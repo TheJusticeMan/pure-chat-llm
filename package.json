@@ -1,6 +1,6 @@
 {
 	"name": "pure-chat-llm",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"description": "Pure Chat LLM is a plugin for Obsidian that enables advanced conversational capabilities using large language models, allowing users to engage with intelligent chats directly from their notes.",
 	"main": "main.js",
 	"scripts": {
