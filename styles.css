@@ -6,3 +6,73 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.PURE.is-clickable:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.PURE.is-clickable.markdown {
+    padding: var(--file-margins);
+    background-color: var(--background-primary);
+    /* height: 10em; */
+    /* overflow: hidden; */
+    border: var(--border-width) solid var(--background-modifier-border);
+    border-radius: var(--radius-l);
+    font-size: 0.75em;
+}
+
+.PURE.is-clickable.markdown pre .copy-code-button {
+    display: none;
+}
+
+
+.PURE.is-clickable.markdown:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.PURE.floatbottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--background-primary);
+    border-top: var(--border-width) solid var(--background-modifier-border);
+    padding: 1em;
+    z-index: 100;
+    padding-bottom: 2em;
+}
+
+.PURE.floattop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--background-primary);
+    border-bottom: var(--border-width) solid var(--background-modifier-border);
+    padding: 1em;
+    z-index: 100;
+}
+
+.PURE.floatbottom textarea {
+    width: 100%;
+    height: 5em;
+}
+
+.PURE.floatbottom button {
+    position: fixed;
+    bottom: 5em;
+    right: 2em;
+}
+
+.PURE.case{
+    padding-bottom: 8em;
+    padding-top: 8em;
+}
+
+.PURE.icn{
+    padding: 0.5em;
+}
+
+.PURE.icn:hover{
+    color: var(--text-muted);
+}
