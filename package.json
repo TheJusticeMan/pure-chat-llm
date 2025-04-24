@@ -1,6 +1,6 @@
 {
 	"name": "pure-chat-llm",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Use Obsidian as a chatGPT GUI.",
 	"main": "main.js",
 	"scripts": {
