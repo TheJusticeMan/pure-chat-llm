@@ -1,7 +1,7 @@
 {
 	"id": "pure-chat-llm",
 	"name": "Pure Chat LLM",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.8.10",
 	"description": "Use Obsidian as a chatGPT GUI",
 	"author": "Justice Vellacott",
