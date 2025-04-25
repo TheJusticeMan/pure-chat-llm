@@ -4,7 +4,6 @@ import PureChatLLM from './main';
 import { toSentanceCase } from './toSentanceCase';
 import { ChatMessage, PureChatLLMInstructPrompt } from './types';
 import { BrowserConsole } from './MyBrowserConsole';
-import OpenAI from "openai";
 
 export interface codeContent {
 	language: codelanguage;
@@ -258,10 +257,6 @@ Use this workflow to help modify markdown content accurately.`;
 				this.plugin.console.error(`Error in chat completion:`, error);
 				return this;
 			});
-	}
-
-	async sendChatRequestV2(options: any, streamcallback?: (textFragment: any) => boolean) {
-		const openai = new OpenAI();
 	}
 
 	async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean) {

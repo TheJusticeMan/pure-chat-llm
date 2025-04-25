@@ -3,7 +3,6 @@ import { codeContent, PureChatLLMChat } from './Chat';
 import { PureChatLLMSideView } from './SideView';
 import { DEFAULT_PROCESS_CHAT_TEMPLATES, DEFAULT_SELECTION_TEMPLATES, DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMInstructPrompt, PureChatLLMInstructPrompts, PureChatLLMSettings } from './types';
 import { BrowserConsole } from './MyBrowserConsole';
-import { on } from 'events';
 
 /**
  * The main plugin class for the Pure Chat LLM Obsidian plugin.
