@@ -1,9 +1,9 @@
 {
 	"id": "pure-chat-llm",
 	"name": "Pure Chat LLM",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"minAppVersion": "1.8.10",
-	"description": "Use Obsidian as a chatGPT GUI",
+	"description": "Turn notes into conversations with chatGPT",
 	"author": "Justice Vellacott",
 	"authorUrl": "https://thejusticeman.github.io/",
 	"isDesktopOnly": false
