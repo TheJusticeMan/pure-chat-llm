@@ -5,13 +5,44 @@ export interface PureChatLLMSettings {
 	AutogenerateTitle: number;
 	Model: string;
 	SystemPrompt: string;
+	debug: boolean;
+}
+export const DEFAULT_SETTINGS: PureChatLLMSettings = {
+	apiKey: 'sk-XXXXXXXXX',
+	AutogenerateTitle: 0,
+	Model: "gpt-4.1-nano",
+	SystemPrompt: `You are ChatGPT, a large language model trained by OpenAI. Carefully heed the user's instructions. Respond using Markdown.\n\nBe attentive, thoughtful, and precise—provide clear, well-structured answers that honor the complexity of each query. Avoid generic responses; instead, offer insights that encourage creativity, reflection, and learning. Employ subtle, dry humor or depth when appropriate. Respect the user’s individuality and values, adapting your tone and approach as needed to foster a conversational, meaningful, and genuinely supportive exchange.`,
+	debug: false
+};
+
+
+/**
+ * Represents a collection of instruct prompts for PureChat LLM, 
+ * where each prompt is identified by a unique string key.
+ * 
+ * @remarks
+ * The keys are typically descriptive names or identifiers for each instruct prompt.
+ * The values are of type {@link PureChatLLMInstructPrompt}.
+ *
+ * @example
+ * ```typescript
+ * const prompts: PureChatLLMInstructPrompts = {
+ *   "summarize": { /* prompt details *\/ },
+ *   "translate": { /* prompt details *\/ }
+ * };
+ * ```
+ */
+export interface PureChatLLMInstructPrompts {
+	[key: string]: PureChatLLMInstructPrompt;
 }
 
-export interface PureChatLLMPromptTemplates {
-	[key: string]: PureChatLLMPromptTemplate;
-}
-
-export interface PureChatLLMPromptTemplate {
+/**
+ * Represents an instruction prompt for the Pure Chat LLM plugin.
+ *
+ * @property name - The unique name identifying the prompt.
+ * @property template - The template string used for the prompt's content.
+ */
+export interface PureChatLLMInstructPrompt {
 	name: string;
 	template: string;
 }
@@ -24,7 +55,7 @@ export interface ChatMessage {
 
 export const PURE_CHAT_LLM_VIEW_TYPE = 'pure-chat-llm-left-pane';
 
-export const DEFAULT_PROCESS_CHAT_TEMPLATES: PureChatLLMPromptTemplates = {
+export const DEFAULT_PROCESS_CHAT_TEMPLATES: PureChatLLMInstructPrompts = {
 	"Conversation titler": {
 		name: "Conversation titler",
 		template: `Summarize the conversation in 5 words or fewer:
@@ -48,7 +79,7 @@ Write another prompt by condensing all the user requests into one to get the fin
 	}
 };
 
-export const DEFAULT_SELECTION_TEMPLATES: PureChatLLMPromptTemplates = {
+export const DEFAULT_SELECTION_TEMPLATES: PureChatLLMInstructPrompts = {
 	"Summarize": {
 		name: "Summarize",
 		template: "Create a bullet-point summary of the provided selection.\nEach bullet point should capture a key point.\nReturn only the bullet-point summary."
@@ -81,12 +112,5 @@ export const DEFAULT_SELECTION_TEMPLATES: PureChatLLMPromptTemplates = {
 		name: "Clarify & Expand Role Description",
 		template: "The provided selection contains a brief role description. Expand and clarify this description by explaining the responsibilities, goals, and perspective someone playing this role should adopt. Use detailed and clear language, including relevant context or examples. Maintain the original intent while making the explanation comprehensive. Return only the expanded role description."
 	},
-};
-
-export const DEFAULT_SETTINGS: PureChatLLMSettings = {
-	apiKey: 'sk-XXXXXXXXX',
-	AutogenerateTitle: 0,
-	Model: "gpt-4.1-nano",
-	SystemPrompt: `You are ChatGPT, a large language model trained by OpenAI. Carefully heed the user's instructions. Respond using Markdown.\n\nBe attentive, thoughtful, and precise—provide clear, well-structured answers that honor the complexity of each query. Avoid generic responses; instead, offer insights that encourage creativity, reflection, and learning. Employ subtle, dry humor or depth when appropriate. Respect the user’s individuality and values, adapting your tone and approach as needed to foster a conversational, meaningful, and genuinely supportive exchange.`,
 };
 

@@ -1,14 +1,46 @@
 import { App, EditorRange, Notice, TFile } from 'obsidian';
 import { codelanguage } from './codelanguages';
 import PureChatLLM from './main';
-import { ChatMessage, PureChatLLMPromptTemplate } from './types';
+import { toSentanceCase } from './toSentanceCase';
+import { ChatMessage, PureChatLLMInstructPrompt } from './types';
+import { BrowserConsole } from './MyBrowserConsole';
+import OpenAI from "openai";
+
+export interface codeContent {
+	language: codelanguage;
+	code: string;
+}
+
+/**
+ * Represents a chat session for the Pure Chat LLM Obsidian plugin.
+ * 
+ * Handles chat message management, markdown serialization/deserialization, 
+ * OpenAI API communication, and integration with Obsidian files and templates.
+ * 
+ * @remarks
+ * - Supports parsing and formatting chat conversations in markdown.
+ * - Can resolve Obsidian file links within chat messages.
+ * - Provides methods for sending chat requests to the OpenAI API, including streaming support.
+ * - Integrates with prompt templates for advanced chat processing and selection-based responses.
+ * 
+ * @example
+ * ```typescript
+ * const chat = new PureChatLLMChat(pluginInstance);
+ * chat.appendMessage({ role: "user", content: "Hello!" });
+ * await chat.CompleteChatResponse(activeFile);
+ * ```
+ * 
+ * @public
+ */
 export class PureChatLLMChat {
 	options: object = { model: "gpt-4.1-nano", max_tokens: 1000 };
 	messages: ChatMessage[];
 	plugin: PureChatLLM;
+	console: BrowserConsole;
 
 	constructor(plugin: PureChatLLM) {
 		this.plugin = plugin;
+		this.console = new BrowserConsole(plugin.settings.debug, "PureChatLLMChat");
 	}
 
 	get Markdown(): string {
@@ -64,7 +96,7 @@ export class PureChatLLMChat {
 	}
 
 	// Instance method: extract all code blocks
-	static extractAllCodeBlocks(markdown: string): { language: codelanguage; code: string; }[] {
+	static extractAllCodeBlocks(markdown: string): codeContent[] {
 		const regex = /^```(\w*)\n([\s\S]*?)\n```/gm;
 		const matches: { language: codelanguage; code: string; }[] = [];
 		let match;
@@ -133,7 +165,20 @@ export class PureChatLLMChat {
 		};
 	}
 
-	ProcessChatWithTemplate(templatePrompt: PureChatLLMPromptTemplate) {
+	/**
+	 * Processes a chat conversation using a specified template prompt.
+	 *
+	 * This method constructs a system prompt instructing the chat model to:
+	 * 1. Extract the chat content enclosed within `<Conversation>` tags.
+	 * 2. Follow a command or instruction provided after the conversation.
+	 * 3. Return the processed chat in markdown format, omitting any tags or instructions.
+	 *
+	 * The method then sends a chat request to the model with the constructed prompts and user input.
+	 *
+	 * @param templatePrompt - The template prompt containing the instruction and template name to guide the chat processing.
+	 * @returns A Promise resolving to the processed chat response from the model.
+	 */
+	ProcessChatWithTemplate(templatePrompt: PureChatLLMInstructPrompt) {
 		const systemprompt =
 			`You are a markdown chat processor.
 
@@ -159,7 +204,20 @@ Use this workflow to accurately handle the chat based on the instruction.`;
 		})
 	}
 
-	SelectionResponse(templatePrompt: PureChatLLMPromptTemplate, selectedText: string) {
+	/**
+	 * Processes a selected piece of markdown text using a specified instruction prompt.
+	 *
+	 * This method constructs a system prompt to guide a markdown content processor,
+	 * then sends a chat request to an LLM model with the selected markdown and the
+	 * provided instruction. The LLM is expected to extract the markdown within
+	 * <Selection> tags, apply the instruction, and return only the processed markdown.
+	 *
+	 * @param templatePrompt - The instruction prompt containing the name and template for processing.
+	 * @param selectedText - The markdown text selected by the user to be processed.
+	 * @returns A Promise resolving to the LLM's response containing the processed markdown,
+	 *          or an empty response if no text is selected.
+	 */
+	SelectionResponse(templatePrompt: PureChatLLMInstructPrompt, selectedText: string) {
 		const systemprompt = `You are a markdown content processor. 
 
 You will receive:
@@ -197,15 +255,22 @@ Use this workflow to help modify markdown content accurately.`;
 				return this;
 			})
 			.catch(error => {
-				console.error(error);
+				this.plugin.console.error(`Error in chat completion:`, error);
 				return this;
 			});
 	}
 
+	async sendChatRequestV2(options: any, streamcallback?: (textFragment: any) => boolean) {
+		const openai = new OpenAI();
+	}
+
 	async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean) {
+		//const openai = new OpenAI({ apiKey: this.plugin.settings.apiKey.trim() });
+
 		//console.log("Initiating fetch request to OpenAI API...");
-		console.log("Sending chat request with options:", options);
-		console.log("Using API key:", this.plugin.settings.apiKey.trim());
+		this.plugin.console.log(`Sending chat request with options: `, options);
+		this.console.log("Sending chat request with options:", options);
+		this.console.log("Using API key:", this.plugin.settings.apiKey.trim());
 		const response = await fetch("https://api.openai.com/v1/chat/completions", {
 			method: "POST",
 			headers: {
@@ -217,7 +282,7 @@ Use this workflow to help modify markdown content accurately.`;
 		//console.log(`Received response with status: ${response.status} (${response.statusText})`);
 
 		if (!response.ok) {
-			console.error(`Network error: ${response.statusText}`);
+			this.console.error(`Network error: ${response.statusText}`);
 			throw new Error(`Network error: ${response.statusText}`);
 		}
 
@@ -268,7 +333,7 @@ Use this workflow to help modify markdown content accurately.`;
 								}
 							}
 						} catch (err) {
-							console.error("Error parsing stream data:", err);
+							this.console.error("Error parsing stream data:", err);
 						}
 					}
 				}
@@ -287,7 +352,7 @@ Use this workflow to help modify markdown content accurately.`;
 	// Instance method: convert chat back to markdown
 	getChatText(): string {
 		return this.messages
-			.map(msg => `# role: ${msg.role}\n${msg.content}\n`)
+			.map(msg => `# role: ${toSentanceCase(msg.role)}\n${msg.content}\n`)
 			.join("");
 	}
 

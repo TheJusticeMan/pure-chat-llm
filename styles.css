@@ -7,18 +7,71 @@ If your plugin does not need CSS, delete this file.
 
 */
 
+.PUREcodePreview {
+    width: 100%;
+    min-height: 10em;
+    resize: vertical;
+}
+
+.PURE.preview2.user {
+    text-align: right;
+    gap: 10px;
+}
+
+.PURE.preview2.system,
+.PURE.preview2.developer {
+    text-align: center;
+    gap: 10px;
+}
+
+.PURE.preview2.assistant {
+    text-align: left;
+    gap: 10px;
+}
+
+.PURE.preview.user,
+.PURE.preview.system,
+.PURE.preview.developer,
+.PURE.preview.assistant {
+    max-width: 90%;
+    display: inline-block;
+}
+
+.PURE.preview.user {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.PURE.preview.system,
+.PURE.preview.developer {
+    margin: auto;
+}
+
+.PURE.preview.assistant {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.PURE.preview button {
+    margin: 0.5em;
+}
+
 .PURE.is-clickable:hover {
     background-color: var(--background-modifier-hover);
 }
 
 .PURE.is-clickable.markdown {
-    padding: var(--file-margins);
+    padding-left: var(--size-4-4);
+    padding-right: var(--size-4-4);
+    padding-top: 0;
+    padding-bottom: 0;
     background-color: var(--background-primary);
-    /* height: 10em; */
-    /* overflow: hidden; */
+    max-height: 10em;
+    overflow: hidden;
     border: var(--border-width) solid var(--background-modifier-border);
-    border-radius: var(--radius-l);
+    border-radius: var(--radius-m);
     font-size: 0.75em;
+    text-align: left;
 }
 
 .PURE.is-clickable.markdown pre .copy-code-button {
@@ -53,33 +106,8 @@ If your plugin does not need CSS, delete this file.
     z-index: 100;
 }
 
-.PURE.floatbottom textarea {
-    width: 100%;
-    height: 5em;
-}
-
-.PURE.floatbottom button {
-    position: fixed;
-    bottom: 5em;
-    right: 2em;
-}
-
-.PURE.case {
-    padding-bottom: 8em;
-    padding-top: 8em;
-}
-
-.PURE.icn {
-    padding: 0.5em;
-}
-
-.PURE.icn:hover {
-    color: var(--text-muted);
-}
-
 .PURE.setting-item textarea {
     width: 100%;
     height: 7em;
-    columns: 150;
     resize: none;
 }
