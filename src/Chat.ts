@@ -2,11 +2,12 @@ import { App, EditorRange, Notice, TFile } from 'obsidian';
 import { codelanguage } from './codelanguages';
 import PureChatLLM from './main';
 import { toSentanceCase } from './toSentanceCase';
-import { ChatMessage, PureChatLLMInstructPrompt } from './types';
+import { ChatMessage, PureChatLLMAPI, PureChatLLMInstructPrompt } from './types';
 import { BrowserConsole } from './MyBrowserConsole';
+import { Stream } from 'stream';
 
 export interface codeContent {
-	language: codelanguage;
+	language: string;
 	code: string;
 }
 
@@ -32,10 +33,12 @@ export interface codeContent {
  * @public
  */
 export class PureChatLLMChat {
-	options: object = { model: "gpt-4.1-nano", max_tokens: 1000 };
+	options: any = { model: "gpt-4.1-nano", max_completion_tokens: 1000, stream: true };
 	messages: ChatMessage[];
 	plugin: PureChatLLM;
 	console: BrowserConsole;
+	pretext: string = "";
+	endpoint: PureChatLLMAPI;
 
 	constructor(plugin: PureChatLLM) {
 		this.plugin = plugin;
@@ -49,6 +52,7 @@ export class PureChatLLMChat {
 	set Markdown(markdown: string) {
 		let [prechat, ...chat] = markdown.split(/^# role: (?=system|user|assistant|developer)/im);
 		let lengthtoHere = prechat.split("\n").length;
+		this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
 		if (chat.length === 0) { // if the file has no # role: system|user|assistant|developer
 			this.messages = [];
 			this.appendMessage({ role: "system", content: this.plugin.settings.SystemPrompt });
@@ -76,6 +80,11 @@ export class PureChatLLMChat {
 
 	setMarkdown(markdown: string) {// make this chainable
 		this.Markdown = markdown;
+		return this;
+	}
+
+	setModel(modal: string) {
+		this.options.model = modal;
 		return this;
 	}
 
@@ -194,7 +203,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
 		//const systemprompt = `You are a ${templatePrompt.name}.`;
 		new Notice('Generating chat response from template...');
 		return this.sendChatRequest({
-			model: this.plugin.settings.Model,
+			model: this.endpoint.defaultmodel,
 			messages: [
 				{ role: 'system', content: systemprompt },
 				{ role: 'user', content: `<Conversation>\n${this.getChatText()}\n\n</Conversation>` },
@@ -217,6 +226,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
 	 *          or an empty response if no text is selected.
 	 */
 	SelectionResponse(templatePrompt: PureChatLLMInstructPrompt, selectedText: string) {
+		//const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];	
 		const systemprompt = `You are a markdown content processor. 
 
 You will receive:
@@ -233,7 +243,7 @@ Use this workflow to help modify markdown content accurately.`;
 		if (selectedText.length > 0) {
 			new Notice('Generating response for selection...');
 			return this.sendChatRequest({
-				model: this.plugin.settings.Model,
+				model: this.endpoint.defaultmodel,
 				messages: [
 					{ role: 'system', content: systemprompt },
 					{ role: 'user', content: `<Selection>\n${selectedText}\n\n</Selection>` },
@@ -259,89 +269,102 @@ Use this workflow to help modify markdown content accurately.`;
 			});
 	}
 
-	async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean) {
-		//const openai = new OpenAI({ apiKey: this.plugin.settings.apiKey.trim() });
+	/**
+	 * Handles streaming responses from a fetch Response object.
+	 * Calls the provided callback with each parsed data fragment.
+	 * Returns the concatenated content as a string.
+	 */
+	static async handleStreamingResponse(
+		response: Response,
+		streamcallback: (textFragment: any) => boolean
+	): Promise<string> {
+		if (!response.body) {
+			throw new Error("Response body is null. Streaming is not supported in this environment.");
+		}
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder("utf-8");
+		let done = false;
+		let buffer = "";
+		let fullText = "";
 
-		//console.log("Initiating fetch request to OpenAI API...");
-		this.plugin.console.log(`Sending chat request with options: `, options);
+		while (!done) {
+			const { value, done: streamDone } = await reader.read();
+			if (streamDone) break;
+			buffer += decoder.decode(value, { stream: true });
+
+			let lines = buffer.split("\n");
+			buffer = lines.pop() || "";
+
+			for (const line of lines) {
+				const trimmedLine = line.trim();
+				if (trimmedLine.startsWith("data: ")) {
+					const dataStr = trimmedLine.replace(/^data:\s*/, '');
+					if (dataStr === "[DONE]") {
+						done = true;
+						break;
+					}
+					try {
+						const data = JSON.parse(dataStr);
+						const delta = data.choices?.[0]?.delta;
+						if (delta?.content) {
+							fullText += delta.content;
+							const continueProcessing = streamcallback(delta);
+							if (!continueProcessing) {
+								done = true;
+								break;
+							}
+						}
+					} catch (err) {
+						// Optionally handle parse errors
+					}
+				}
+			}
+		}
+		return fullText;
+	}
+
+	async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean) {
 		this.console.log("Sending chat request with options:", options);
-		this.console.log("Using API key:", this.plugin.settings.apiKey.trim());
-		const response = await fetch("https://api.openai.com/v1/chat/completions", {
+		this.console.log("Using API key:", this.endpoint.apiKey);
+		const response = await fetch(this.endpoint.endpoint, {
 			method: "POST",
 			headers: {
-				"Authorization": `Bearer ${this.plugin.settings.apiKey.trim()}`,
+				"Authorization": `Bearer ${this.endpoint.apiKey}`,
 				"Content-Type": "application/json"
 			},
-			body: JSON.stringify({ ...options, stream: options.stream && !!streamcallback }) // Add stream flag if callback provided
+			body: JSON.stringify({ ...options, stream: options.stream && !!streamcallback })
 		});
-		//console.log(`Received response with status: ${response.status} (${response.statusText})`);
 
 		if (!response.ok) {
 			this.console.error(`Network error: ${response.statusText}`);
 			throw new Error(`Network error: ${response.statusText}`);
 		}
 
-		// If a streamcallback is provided, handle streaming
 		if (options.stream && !!streamcallback) {
-			//console.log("Streaming response detected. Starting to process stream...");
-			if (!response.body) {
-				throw new Error("Response body is null. Streaming is not supported in this environment.");
-			}
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder("utf-8");
-			let done = false;
-			let buffer = "";
-			let fullText = "";
-
-			while (!done) {
-				const { value, done: streamDone } = await reader.read();
-				if (streamDone) {
-					//console.log("Stream has ended.");
-					break;
-				}
-				buffer += decoder.decode(value, { stream: true });
-
-				// The OpenAI streaming format sends data in chunks prefixed with "data: "
-				let lines = buffer.split("\n");
-				buffer = lines.pop() || "";
-
-				for (const line of lines) {
-					const trimmedLine = line.trim();
-					if (trimmedLine.startsWith("data: ")) {
-						const dataStr = trimmedLine.replace(/^data:\s*/, '');
-						if (dataStr === "[DONE]") {
-							//console.log("Received [DONE] signal. Ending stream processing.");
-							done = true;
-							break;
-						}
-						try {
-							const data = JSON.parse(dataStr);
-							const delta = data.choices[0].delta;
-							if (delta.content) {
-								fullText += delta.content;
-								// Call the callback with the new fragment
-								const continueProcessing = streamcallback(delta);
-								if (!continueProcessing) {
-									//console.log("Callback requested to stop processing stream.");
-									done = true;
-									break;
-								}
-							}
-						} catch (err) {
-							this.console.error("Error parsing stream data:", err);
-						}
-					}
-				}
-			}
-
-			//console.log("Finished processing streaming response.");
-			return { role: "assistant", content: fullText }; // Since this is streaming, return result
+			const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
+			return { role: "assistant", content: fullText };
 		} else {
-			// Non-streaming response; parse JSON and return the first message
 			const data = await response.json();
-			//console.log("Received complete response:", data);
 			return data.choices[0].message;
 		}
+	}
+
+	getAllModels(): Promise<any[]> {
+		const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+		if (this.plugin.modellist.length > 0) {
+			return Promise.resolve(this.plugin.modellist);
+		}
+		new Notice(`Fetching models from ${endpoint.name} API...`);
+		this.console.log(`Fetching models from ${endpoint.name} API...`);
+		return fetch(endpoint.listmodels, {
+			method: "GET",
+			headers: {
+				"Authorization": `Bearer ${endpoint.apiKey}`,
+				"Content-Type": "application/json"
+			}
+		})
+			.then(response => response.json())
+			.then(data => data.data.map(({ id }: any) => id).sort((a: string, b: string) => a.localeCompare(b)));
 	}
 
 	// Instance method: convert chat back to markdown

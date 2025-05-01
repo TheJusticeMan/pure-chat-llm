@@ -1,6 +1,6 @@
-import { ItemView, WorkspaceLeaf, Editor, MarkdownView, setIcon, MarkdownRenderer, EditorRange, Notice, ButtonComponent, Platform } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Editor, MarkdownView, setIcon, MarkdownRenderer, EditorRange, Notice, ButtonComponent, Platform, Menu, DropdownComponent } from 'obsidian';
 import { PureChatLLMChat } from './Chat';
-import PureChatLLM, { CodeHandling } from './main';
+import PureChatLLM, { AskForAPI, CodeHandling, SectionHandling } from './main';
 import { toSentanceCase } from './toSentanceCase';
 import { PURE_CHAT_LLM_VIEW_TYPE } from './types';
 import { BrowserConsole } from './MyBrowserConsole';
@@ -79,12 +79,63 @@ export class PureChatLLMSideView extends ItemView {
 		}
 	}
 
+	menumodels(e: MouseEvent, editor: Editor) {
+		//if (!this.plugin.isresponding) return;
+		const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+		if (endpoint.apiKey === "sk-XXXXXXXXX") {
+			new AskForAPI(this.app, this.plugin).open();
+			return;
+		}
+		new PureChatLLMChat(this.plugin)
+			.getAllModels()
+			.then((models) => {
+				const m = new Menu();
+				this.plugin.modellist = models;
+				models.forEach((model) => {
+					m.addItem((item) => {
+						item.setTitle(model);
+						item.onClick(() => {
+							editor.setValue(new PureChatLLMChat(this.plugin)
+								.setMarkdown(editor.getValue())
+								.setModel(model)
+								.Markdown);
+							// this.plugin.saveSettings();
+							new Notice("Model changed to " + model);
+						});
+					});
+				});
+				m.showAtMouseEvent(e);
+			})
+	}
+
 	update(editor: Editor, view: MarkdownView) {
 		const editorValue = editor.getValue();
 		const chat = new PureChatLLMChat(this.plugin);
 		chat.Markdown = editorValue;
 		const container = this.contentEl;
 		container.empty();
+		container.createDiv({ text: "" }, (contain) => {
+			contain.addClass("PURE", "floattop");
+			new ButtonComponent(contain)
+				.setIcon("box")
+				.setTooltip("Change model")
+				.onClick((e) => {
+					this.menumodels(e, editor);
+				})
+			new DropdownComponent(contain)
+				.addOptions(Object.fromEntries(this.plugin.settings.endpoints.map((e, i) => [i.toString(), e.name])))
+				.setValue(this.plugin.settings.endpoint.toString())
+				.onChange(async (value) => {
+					this.plugin.settings.endpoint = parseInt(value, 10);
+					editor.setValue(new PureChatLLMChat(this.plugin)
+						.setMarkdown(editor.getValue())
+						.setModel(this.plugin.settings.endpoints[this.plugin.settings.endpoint].defaultmodel)
+						.Markdown);
+					this.plugin.modellist = [];
+					await this.plugin.saveSettings();
+				});
+
+		})
 
 		// Process markdown messages
 		chat.messages.forEach((message) => {
@@ -108,23 +159,39 @@ export class PureChatLLMSideView extends ItemView {
 						});
 						new ButtonComponent(div)
 							.setIcon("copy")
+							.setTooltip("Copy message to clipboard")
 							.onClick(() => {
 								navigator.clipboard.writeText(message.content);
 								new Notice("Copied message to clipboard");
 							});
 						new ButtonComponent(div)
 							.setIcon("message-square-x")
+							.setTooltip("Delete message")
 							.onClick(() => {
 								editor.replaceRange("", { line: message.cline.from.line - 1, ch: 0 }, message.cline.to);
 								new Notice("Deleted message");
 							});
-						const iscode = /```[\w\W]*?```/gm.test(message.content);
-						if (iscode)
+						if (/# \w+/gm.test(message.content))
+							new ButtonComponent(div)
+								.setIcon("table-of-contents")
+								.setTooltip("View and edit sections")
+								.onClick(() => {
+									new SectionHandling(this.app, this.plugin, message.content).open();
+								});
+						if (/```[\w\W]*?```/gm.test(message.content))
 							new ButtonComponent(div)
 								.setIcon("code")
+								.setTooltip("View and edit code")
 								.onClick(() => {
 									new CodeHandling(this.app, this.plugin, message.content).open();
 								});
+						new ButtonComponent(div)
+							.setIcon("refresh-cw")
+							.setTooltip("Regenerate response")
+							.onClick(() => {
+								editor.replaceRange("", { line: message.cline.to.line, ch: 0 }, { line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length });
+								this.plugin.CompleteChatResponse(editor, view);
+							})
 					});
 			});
 		});

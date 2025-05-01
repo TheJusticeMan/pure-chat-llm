@@ -96,11 +96,11 @@ If your plugin does not need CSS, delete this file.
 }
 
 .PURE.floattop {
-    position: fixed;
+    position: sticky;
     top: 0;
     left: 0;
     width: 100%;
-    background-color: var(--background-primary);
+    background-color: var(--background-secondary);
     border-bottom: var(--border-width) solid var(--background-modifier-border);
     padding: 1em;
     z-index: 100;
