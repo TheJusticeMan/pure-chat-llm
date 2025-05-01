@@ -1,113 +1,150 @@
 /*
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+This CSS file provides styling for the Pure Chat LLM plugin in Obsidian. 
+It includes styles for various message containers, previews, and markdown elements, 
+as well as settings-related UI components.
 
-If your plugin does not need CSS, delete this file.
+Styles Overview:
+- `.PURE.floattop`: Sticky header bar with a background and border.
+- `.PURE.messageContainer`: Defines alignment and spacing for different message types (user, system, developer, assistant).
+- `.PURE.messageHeader` and `.PURE.messageMarkdown`: Hover effects and background styling for message content.
+- `.PURE.preview`: Controls layout and alignment of message previews for different roles.
+- `.PURE.messageMarkdown`: Styles for markdown content, including padding, background, borders, and text alignment.
+	- Specific border-radius adjustments for user, assistant, and system messages.
+- `.PURE.preview button`: Button styling within previews, with role-specific border-radius.
+- `.PURE.setting-item textarea`: Styling for textareas in settings, including size and non-resizable behavior.
+- `.PUREcodePreview`: Styling for code preview areas, including width and resizable behavior.
 
+Customization:
+- Utilizes CSS variables (e.g., `--background-secondary`, `--radius-xl`) for theme consistency.
+- Includes hover effects and responsive design considerations.
 */
 
-.PUREcodePreview {
-    width: 100%;
-    min-height: 10em;
-    resize: vertical;
+.PURE {
+	--noshadow: 0 0 0 var(--text-normal);
+	--littleshadow: 1px 1px 4px var(--text-normal);
+	--littleshadowhover: 4px 4px 16px var(--text-normal);
+	--bigshadow: 2px 2px 8px var(--text-normal);
+	--bigshadowhover: 8px 8px 32px var(--text-normal);
 }
 
-.PURE.preview2.user {
-    text-align: right;
-    gap: 10px;
+.PURE.floattop {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	background-color: var(--background-secondary);
+	border-bottom: var(--border-width) solid var(--background-modifier-border);
+	padding: 1em;
+	z-index: 100;
 }
 
-.PURE.preview2.system,
-.PURE.preview2.developer {
-    text-align: center;
-    gap: 10px;
+.PURE.messageContainer.user {
+	text-align: right;
+	gap: 10px;
 }
 
-.PURE.preview2.assistant {
-    text-align: left;
-    gap: 10px;
+.PURE.messageContainer.system,
+.PURE.messageContainer.developer {
+	text-align: center;
+	gap: 10px;
+}
+
+.PURE.messageContainer.assistant {
+	text-align: left;
+	gap: 10px;
+}
+
+.PURE.messageHeader {
+	text-shadow: var(--noshadow);
+	transition: text-shadow 0.3s ease;
+}
+
+.PURE.messageHeader:hover {
+	text-shadow: var(--littleshadowhover);
 }
 
 .PURE.preview.user,
 .PURE.preview.system,
 .PURE.preview.developer,
 .PURE.preview.assistant {
-    max-width: 90%;
-    display: inline-block;
+	max-width: 90%;
+	display: inline-block;
 }
 
 .PURE.preview.user {
-    margin-left: auto;
-    margin-right: 0;
+	margin-left: auto;
+	margin-right: 0;
 }
 
 .PURE.preview.system,
 .PURE.preview.developer {
-    margin: auto;
+	margin: auto;
 }
 
 .PURE.preview.assistant {
-    margin-left: 0;
-    margin-right: auto;
+	margin-left: 0;
+	margin-right: auto;
+}
+
+.PURE.messageMarkdown {
+	padding: 0 var(--size-4-4);
+	max-height: 10em;
+	overflow: hidden;
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	font-size: 0.75em;
+	text-align: left;
+	box-shadow: var(--bigshadow);
+	transition: box-shadow 0.3s ease;
+}
+
+.PURE.messageMarkdown:hover {
+	box-shadow: var(--bigshadowhover);
+}
+
+.PURE.messageMarkdown.user {
+	border-radius: 0 var(--radius-xl);
+}
+
+.PURE.messageMarkdown.assistant {
+	border-radius: var(--radius-xl) 0;
+}
+
+.PURE.messageMarkdown.system {
+	border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.PURE.messageMarkdown pre .copy-code-button {
+	display: none;
 }
 
 .PURE.preview button {
-    margin: 0.5em;
+	margin: 0.5em;
+	box-shadow: var(--littleshadow);
+	transition: box-shadow 0.3s ease;
 }
 
-.PURE.is-clickable:hover {
-    background-color: var(--background-modifier-hover);
+.PURE.preview button:hover {
+	box-shadow: var(--littleshadowhover);
 }
 
-.PURE.is-clickable.markdown {
-    padding-left: var(--size-4-4);
-    padding-right: var(--size-4-4);
-    padding-top: 0;
-    padding-bottom: 0;
-    background-color: var(--background-primary);
-    max-height: 10em;
-    overflow: hidden;
-    border: var(--border-width) solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    font-size: 0.75em;
-    text-align: left;
+.PURE.preview.user button {
+	border-radius: 0 var(--radius-m);
 }
 
-.PURE.is-clickable.markdown pre .copy-code-button {
-    display: none;
-}
-
-
-.PURE.is-clickable.markdown:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.PURE.floatbottom {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: var(--background-primary);
-    border-top: var(--border-width) solid var(--background-modifier-border);
-    padding: 1em;
-    z-index: 100;
-    padding-bottom: 2em;
-}
-
-.PURE.floattop {
-    position: sticky;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: var(--background-secondary);
-    border-bottom: var(--border-width) solid var(--background-modifier-border);
-    padding: 1em;
-    z-index: 100;
+.PURE.preview.assistant button {
+	border-radius: var(--radius-m) 0;
 }
 
 .PURE.setting-item textarea {
-    width: 100%;
-    height: 7em;
-    resize: none;
+	width: 100%;
+	height: 7em;
+	resize: none;
+}
+
+.PUREcodePreview {
+	width: 100%;
+	min-height: 10em;
+	resize: vertical;
 }

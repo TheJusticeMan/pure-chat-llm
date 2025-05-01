@@ -1,4 +1,12 @@
-import { Editor, EditorPosition, EditorSelectionOrCaret, EditorRange, EditorSelection, EditorCommandName, EditorTransaction } from 'obsidian';
+import {
+	Editor,
+	EditorPosition,
+	EditorSelectionOrCaret,
+	EditorRange,
+	EditorSelection,
+	EditorCommandName,
+	EditorTransaction,
+} from "obsidian";
 
 /**
  * Represents a chainable wrapper around an Editor instance,
@@ -180,7 +188,7 @@ export class ChainableEditor {
 	 * Gets scroll information.
 	 * @returns {{ top: number; left: number }} - Scroll positions.
 	 */
-	getScrollInfo(): { top: number; left: number; } {
+	getScrollInfo(): { top: number; left: number } {
 		return this.editor.getScrollInfo();
 	}
 
@@ -197,7 +205,7 @@ export class ChainableEditor {
 	 * @param {'from'|'to'|'head'|'anchor'} [position] - Specific position type (optional).
 	 * @returns {EditorPosition} - The cursor position object.
 	 */
-	getCursor(position?: 'from' | 'to' | 'head' | 'anchor'): EditorPosition {
+	getCursor(position?: "from" | "to" | "head" | "anchor"): EditorPosition {
 		return this.editor.getCursor(position);
 	}
 

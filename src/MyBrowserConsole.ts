@@ -1,6 +1,3 @@
-// extend the browser to add debug on off switch
-
-
 /**
  * A wrapper class for the browser's console object that allows enabling or disabling
  * logging and prefixes all log messages with a custom console name.
