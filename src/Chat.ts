@@ -4,6 +4,7 @@ import PureChatLLM from "./main";
 import { toSentanceCase } from "./toSentanceCase";
 import {
 	ChatMessage,
+	EmptyApiKey,
 	PureChatLLMAPI,
 	PureChatLLMInstructPrompt,
 } from "./types";
@@ -356,6 +357,10 @@ export class PureChatLLMChat {
 	 * @returns A Promise resolving to the processed chat response from the model.
 	 */
 	ProcessChatWithTemplate(templatePrompt: PureChatLLMInstructPrompt) {
+		if (this.endpoint.apiKey === EmptyApiKey) {
+			this.plugin.askForApiKey();
+			return Promise.resolve({ role: "assistant", content: EmptyApiKey });
+		}
 		const systemprompt = `You are a markdown chat processor.
 
 You will receive:
@@ -401,6 +406,13 @@ Use this workflow to accurately handle the chat based on the instruction.`;
 		templatePrompt: PureChatLLMInstructPrompt,
 		selectedText: string
 	) {
+		if (this.endpoint.apiKey === EmptyApiKey) {
+			this.plugin.askForApiKey();
+			return Promise.resolve({
+				role: "assistant",
+				content: selectedText,
+			});
+		}
 		//const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
 		const systemprompt = `You are a markdown content processor. 
 
@@ -451,6 +463,9 @@ Use this workflow to help modify markdown content accurately.`;
 		file: TFile,
 		streamcallback?: (textFragment: any) => boolean
 	): Promise<this> {
+		if (this.endpoint.apiKey === EmptyApiKey) {
+			return Promise.resolve(this);
+		}
 		return this.getChatGPTinstructions(file, this.plugin.app)
 			.then((options) => this.sendChatRequest(options, streamcallback))
 			.then((content) => {

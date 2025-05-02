@@ -23,10 +23,12 @@ export interface PureChatLLMAPI {
 	getapiKey: string;
 }
 
+export const EmptyApiKey = "sk-XXXXXXXXX";
+
 export const ENDPOINTS: PureChatLLMAPI[] = [
 	{
 		name: "OpenAI",
-		apiKey: "sk-XXXXXXXXX",
+		apiKey: EmptyApiKey,
 		defaultmodel: "gpt-4.1-nano",
 		endpoint: "https://api.openai.com/v1/chat/completions",
 		listmodels: "https://api.openai.com/v1/models",
@@ -34,7 +36,7 @@ export const ENDPOINTS: PureChatLLMAPI[] = [
 	},
 	{
 		name: "Gemini",
-		apiKey: "sk-XXXXXXXXX",
+		apiKey: EmptyApiKey,
 		defaultmodel: "gemini-2.0-flash-lite",
 		endpoint:
 			"https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
@@ -44,7 +46,7 @@ export const ENDPOINTS: PureChatLLMAPI[] = [
 	},
 	{
 		name: "xAI",
-		apiKey: "sk-XXXXXXXXX",
+		apiKey: EmptyApiKey,
 		defaultmodel: "grok-3-mini",
 		endpoint: "https://api.x.ai/v1/chat/completions",
 		listmodels: "https://api.x.ai/v1/models",
@@ -52,7 +54,7 @@ export const ENDPOINTS: PureChatLLMAPI[] = [
 	},
 	{
 		name: "Anthropic",
-		apiKey: "sk-XXXXXXXXX",
+		apiKey: EmptyApiKey,
 		defaultmodel: "claude-3-7-sonnet-20250219",
 		endpoint: "https://api.anthropic.com/v1/messages",
 		listmodels: "https://api.anthropic.com/v1/models",
@@ -60,7 +62,7 @@ export const ENDPOINTS: PureChatLLMAPI[] = [
 	},
 	{
 		name: "Cohere",
-		apiKey: "sk-XXXXXXXXX",
+		apiKey: EmptyApiKey,
 		defaultmodel: "command",
 		endpoint: "https://api.cohere.ai/v1/generate",
 		listmodels: "https://api.cohere.ai/v1/models",
@@ -68,7 +70,7 @@ export const ENDPOINTS: PureChatLLMAPI[] = [
 	},
 	{
 		name: "Mistral AI",
-		apiKey: "sk-XXXXXXXXX",
+		apiKey: EmptyApiKey,
 		defaultmodel: "mixtral-8x7b",
 		endpoint: "https://api.mistral.ai/v1/chat/completions",
 		listmodels: "https://api.mistral.ai/v1/models",
@@ -76,7 +78,7 @@ export const ENDPOINTS: PureChatLLMAPI[] = [
 	},
 	{
 		name: "DeepSeek",
-		apiKey: "sk-XXXXXXXXX",
+		apiKey: EmptyApiKey,
 		defaultmodel: "deepseek-llm",
 		endpoint: "https://api.deepseek.com/v1/chat/completions",
 		listmodels: "https://api.deepseek.com/v1/models",

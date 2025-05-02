@@ -21,6 +21,7 @@ import {
 	DEFAULT_PROCESS_CHAT_TEMPLATES,
 	DEFAULT_SELECTION_TEMPLATES,
 	DEFAULT_SETTINGS,
+	EmptyApiKey,
 	ENDPOINTS,
 	PURE_CHAT_LLM_VIEW_TYPE,
 	PureChatLLMInstructPrompt,
@@ -28,6 +29,21 @@ import {
 	PureChatLLMSettings,
 } from "./types";
 import { BrowserConsole } from "./MyBrowserConsole";
+
+declare module "obsidian" {
+	interface App {
+		commands: {
+			commands: {
+				[commandId: string]: {
+					id: string;
+					name: string;
+					callback: () => void;
+				};
+			};
+			executeCommandById(commandId: string): boolean;
+		};
+	}
+}
 
 /**
  * The main plugin class for the Pure Chat LLM Obsidian plugin.
@@ -64,6 +80,11 @@ export default class PureChatLLM extends Plugin {
 		if (this.settings.endpoints.length == 0) {
 			this.settings.endpoints = ENDPOINTS;
 		}
+		//const APP: any = this.app;
+		//this.app.commands.executeCommandById("app:open-settings");
+		//this.app.commands.executeCommandById("workspace:goto-tab-5");
+		//  this.app.workspace.trigger("app:open-settings");
+		//  this.console.log(APP.commands.listCommands());
 
 		this.registerView(
 			PURE_CHAT_LLM_VIEW_TYPE,
@@ -77,11 +98,11 @@ export default class PureChatLLM extends Plugin {
 		);
 
 		// Add command for completing chat response
+		// No default hotkey
 		this.addCommand({
 			id: "complete-chat-response",
 			name: "Complete chat response",
 			icon: "send",
-			hotkeys: [{ modifiers: ["Shift"], key: "Enter" }],
 			editorCallback: this.CompleteChatResponse.bind(this),
 		});
 		// Add command for settings
@@ -132,6 +153,14 @@ export default class PureChatLLM extends Plugin {
 				);
 			},
 		});
+		this.addCommand({
+			id: "open-hotkeys",
+			name: "Open hotkeys",
+			icon: "key",
+			callback: async () => {
+				this.openHotkeys();
+			},
+		});
 		// Add a context menu item for simplifying the selection
 		this.registerEvent(
 			this.app.workspace.on(
@@ -148,12 +177,23 @@ export default class PureChatLLM extends Plugin {
 		if (this.settings.debug) {
 			this.app.workspace.onLayoutReady(() => {
 				this.activateView();
+				//this.openHotkeys();
 			});
 		}
 	}
 
+	async openHotkeys(): Promise<void> {
+		const setting = (this.app as any).setting;
+		await setting.open();
+		this.console.log(setting.activeTab.searchComponent);
+		setting.openTabById("hotkeys");
+		setting.activeTab.searchComponent.setValue("Pure Chat LLM");
+		setting.activeTab.searchComponent.onChanged();
+	}
+
 	onUserEnable() {
 		this.activateView();
+		this.openHotkeys();
 		this.console.log("Plugin enabled");
 	}
 
@@ -278,6 +318,10 @@ export default class PureChatLLM extends Plugin {
 		);
 	}
 
+	askForApiKey() {
+		new AskForAPI(this.app, this).open();
+	}
+
 	/**
 	 * Generates a new title for the currently active file based on its content using an LLM-powered chat template.
 	 * The generated title is sanitized to remove non-alphanumeric characters and is used to rename the file.
@@ -320,7 +364,7 @@ export default class PureChatLLM extends Plugin {
 	 */
 	CompleteChatResponse(editor: Editor, view: MarkdownView) {
 		const endpoint = this.settings.endpoints[this.settings.endpoint];
-		if (endpoint.apiKey == "sk-XXXXXXXXX") {
+		if (endpoint.apiKey == EmptyApiKey) {
 			new AskForAPI(this.app, this).open();
 			return;
 		}
@@ -390,7 +434,7 @@ export default class PureChatLLM extends Plugin {
 	}
 
 	onunload() {
-		this.app.workspace.detachLeavesOfType(PURE_CHAT_LLM_VIEW_TYPE);
+		// Cleanup code if needed
 	}
 }
 
@@ -586,7 +630,7 @@ export class AskForAPI extends Modal {
 
 	private async saveAndClose() {
 		this.plugin.settings.endpoints[this.plugin.settings.endpoint].apiKey =
-			this.apiKey || "sk-XXXXXXXXX";
+			this.apiKey || EmptyApiKey;
 		await this.plugin.saveSettings();
 		this.close();
 	}

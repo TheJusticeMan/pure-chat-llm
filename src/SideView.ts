@@ -15,7 +15,7 @@ import {
 import { PureChatLLMChat } from "./Chat";
 import PureChatLLM, { AskForAPI, CodeHandling, SectionHandling } from "./main";
 import { toSentanceCase } from "./toSentanceCase";
-import { PURE_CHAT_LLM_VIEW_TYPE } from "./types";
+import { EmptyApiKey, PURE_CHAT_LLM_VIEW_TYPE } from "./types";
 import { BrowserConsole } from "./MyBrowserConsole";
 
 /**
@@ -109,7 +109,7 @@ export class PureChatLLMSideView extends ItemView {
 		//if (!this.plugin.isresponding) return;
 		const endpoint =
 			this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-		if (endpoint.apiKey === "sk-XXXXXXXXX") {
+		if (endpoint.apiKey === EmptyApiKey) {
 			new AskForAPI(this.app, this.plugin).open();
 			return;
 		}
