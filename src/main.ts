@@ -18,6 +18,7 @@ import {
 import { codeContent, PureChatLLMChat } from "./Chat";
 import { PureChatLLMSideView } from "./SideView";
 import {
+	chatParser,
 	DEFAULT_PROCESS_CHAT_TEMPLATES,
 	DEFAULT_SELECTION_TEMPLATES,
 	DEFAULT_SETTINGS,
@@ -80,11 +81,6 @@ export default class PureChatLLM extends Plugin {
 		if (this.settings.endpoints.length == 0) {
 			this.settings.endpoints = ENDPOINTS;
 		}
-		//const APP: any = this.app;
-		//this.app.commands.executeCommandById("app:open-settings");
-		//this.app.commands.executeCommandById("workspace:goto-tab-5");
-		//  this.app.workspace.trigger("app:open-settings");
-		//  this.console.log(APP.commands.listCommands());
 
 		this.registerView(
 			PURE_CHAT_LLM_VIEW_TYPE,
@@ -153,6 +149,25 @@ export default class PureChatLLM extends Plugin {
 				);
 			},
 		});
+		this.addCommand({
+			id: "analyze-conversation",
+			name: "Analyze conversation",
+			icon: "messages-square",
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				new InstructPromptsHandler(
+					this.app,
+					(s) =>
+						new PureChatLLMChat(this)
+							.setMarkdown(editor.getValue())
+							.ProcessChatWithTemplate(s)
+							.then((response) =>
+								editor.replaceSelection(response.content)
+							),
+					DEFAULT_PROCESS_CHAT_TEMPLATES
+				).open();
+			},
+		});
+		// Add command for opening the settings
 		this.addCommand({
 			id: "open-hotkeys",
 			name: "Open hotkeys",
@@ -292,30 +307,7 @@ export default class PureChatLLM extends Plugin {
 					.setSection("selection")
 			);
 
-		menu.addItem((item) =>
-			item
-				.setTitle(`Analyze conversation`)
-				.setIcon("messages-square")
-				.onClick(async () =>
-					new InstructPromptsHandler(
-						this.app,
-						(s) =>
-							new PureChatLLMChat(this)
-								.setMarkdown(editor.getValue())
-								.ProcessChatWithTemplate(s)
-								.then((response) =>
-									editor.replaceSelection(response.content)
-								),
-						DEFAULT_PROCESS_CHAT_TEMPLATES
-					).open()
-				)
-		);
-		return menu.addSeparator().addItem((item) =>
-			item
-				.setTitle("Generate title")
-				.setIcon("text-cursor-input")
-				.onClick(async () => this.GenerateTitle(editor, view))
-		);
+		return menu;
 	}
 
 	askForApiKey() {
@@ -399,6 +391,11 @@ export default class PureChatLLM extends Plugin {
 					this.GenerateTitle(editor, view);
 				}
 				editor.setValue(chat.Markdown);
+				// put the cursor at the end of the editor
+				editor.setCursor(
+					editor.lastLine(),
+					editor.getLine(editor.lastLine()).length
+				);
 				editor.scrollIntoView({
 					from: editor.getCursor(),
 					to: editor.getCursor(),
@@ -408,17 +405,6 @@ export default class PureChatLLM extends Plugin {
 			.finally(() => {
 				this.isresponding = false;
 			});
-	}
-
-	changeCodeBlockMD(text: string, language: string, newText: string) {
-		const regex = new RegExp(
-			`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``,
-			"im"
-		);
-		return (
-			text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) ||
-			`${text}\n\`\`\`${language}\n${newText}\n\`\`\``
-		);
 	}
 
 	async loadSettings() {
@@ -746,31 +732,27 @@ class PureChatLLMSettingTab extends PluginSettingTab {
 						new AskForAPI(this.app, this.plugin).open();
 					})
 			);
-		if (false)
-			for (const endpoint of settings.endpoints) {
-				new Setting(containerEl)
-					.setName(endpoint.name)
-					.setDesc("Api key and modal for " + endpoint.name)
-					.addText((text) =>
-						text
-							.setPlaceholder(endpoint.apiKey)
-							.setValue(endpoint.apiKey)
-							.onChange(async (value) => {
-								endpoint.apiKey = value || endpoint.apiKey;
-								await this.plugin.saveSettings();
-							})
+		new Setting(containerEl)
+			.setName("Chat type written style")
+			.setDesc("Select the chat type written style")
+			// use the name from the objects in the array: chatParser
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOptions(
+						Object.fromEntries(
+							Object.entries(chatParser).map(([key, value]) => [
+								key,
+								value.name,
+							])
+						)
 					)
-					.addText((text) =>
-						text
-							.setPlaceholder(endpoint.defaultmodel)
-							.setValue(endpoint.defaultmodel)
-							.onChange(async (value) => {
-								endpoint.defaultmodel =
-									value || endpoint.defaultmodel;
-								await this.plugin.saveSettings();
-							})
-					);
-			}
+					.setValue(settings.chatParser.toString())
+					.onChange(async (value) => {
+						settings.chatParser = parseInt(value, 10);
+						await this.plugin.saveSettings();
+					});
+			});
+
 		new Setting(containerEl)
 			.setName("Autogenerate title")
 			.setDesc(

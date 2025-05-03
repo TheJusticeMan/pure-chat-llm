@@ -4,9 +4,11 @@ import PureChatLLM from "./main";
 import { toSentanceCase } from "./toSentanceCase";
 import {
 	ChatMessage,
+	chatParser,
 	EmptyApiKey,
 	PureChatLLMAPI,
 	PureChatLLMInstructPrompt,
+	RoleType,
 } from "./types";
 import { BrowserConsole } from "./MyBrowserConsole";
 
@@ -37,16 +39,13 @@ export interface codeContent {
  * @public
  */
 export class PureChatLLMChat {
-	options: any = {
-		model: "gpt-4.1-nano",
-		max_completion_tokens: 1000,
-		stream: true,
-	};
+	options;
 	messages: ChatMessage[];
 	plugin: PureChatLLM;
 	console: BrowserConsole;
 	pretext: string = "";
 	endpoint: PureChatLLMAPI;
+	Parser = chatParser[0];
 
 	constructor(plugin: PureChatLLM) {
 		this.plugin = plugin;
@@ -56,6 +55,12 @@ export class PureChatLLMChat {
 		);
 		this.endpoint =
 			this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+		this.options = {
+			model: this.endpoint.defaultmodel,
+			max_completion_tokens: 4096,
+			stream: true,
+		};
+		this.Parser = chatParser[this.plugin.settings.chatParser];
 	}
 
 	/**
@@ -68,12 +73,12 @@ export class PureChatLLMChat {
 	 * of the chat options and the chat text.
 	 */
 	get Markdown(): string {
-		return (
-			"\n```json\n" +
-			JSON.stringify(this.options, null, 2) +
-			"\n```\n" +
-			this.getChatText()
+		const prechat = PureChatLLMChat.changeCodeBlockMD(
+			this.pretext,
+			"json",
+			JSON.stringify(this.options, null, 2)
 		);
+		return `${prechat}\n${this.ChatText}`;
 	}
 
 	/**
@@ -96,9 +101,7 @@ export class PureChatLLMChat {
 	 * - The `options` property is updated if valid JSON is found in the prechat section.
 	 */
 	set Markdown(markdown: string) {
-		let [prechat, ...chat] = markdown.split(
-			/^# role: (?=system|user|assistant|developer)/im
-		);
+		let [prechat, ...chat] = markdown.split(this.Parser.SplitMessages);
 		let lengthtoHere = prechat.split("\n").length;
 		this.endpoint =
 			this.plugin.settings.endpoints[this.plugin.settings.endpoint];
@@ -114,19 +117,21 @@ export class PureChatLLMChat {
 		}
 
 		this.messages = chat.map((text) => {
-			const [role, ...contentLines] = text.split(/\n/);
+			const [role, ...contentLines] = text
+				.replace(this.Parser.getRole, "$1\n")
+				.split(/\n/);
 			const cline: EditorRange = {
 				from: { line: lengthtoHere, ch: 0 },
 				to: { line: lengthtoHere + contentLines.length - 1, ch: 0 },
 			};
 			lengthtoHere += contentLines.length;
 			return {
-				role: role.toLowerCase().trim(),
+				role: role.toLowerCase().trim() as RoleType,
 				content: contentLines.join("\n").trim(),
 				cline,
 			};
 		});
-
+		this.pretext = prechat;
 		const optionsStr =
 			PureChatLLMChat.extractCodeBlockMD(prechat, "json") || "";
 		this.options = PureChatLLMChat.tryJSONParse(optionsStr) || this.options;
@@ -246,6 +251,37 @@ export class PureChatLLMChat {
 	}
 
 	/**
+	 * Replaces the content of a code block in a markdown string with new text.
+	 *
+	 * @param text - The original markdown string containing the code block.
+	 * @param language - The programming language of the code block to replace.
+	 * @param newText - The new text to insert into the code block.
+	 * @returns The modified markdown string with the updated code block content.
+	 *
+	 * @example
+	 * ```typescript
+	 * const markdown = `
+	 * \`\`\`javascript
+	 * console.log("Hello, world!");
+	 * \`\`\`
+	 * `;
+	 * const updatedMarkdown = changeCodeBlockMD(markdown, "javascript", "console.log('New code');");
+	 * console.log(updatedMarkdown);
+	 * // Output: "\`\`\`javascript\nconsole.log('New code');\n\`\`\`"
+	 * ```
+	 */
+	static changeCodeBlockMD(text: string, language: string, newText: string) {
+		const regex = new RegExp(
+			`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``,
+			"im"
+		);
+		return (
+			text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) ||
+			`${text}\n\`\`\`${language}\n${newText}\n\`\`\``
+		);
+	}
+
+	/**
 	 * Appends a new message to the list of messages.
 	 *
 	 * @param message - An object containing the role and content of the message.
@@ -257,7 +293,7 @@ export class PureChatLLMChat {
 	 */
 	appendMessage(message: { role: string; content: string }) {
 		this.messages.push({
-			role: message.role,
+			role: message.role as RoleType,
 			content: message.content,
 			cline: {
 				from: { line: 0, ch: 0 },
@@ -323,7 +359,7 @@ export class PureChatLLMChat {
 	async getChatGPTinstructions(
 		activeFile: TFile,
 		app: App
-	): Promise<{ messages: { role: string; content: string }[] }> {
+	): Promise<{ messages: { role: RoleType; content: string }[] }> {
 		const resolvedMessages = await Promise.all(
 			this.messages.map(async ({ role, content }) => ({
 				role: role,
@@ -381,11 +417,11 @@ Use this workflow to accurately handle the chat based on the instruction.`;
 				{ role: "system", content: systemprompt },
 				{
 					role: "user",
-					content: `<Conversation>\n${this.getChatText()}\n\n</Conversation>`,
+					content: `<Conversation>\n${this.ChatText}\n\n</Conversation>`,
 				},
 				{ role: "user", content: templatePrompt.template },
 			],
-			max_tokens: 4000,
+			max_completion_tokens: 4096,
 		});
 	}
 
@@ -439,7 +475,7 @@ Use this workflow to help modify markdown content accurately.`;
 					},
 					{ role: "user", content: templatePrompt.template },
 				],
-				max_tokens: 4000,
+				max_completion_tokens: 4096,
 			});
 		}
 		return Promise.resolve({ role: "assistant", content: "" });
@@ -629,10 +665,14 @@ Use this workflow to help modify markdown content accurately.`;
 	 *
 	 * @returns {string} A formatted string containing all chat messages.
 	 */
-	getChatText(): string {
+	get ChatText(): string {
 		return this.messages
 			.map(
-				(msg) => `# role: ${toSentanceCase(msg.role)}\n${msg.content}\n`
+				(msg) =>
+					`${this.Parser.rolePlacement.replace(
+						/{role}/g,
+						toSentanceCase(msg.role)
+					)}\n${msg.content}\n`
 			)
 			.join("");
 	}

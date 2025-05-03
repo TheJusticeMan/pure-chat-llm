@@ -6,14 +6,16 @@
 
 ## Features
 
--   Embed a user-friendly ChatGPT interface within Obsidian
--   Use `[[Note Name]]` to include the content of a note in your chat messages or roles (note must start at the beginning of a line)
--   Link notes to specific chats
--   Customize API parameters per note, including model, max tokens, and more
--   Modify system prompts within notes to influence ChatGPT’s behavior
+-   **Interactive Chat Interface:** Engage in seamless conversations with ChatGPT and other leading AI models directly from any Obsidian note. Edit your questions or responses and continue the chat without leaving your vault.
+-   **Multiple AI Providers:** Choose from a wide range of supported model providers, including OpenAI, Gemini, xAI, Anthropic, Cohere, Mistral AI, and DeepSeek. Easily switch between providers and models to suit your needs.
+-   **Note Linking for Context:** Use `[[Note Name]]` or Markdown links to include the content of other notes in your chat, providing additional context or structuring complex prompts. (Referenced notes must start at the beginning of a line.)
+-   **Per-Note Customization:** Configure API parameters (such as `model`, `max_completion_tokens`, and more) on a per-note basis using a JSON block at the top of your note.
+-   **Flexible System Prompts:** Modify system prompts within your notes to influence the AI’s behavior for each conversation.
+-   **Chat-Linked Notes:** Link specific notes to individual chat sessions for organized, context-rich discussions.
+-   **Markdown Rendering:** All chat responses support full Markdown formatting, including lists, code blocks, and more.
+-   **Simple Setup:** Just add your API key for your chosen provider in the plugin settings to get started.
 
-> [!IMPORTANT]
-> Please note: This plugin is _not_ an AI note editor. It is designed solely for chatting with ChatGPT through notes. It does not edit or manage your notes beyond the chat interface. It simply turns notes into GUI elements for ChatGPT.
+> [!IMPORTANT] > **Note:** This plugin is _not_ an AI note editor. It is designed solely for chatting with AI models through notes. It does not edit or manage your notes beyond the chat interface—it simply turns notes into GUI elements for AI chat.
 
 ---
 
@@ -25,7 +27,8 @@
 4. Your note will transform into a chat interface, allowing you to continue the conversation.
 5. To customize API parameters, add a JSON block at the top of your note, specifying options like:
     - `model` (e.g., `"gpt-4.1-nano"`)
-    - `max_tokens`
+    - `max_completion_tokens`
+    - `stream`
     - Other API options (see [OpenAI API documentation](https://platform.openai.com/docs/api-reference/create))
 6. To include content from other notes, use `[[Note Name]]` within your note. This will insert the entire content of that note at the position, which can be used as part of your message or role, helping you structure complex prompts or context.
 
@@ -39,7 +42,8 @@
 > ```json
 > {
 > 	"model": "gpt-4.1-nano",
-> 	"max_tokens": 1000
+> 	"max_completion_tokens": 4096,
+> 	"stream": true
 > }
 > ```
 >

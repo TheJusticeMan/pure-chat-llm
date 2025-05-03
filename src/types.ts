@@ -5,13 +5,15 @@ export interface PureChatLLMSettings {
 	debug: boolean;
 	endpoint: number;
 	endpoints: PureChatLLMAPI[];
+	chatParser: number;
 }
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
-	AutogenerateTitle: 0,
+	AutogenerateTitle: 4,
 	SystemPrompt: `You are ChatGPT, a large language model trained by OpenAI. Carefully heed the user's instructions. Respond using Markdown.\n\nBe attentive, thoughtful, and precise—provide clear, well-structured answers that honor the complexity of each query. Avoid generic responses; instead, offer insights that encourage creativity, reflection, and learning. Employ subtle, dry humor or depth when appropriate. Respect the user’s individuality and values, adapting your tone and approach as needed to foster a conversational, meaningful, and genuinely supportive exchange.`,
 	debug: false,
 	endpoint: 0,
 	endpoints: [],
+	chatParser: 0,
 };
 
 export interface PureChatLLMAPI {
@@ -22,6 +24,35 @@ export interface PureChatLLMAPI {
 	listmodels: string;
 	getapiKey: string;
 }
+
+interface ChatParser {
+	name: string;
+	description: string;
+	SplitMessages: RegExp;
+	getRole: RegExp;
+	rolePlacement: string;
+	isChat?: RegExp;
+}
+
+export const chatParser: ChatParser[] = [
+	{
+		name: "SimpleMarkdownHeader",
+		description: "Simple markdown header parser",
+		SplitMessages: /^# role: (?=system|user|assistant|developer)/im,
+		getRole: /^(system|user|assistant|developer)[^\n]+\n/i,
+		rolePlacement: "# role: {role}",
+		isChat: /^# role: (system|user|assistant|developer)/i,
+	},
+	{
+		name: "NoteMarkdownHeader",
+		description: "Note markdown header parser",
+		SplitMessages:
+			/^\n> \[!note\] \w+\n> # role: (?=system|user|assistant|developer)/im,
+		getRole: /^(system|user|assistant|developer)[^\n]+\n/i,
+		rolePlacement: "\n> [!note] {role}\n> # role: {role}\n",
+		isChat: /^> \[!note\] \w+\n> # role: (system|user|assistant|developer)/i,
+	},
+];
 
 export const EmptyApiKey = "sk-XXXXXXXXX";
 
@@ -117,8 +148,10 @@ export interface PureChatLLMInstructPrompt {
 	template: string;
 }
 
+export type RoleType = "system" | "user" | "assistant" | "developer";
+
 export interface ChatMessage {
-	role: string;
+	role: RoleType;
 	content: string;
 	cline: EditorRange;
 }
