@@ -21,130 +21,130 @@ Customization:
 */
 
 .PURE {
-	--noshadow: 0 0 0 var(--text-normal);
-	--littleshadow: 1px 1px 4px var(--text-normal);
-	--littleshadowhover: 4px 4px 16px var(--text-normal);
-	--bigshadow: 2px 2px 8px var(--text-normal);
-	--bigshadowhover: 8px 8px 32px var(--text-normal);
+  --noshadow: 0 0 0 var(--text-normal);
+  --littleshadow: 1px 1px 4px var(--text-normal);
+  --littleshadowhover: 4px 4px 16px var(--text-normal);
+  --bigshadow: 2px 2px 8px var(--text-normal);
+  --bigshadowhover: 8px 8px 32px var(--text-normal);
 }
 
 .PURE.floattop {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	background-color: var(--background-secondary);
-	border-bottom: var(--border-width) solid var(--background-modifier-border);
-	padding: 1em;
-	z-index: 100;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--background-secondary);
+  border-bottom: var(--border-width) solid var(--background-modifier-border);
+  padding: 1em;
+  z-index: 100;
 }
 
 .PURE.messageContainer.user {
-	text-align: right;
-	gap: 10px;
+  text-align: right;
+  gap: 10px;
 }
 
 .PURE.messageContainer.system,
 .PURE.messageContainer.developer {
-	text-align: center;
-	gap: 10px;
+  text-align: center;
+  gap: 10px;
 }
 
 .PURE.messageContainer.assistant {
-	text-align: left;
-	gap: 10px;
+  text-align: left;
+  gap: 10px;
 }
 
 .PURE.messageHeader {
-	text-shadow: var(--noshadow);
-	transition: text-shadow 0.3s ease;
+  text-shadow: var(--noshadow);
+  transition: text-shadow 0.3s ease;
 }
 
 .PURE.messageHeader:hover {
-	text-shadow: var(--littleshadowhover);
+  text-shadow: var(--littleshadowhover);
 }
 
 .PURE.preview.user,
 .PURE.preview.system,
 .PURE.preview.developer,
 .PURE.preview.assistant {
-	max-width: 90%;
-	display: inline-block;
+  max-width: 90%;
+  display: inline-block;
 }
 
 .PURE.preview.user {
-	margin-left: auto;
-	margin-right: 0;
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .PURE.preview.system,
 .PURE.preview.developer {
-	margin: auto;
+  margin: auto;
 }
 
 .PURE.preview.assistant {
-	margin-left: 0;
-	margin-right: auto;
+  margin-left: 0;
+  margin-right: auto;
 }
 
 .PURE.messageMarkdown {
-	padding: 0 var(--size-4-4);
-	max-height: 10em;
-	overflow: hidden;
-	border: var(--border-width) solid var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	font-size: 0.75em;
-	text-align: left;
-	box-shadow: var(--bigshadow);
-	transition: box-shadow 0.3s ease;
+  padding: 0 var(--size-4-4);
+  max-height: 10em;
+  overflow: hidden;
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  font-size: 0.75em;
+  text-align: left;
+  box-shadow: var(--bigshadow);
+  transition: box-shadow 0.3s ease;
 }
 
 .PURE.messageMarkdown:hover {
-	box-shadow: var(--bigshadowhover);
+  box-shadow: var(--bigshadowhover);
 }
 
 .PURE.messageMarkdown.user {
-	border-radius: 0 var(--radius-xl);
+  border-radius: 0 var(--radius-xl);
 }
 
 .PURE.messageMarkdown.assistant {
-	border-radius: var(--radius-xl) 0;
+  border-radius: var(--radius-xl) 0;
 }
 
 .PURE.messageMarkdown.system {
-	border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .PURE.messageMarkdown pre .copy-code-button {
-	display: none;
+  display: none;
 }
 
 .PURE.preview button {
-	margin: 0.5em;
-	box-shadow: var(--littleshadow);
-	transition: box-shadow 0.3s ease;
+  margin: 0.5em;
+  box-shadow: var(--littleshadow);
+  transition: box-shadow 0.3s ease;
 }
 
 .PURE.preview button:hover {
-	box-shadow: var(--littleshadowhover);
+  box-shadow: var(--littleshadowhover);
 }
 
 .PURE.preview.user button {
-	border-radius: 0 var(--radius-m);
+  border-radius: 0 var(--radius-m);
 }
 
 .PURE.preview.assistant button {
-	border-radius: var(--radius-m) 0;
+  border-radius: var(--radius-m) 0;
 }
 
 .PURE.setting-item textarea {
-	width: 100%;
-	height: 7em;
-	resize: none;
+  width: 100%;
+  height: 7em;
+  resize: none;
 }
 
 .PUREcodePreview {
-	width: 100%;
-	min-height: 10em;
-	resize: vertical;
+  width: 100%;
+  min-height: 10em;
+  resize: vertical;
 }
