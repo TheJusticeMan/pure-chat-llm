@@ -337,16 +337,24 @@ export default class PureChatLLM extends Plugin {
     if (!activeFile) return;
     this.isresponding = true;
     const editorcontent = editor.getValue();
-    editor.setCursor(editor.lastLine(), editor.getLine(editor.lastLine()).length);
+    this.setCursorEnd(editor);
+    const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
+    if (!chat.validChat) {
+      this.isresponding = false;
+      editor.setValue(chat.Markdown);
+      this.setCursorEnd(editor);
+      return;
+    }
+
     editor.replaceSelection("\n# role: Assistant...\n");
     editor.scrollIntoView({
       from: editor.getCursor(),
       to: editor.getCursor(),
     });
     //editor.setValue(
-    new PureChatLLMChat(this)
-      .setMarkdown(editorcontent)
+    chat
       .CompleteChatResponse(activeFile, (e) => {
+        this.setCursorEnd(editor);
         editor.replaceSelection(e.content);
         return true;
       })
@@ -362,7 +370,7 @@ export default class PureChatLLM extends Plugin {
         }
         editor.setValue(chat.Markdown);
         // put the cursor at the end of the editor
-        editor.setCursor(editor.lastLine(), editor.getLine(editor.lastLine()).length);
+        this.setCursorEnd(editor);
         editor.scrollIntoView({
           from: editor.getCursor(),
           to: editor.getCursor(),
@@ -372,6 +380,10 @@ export default class PureChatLLM extends Plugin {
       .finally(() => {
         this.isresponding = false;
       });
+  }
+
+  setCursorEnd(editor: Editor) {
+    editor.setCursor(editor.lastLine(), editor.getLine(editor.lastLine()).length);
   }
 
   async loadSettings() {

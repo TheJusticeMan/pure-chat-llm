@@ -46,6 +46,7 @@ export class PureChatLLMChat {
   pretext: string = "";
   endpoint: PureChatLLMAPI;
   Parser = chatParser[0];
+  validChat = true;
 
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
@@ -102,6 +103,7 @@ export class PureChatLLMChat {
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     if (chat.length === 0) {
       // if the file has no # role: system|user|assistant|developer
+      this.validChat = false;
       this.messages = [];
       this.appendMessage({
         role: "system",

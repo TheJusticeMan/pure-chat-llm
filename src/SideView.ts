@@ -17,6 +17,7 @@ import PureChatLLM, { AskForAPI, CodeHandling, SectionHandling } from "./main";
 import { toSentanceCase } from "./toSentanceCase";
 import { EmptyApiKey, PURE_CHAT_LLM_VIEW_TYPE } from "./types";
 import { BrowserConsole } from "./MyBrowserConsole";
+import StringsSett from "./settings";
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -91,6 +92,8 @@ export class PureChatLLMSideView extends ItemView {
     // check it the editor is open
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (view) {
+      this.defaultContent(view);
+
       const editor = view.editor;
       if (editor) {
         this.update(editor, view);
@@ -125,12 +128,27 @@ export class PureChatLLMSideView extends ItemView {
     });
   }
 
+  defaultContent(view: MarkdownView) {
+    const content = StringsSett.splash;
+    MarkdownRenderer.render(this.app, content, this.contentEl, view.file?.basename || "", this);
+  }
+
   update(editor: Editor, view: MarkdownView) {
-    const editorValue = editor.getValue();
+    const editorValue = editor.getValue().trim();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
     const container = this.contentEl;
     container.empty();
+    if (editorValue.endsWith(">go")) {
+      this.plugin.isresponding = true;
+      editor.setValue(editorValue.slice(0, -3));
+      this.plugin.CompleteChatResponse(editor, view);
+      return;
+    }
+    if (!chat.validChat || !editorValue) {
+      this.defaultContent(view);
+      return;
+    }
     container.createDiv({ text: "" }, (contain) => {
       contain.addClass("PURE", "floattop");
       new ButtonComponent(contain)
