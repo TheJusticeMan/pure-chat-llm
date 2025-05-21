@@ -119,8 +119,6 @@ export class PureChatLLMSideView extends ItemView {
               new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).setModel(model)
                 .Markdown
             );
-            // this.plugin.saveSettings();
-            new Notice("Model changed to " + model);
           });
         });
       });
@@ -153,7 +151,7 @@ export class PureChatLLMSideView extends ItemView {
       contain.addClass("PURE", "floattop");
       new ButtonComponent(contain)
         //.setIcon("box")
-        .setButtonText("Models")
+        .setButtonText(chat.options.model)
         .setTooltip("Change model")
         .onClick((e) => {
           this.menumodels(e, editor);
@@ -174,12 +172,24 @@ export class PureChatLLMSideView extends ItemView {
           this.plugin.modellist = [];
           await this.plugin.saveSettings();
         });
+      new ButtonComponent(contain)
+        .setButtonText("Show all")
+        .setTooltip("Show all options")
+        .onClick(() =>
+          editor.setValue(
+            new PureChatLLMChat(this.plugin)
+              .setMarkdown(editor.getValue())
+              .thencb((chat) =>
+                Object.assign(chat.options, { ...StringsSett.alloptions }, { ...chat.options })
+              ).Markdown
+          )
+        );
     });
 
+    container.addClass("PURESideView");
     // Process markdown messages
     chat.messages.forEach((message) => {
-      const preview =
-        message.content.substring(0, 400) + (message.content.length > 200 ? "\n... " : "");
+      const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
       container.createDiv({ text: "" }, (contain) => {
@@ -216,7 +226,6 @@ export class PureChatLLMSideView extends ItemView {
                   },
                   message.cline.to
                 );
-                new Notice("Deleted message");
               });
             if (/# \w+/gm.test(message.content))
               new ButtonComponent(div)
@@ -259,7 +268,6 @@ export class PureChatLLMSideView extends ItemView {
   private goToPostion(editor: Editor, position: EditorRange, select = false) {
     if (select) {
       editor.setSelections([{ anchor: position.from, head: position.to }]);
-      //editor.setSelection(position.from, position.to);
       editor.scrollIntoView(position);
     } else {
       editor.setCursor(position.from);

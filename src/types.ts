@@ -6,6 +6,7 @@ export interface PureChatLLMSettings {
   endpoint: number;
   endpoints: PureChatLLMAPI[];
   chatParser: number;
+  AutoReverseRoles: boolean;
 }
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   AutogenerateTitle: 4,
@@ -14,6 +15,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   endpoint: 0,
   endpoints: [],
   chatParser: 0,
+  AutoReverseRoles: false,
 };
 
 export interface PureChatLLMAPI {

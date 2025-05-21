@@ -538,6 +538,18 @@ Use this workflow to help modify markdown content accurately.`;
     return fullText;
   }
 
+  ReverseRoles() {
+    this.messages = this.messages.map((msg) => {
+      if (msg.role === "user") {
+        msg.role = "assistant";
+      } else if (msg.role === "assistant") {
+        msg.role = "user";
+      }
+      return msg;
+    });
+    return this;
+  }
+
   /**
    * Sends a chat request to the specified endpoint with the provided options.
    *
@@ -600,7 +612,6 @@ Use this workflow to help modify markdown content accurately.`;
     if (this.plugin.modellist.length > 0) {
       return Promise.resolve(this.plugin.modellist);
     }
-    new Notice(`Fetching models from ${endpoint.name} API...`);
     this.console.log(`Fetching models from ${endpoint.name} API...`);
     return fetch(endpoint.listmodels, {
       method: "GET",
@@ -630,9 +641,14 @@ Use this workflow to help modify markdown content accurately.`;
           `${this.Parser.rolePlacement.replace(
             /{role}/g,
             toSentanceCase(msg.role)
-          )}\n${msg.content.trim()}\n`
+          )}\n${msg.content.trim()}`
       )
-      .join("");
+      .join("\n");
+  }
+
+  thencb(cb: (chat: PureChatLLMChat) => any): PureChatLLMChat {
+    cb(this);
+    return this;
   }
 
   /**

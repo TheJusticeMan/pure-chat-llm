@@ -162,6 +162,17 @@ export default class PureChatLLM extends Plugin {
         this.openHotkeys();
       },
     });
+    this.addCommand({
+      id: "reverse-roles",
+      name: "Reverse roles",
+      icon: "swap-horizontal",
+      editorCallback: (editor: Editor) => {
+        const content = new PureChatLLMChat(this).setMarkdown(editor.getValue()).ReverseRoles();
+        editor.setValue(content.Markdown);
+        this.setCursorEnd(editor);
+      },
+    });
+
     // Add a context menu item for simplifying the selection
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
@@ -335,22 +346,19 @@ export default class PureChatLLM extends Plugin {
     }
     const activeFile = view.file;
     if (!activeFile) return;
-    this.isresponding = true;
     const editorcontent = editor.getValue();
-    this.setCursorEnd(editor);
     const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
-    if (!chat.validChat) {
-      this.isresponding = false;
-      editor.setValue(chat.Markdown);
-      this.setCursorEnd(editor);
-      return;
+    if (chat.messages[chat.messages.length - 1].content === "" && chat.validChat) {
+      if (chat.messages.pop()?.role == "user" && this.settings.AutoReverseRoles)
+        chat.ReverseRoles();
     }
+    editor.setValue(chat.Markdown);
+    this.setCursorEnd(editor, true);
+    if (!chat.validChat) return;
+
+    this.isresponding = true;
 
     editor.replaceSelection("\n# role: Assistant...\n");
-    editor.scrollIntoView({
-      from: editor.getCursor(),
-      to: editor.getCursor(),
-    });
     //editor.setValue(
     chat
       .CompleteChatResponse(activeFile, (e) => {
@@ -370,20 +378,18 @@ export default class PureChatLLM extends Plugin {
         }
         editor.setValue(chat.Markdown);
         // put the cursor at the end of the editor
-        this.setCursorEnd(editor);
-        editor.scrollIntoView({
-          from: editor.getCursor(),
-          to: editor.getCursor(),
-        });
+        this.setCursorEnd(editor, true);
       })
       .catch((error) => this.console.error(error))
       .finally(() => {
         this.isresponding = false;
+        return;
       });
   }
 
-  setCursorEnd(editor: Editor) {
+  setCursorEnd(editor: Editor, intoview = false) {
     editor.setCursor(editor.lastLine(), editor.getLine(editor.lastLine()).length);
+    if (intoview) editor.scrollIntoView({ from: editor.getCursor(), to: editor.getCursor() });
   }
 
   async loadSettings() {
@@ -629,7 +635,6 @@ export class InstructPromptsHandler extends FuzzySuggestModal<PureChatLLMInstruc
 
   onChooseItem(book: PureChatLLMInstructPrompt, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(book);
-    //new Notice(`Selected ${book.name}`);
   }
 }
 
@@ -666,7 +671,7 @@ class PureChatLLMSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Endpoint")
-      .setDesc("Select the endpoint to use for chat completions")
+      .setDesc("Choose the server endpoint used for chat interactions.")
       .addDropdown((dropdown) => {
         dropdown
           .addOptions(Object.fromEntries(settings.endpoints.map((e, i) => [i.toString(), e.name])))
@@ -690,8 +695,10 @@ class PureChatLLMSettingTab extends PluginSettingTab {
           })
       );
     new Setting(containerEl)
-      .setName("Chat type written style")
-      .setDesc("Select the chat type written style")
+      .setName("Chat style")
+      .setDesc(
+        "Select how chats are written and interpreted in markdown (choose from multiple styles)."
+      )
       // use the name from the objects in the array: chatParser
       .addDropdown((dropdown) => {
         dropdown
@@ -709,7 +716,9 @@ class PureChatLLMSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Autogenerate title")
-      .setDesc("Number of responces before generateing title for the conversation, 0 to disable")
+      .setDesc(
+        "Specify how many responses to wait for before automatically creating a conversation title (set to 0 to disable)."
+      )
       .addText((text) =>
         text
           .setPlaceholder(DEFAULT_SETTINGS.AutogenerateTitle.toString())
@@ -720,14 +729,12 @@ class PureChatLLMSettingTab extends PluginSettingTab {
             if (!isNaN(num) && num >= 0) {
               settings.AutogenerateTitle = num;
               await this.plugin.saveSettings();
-            } else {
-              new Notice("Please enter a valid number.");
             }
           })
       );
     new Setting(containerEl)
       .setName("Default system prompt")
-      .setDesc("Default system prompt to use for chat completions")
+      .setDesc("Define the initial message or instructions the AI uses at the start of each chat.")
       .setClass("PURE")
       .addTextArea((text) =>
         text
@@ -739,8 +746,17 @@ class PureChatLLMSettingTab extends PluginSettingTab {
           })
       );
     new Setting(containerEl)
+      .setName("Auto Reverse Roles")
+      .setDesc("Automatically switch roles when the last message is empty, for replying to self.")
+      .addToggle((toggle) => {
+        toggle.setValue(settings.AutoReverseRoles).onChange(async (value) => {
+          settings.AutoReverseRoles = value;
+          await this.plugin.saveSettings();
+        });
+      });
+    new Setting(containerEl)
       .setName("Debug")
-      .setDesc("Log debug information to the console")
+      .setDesc("Enable logging of detailed debug information in the console for troubleshooting.")
       .addToggle((toggle) =>
         toggle.setValue(settings.debug).onChange(async (value) => {
           settings.debug = value;

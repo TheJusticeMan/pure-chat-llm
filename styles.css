@@ -30,13 +30,15 @@ Customization:
 
 .PURE.floattop {
   position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   top: 0;
   left: 0;
   width: 100%;
   background-color: var(--background-secondary);
   border-bottom: var(--border-width) solid var(--background-modifier-border);
-  padding: 1em;
-  z-index: 100;
+  padding: 0.5em;
 }
 
 .PURE.messageContainer.user {
@@ -88,7 +90,7 @@ Customization:
 }
 
 .PURE.messageMarkdown {
-  padding: 0 var(--size-4-4);
+  padding: 0 1em;
   max-height: 10em;
   overflow: hidden;
   border: var(--border-width) solid var(--background-modifier-border);
@@ -147,4 +149,8 @@ Customization:
   width: 100%;
   min-height: 10em;
   resize: vertical;
+}
+
+.PURESideView .PURE.messageContainer.system {
+  padding-top: 2em;
 }
