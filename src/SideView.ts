@@ -1,23 +1,23 @@
 import {
-  ItemView,
-  WorkspaceLeaf,
-  Editor,
-  MarkdownView,
-  setIcon,
-  MarkdownRenderer,
-  EditorRange,
-  Notice,
   ButtonComponent,
-  Platform,
-  Menu,
   DropdownComponent,
+  Editor,
+  EditorRange,
+  ExtraButtonComponent,
+  ItemView,
+  MarkdownRenderer,
+  MarkdownView,
+  Menu,
+  Notice,
+  Platform,
+  WorkspaceLeaf,
 } from "obsidian";
+import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
 import PureChatLLM, { AskForAPI, CodeHandling, SectionHandling } from "./main";
-import { toSentanceCase } from "./toSentanceCase";
+import { StatSett } from "./settings";
+import { toTitleCase } from "./toTitleCase";
 import { EmptyApiKey, PURE_CHAT_LLM_VIEW_TYPE } from "./types";
-import { BrowserConsole } from "./MyBrowserConsole";
-import StringsSett from "./settings";
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -127,7 +127,7 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   defaultContent(view: MarkdownView) {
-    const content = StringsSett.splash;
+    const content = StatSett.splash;
     MarkdownRenderer.render(this.app, content, this.contentEl, view.file?.basename || "", this);
   }
 
@@ -180,7 +180,7 @@ export class PureChatLLMSideView extends ItemView {
             new PureChatLLMChat(this.plugin)
               .setMarkdown(editor.getValue())
               .thencb((chat) =>
-                Object.assign(chat.options, { ...StringsSett.alloptions }, { ...chat.options })
+                Object.assign(chat.options, { ...StatSett.alloptions }, { ...chat.options })
               ).Markdown
           )
         );
@@ -194,7 +194,7 @@ export class PureChatLLMSideView extends ItemView {
       // Role header with clickable position jump
       container.createDiv({ text: "" }, (contain) => {
         contain.addClass("PURE", "messageContainer", message.role);
-        contain.createEl("h1", { text: toSentanceCase(message.role) }, (el) => {
+        contain.createEl("h1", { text: toTitleCase(message.role) }, (el) => {
           el.onClickEvent(() => this.goToPostion(editor, message.cline));
           el.addClass("PURE", "messageHeader", message.role);
         });
@@ -207,14 +207,14 @@ export class PureChatLLMSideView extends ItemView {
               el.addClass("PURE", "messageMarkdown", message.role);
               MarkdownRenderer.render(this.app, preview, el, view.file?.basename || "", this);
             });
-            new ButtonComponent(div)
+            new ExtraButtonComponent(div)
               .setIcon("copy")
               .setTooltip("Copy message to clipboard")
               .onClick(() => {
                 navigator.clipboard.writeText(message.content);
                 new Notice("Copied message to clipboard");
               });
-            new ButtonComponent(div)
+            new ExtraButtonComponent(div)
               .setIcon("message-square-x")
               .setTooltip("Delete message")
               .onClick(() => {
@@ -228,31 +228,33 @@ export class PureChatLLMSideView extends ItemView {
                 );
               });
             if (/# \w+/gm.test(message.content))
-              new ButtonComponent(div)
+              new ExtraButtonComponent(div)
                 .setIcon("table-of-contents")
                 .setTooltip("View and edit sections")
                 .onClick(() => {
                   new SectionHandling(this.app, this.plugin, message.content).open();
                 });
             if (/```[\w\W]*?```/gm.test(message.content))
-              new ButtonComponent(div)
+              new ExtraButtonComponent(div)
                 .setIcon("code")
                 .setTooltip("View and edit code")
                 .onClick(() => {
                   new CodeHandling(this.app, this.plugin, message.content).open();
                 });
-            new ButtonComponent(div)
+            new ExtraButtonComponent(div)
               .setIcon("refresh-cw")
               .setTooltip("Regenerate response")
               .onClick(() => {
-                editor.replaceRange(
-                  "",
-                  { line: message.cline.to.line, ch: 0 },
-                  {
-                    line: editor.lastLine(),
-                    ch: editor.getLine(editor.lastLine()).length,
-                  }
-                );
+                new Notice(`${message.cline.to.line} ${editor.lastLine()}`);
+                if (message.cline.to.line !== editor.lastLine())
+                  editor.replaceRange(
+                    "",
+                    { line: message.cline.to.line, ch: 0 },
+                    {
+                      line: editor.lastLine(),
+                      ch: editor.getLine(editor.lastLine()).length,
+                    }
+                  );
                 this.plugin.CompleteChatResponse(editor, view);
               });
           });

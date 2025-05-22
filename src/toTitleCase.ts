@@ -13,7 +13,7 @@
  * console.log(result); // "Hello World"
  * ```
  */
-export function toSentanceCase(str: string): string {
+export function toTitleCase(str: string): string {
   return str
     .toLowerCase()
     .split(" ")

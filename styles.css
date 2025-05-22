@@ -22,10 +22,9 @@ Customization:
 
 .PURE {
   --noshadow: 0 0 0 var(--text-normal);
-  --littleshadow: 1px 1px 4px var(--text-normal);
-  --littleshadowhover: 4px 4px 16px var(--text-normal);
-  --bigshadow: 2px 2px 8px var(--text-normal);
-  --bigshadowhover: 8px 8px 32px var(--text-normal);
+  --littleshadowhover: 2px 2px 8px var(--text-normal);
+  --bigshadow: 1px 1px 4px var(--text-normal);
+  --bigshadowhover: 4px 4px 16px var(--text-normal);
 }
 
 .PURE.floattop {
@@ -99,6 +98,7 @@ Customization:
   text-align: left;
   box-shadow: var(--bigshadow);
   transition: box-shadow 0.3s ease;
+  margin-bottom: 1em;
 }
 
 .PURE.messageMarkdown:hover {
@@ -121,22 +121,9 @@ Customization:
   display: none;
 }
 
-.PURE.preview button {
-  margin: 0.5em;
-  box-shadow: var(--littleshadow);
-  transition: box-shadow 0.3s ease;
-}
-
-.PURE.preview button:hover {
-  box-shadow: var(--littleshadowhover);
-}
-
-.PURE.preview.user button {
-  border-radius: 0 var(--radius-m);
-}
-
-.PURE.preview.assistant button {
-  border-radius: var(--radius-m) 0;
+.PURE.preview div.clickable-icon {
+  display: inline;
+  padding-top: 1em;
 }
 
 .PURE.setting-item textarea {
@@ -153,4 +140,8 @@ Customization:
 
 .PURESideView .PURE.messageContainer.system {
   padding-top: 2em;
+}
+
+sup {
+  font-weight: normal;
 }

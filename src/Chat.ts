@@ -1,16 +1,16 @@
 import { App, EditorRange, Notice, TFile } from "obsidian";
+import { BrowserConsole } from "./BrowserConsole";
 import { codelanguage } from "./codelanguages";
 import PureChatLLM from "./main";
-import { toSentanceCase } from "./toSentanceCase";
+import { toTitleCase } from "./toTitleCase";
 import {
   ChatMessage,
-  chatParser,
   EmptyApiKey,
   PureChatLLMAPI,
   PureChatLLMInstructPrompt,
   RoleType,
 } from "./types";
-import { BrowserConsole } from "./MyBrowserConsole";
+import { StatSett } from "./settings";
 
 export interface codeContent {
   language: string;
@@ -45,7 +45,7 @@ export class PureChatLLMChat {
   console: BrowserConsole;
   pretext: string = "";
   endpoint: PureChatLLMAPI;
-  Parser = chatParser[0];
+  Parser = StatSett.chatParser[0];
   validChat = true;
 
   constructor(plugin: PureChatLLM) {
@@ -57,7 +57,7 @@ export class PureChatLLMChat {
       max_completion_tokens: 4096,
       stream: true,
     };
-    this.Parser = chatParser[this.plugin.settings.chatParser];
+    this.Parser = StatSett.chatParser[this.plugin.settings.chatParser];
   }
 
   /**
@@ -566,7 +566,6 @@ Use this workflow to help modify markdown content accurately.`;
    */
   async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean) {
     this.console.log("Sending chat request with options:", options);
-    this.console.log("Using API key:", this.endpoint.apiKey);
     const response = await fetch(this.endpoint.endpoint, {
       method: "POST",
       headers: {
@@ -640,7 +639,7 @@ Use this workflow to help modify markdown content accurately.`;
         (msg) =>
           `${this.Parser.rolePlacement.replace(
             /{role}/g,
-            toSentanceCase(msg.role)
+            toTitleCase(msg.role)
           )}\n${msg.content.trim()}`
       )
       .join("\n");

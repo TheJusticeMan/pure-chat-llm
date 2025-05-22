@@ -12,3 +12,11 @@ writeFileSync("manifest.json", JSON.stringify(manifest, null, "\t"));
 let versions = JSON.parse(readFileSync("versions.json", "utf8"));
 versions[targetVersion] = minAppVersion;
 writeFileSync("versions.json", JSON.stringify(versions, null, "\t"));
+
+writeFileSync(
+  "src/settings.ts",
+  readFileSync("src/settings.ts", "utf8").replace(
+    /version\: \"[^\"]+\",/gm,
+    `version: "${targetVersion}",`
+  )
+);

@@ -2,6 +2,7 @@ import {
   App,
   ButtonComponent,
   Editor,
+  ExtraButtonComponent,
   FuzzySuggestModal,
   MarkdownView,
   Menu,
@@ -15,20 +16,20 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { codeContent, PureChatLLMChat } from "./Chat";
+import { BrowserConsole } from "./BrowserConsole";
+import { StatSett } from "./settings";
 import { PureChatLLMSideView } from "./SideView";
+import { PureChatLLMSpeech } from "./Speech";
 import {
-  chatParser,
   DEFAULT_PROCESS_CHAT_TEMPLATES,
   DEFAULT_SELECTION_TEMPLATES,
   DEFAULT_SETTINGS,
   EmptyApiKey,
-  ENDPOINTS,
   PURE_CHAT_LLM_VIEW_TYPE,
   PureChatLLMInstructPrompt,
   PureChatLLMInstructPrompts,
   PureChatLLMSettings,
 } from "./types";
-import { BrowserConsole } from "./MyBrowserConsole";
 
 declare module "obsidian" {
   interface App {
@@ -78,7 +79,7 @@ export default class PureChatLLM extends Plugin {
     this.console = new BrowserConsole(this.settings.debug, "PureChatLLM");
     this.console.log("settings loaded", this.settings);
     if (this.settings.endpoints.length == 0) {
-      this.settings.endpoints = ENDPOINTS;
+      this.settings.endpoints = StatSett.ENDPOINTS;
     }
 
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, (leaf) => new PureChatLLMSideView(leaf, this));
@@ -106,16 +107,22 @@ export default class PureChatLLM extends Plugin {
       editorCheckCallback: (checking, e: Editor) => {
         const selected = e.getSelection();
         if (checking) return !!selected;
-        this.GetInstructPrompts("PureChatLLM/templates.md", DEFAULT_SELECTION_TEMPLATES).then(
-          (templates) =>
-            new InstructPromptsHandler(
-              this.app,
-              (s) =>
-                new PureChatLLMChat(this)
-                  .SelectionResponse(s, selected)
-                  .then((response) => e.replaceSelection(response.content)),
-              templates
-            ).open()
+        this.GetInstructPrompts("PureChatLLM/templates.md", {
+          ...DEFAULT_SELECTION_TEMPLATES,
+          "Custom prompt": { name: "Custom prompt", template: "" },
+        }).then((templates) =>
+          new InstructPromptsHandler(
+            this.app,
+            (s) =>
+              s.template
+                ? new PureChatLLMChat(this)
+                    .SelectionResponse(s, selected)
+                    .then((response) => e.replaceSelection(response.content))
+                : new EditSelectionModal(this.app, this, selected, (text) =>
+                    e.replaceSelection(text)
+                  ).open(),
+            templates
+          ).open()
         );
       },
     });
@@ -170,6 +177,21 @@ export default class PureChatLLM extends Plugin {
         const content = new PureChatLLMChat(this).setMarkdown(editor.getValue()).ReverseRoles();
         editor.setValue(content.Markdown);
         this.setCursorEnd(editor);
+      },
+    });
+    this.addCommand({
+      id: "speak-chat",
+      name: "Speak Chat",
+      icon: "mic",
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        new PureChatLLMSpeech(
+          this,
+          new PureChatLLMChat(this).setMarkdown(editor.getValue()).thencb((chat) => {
+            chat.messages = chat.messages.filter(
+              (message) => message.role === "user" || message.role === "assistant"
+            );
+          })
+        ).startStreaming();
       },
     });
 
@@ -359,7 +381,6 @@ export default class PureChatLLM extends Plugin {
     this.isresponding = true;
 
     editor.replaceSelection("\n# role: Assistant...\n");
-    //editor.setValue(
     chat
       .CompleteChatResponse(activeFile, (e) => {
         this.setCursorEnd(editor);
@@ -438,43 +459,37 @@ export class CodeHandling extends Modal {
 
   private renderCodeBlocks() {
     if (!this.code.length) {
-      this.contentEl.createEl("p", { text: "No code blocks found." });
+      new Setting(this.contentEl).setName("No code blocks found.");
       return;
     }
     this.code.forEach((c, idx) => {
-      const section = this.contentEl.createDiv({
-        cls: "pure-code-block-section",
-      });
-      section.createEl("h2", {
-        text: c.language || `Code Block ${idx + 1}`,
-      });
+      new Setting(this.contentEl).setName(c.language || `Code Block ${idx + 1}`).setHeading();
 
-      const textArea = new TextAreaComponent(section).setValue(c.code).onChange((value) => {
+      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange((value) => {
         c.code = value;
       });
-      textArea.inputEl.addClass("PUREcodePreview");
 
-      const buttonRow = section.createDiv({
-        cls: "pure-code-block-actions",
-      });
-
-      new ButtonComponent(buttonRow)
-        .setIcon("copy")
-        .setTooltip("Copy to clipboard")
-        .onClick(() => {
-          navigator.clipboard.writeText(c.code);
-          new Notice("Code copied to clipboard");
-        });
-
-      new ButtonComponent(buttonRow)
-        .setIcon("pencil")
-        .setTooltip("Edit with prompt")
-        .onClick(() => {
-          new EditSelectionModal(this.app, this.plugin, c.code, (newCode) => {
-            c.code = newCode;
-            textArea.setValue(newCode);
-          }).open();
-        });
+      new Setting(this.contentEl)
+        .addExtraButton((btn) =>
+          btn
+            .setIcon("copy")
+            .setTooltip("Copy to clipboard")
+            .onClick(() => {
+              navigator.clipboard.writeText(c.code);
+              new Notice("Code copied to clipboard");
+            })
+        )
+        .addExtraButton((btn) =>
+          btn
+            .setIcon("pencil")
+            .setTooltip("Edit with prompt")
+            .onClick(() => {
+              new EditSelectionModal(this.app, this.plugin, c.code, (newCode) => {
+                c.code = newCode;
+                textArea.setValue(newCode);
+              }).open();
+            })
+        );
     });
   }
 
@@ -569,6 +584,10 @@ export class AskForAPI extends Modal {
           });
       });
     new Setting(this.contentEl)
+      .setName(
+        createFragment((el) => el.createEl("a", { href: endpoint.getapiKey, text: endpoint.name }))
+      )
+      .setDesc(`Link to Get API key from ${endpoint.name}`)
       .addButton((btn) =>
         btn
           .setButtonText("Save")
@@ -578,13 +597,6 @@ export class AskForAPI extends Modal {
           })
       )
       .addButton((btn) => btn.setButtonText("Cancel").onClick(() => this.close()));
-
-    const infoDiv = this.contentEl.createDiv();
-    infoDiv.createSpan({ text: "You can get an API key from " });
-    infoDiv.createEl("a", {
-      text: endpoint.name + " API",
-      href: endpoint.getapiKey,
-    });
   }
 
   private async saveAndClose() {
@@ -664,11 +676,18 @@ class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   display(): void {
-    const { containerEl } = this;
+    const {
+      containerEl,
+      plugin: { settings },
+    } = this;
 
     containerEl.empty();
-    const settings = this.plugin.settings;
 
+    new Setting(containerEl)
+      .setName("Pure Chat LLM")
+      .setDesc(`v${StatSett.version}`)
+      .addButton((btn) => btn.setButtonText("Hot keys").onClick((e) => this.plugin.openHotkeys()))
+      .setHeading();
     new Setting(containerEl)
       .setName("Endpoint")
       .setDesc("Choose the server endpoint used for chat interactions.")
@@ -690,7 +709,6 @@ class PureChatLLMSettingTab extends PluginSettingTab {
           .setIcon("key")
           .setTooltip("Add API keys")
           .onClick(async () => {
-            const endpoint = settings.endpoints[settings.endpoint];
             new AskForAPI(this.app, this.plugin).open();
           })
       );
@@ -699,12 +717,11 @@ class PureChatLLMSettingTab extends PluginSettingTab {
       .setDesc(
         "Select how chats are written and interpreted in markdown (choose from multiple styles)."
       )
-      // use the name from the objects in the array: chatParser
       .addDropdown((dropdown) => {
         dropdown
           .addOptions(
             Object.fromEntries(
-              Object.entries(chatParser).map(([key, value]) => [key, value.description])
+              Object.entries(StatSett.chatParser).map(([key, value]) => [key, value.description])
             )
           )
           .setValue(settings.chatParser.toString())
@@ -713,7 +730,6 @@ class PureChatLLMSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
       });
-
     new Setting(containerEl)
       .setName("Autogenerate title")
       .setDesc(
@@ -768,114 +784,182 @@ class PureChatLLMSettingTab extends PluginSettingTab {
   }
 }
 
+class CodeAreaComponent extends TextAreaComponent {
+  constructor(containerEl: HTMLElement) {
+    super(containerEl);
+    this.inputEl.addClass("PUREcodePreview");
+  }
+}
+
 /**
- * Modal dialog for modifying a selected text using a prompt in the PureChatLLM Obsidian plugin.
+ * Modal dialog for modifying selected text using a prompt within the PureChatLLM Obsidian plugin.
  *
- * This modal allows the user to:
+ * Features:
  * - View and edit the current selection.
- * - Enter a prompt to modify the selection using an LLM.
+ * - Enter a prompt to modify the selection via an LLM.
  * - Copy the selection to the clipboard.
- * - Submit the modified selection or cancel the operation.
+ * - Submit the modified selection or cancel.
  *
  * @extends Modal
  *
  * @param app - The Obsidian app instance.
  * @param plugin - The instance of the PureChatLLM plugin.
- * @param selection - The initial selected text to be modified.
- * @param onSubmit - Callback invoked with the modified selection when the user confirms.
+ * @param selection - The initial text selected for modification.
+ * @param onSubmit - Callback invoked with the final modified text.
  */
 class EditSelectionModal extends Modal {
   plugin: PureChatLLM;
   app: App;
+
+  // History management
   hist: string[];
-  iHist: number;
-  navHist: Setting;
-  constructor(app: App, plugin: PureChatLLM, selection: string, onSubmit: (s: string) => void) {
+  iHist: number = 1; // Current index in history
+  navButtons: (ButtonComponent | ExtraButtonComponent)[] = [];
+
+  // UI components
+  selectionEl: CodeAreaComponent;
+  promptEl: CodeAreaComponent;
+
+  // Original selection
+  selection: string;
+
+  // Callback for when user confirms the change
+  onSubmit: (modifiedText: string) => void;
+
+  constructor(
+    app: App,
+    plugin: PureChatLLM,
+    selection: string,
+    onSubmit: (modifiedText: string) => void
+  ) {
     super(app);
     this.plugin = plugin;
     this.app = app;
-    this.hist = [selection, selection];
-    this.iHist = 1;
-    this.setTitle("Change selection with prompt");
-    this.navHist = new Setting(this.contentEl)
-      .addButton((btn) =>
-        btn.setIcon("chevron-left").onClick(async () => {
-          this.iHist = Math.max(this.iHist - 1, 0);
-          this.update(selectionEl, this.hist[this.iHist]);
-        })
-      )
-      .addButton((btn) => btn.setDisabled(true))
-      .addButton((btn) =>
-        btn.setIcon("chevron-right").onClick(async () => {
-          this.iHist = Math.min(this.iHist + 1, this.hist.length - 1);
-          this.update(selectionEl, this.hist[this.iHist]);
-        })
-      );
-    const selectionEl = new TextAreaComponent(this.contentEl)
-      .setPlaceholder("Selection")
-      .setValue(selection)
-      .onChange(async (value) => (this.hist[this.hist.length - 1] = value));
-    selectionEl.inputEl.addClass("PUREcodePreview");
-    const promptEl = new TextAreaComponent(this.contentEl).setPlaceholder("Enter the prompt");
-    promptEl.inputEl.addClass("PUREcodePreview");
-    new Setting(this.contentEl)
-      .addButton((btn) =>
-        btn.setIcon("copy").onClick(async () => {
-          navigator.clipboard.writeText(selectionEl.getValue());
-          new Notice("Code copied to clipboard");
-        })
-      )
-      .addButton((btn) =>
-        btn
-          .setIcon("send")
-          .setCta()
-          .onClick(async () => {
-            new PureChatLLMChat(this.plugin)
-              .setMarkdown(promptEl.getValue())
-              .SelectionResponse(
-                { name: "", template: promptEl.getValue() },
-                selectionEl.getValue()
-              )
-              .then((response) => {
-                if (this.iHist != this.hist.length - 1) {
-                  this.hist = this.hist.slice(0, this.iHist + 1);
-                }
-                if (this.hist[this.hist.length - 1] == this.hist[this.hist.length - 2]) {
-                  this.hist.pop();
-                }
-                this.hist.push(response.content, response.content);
-                this.iHist = this.hist.length - 1;
-                console.log(this.hist);
-                this.update(selectionEl, response.content);
-              });
-          })
-      );
+    this.selection = selection;
+    this.onSubmit = onSubmit;
 
+    // Initialize history with the initial selection
+    this.hist = [selection, selection];
+
+    this.setTitle("Change Selection with Prompt");
+
+    // Setup navigation buttons
+    this.setupNavigationButtons();
+
+    // Create selection textarea
+    this.selectionEl = new CodeAreaComponent(this.contentEl)
+      .setPlaceholder("Selection")
+      .setValue(this.selection)
+      .onChange((value) => {
+        // Update the latest history entry when user edits selection
+        this.hist[this.hist.length - 1] = value;
+      });
+
+    // Create prompt textarea
+    this.promptEl = new CodeAreaComponent(this.contentEl)
+      .setPlaceholder("Enter the prompt")
+      .onChange((value) => {
+        if (value.endsWith(">go")) {
+          this.promptEl.setValue(value.slice(0, -3));
+          this.send();
+        }
+      });
+
+    // Setup action buttons
+    this.setupActionButtons();
+
+    // Initialize the display with the current selection
+    this.update(this.selectionEl, this.selection);
+  }
+
+  /**
+   * Setup navigation buttons for history traversal.
+   */
+  private setupNavigationButtons() {
     new Setting(this.contentEl)
+      // Copy selection to clipboard
+      .addExtraButton((btn) =>
+        btn.setIcon("copy").onClick(async () => {
+          await navigator.clipboard.writeText(this.selectionEl.getValue());
+          new Notice("Selection copied to clipboard");
+        })
+      )
+      .addExtraButton(
+        (btn) =>
+          (this.navButtons[0] = btn.setIcon("undo-2").onClick(async () => {
+            this.iHist = Math.max(this.iHist - 1, 0);
+            this.update(this.selectionEl, this.hist[this.iHist]);
+          }))
+      )
+      .addExtraButton(
+        (btn) =>
+          (this.navButtons[1] = btn.setIcon("redo-2").onClick(async () => {
+            this.iHist = Math.min(this.iHist + 1, this.hist.length - 1);
+            this.update(this.selectionEl, this.hist[this.iHist]);
+          }))
+      );
+  }
+
+  /**
+   * Setup action buttons: copy, send prompt, confirm, cancel.
+   */
+  private setupActionButtons() {
+    new Setting(this.contentEl)
+      // Send prompt to LLM and update selection with response
+      .addExtraButton((btn) => btn.setIcon("send").onClick(this.send.bind(this)))
+      // Confirm button
       .addButton((btn) =>
         btn
           .setIcon("check")
           .setCta()
           .onClick(async () => {
             this.close();
-            onSubmit(selectionEl.getValue());
+            this.onSubmit(this.selectionEl.getValue());
           })
       )
-      .addButton((btn) =>
-        btn.setButtonText("Cancel").onClick(async () => {
-          this.close();
-        })
-      );
-    this.update(selectionEl, selection);
+      // Cancel button
+      .addButton((btn) => btn.setIcon("x").onClick(() => this.close()));
   }
-  update(element: TextAreaComponent, value: string) {
-    const [back, middle, forward] = this.navHist?.components;
-    if (middle instanceof ButtonComponent) {
-      middle.setButtonText(`${this.iHist + 1}/${this.hist.length}`);
+
+  async send() {
+    const promptText = this.promptEl.getValue();
+
+    // Create LLM chat request
+    const response = await new PureChatLLMChat(this.plugin)
+      .setMarkdown(promptText)
+      .SelectionResponse({ name: "", template: promptText }, this.selectionEl.getValue());
+
+    // Manage history for undo/redo
+    if (this.iHist !== this.hist.length - 1) {
+      this.hist = this.hist.slice(0, this.iHist + 1);
     }
-    back.setDisabled(this.iHist == 0);
-    forward.setDisabled(this.iHist == this.hist.length - 1);
+
+    // Avoid duplicate consecutive entries
+    if (this.hist[this.hist.length - 1] === response.content) {
+      this.hist.pop();
+    }
+
+    this.hist.push(response.content, response.content);
+    this.iHist = this.hist.length - 1;
+
+    console.log(this.hist);
+    this.update(this.selectionEl, response.content);
+  }
+
+  /**
+   * Update the selection textarea and navigation controls.
+   * @param element - The CodeAreaComponent to update.
+   * @param value - The new text value.
+   */
+  private update(element: CodeAreaComponent, value: string) {
+    const [backBtn, forwardBtn] = this.navButtons;
+    // Update navigation index display
+    // Enable/disable navigation buttons based on position
+    backBtn.setDisabled(this.iHist === 0);
+    forwardBtn.setDisabled(this.iHist === this.hist.length - 1);
+    // Update the textarea with the new value
     element.setValue(value);
+    // Select all text for easy editing
     element.inputEl.select();
   }
 }
