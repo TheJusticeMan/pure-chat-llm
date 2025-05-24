@@ -13,10 +13,8 @@ let versions = JSON.parse(readFileSync("versions.json", "utf8"));
 versions[targetVersion] = minAppVersion;
 writeFileSync("versions.json", JSON.stringify(versions, null, "\t"));
 
-writeFileSync(
-  "src/settings.ts",
-  readFileSync("src/settings.ts", "utf8").replace(
-    /version\: \"[^\"]+\",/gm,
-    `version: "${targetVersion}",`
-  )
-);
+let appSett = JSON.parse(readFileSync("src/s.json", "utf8"));
+appSett.version = targetVersion;
+appSett.readme = readFileSync("README.md").toString();
+appSett.splash = readFileSync("src/splash.md").toString();
+writeFileSync("src/s.json", JSON.stringify(appSett, null, "\t"));

@@ -1,21 +1,19 @@
 import { App, EditorRange, Notice, TFile } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
+import { codeContent } from "./CodeHandling";
 import { codelanguage } from "./codelanguages";
 import PureChatLLM from "./main";
-import { toTitleCase } from "./toTitleCase";
-import {
-  ChatMessage,
-  EmptyApiKey,
-  PureChatLLMAPI,
-  PureChatLLMInstructPrompt,
-  RoleType,
-} from "./types";
+import { EmptyApiKey } from "./s.json";
 import { StatSett } from "./settings";
-
-export interface codeContent {
-  language: string;
-  code: string;
+import { toTitleCase } from "./toTitleCase";
+import { PureChatLLMAPI } from "./types";
+interface ChatMessage {
+  role: RoleType;
+  content: string;
+  cline: EditorRange;
 }
+
+type RoleType = "system" | "user" | "assistant" | "developer";
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -364,7 +362,7 @@ export class PureChatLLMChat {
    * @param templatePrompt - The template prompt containing the instruction and template name to guide the chat processing.
    * @returns A Promise resolving to the processed chat response from the model.
    */
-  ProcessChatWithTemplate(templatePrompt: PureChatLLMInstructPrompt) {
+  ProcessChatWithTemplate(templatePrompt: string) {
     if (this.endpoint.apiKey === EmptyApiKey) {
       this.plugin.askForApiKey();
       return Promise.resolve({ role: "assistant", content: EmptyApiKey });
@@ -391,7 +389,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
           role: "user",
           content: `<Conversation>\n${this.ChatText}\n\n</Conversation>`,
         },
-        { role: "user", content: templatePrompt.template },
+        { role: "user", content: templatePrompt },
       ],
       max_completion_tokens: 4096,
     });
@@ -410,7 +408,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
    * @returns A Promise resolving to the LLM's response containing the processed markdown,
    *          or an empty response if no text is selected.
    */
-  SelectionResponse(templatePrompt: PureChatLLMInstructPrompt, selectedText: string) {
+  SelectionResponse(templatePrompt: string, selectedText: string) {
     if (this.endpoint.apiKey === EmptyApiKey) {
       this.plugin.askForApiKey();
       return Promise.resolve({
@@ -442,7 +440,7 @@ Use this workflow to help modify markdown content accurately.`;
             role: "user",
             content: `<Selection>\n${selectedText}\n\n</Selection>`,
           },
-          { role: "user", content: templatePrompt.template },
+          { role: "user", content: templatePrompt },
         ],
         max_completion_tokens: 4096,
       });

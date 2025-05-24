@@ -12,24 +12,17 @@ import {
   PluginSettingTab,
   Setting,
   TextAreaComponent,
+  TextComponent,
   TFile,
   WorkspaceLeaf,
 } from "obsidian";
-import { codeContent, PureChatLLMChat } from "./Chat";
 import { BrowserConsole } from "./BrowserConsole";
+import { PureChatLLMChat } from "./Chat";
+import { EmptyApiKey, version } from "./s.json";
 import { StatSett } from "./settings";
 import { PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
-import {
-  DEFAULT_PROCESS_CHAT_TEMPLATES,
-  DEFAULT_SELECTION_TEMPLATES,
-  DEFAULT_SETTINGS,
-  EmptyApiKey,
-  PURE_CHAT_LLM_VIEW_TYPE,
-  PureChatLLMInstructPrompt,
-  PureChatLLMInstructPrompts,
-  PureChatLLMSettings,
-} from "./types";
+import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
 
 declare module "obsidian" {
   interface App {
@@ -78,9 +71,6 @@ export default class PureChatLLM extends Plugin {
     await this.loadSettings();
     this.console = new BrowserConsole(this.settings.debug, "PureChatLLM");
     this.console.log("settings loaded", this.settings);
-    if (this.settings.endpoints.length == 0) {
-      this.settings.endpoints = StatSett.ENDPOINTS;
-    }
 
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, (leaf) => new PureChatLLMSideView(leaf, this));
 
@@ -107,41 +97,7 @@ export default class PureChatLLM extends Plugin {
       editorCheckCallback: (checking, e: Editor) => {
         const selected = e.getSelection();
         if (checking) return !!selected;
-        this.GetInstructPrompts("PureChatLLM/templates.md", {
-          ...DEFAULT_SELECTION_TEMPLATES,
-          "Custom prompt": { name: "Custom prompt", template: "" },
-        }).then((templates) =>
-          new InstructPromptsHandler(
-            this.app,
-            (s) =>
-              s.template
-                ? new PureChatLLMChat(this)
-                    .SelectionResponse(s, selected)
-                    .then((response) => e.replaceSelection(response.content))
-                : new EditSelectionModal(this.app, this, selected, (text) =>
-                    e.replaceSelection(text)
-                  ).open(),
-            templates
-          ).open()
-        );
-      },
-    });
-    this.addCommand({
-      id: "save-templates",
-      name: "Save templates",
-      callback: async () => {
-        const folderPath = "PureChatLLM";
-        const filePath = `${folderPath}/templates.md`;
-        // Check if folder exists, create if not
-        if (!this.app.vault.getAbstractFileByPath(folderPath)) {
-          await this.app.vault.createFolder(folderPath);
-        }
-        await this.app.vault.create(
-          filePath,
-          Object.values(DEFAULT_SELECTION_TEMPLATES)
-            .map((t) => `# ${t.name}\n${t.template}`)
-            .join("\n\n")
-        );
+        this.EditSelection(selected, e);
       },
     });
     this.addCommand({
@@ -156,7 +112,7 @@ export default class PureChatLLM extends Plugin {
               .setMarkdown(editor.getValue())
               .ProcessChatWithTemplate(s)
               .then((response) => editor.replaceSelection(response.content)),
-          DEFAULT_PROCESS_CHAT_TEMPLATES
+          this.settings.chatTemplates
         ).open();
       },
     });
@@ -205,12 +161,6 @@ export default class PureChatLLM extends Plugin {
 
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
-    if (this.settings.debug) {
-      this.app.workspace.onLayoutReady(() => {
-        this.activateView();
-        //this.openHotkeys();
-      });
-    }
   }
 
   async openHotkeys(): Promise<void> {
@@ -225,36 +175,8 @@ export default class PureChatLLM extends Plugin {
 
   onUserEnable() {
     this.activateView();
-    this.openHotkeys();
+    //this.openHotkeys();
     this.console.log("Plugin enabled");
-  }
-
-  private GetInstructPrompts(
-    folderNName: string,
-    DefaultInstructPrompts: PureChatLLMInstructPrompts
-  ): Promise<PureChatLLMInstructPrompts> {
-    const file = this.app.vault.getAbstractFileByPath(folderNName);
-    if (file instanceof TFile)
-      this.app.vault.cachedRead(file).then((InstructPrompts) =>
-        Object.assign(
-          DefaultInstructPrompts,
-          Object.fromEntries(
-            InstructPrompts.split("# ")
-              .filter(Boolean)
-              .map((tm) => {
-                const [name, ...content] = tm.split("\n");
-                return [
-                  name.trim(),
-                  {
-                    name: name.trim(),
-                    template: content.join("\n").trim(),
-                  },
-                ] as [string, PureChatLLMInstructPrompt];
-              })
-          )
-        )
-      );
-    return Promise.resolve(DefaultInstructPrompts);
   }
 
   async activateView() {
@@ -291,17 +213,7 @@ export default class PureChatLLM extends Plugin {
             .setTitle("Edit Selection")
             .setIcon("wand")
             .onClick(async () => {
-              this.GetInstructPrompts("PureChatLLM/templates.md", DEFAULT_SELECTION_TEMPLATES).then(
-                (templates) =>
-                  new InstructPromptsHandler(
-                    this.app,
-                    (s) =>
-                      new PureChatLLMChat(this)
-                        .SelectionResponse(s, selected)
-                        .then((response) => editor.replaceSelection(response.content)),
-                    templates
-                  ).open()
-              );
+              this.EditSelection(selected, editor);
             })
             .setSection("selection")
         )
@@ -318,6 +230,24 @@ export default class PureChatLLM extends Plugin {
         );
 
     return menu;
+  }
+
+  private EditSelection(selected: string, editor: Editor) {
+    new InstructPromptsHandler(
+      this.app,
+      (s) =>
+        s
+          ? new PureChatLLMChat(this)
+              .SelectionResponse(s, selected)
+              .then((response) => editor.replaceSelection(response.content))
+          : new EditSelectionModal(this.app, this, selected, (text) =>
+              editor.replaceSelection(text)
+            ).open(),
+      {
+        ...this.settings.selectionTemplates,
+        "Custom prompt": "",
+      }
+    ).open();
   }
 
   askForApiKey() {
@@ -337,7 +267,7 @@ export default class PureChatLLM extends Plugin {
     if (ActiveFile)
       new PureChatLLMChat(this)
         .setMarkdown(editor.getValue())
-        .ProcessChatWithTemplate(DEFAULT_PROCESS_CHAT_TEMPLATES["Conversation titler"])
+        .ProcessChatWithTemplate(this.settings.chatTemplates["Conversation titler"])
         .then((title) => {
           const sanitizedTitle = `${ActiveFile.parent?.path}/${title.content
             .replace(/[^a-zA-Z0-9 ]/g, "")
@@ -415,6 +345,12 @@ export default class PureChatLLM extends Plugin {
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    /* this.settings = {
+      ...DEFAULT_SETTINGS,
+      selectionTemplates: { ...DEFAULT_SETTINGS.selectionTemplates },
+      endpoints: { ...DEFAULT_SETTINGS.endpoints },
+      ...(await this.loadData()),
+    }; */
   }
 
   async saveSettings() {
@@ -423,104 +359,6 @@ export default class PureChatLLM extends Plugin {
 
   onunload() {
     // Cleanup code if needed
-  }
-}
-
-/**
- * Modal dialog for displaying and handling code blocks extracted from a given string.
- *
- * This modal presents each code block in a separate section, showing its language and code content.
- * Users can edit the code in a textarea, copy the code to the clipboard, or open an advanced edit modal.
- *
- * @remarks
- * - Utilizes the `PureChatLLMChat.extractAllCodeBlocks` method to parse code blocks from the input string.
- * - Each code block is displayed with its language as a heading, an editable textarea, and action buttons.
- * - The modal is titled "Code Handling".
- *
- * @example
- * const modal = new CodeHandling(app, plugin, codeString);
- * modal.open();
- *
- * @param app - The Obsidian application instance.
- * @param plugin - The instance of the PureChatLLM plugin.
- * @param code - The string containing code blocks to be extracted and displayed.
- */
-export class CodeHandling extends Modal {
-  plugin: PureChatLLM;
-  code: codeContent[];
-
-  constructor(app: App, plugin: PureChatLLM, code: string) {
-    super(app);
-    this.plugin = plugin;
-    this.code = this.getCode(code);
-    this.setTitle("Code Handling");
-    this.renderCodeBlocks();
-  }
-
-  private renderCodeBlocks() {
-    if (!this.code.length) {
-      new Setting(this.contentEl).setName("No code blocks found.");
-      return;
-    }
-    this.code.forEach((c, idx) => {
-      new Setting(this.contentEl).setName(c.language || `Code Block ${idx + 1}`).setHeading();
-
-      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange((value) => {
-        c.code = value;
-      });
-
-      new Setting(this.contentEl)
-        .addExtraButton((btn) =>
-          btn
-            .setIcon("copy")
-            .setTooltip("Copy to clipboard")
-            .onClick(() => {
-              navigator.clipboard.writeText(c.code);
-              new Notice("Code copied to clipboard");
-            })
-        )
-        .addExtraButton((btn) =>
-          btn
-            .setIcon("pencil")
-            .setTooltip("Edit with prompt")
-            .onClick(() => {
-              new EditSelectionModal(this.app, this.plugin, c.code, (newCode) => {
-                c.code = newCode;
-                textArea.setValue(newCode);
-              }).open();
-            })
-        );
-    });
-  }
-
-  getCode(code: string): codeContent[] {
-    return PureChatLLMChat.extractAllCodeBlocks(code);
-  }
-}
-
-/**
- * The `SectionHandling` class extends the `CodeHandling` class and provides
- * functionality for extracting and organizing code sections from a given string.
- * It is specifically designed to work with headers and their associated content.
- *
- * @extends CodeHandling
- */
-export class SectionHandling extends CodeHandling {
-  plugin: PureChatLLM;
-  code: codeContent[];
-  getCode(code: string): codeContent[] {
-    // Extract all Headers and content from the input string
-    // capture the headers and the text following them
-    const regex = /^(#{1,6})\s*(.*?)\n([\s\S]*?)(?=\n#{1,6}|\n$)/gm;
-    const matches = code.matchAll(regex);
-    const sections: codeContent[] = [];
-    for (const match of matches) {
-      const header = match[2].trim();
-      const content = match[3].trim();
-      const level = match[1].length;
-      sections.push({ language: header, code: content });
-    }
-    return sections;
   }
 }
 
@@ -624,29 +462,26 @@ export class AskForAPI extends Modal {
  * const handler = new InstructPromptsHandler(app, (prompt) => { ... }, templates);
  * handler.open();
  */
-export class InstructPromptsHandler extends FuzzySuggestModal<PureChatLLMInstructPrompt> {
-  onSubmit: (result: PureChatLLMInstructPrompt) => void;
-  templates: PureChatLLMInstructPrompts;
-  constructor(
-    app: App,
-    onSubmit: (result: PureChatLLMInstructPrompt) => void,
-    templates: PureChatLLMInstructPrompts
-  ) {
+class InstructPromptsHandler extends FuzzySuggestModal<string> {
+  onSubmit: (result: string) => void;
+  templates: { [key: string]: string };
+  constructor(app: App, onSubmit: (result: string) => void, templates: { [key: string]: string }) {
     super(app);
     this.onSubmit = onSubmit;
     this.templates = templates;
+    this.setPlaceholder("Select a prompt...");
   }
 
-  getItems(): PureChatLLMInstructPrompt[] {
-    return Object.values(this.templates);
+  getItems(): string[] {
+    return Object.keys(this.templates);
   }
 
-  getItemText(book: PureChatLLMInstructPrompt): string {
-    return book.name;
+  getItemText(book: string): string {
+    return book;
   }
 
-  onChooseItem(book: PureChatLLMInstructPrompt, evt: MouseEvent | KeyboardEvent) {
-    this.onSubmit(book);
+  onChooseItem(book: string, evt: MouseEvent | KeyboardEvent) {
+    this.onSubmit(this.templates[book]);
   }
 }
 
@@ -682,15 +517,36 @@ class PureChatLLMSettingTab extends PluginSettingTab {
     } = this;
 
     containerEl.empty();
-
     new Setting(containerEl)
       .setName("Pure Chat LLM")
-      .setDesc(`v${StatSett.version}`)
-      .addButton((btn) => btn.setButtonText("Hot keys").onClick((e) => this.plugin.openHotkeys()))
+      .setDesc(`v${version}`)
+      .addButton((btn) =>
+        btn
+          .setButtonText("Reset Settings")
+          .setTooltip("Won't delete the API keys.")
+          .onClick((e) => {
+            const oldSettings = { ...this.plugin.settings };
+            this.plugin.settings = { ...DEFAULT_SETTINGS };
+            for (const endpoint in this.plugin.settings.endpoints) {
+              if (DEFAULT_SETTINGS.endpoints[endpoint])
+                this.plugin.settings.endpoints[endpoint].apiKey =
+                  oldSettings.endpoints[endpoint].apiKey;
+            }
+            this.plugin.saveSettings();
+            this.display();
+            new Notice("Settings reset to defaults.  API Keys are unchanged.");
+          })
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText("Hot keys")
+          .setCta()
+          .onClick((e) => this.plugin.openHotkeys())
+      )
       .setHeading();
     new Setting(containerEl)
-      .setName("Endpoint")
-      .setDesc("Choose the server endpoint used for chat interactions.")
+      .setName("Model provider")
+      .setDesc("Choose the default model provider. Configure API keys.")
       .addDropdown((dropdown) => {
         dropdown
           .addOptions(Object.fromEntries(settings.endpoints.map((e, i) => [i.toString(), e.name])))
@@ -700,23 +556,148 @@ class PureChatLLMSettingTab extends PluginSettingTab {
             this.plugin.modellist = [];
             await this.plugin.saveSettings();
           });
-      });
-    new Setting(containerEl)
-      .setName("Api keys")
-      .setDesc("Configure API keys for different AI providers")
+      })
       .addButton((btn) =>
         btn
           .setIcon("key")
-          .setTooltip("Add API keys")
+          .setTooltip("Add API key")
           .onClick(async () => {
             new AskForAPI(this.app, this.plugin).open();
           })
       );
     new Setting(containerEl)
-      .setName("Chat style")
+      .setName("Default system prompt")
       .setDesc(
-        "Select how chats are written and interpreted in markdown (choose from multiple styles)."
+        createFragment((frag) => {
+          frag.appendText("System message for each new chat.");
+          frag.createEl("br");
+          frag.appendText("Press [ to link a file.");
+        })
       )
+      .setClass("PURE")
+      .addTextArea((text) => {
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
+          .setValue(
+            settings.SystemPrompt !== DEFAULT_SETTINGS.SystemPrompt ? settings.SystemPrompt : ""
+          )
+          .onChange(async (value) => {
+            settings.SystemPrompt = value || DEFAULT_SETTINGS.SystemPrompt;
+            await this.plugin.saveSettings();
+          });
+        // Listen for "/" or "[" key to open FileSuggest
+        text.inputEl.addEventListener("keydown", (e: KeyboardEvent) => {
+          if (e.key === "/" || e.key === "[") {
+            e.preventDefault();
+            new FileSuggest(this.app, (file) => {
+              // Insert the selected file at the cursor position
+              const cursorPos = text.inputEl.selectionStart ?? 0;
+              const before = text.inputEl.value.slice(0, cursorPos);
+              const after = text.inputEl.value.slice(cursorPos);
+              const insert = `[[${file}]]`;
+              text.setValue(before + insert + after);
+              // Move cursor after inserted text
+              setTimeout(() => {
+                text.inputEl.selectionStart = text.inputEl.selectionEnd =
+                  before.length + insert.length;
+                text.inputEl.focus();
+              }, 0);
+            }).open();
+          }
+        });
+
+        return text.inputEl;
+      });
+    new Setting(containerEl)
+      .setName("Selection commands")
+      .setDesc("Edit selection prompt templates for the selection commands.")
+      .addButton((btn) =>
+        btn
+          .setButtonText("Edit")
+          .setCta()
+          .setTooltip("Edit selection prompt templates")
+          .onClick(() =>
+            new SelectionPromptEditor(
+              this.app,
+              this.plugin,
+              this.plugin.settings.selectionTemplates
+            ).open()
+          )
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText("Reset")
+          .setTooltip("Reset selection prompt templates to default")
+          .onClick(async () => {
+            this.plugin.settings.selectionTemplates = { ...DEFAULT_SETTINGS.selectionTemplates };
+            await this.plugin.saveSettings();
+            this.display();
+            new Notice("Selection prompt templates reset to default.");
+          })
+      );
+    new Setting(containerEl)
+      .setName("Chat Analyze commands")
+      .setDesc("Edit chat prompt templates for the analyze commands.")
+      .addButton((btn) =>
+        btn
+          .setButtonText("Edit")
+          .setCta()
+          .setTooltip("Edit chat prompt templates")
+          .onClick(() =>
+            new SelectionPromptEditor(
+              this.app,
+              this.plugin,
+              this.plugin.settings.chatTemplates
+            ).open()
+          )
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText("Reset")
+          .setTooltip("Reset chat prompt templates to default")
+          .onClick(async () => {
+            this.plugin.settings.chatTemplates = {
+              ...DEFAULT_SETTINGS.chatTemplates,
+            };
+            await this.plugin.saveSettings();
+            this.display();
+            new Notice("Chat prompt templates reset to default.");
+          })
+      );
+
+    new Setting(containerEl).setName("Advanced").setHeading();
+    new Setting(containerEl)
+      .setName("Autogenerate title")
+      .setDesc(
+        "How many responses to wait for before automatically creating a conversation title (set to 0 to disable)."
+      )
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.AutogenerateTitle.toString())
+          .setValue(
+            settings.AutogenerateTitle !== DEFAULT_SETTINGS.AutogenerateTitle
+              ? settings.AutogenerateTitle.toString()
+              : ""
+          )
+          .onChange(async (value) => {
+            const num = value ? Number(value) : DEFAULT_SETTINGS.AutogenerateTitle;
+            settings.AutogenerateTitle = num || 0;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Auto Reverse Roles")
+      .setDesc("Automatically switch roles when the last message is empty, for replying to self.")
+      .addToggle((toggle) => {
+        toggle.setValue(settings.AutoReverseRoles).onChange(async (value) => {
+          settings.AutoReverseRoles = value;
+          await this.plugin.saveSettings();
+        });
+      });
+    new Setting(containerEl)
+      .setName("Chat style")
+      .setDesc("Select how chats are written and interpreted in markdown.")
       .addDropdown((dropdown) => {
         dropdown
           .addOptions(
@@ -729,46 +710,6 @@ class PureChatLLMSettingTab extends PluginSettingTab {
             settings.chatParser = parseInt(value, 10);
             await this.plugin.saveSettings();
           });
-      });
-    new Setting(containerEl)
-      .setName("Autogenerate title")
-      .setDesc(
-        "Specify how many responses to wait for before automatically creating a conversation title (set to 0 to disable)."
-      )
-      .addText((text) =>
-        text
-          .setPlaceholder(DEFAULT_SETTINGS.AutogenerateTitle.toString())
-          .setValue(settings.AutogenerateTitle.toString())
-          .onChange(async (value) => {
-            const num =
-              value.length != 0 ? parseInt(value, 10) : DEFAULT_SETTINGS.AutogenerateTitle;
-            if (!isNaN(num) && num >= 0) {
-              settings.AutogenerateTitle = num;
-              await this.plugin.saveSettings();
-            }
-          })
-      );
-    new Setting(containerEl)
-      .setName("Default system prompt")
-      .setDesc("Define the initial message or instructions the AI uses at the start of each chat.")
-      .setClass("PURE")
-      .addTextArea((text) =>
-        text
-          .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
-          .setValue(settings.SystemPrompt)
-          .onChange(async (value) => {
-            settings.SystemPrompt = value || DEFAULT_SETTINGS.SystemPrompt;
-            await this.plugin.saveSettings();
-          })
-      );
-    new Setting(containerEl)
-      .setName("Auto Reverse Roles")
-      .setDesc("Automatically switch roles when the last message is empty, for replying to self.")
-      .addToggle((toggle) => {
-        toggle.setValue(settings.AutoReverseRoles).onChange(async (value) => {
-          settings.AutoReverseRoles = value;
-          await this.plugin.saveSettings();
-        });
       });
     new Setting(containerEl)
       .setName("Debug")
@@ -784,7 +725,17 @@ class PureChatLLMSettingTab extends PluginSettingTab {
   }
 }
 
-class CodeAreaComponent extends TextAreaComponent {
+/**
+ * A custom text area component that extends the base `TextAreaComponent`.
+ *
+ * This component adds the "PUREcodePreview" CSS class to its input element,
+ * allowing for specialized styling or behavior in the UI.
+ *
+ * @extends TextAreaComponent
+ * @example
+ * const codeArea = new CodeAreaComponent(containerElement);
+ */
+export class CodeAreaComponent extends TextAreaComponent {
   constructor(containerEl: HTMLElement) {
     super(containerEl);
     this.inputEl.addClass("PUREcodePreview");
@@ -807,7 +758,7 @@ class CodeAreaComponent extends TextAreaComponent {
  * @param selection - The initial text selected for modification.
  * @param onSubmit - Callback invoked with the final modified text.
  */
-class EditSelectionModal extends Modal {
+export class EditSelectionModal extends Modal {
   plugin: PureChatLLM;
   app: App;
 
@@ -927,7 +878,7 @@ class EditSelectionModal extends Modal {
     // Create LLM chat request
     const response = await new PureChatLLMChat(this.plugin)
       .setMarkdown(promptText)
-      .SelectionResponse({ name: "", template: promptText }, this.selectionEl.getValue());
+      .SelectionResponse(promptText, this.selectionEl.getValue());
 
     // Manage history for undo/redo
     if (this.iHist !== this.hist.length - 1) {
@@ -942,7 +893,6 @@ class EditSelectionModal extends Modal {
     this.hist.push(response.content, response.content);
     this.iHist = this.hist.length - 1;
 
-    console.log(this.hist);
     this.update(this.selectionEl, response.content);
   }
 
@@ -961,5 +911,128 @@ class EditSelectionModal extends Modal {
     element.setValue(value);
     // Select all text for easy editing
     element.inputEl.select();
+  }
+}
+
+/**
+ * Modal dialog for editing and managing selection prompt templates within the PureChatLLM plugin.
+ *
+ * This class provides a UI for users to create, select, and edit named prompt templates
+ * that are stored in the plugin's settings. It features a dropdown for selecting existing
+ * templates, a button to add new templates, and a code editor area for editing the template content.
+ *
+ * @extends Modal
+ */
+class SelectionPromptEditor extends Modal {
+  plugin: PureChatLLM;
+  name: string;
+  promptTemplates: { [key: string]: string };
+  constructor(app: App, plugin: PureChatLLM, promptTemplates: { [key: string]: string }) {
+    super(app);
+    this.plugin = plugin;
+    this.promptTemplates = promptTemplates;
+    this.update();
+  }
+  update() {
+    this.contentEl.empty();
+    if (this.name && !this.promptTemplates[this.name]) this.promptTemplates[this.name] = "";
+    new Setting(this.contentEl)
+      .addExtraButton((btn) =>
+        btn.setIcon("plus").onClick(() => {
+          new PromptName(this.app, "What title", "title", (value) => {
+            this.name = value;
+            this.update();
+          }).open();
+        })
+      )
+      .addDropdown((drop) => {
+        drop
+          .addOptions(
+            Object.fromEntries(Object.entries(this.promptTemplates).map((t) => [t[0], t[0]]))
+          )
+          .onChange((value) => {
+            c.setValue(this.promptTemplates[value]);
+            this.setTitle(value);
+            this.name = value;
+          });
+        if (this.name) drop.setValue(this.name);
+        else this.name = drop.getValue();
+      });
+    const c = new CodeAreaComponent(this.contentEl)
+      .setValue(this.promptTemplates[this.name])
+      .onChange((value) => (this.promptTemplates[this.name] = value));
+    this.setTitle(this.name);
+  }
+  onClose(): void {
+    this.plugin.saveSettings();
+  }
+}
+
+/**
+ * A modal dialog for prompting the user to enter a string value.
+ *
+ * Displays a text input field and "OK" and "Cancel" buttons.
+ * When "OK" is clicked, the provided callback is invoked with the entered value.
+ *
+ * @extends Modal
+ * @param app - The Obsidian application instance.
+ * @param title - The title of the modal dialog.
+ * @param placeholder - The placeholder text for the input field.
+ * @param cb - Optional callback function to receive the entered value when "OK" is clicked.
+ */
+class PromptName extends Modal {
+  constructor(app: App, title: string, placeholder: string, cb?: (value: string) => void) {
+    super(app);
+    const t = new TextComponent(this.contentEl);
+    new Setting(this.contentEl)
+      .addButton((btn) =>
+        btn
+          .setButtonText("OK")
+          .setCta()
+          .onClick(() => {
+            cb?.(t.getValue());
+            this.close();
+          })
+      )
+      .addButton((btn) => btn.setButtonText("Cancel").onClick(() => this.close()));
+  }
+}
+
+/**
+ * A modal dialog that provides a fuzzy search interface for selecting markdown files
+ * from the current Obsidian vault. Extends `FuzzySuggestModal` to display file paths
+ * and returns the selected file path via the provided `onSubmit` callback.
+ *
+ * @extends FuzzySuggestModal<string>
+ *
+ * @example
+ * ```typescript
+ * new FileSuggest(app, (filePath) => {
+ *   // Handle the selected file path
+ * });
+ * ```
+ *
+ * @param app - The current Obsidian application instance.
+ * @param onSubmit - Callback invoked with the selected file path when a file is chosen.
+ *
+ * @public
+ */
+class FileSuggest extends FuzzySuggestModal<string> {
+  onSubmit: (result: string) => void;
+  files: TFile[];
+  constructor(app: App, onSubmit: (result: string) => void) {
+    super(app);
+    this.onSubmit = onSubmit;
+    this.files = app.vault.getMarkdownFiles();
+    this.setPlaceholder("Search for a file...");
+  }
+  getItems(): string[] {
+    return this.files.map((f) => f.path);
+  }
+  getItemText(file: string): string {
+    return file;
+  }
+  onChooseItem(file: string, evt: MouseEvent | KeyboardEvent) {
+    this.onSubmit(file);
   }
 }

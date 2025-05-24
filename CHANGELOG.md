@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.2
+
+Refactor Pure Chat LLM Plugin: Consolidate settings, enhance selection templates, and improve user interface
+
+- Migrate settings to a new JSON structure in `src/s.json` for better organization.
+- Update `SideView.ts` and `Speech.ts` to utilize new settings structure.
+- Simplify API endpoint management and remove redundant code in `main.ts`.
+- Introduce a new `SelectionPromptEditor` modal for managing selection templates.
+- Enhance user experience with improved splash screen and README documentation.
+- Add functionality for customizable system prompts and selection commands.
+- Update TypeScript configuration to support JSON module imports.
+- Bump version to 1.2.2 and update related documentation.
+
 # 1.2.1
 
 feat: Enhance speech functionality with OpenAI TTS API integration

@@ -14,10 +14,11 @@ import {
 } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
-import PureChatLLM, { AskForAPI, CodeHandling, SectionHandling } from "./main";
-import { StatSett } from "./settings";
+import { CodeHandling, SectionHandling } from "./CodeHandling";
+import PureChatLLM, { AskForAPI } from "./main";
+import { alloptions, EmptyApiKey, splash } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
-import { EmptyApiKey, PURE_CHAT_LLM_VIEW_TYPE } from "./types";
+import { PURE_CHAT_LLM_VIEW_TYPE } from "./types";
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -127,7 +128,7 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   defaultContent(view: MarkdownView) {
-    const content = StatSett.splash;
+    const content = splash;
     MarkdownRenderer.render(this.app, content, this.contentEl, view.file?.basename || "", this);
   }
 
@@ -179,9 +180,8 @@ export class PureChatLLMSideView extends ItemView {
           editor.setValue(
             new PureChatLLMChat(this.plugin)
               .setMarkdown(editor.getValue())
-              .thencb((chat) =>
-                Object.assign(chat.options, { ...StatSett.alloptions }, { ...chat.options })
-              ).Markdown
+              .thencb((chat) => Object.assign(chat.options, { ...alloptions }, { ...chat.options }))
+              .Markdown
           )
         );
     });
