@@ -21,7 +21,6 @@ import PureChatLLM, { CodeAreaComponent, EditSelectionModal } from "./main";
  * @param plugin - The instance of the PureChatLLM plugin.
  * @param code - The string containing code blocks to be extracted and displayed.
  */
-
 export class CodeHandling extends Modal {
   plugin: PureChatLLM;
   code: codeContent[];
@@ -74,6 +73,7 @@ export class CodeHandling extends Modal {
     return PureChatLLMChat.extractAllCodeBlocks(code);
   }
 }
+
 /**
  * The `SectionHandling` class extends the `CodeHandling` class and provides
  * functionality for extracting and organizing code sections from a given string.
@@ -81,7 +81,6 @@ export class CodeHandling extends Modal {
  *
  * @extends CodeHandling
  */
-
 export class SectionHandling extends CodeHandling {
   plugin: PureChatLLM;
   code: codeContent[];

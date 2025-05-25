@@ -2,6 +2,10 @@ import {
   App,
   ButtonComponent,
   Editor,
+  EditorPosition,
+  EditorSuggest,
+  EditorSuggestContext,
+  EditorSuggestTriggerInfo,
   ExtraButtonComponent,
   FuzzySuggestModal,
   MarkdownView,
@@ -23,6 +27,8 @@ import { StatSett } from "./settings";
 import { PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
+import { codelanguages } from "./codelanguages";
+import { toTitleCase } from "./toTitleCase";
 
 declare module "obsidian" {
   interface App {
@@ -118,14 +124,6 @@ export default class PureChatLLM extends Plugin {
     });
     // Add command for opening the settings
     this.addCommand({
-      id: "open-hotkeys",
-      name: "Open hotkeys",
-      icon: "key",
-      callback: async () => {
-        this.openHotkeys();
-      },
-    });
-    this.addCommand({
       id: "reverse-roles",
       name: "Reverse roles",
       icon: "swap-horizontal",
@@ -159,6 +157,8 @@ export default class PureChatLLM extends Plugin {
       })
     );
 
+    this.registerEditorSuggest(new PureChatEditorSuggest(this.app, this));
+
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
   }
@@ -167,10 +167,15 @@ export default class PureChatLLM extends Plugin {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
     const setting = (this.app as any).setting;
     await setting.open();
-    this.console.log(setting.activeTab.searchComponent);
     setting.openTabById("hotkeys");
     setting.activeTab.searchComponent.setValue("Pure Chat LLM");
     setting.activeTab.searchComponent.onChanged();
+  }
+
+  async openSettings(): Promise<void> {
+    const setting = (this.app as any).setting;
+    await setting.open();
+    setting.openTabById("pure-chat-llm");
   }
 
   onUserEnable() {
@@ -1034,5 +1039,90 @@ class FileSuggest extends FuzzySuggestModal<string> {
   }
   onChooseItem(file: string, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(file);
+  }
+}
+
+class PureChatEditorSuggest extends EditorSuggest<string> {
+  type: string;
+  plugin: PureChatLLM;
+  constructor(app: App, plugin: PureChatLLM) {
+    super(app);
+    this.plugin = plugin;
+  }
+
+  onTrigger(
+    cursor: EditorPosition,
+    editor: Editor,
+    file: TFile | null
+  ): EditorSuggestTriggerInfo | null {
+    //const line = editor.getLine(cursor.line);
+    const line = editor.getRange({ ...cursor, ch: 0 }, cursor); // Get the line text
+    if (/^(```|# |send)/.test(line))
+      return {
+        start: { line: cursor.line, ch: 0 },
+        end: { line: cursor.line, ch: line.length },
+        query: line,
+      };
+    else return null;
+  }
+
+  getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
+    if (context.query === "send") {
+      this.type = "send";
+      return ["send"];
+    }
+    if (context.query.startsWith("```")) {
+      this.type = "code";
+      const query = context.query.slice(3).toLowerCase().trim();
+      if (query) return codelanguages.filter((lang) => lang.startsWith(query)).slice(0, 100);
+      else return ["", ...codelanguages.sort().slice(0, 100)];
+    } else if (context.query.startsWith("# ")) {
+      this.type = "role";
+      const roles = ["user", "assistant", "system", "developer"];
+      const query = context.query.slice(2).toLowerCase().trim();
+
+      return roles.filter((h) => h.startsWith(query) || ("role: " + h).startsWith(query));
+    }
+    return [];
+  }
+
+  renderSuggestion(value: string, el: HTMLElement): void {
+    switch (this.type) {
+      case "send":
+        el.textContent = "Send to LLM";
+        break;
+      case "code":
+        el.textContent = value;
+        break;
+      case "role":
+        el.textContent = `role: ${toTitleCase(value)}`;
+        break;
+    }
+  }
+
+  selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
+    if (!this.context) return;
+    const { start, end, editor, query } = this.context;
+    switch (this.type) {
+      case "send":
+        editor.replaceRange("", start, end);
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!view) return;
+        this.plugin.CompleteChatResponse(editor, view);
+        break;
+      case "code":
+        editor.replaceRange(`\`\`\`${value}\n`, start, end);
+        editor.setCursor({
+          line: start.line + 1,
+          ch: 0,
+        });
+        break;
+      case "role":
+        editor.replaceRange(`# role: ${toTitleCase(value)}\n`, start, end);
+        editor.setCursor({
+          line: start.line + 1,
+          ch: 0,
+        });
+    }
   }
 }

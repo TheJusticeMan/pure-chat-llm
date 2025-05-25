@@ -20,7 +20,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   endpoint: 0,
   endpoints: StatSett.ENDPOINTS,
   chatParser: 0,
-  AutoReverseRoles: false,
+  AutoReverseRoles: true,
   selectionTemplates: selectionTemplates,
   chatTemplates: chatTemplates,
 };

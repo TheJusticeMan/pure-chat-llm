@@ -1,394 +1,386 @@
-export type codelanguage =
-  | "plaintext"
-  | "markup"
-  | "html"
-  | "xml"
-  | "svg"
-  | "mathml"
-  | "ssml"
-  | "atom"
-  | "rss"
-  | "css"
-  | "clike"
-  | "javascript"
-  | "js"
-  | "abap"
-  | "abnf"
-  | "actionscript"
-  | "ada"
-  | "agda"
-  | "al"
-  | "antlr4"
-  | "g4"
-  | "apacheconf"
-  | "apex"
-  | "apl"
-  | "applescript"
-  | "aql"
-  | "arduino"
-  | "ino"
-  | "arff"
-  | "asm"
-  | "arturo"
-  | "art"
-  | "asciidoc"
-  | "adoc"
-  | "aspnet"
-  | "asm6502"
-  | "asmatmel"
-  | "autohotkey"
-  | "autoit"
-  | "avisynth"
-  | "avs"
-  | "idl"
-  | "avdl"
-  | "awk"
-  | "gawk"
-  | "bash"
-  | "sh"
-  | "shell"
-  | "basic"
-  | "batch"
-  | "bbcode"
-  | "shortcode"
-  | "bbj"
-  | "bicep"
-  | "birb"
-  | "bison"
-  | "bnf"
-  | "rbnf"
-  | "bqn"
-  | "brainfuck"
-  | "brightscript"
-  | "bro"
-  | "bsl"
-  | "oscript"
-  | "c"
-  | "csharp"
-  | "cs"
-  | "dotnet"
-  | "cpp"
-  | "cfscript"
-  | "cfc"
-  | "chaiscript"
-  | "cil"
-  | "c"
-  | "cpp"
-  | "cilk"
-  | "clojure"
-  | "cmake"
-  | "cobol"
-  | "coffeescript"
-  | "coffee"
-  | "concurnas"
-  | "conc"
-  | "csp"
-  | "cooklang"
-  | "coq"
-  | "crystal"
-  | "extras"
-  | "csv"
-  | "cue"
-  | "cypher"
-  | "d"
-  | "dart"
-  | "dataweave"
-  | "dax"
-  | "dhall"
-  | "diff"
-  | "django"
-  | "jinja2"
-  | "zone"
-  | "docker"
-  | "dockerfile"
-  | "dot"
-  | "gv"
-  | "ebnf"
-  | "editorconfig"
-  | "eiffel"
-  | "ejs"
-  | "eta"
-  | "elixir"
-  | "elm"
-  | "etlua"
-  | "erb"
-  | "erlang"
-  | "formula"
-  | "xlsx"
-  | "xls"
-  | "fsharp"
-  | "factor"
-  | "false"
-  | "rules"
-  | "flow"
-  | "fortran"
-  | "ftl"
-  | "gml"
-  | "gamemakerlanguage"
-  | "gap"
-  | "gcode"
-  | "gdscript"
-  | "gedcom"
-  | "gettext"
-  | "po"
-  | "gherkin"
-  | "git"
-  | "glsl"
-  | "gn"
-  | "gni"
-  | "script"
-  | "ld"
-  | "go"
-  | "mod"
-  | "gradle"
-  | "graphql"
-  | "groovy"
-  | "haml"
-  | "handlebars"
-  | "hbs"
-  | "mustache"
-  | "haskell"
-  | "hs"
-  | "haxe"
-  | "hcl"
-  | "hlsl"
-  | "hoon"
-  | "http"
-  | "hpkp"
-  | "hsts"
-  | "ichigojam"
-  | "icon"
-  | "format"
-  | "idris"
-  | "idr"
-  | "ignore"
-  | "gitignore"
-  | "hgignore"
-  | "npmignore"
-  | "inform7"
-  | "ini"
-  | "io"
-  | "j"
-  | "java"
-  | "javadoc"
-  | "javadoclike"
-  | "javastacktrace"
-  | "jexl"
-  | "jolie"
-  | "jq"
-  | "jsdoc"
-  | "extras"
-  | "json"
-  | "webmanifest"
-  | "json5"
-  | "jsonp"
-  | "jsstacktrace"
-  | "templates"
-  | "julia"
-  | "keepalived"
-  | "keyman"
-  | "kotlin"
-  | "kt"
-  | "kts"
-  | "kumir"
-  | "kum"
-  | "kusto"
-  | "latex"
-  | "tex"
-  | "context"
-  | "latte"
-  | "less"
-  | "lilypond"
-  | "ly"
-  | "liquid"
-  | "lisp"
-  | "livescript"
-  | "llvm"
-  | "log"
-  | "lolcode"
-  | "lua"
-  | "magma"
-  | "makefile"
-  | "markdown"
-  | "md"
-  | "templating"
-  | "mata"
-  | "matlab"
-  | "maxscript"
-  | "mel"
-  | "mermaid"
-  | "metafont"
-  | "mizar"
-  | "mongodb"
-  | "monkey"
-  | "moonscript"
-  | "moon"
-  | "n1ql"
-  | "n4js"
-  | "n4jsd"
-  | "hdl"
-  | "naniscript"
-  | "nani"
-  | "nasm"
-  | "neon"
-  | "nevod"
-  | "nginx"
-  | "nim"
-  | "nix"
-  | "nsis"
-  | "objectivec"
-  | "objc"
-  | "ocaml"
-  | "odin"
-  | "opencl"
-  | "openqasm"
-  | "qasm"
-  | "oz"
-  | "parigp"
-  | "parser"
-  | "pascal"
-  | "objectpascal"
-  | "pascaligo"
-  | "psl"
-  | "pcaxis"
-  | "px"
-  | "peoplecode"
-  | "pcode"
-  | "perl"
-  | "php"
-  | "phpdoc"
-  | "extras"
-  | "uml"
-  | "plantuml"
-  | "plsql"
-  | "powerquery"
-  | "pq"
-  | "mscript"
-  | "powershell"
-  | "processing"
-  | "prolog"
-  | "promql"
-  | "properties"
-  | "protobuf"
-  | "pug"
-  | "puppet"
-  | "pure"
-  | "purebasic"
-  | "pbfasm"
-  | "purescript"
-  | "purs"
-  | "python"
-  | "py"
-  | "qsharp"
-  | "qs"
-  | "q"
-  | "qml"
-  | "qore"
-  | "r"
-  | "racket"
-  | "rkt"
-  | "cshtml"
-  | "razor"
-  | "jsx"
-  | "tsx"
-  | "reason"
-  | "regex"
-  | "rego"
-  | "renpy"
-  | "rpy"
-  | "rescript"
-  | "res"
-  | "rest"
-  | "rip"
-  | "roboconf"
-  | "robotframework"
-  | "robot"
-  | "ruby"
-  | "rb"
-  | "rust"
-  | "sas"
-  | "sass"
-  | "scss"
-  | "scala"
-  | "scheme"
-  | "session"
-  | "shellsession"
-  | "smali"
-  | "smalltalk"
-  | "smarty"
-  | "sml"
-  | "smlnj"
-  | "solidity"
-  | "sol"
-  | "file"
-  | "sln"
-  | "soy"
-  | "sparql"
-  | "rq"
-  | "spl"
-  | "sqf"
-  | "sql"
-  | "squirrel"
-  | "stan"
-  | "stata"
-  | "iecst"
-  | "stylus"
-  | "supercollider"
-  | "sclang"
-  | "swift"
-  | "systemd"
-  | "templating"
-  | "cs"
-  | "t4"
-  | "vb"
-  | "tap"
-  | "tcl"
-  | "tt2"
-  | "textile"
-  | "toml"
-  | "tremor"
-  | "trickle"
-  | "troy"
-  | "turtle"
-  | "trig"
-  | "twig"
-  | "typescript"
-  | "ts"
-  | "typoscript"
-  | "tsconfig"
-  | "unrealscript"
-  | "uscript"
-  | "uc"
-  | "uorazor"
-  | "uri"
-  | "url"
-  | "v"
-  | "vala"
-  | "vbnet"
-  | "velocity"
-  | "verilog"
-  | "vhdl"
-  | "vim"
-  | "basic"
-  | "vb"
-  | "vba"
-  | "warpscript"
-  | "wasm"
-  | "idl"
-  | "webidl"
-  | "wgsl"
-  | "wiki"
-  | "wolfram"
-  | "mathematica"
-  | "nb"
-  | "wl"
-  | "wren"
-  | "xeora"
-  | "xeoracube"
-  | "doc"
-  | "xojo"
-  | "xquery"
-  | "yaml"
-  | "yml"
-  | "yang"
-  | "zig";
+export const codelanguages = [
+  "abap",
+  "abnf",
+  "actionscript",
+  "ada",
+  "adoc",
+  "agda",
+  "al",
+  "antlr4",
+  "apacheconf",
+  "apex",
+  "apl",
+  "applescript",
+  "aql",
+  "arduino",
+  "arff",
+  "art",
+  "arturo",
+  "asciidoc",
+  "asm",
+  "asm6502",
+  "asmatmel",
+  "aspnet",
+  "atom",
+  "autohotkey",
+  "autoit",
+  "avdl",
+  "avisynth",
+  "avs",
+  "awk",
+  "bash",
+  "basic",
+  "batch",
+  "bbcode",
+  "bbj",
+  "bicep",
+  "birb",
+  "bison",
+  "bnf",
+  "bqn",
+  "brainfuck",
+  "brightscript",
+  "bro",
+  "bsl",
+  "c",
+  "cfc",
+  "cfscript",
+  "chaiscript",
+  "cil",
+  "cilk",
+  "clike",
+  "clojure",
+  "cmake",
+  "cobol",
+  "coffee",
+  "coffeescript",
+  "conc",
+  "concurnas",
+  "context",
+  "cooklang",
+  "coq",
+  "cpp",
+  "crystal",
+  "cs",
+  "csharp",
+  "cshtml",
+  "csp",
+  "css",
+  "csv",
+  "cue",
+  "cypher",
+  "d",
+  "dart",
+  "dataweave",
+  "dax",
+  "dhall",
+  "diff",
+  "django",
+  "doc",
+  "docker",
+  "dockerfile",
+  "dot",
+  "dotnet",
+  "ebnf",
+  "editorconfig",
+  "eiffel",
+  "ejs",
+  "elixir",
+  "elm",
+  "erb",
+  "erlang",
+  "eta",
+  "etlua",
+  "extras",
+  "factor",
+  "false",
+  "file",
+  "flow",
+  "format",
+  "formula",
+  "fortran",
+  "fsharp",
+  "ftl",
+  "g4",
+  "gamemakerlanguage",
+  "gap",
+  "gawk",
+  "gcode",
+  "gdscript",
+  "gedcom",
+  "gettext",
+  "gherkin",
+  "git",
+  "gitignore",
+  "glsl",
+  "gml",
+  "gn",
+  "gni",
+  "go",
+  "gradle",
+  "graphql",
+  "groovy",
+  "gv",
+  "haml",
+  "handlebars",
+  "haskell",
+  "haxe",
+  "hbs",
+  "hcl",
+  "hdl",
+  "hgignore",
+  "hlsl",
+  "hoon",
+  "hpkp",
+  "hs",
+  "hsts",
+  "html",
+  "http",
+  "ichigojam",
+  "icon",
+  "idl",
+  "idr",
+  "idris",
+  "iecst",
+  "ignore",
+  "inform7",
+  "ini",
+  "ino",
+  "io",
+  "j",
+  "java",
+  "javadoc",
+  "javadoclike",
+  "javascript",
+  "javastacktrace",
+  "jexl",
+  "jinja2",
+  "jolie",
+  "jq",
+  "js",
+  "jsdoc",
+  "json",
+  "json5",
+  "jsonp",
+  "jsstacktrace",
+  "jsx",
+  "julia",
+  "keepalived",
+  "keyman",
+  "kotlin",
+  "kt",
+  "kts",
+  "kum",
+  "kumir",
+  "kusto",
+  "latex",
+  "latte",
+  "ld",
+  "less",
+  "lilypond",
+  "liquid",
+  "lisp",
+  "livescript",
+  "llvm",
+  "log",
+  "lolcode",
+  "lua",
+  "ly",
+  "magma",
+  "makefile",
+  "markdown",
+  "markup",
+  "mata",
+  "mathematica",
+  "mathml",
+  "matlab",
+  "maxscript",
+  "md",
+  "mel",
+  "mermaid",
+  "metafont",
+  "mizar",
+  "mod",
+  "mongodb",
+  "monkey",
+  "moon",
+  "moonscript",
+  "mscript",
+  "mustache",
+  "n1ql",
+  "n4js",
+  "n4jsd",
+  "nani",
+  "naniscript",
+  "nasm",
+  "nb",
+  "neon",
+  "nevod",
+  "nginx",
+  "nim",
+  "nix",
+  "npmignore",
+  "nsis",
+  "objc",
+  "objectivec",
+  "objectpascal",
+  "ocaml",
+  "odin",
+  "opencl",
+  "openqasm",
+  "oscript",
+  "oz",
+  "parigp",
+  "parser",
+  "pascal",
+  "pascaligo",
+  "pbfasm",
+  "pcaxis",
+  "pcode",
+  "peoplecode",
+  "perl",
+  "php",
+  "phpdoc",
+  "plaintext",
+  "plantuml",
+  "plsql",
+  "po",
+  "powerquery",
+  "powershell",
+  "pq",
+  "processing",
+  "prolog",
+  "promql",
+  "properties",
+  "protobuf",
+  "psl",
+  "pug",
+  "puppet",
+  "pure",
+  "purebasic",
+  "purescript",
+  "purs",
+  "px",
+  "py",
+  "python",
+  "q",
+  "qasm",
+  "qml",
+  "qore",
+  "qs",
+  "qsharp",
+  "r",
+  "racket",
+  "razor",
+  "rb",
+  "rbnf",
+  "reason",
+  "regex",
+  "rego",
+  "renpy",
+  "res",
+  "rescript",
+  "rest",
+  "rip",
+  "rkt",
+  "roboconf",
+  "robot",
+  "robotframework",
+  "rpy",
+  "rq",
+  "rss",
+  "ruby",
+  "rules",
+  "rust",
+  "sas",
+  "sass",
+  "scala",
+  "scheme",
+  "sclang",
+  "script",
+  "scss",
+  "session",
+  "sh",
+  "shell",
+  "shellsession",
+  "shortcode",
+  "sln",
+  "smali",
+  "smalltalk",
+  "smarty",
+  "sml",
+  "smlnj",
+  "sol",
+  "solidity",
+  "soy",
+  "sparql",
+  "spl",
+  "sqf",
+  "sql",
+  "squirrel",
+  "ssml",
+  "stan",
+  "stata",
+  "stylus",
+  "supercollider",
+  "svg",
+  "swift",
+  "systemd",
+  "t4",
+  "tap",
+  "tcl",
+  "templates",
+  "templating",
+  "tex",
+  "textile",
+  "toml",
+  "tremor",
+  "trickle",
+  "trig",
+  "troy",
+  "ts",
+  "tsconfig",
+  "tsx",
+  "tt2",
+  "turtle",
+  "twig",
+  "typescript",
+  "typoscript",
+  "uc",
+  "uml",
+  "unrealscript",
+  "uorazor",
+  "uri",
+  "url",
+  "uscript",
+  "v",
+  "vala",
+  "vb",
+  "vba",
+  "vbnet",
+  "velocity",
+  "verilog",
+  "vhdl",
+  "vim",
+  "warpscript",
+  "wasm",
+  "webidl",
+  "webmanifest",
+  "wgsl",
+  "wiki",
+  "wl",
+  "wolfram",
+  "wren",
+  "xeora",
+  "xeoracube",
+  "xls",
+  "xlsx",
+  "xml",
+  "xojo",
+  "xquery",
+  "yaml",
+  "yang",
+  "yml",
+  "zig",
+  "zone",
+];

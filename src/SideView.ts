@@ -10,6 +10,7 @@ import {
   Menu,
   Notice,
   Platform,
+  Setting,
   WorkspaceLeaf,
 } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
@@ -53,6 +54,7 @@ export class PureChatLLMSideView extends ItemView {
     this.plugin = plugin;
     this.console = new BrowserConsole(plugin.settings.debug, "PureChatLLMSideView");
     this.viewText = "Conversation Overview";
+    this.navigation = false;
   }
 
   getViewType() {
@@ -74,10 +76,11 @@ export class PureChatLLMSideView extends ItemView {
     );
     this.registerEvent(
       this.app.workspace.on("file-open", () => {
+        this.defaultContent();
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
         const editor = view?.editor;
-        if (!editor) return;
         if (!view) return;
+        if (!editor) return;
         this.update(editor, view);
       })
     );
@@ -91,10 +94,9 @@ export class PureChatLLMSideView extends ItemView {
       })
     );
     // check it the editor is open
+    this.defaultContent();
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (view) {
-      this.defaultContent(view);
-
       const editor = view.editor;
       if (editor) {
         this.update(editor, view);
@@ -127,9 +129,36 @@ export class PureChatLLMSideView extends ItemView {
     });
   }
 
-  defaultContent(view: MarkdownView) {
-    const content = splash;
-    MarkdownRenderer.render(this.app, content, this.contentEl, view.file?.basename || "", this);
+  defaultContent() {
+    //MarkdownRenderer.render(this.app, splash, this.contentEl, view.file?.basename || "", this);
+    this.contentEl.empty();
+    new Setting(this.contentEl)
+      .setName("Pure Chat LLM")
+      .setHeading()
+      .addExtraButton((btn) => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
+      .addButton((btn) => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
+    new Setting(this.contentEl).setName(
+      "The current editor does not contain a valid conversation."
+    );
+    new Setting(this.contentEl).setName("Available commands").setHeading();
+    new Setting(this.contentEl)
+      .setName("Complete Chat Response")
+      .setDesc("This will start a new chat with the current editor content.");
+    new Setting(this.contentEl)
+      .setName("Generate title")
+      .setDesc("This will generate a title for the current editor content.");
+    new Setting(this.contentEl)
+      .setName("Edit Selection")
+      .setDesc("This will edit the selected text in the current editor.");
+    new Setting(this.contentEl)
+      .setName("Analyze conversation")
+      .setDesc("This will analyze the current conversation.");
+    new Setting(this.contentEl)
+      .setName("Reverse roles")
+      .setDesc("This will reverse the roles of the current conversation.");
+    new Setting(this.contentEl)
+      .setName("Speak Chat")
+      .setDesc("This will speak the current chat using two voices.");
   }
 
   update(editor: Editor, view: MarkdownView) {
@@ -138,14 +167,8 @@ export class PureChatLLMSideView extends ItemView {
     chat.Markdown = editorValue;
     const container = this.contentEl;
     container.empty();
-    if (editorValue.endsWith(">go")) {
-      this.plugin.isresponding = true;
-      editor.setValue(editorValue.slice(0, -3));
-      this.plugin.CompleteChatResponse(editor, view);
-      return;
-    }
     if (!chat.validChat || !editorValue) {
-      this.defaultContent(view);
+      this.defaultContent();
       return;
     }
     container.createDiv({ text: "" }, (contain) => {

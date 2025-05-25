@@ -1,7 +1,6 @@
 import { App, EditorRange, Notice, TFile } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
 import { codeContent } from "./CodeHandling";
-import { codelanguage } from "./codelanguages";
 import PureChatLLM from "./main";
 import { EmptyApiKey } from "./s.json";
 import { StatSett } from "./settings";
@@ -187,7 +186,7 @@ export class PureChatLLMChat {
    * console.log(code); // Outputs: "const x = 42;"
    * ```
    */
-  static extractCodeBlockMD(markdown: string, language: codelanguage): string | null {
+  static extractCodeBlockMD(markdown: string, language: string): string | null {
     const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "im");
     const match = markdown.match(regex);
     return match ? match[1] : null;
@@ -221,11 +220,11 @@ export class PureChatLLMChat {
    */
   static extractAllCodeBlocks(markdown: string): codeContent[] {
     const regex = /^```(\w*)\n([\s\S]*?)\n```/gm;
-    const matches: { language: codelanguage; code: string }[] = [];
+    const matches: { language: string; code: string }[] = [];
     let match;
     while ((match = regex.exec(markdown)) !== null) {
       const [, language, code] = match;
-      const lang = ((language || "plaintext").trim() as codelanguage) || "plaintext";
+      const lang = ((language || "plaintext").trim() as string) || "plaintext";
       matches.push({
         language: lang,
         code: code.trim(),
@@ -365,7 +364,7 @@ export class PureChatLLMChat {
   ProcessChatWithTemplate(templatePrompt: string) {
     if (this.endpoint.apiKey === EmptyApiKey) {
       this.plugin.askForApiKey();
-      return Promise.resolve({ role: "assistant", content: EmptyApiKey });
+      return Promise.resolve({ role: "assistant", content: "" });
     }
     const systemprompt = `You are a markdown chat processor.
 
@@ -392,6 +391,14 @@ Use this workflow to accurately handle the chat based on the instruction.`;
         { role: "user", content: templatePrompt },
       ],
       max_completion_tokens: 4096,
+    }).then((r) => {
+      return {
+        role: "assistant",
+        content: r.content
+          .trim()
+          .replace(/^<Conversation>|<\/Conversation>$/g, "")
+          .trim(),
+      };
     });
   }
 
@@ -409,12 +416,10 @@ Use this workflow to accurately handle the chat based on the instruction.`;
    *          or an empty response if no text is selected.
    */
   SelectionResponse(templatePrompt: string, selectedText: string) {
+    if (!selectedText) return Promise.resolve({ role: "assistant", content: selectedText });
     if (this.endpoint.apiKey === EmptyApiKey) {
       this.plugin.askForApiKey();
-      return Promise.resolve({
-        role: "assistant",
-        content: selectedText,
-      });
+      return Promise.resolve({ role: "assistant", content: selectedText });
     }
     //const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     const systemprompt = `You are a markdown content processor. 
@@ -430,22 +435,27 @@ Your job:
 
 Use this workflow to help modify markdown content accurately.`;
     //const systemprompt = `You are a ${templatePrompt.name}.`;
-    if (selectedText.length > 0) {
-      new Notice("Generating response for selection...");
-      return this.sendChatRequest({
-        model: this.endpoint.defaultmodel,
-        messages: [
-          { role: "system", content: systemprompt },
-          {
-            role: "user",
-            content: `<Selection>\n${selectedText}\n\n</Selection>`,
-          },
-          { role: "user", content: templatePrompt },
-        ],
-        max_completion_tokens: 4096,
-      });
-    }
-    return Promise.resolve({ role: "assistant", content: "" });
+    new Notice("Generating response for selection...");
+    return this.sendChatRequest({
+      model: this.endpoint.defaultmodel,
+      messages: [
+        { role: "system", content: systemprompt },
+        {
+          role: "user",
+          content: `<Selection>\n${selectedText}\n\n</Selection>`,
+        },
+        { role: "user", content: templatePrompt },
+      ],
+      max_completion_tokens: 4096,
+    }).then((r) => {
+      return {
+        role: "assistant",
+        content: r.content
+          .trim()
+          .replace(/^<Selection>|<\/Selection>$/g, "")
+          .trim(),
+      };
+    });
   }
 
   /**
