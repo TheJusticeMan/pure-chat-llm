@@ -6,6 +6,7 @@ import { EmptyApiKey } from "./s.json";
 import { StatSett } from "./settings";
 import { toTitleCase } from "./toTitleCase";
 import { PureChatLLMAPI } from "./types";
+
 interface ChatMessage {
   role: RoleType;
   content: string;
@@ -152,23 +153,6 @@ export class PureChatLLMChat {
   }
 
   /**
-   * Determines whether the provided markdown string represents a chat message.
-   *
-   * A valid chat message is identified by a header in the format:
-   * `# role: (system|user|assistant|developer)` (case-insensitive).
-   *
-   * @param markdown - The markdown string to evaluate.
-   * @returns `true` if the markdown matches the chat message format, otherwise `false`.
-   */
-  static isChat(markdown: string): boolean {
-    return /^# role: (system|user|assistant|developer)/im.test(markdown);
-  }
-
-  isChat(): boolean {
-    return this.messages[0].content !== this.plugin.settings.SystemPrompt;
-  }
-
-  /**
    * Extracts the content of a code block from a given markdown string based on the specified programming language.
    *
    * @param markdown - The markdown string containing the code block.
@@ -298,14 +282,17 @@ export class PureChatLLMChat {
    */
   static async resolveFiles(markdown: string, activeFile: TFile, app: App): Promise<string> {
     const regex = /^\!?\[\[(.*?)\]\]$/gim;
+    //const regex2 = /^.+\!?\[\[([^\]]+)\]\].+$/gim;
     const matches = Array.from(markdown.matchAll(regex));
+    //const matches2 = Array.from(markdown.matchAll(regex2));
     const replacements: Promise<string>[] = [];
+    //const appendedfiles: Promise<string>[] = [];
 
     for (const match of matches) {
       const filename = match[1];
       const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
       if (file instanceof TFile) {
-        replacements.push(app.vault.read(file));
+        replacements.push(app.vault.cachedRead(file));
       } else {
         replacements.push(Promise.resolve(match[0]));
       }
