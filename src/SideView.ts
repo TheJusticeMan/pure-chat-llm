@@ -16,10 +16,11 @@ import {
 import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
 import { CodeHandling, SectionHandling } from "./CodeHandling";
-import PureChatLLM, { AskForAPI } from "./main";
+import PureChatLLM from "./main";
 import { alloptions, EmptyApiKey, splash } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
 import { PURE_CHAT_LLM_VIEW_TYPE } from "./types";
+import { AskForAPI } from "./models";
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
