@@ -1,6 +1,6 @@
 {
   "name": "pure-chat-llm",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Turn notes into conversations with chatGPT",
   "main": "main.js",
   "scripts": {
