@@ -783,11 +783,11 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   ): EditorSuggestTriggerInfo | null {
     //const line = editor.getLine(cursor.line);
     const line = editor.getRange({ ...cursor, ch: 0 }, cursor); // Get the line text
-    if (/^(```|# |send)/.test(line))
+    if (/^(```|# |send)/i.test(line))
       return {
         start: { line: cursor.line, ch: 0 },
         end: { line: cursor.line, ch: line.length },
-        query: line,
+        query: line.toLowerCase(),
       };
     else return null;
   }
