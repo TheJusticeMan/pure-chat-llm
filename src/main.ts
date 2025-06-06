@@ -97,7 +97,7 @@ export default class PureChatLLM extends Plugin {
     });
     this.addCommand({
       id: "edit-selection",
-      name: "Edit Selection",
+      name: "Edit selection",
       editorCheckCallback: (checking, e: Editor) => {
         const selected = e.getSelection();
         if (checking) return !!selected;
@@ -133,7 +133,7 @@ export default class PureChatLLM extends Plugin {
     });
     this.addCommand({
       id: "speak-chat",
-      name: "Speak Chat",
+      name: "Speak chat",
       icon: "mic",
       editorCallback: (editor: Editor, view: MarkdownView) => {
         new PureChatLLMSpeech(
@@ -213,7 +213,7 @@ export default class PureChatLLM extends Plugin {
       menu
         .addItem((item) =>
           item
-            .setTitle("Edit Selection")
+            .setTitle("Edit selection")
             .setIcon("wand")
             .onClick(async () => {
               this.EditSelection(selected, editor);
@@ -438,33 +438,6 @@ class PureChatLLMSettingTab extends PluginSettingTab {
 
     containerEl.empty();
     new Setting(containerEl)
-      .setName("Pure Chat LLM")
-      .setDesc(`v${version}`)
-      .addButton((btn) =>
-        btn
-          .setButtonText("Reset Settings")
-          .setTooltip("Won't delete the API keys.")
-          .onClick((e) => {
-            const oldSettings = { ...this.plugin.settings };
-            this.plugin.settings = { ...DEFAULT_SETTINGS };
-            for (const endpoint in this.plugin.settings.endpoints) {
-              if (DEFAULT_SETTINGS.endpoints[endpoint])
-                this.plugin.settings.endpoints[endpoint].apiKey =
-                  oldSettings.endpoints[endpoint].apiKey;
-            }
-            this.plugin.saveSettings();
-            this.display();
-            new Notice("Settings reset to defaults.  API Keys are unchanged.");
-          })
-      )
-      .addButton((btn) =>
-        btn
-          .setButtonText("Hot keys")
-          .setCta()
-          .onClick((e) => this.plugin.openHotkeys())
-      )
-      .setHeading();
-    new Setting(containerEl)
       .setName("Model provider")
       .setDesc("Choose the default model provider. Configure API keys.")
       .addDropdown((dropdown) => {
@@ -556,7 +529,7 @@ class PureChatLLMSettingTab extends PluginSettingTab {
           })
       );
     new Setting(containerEl)
-      .setName("Chat Analyze commands")
+      .setName("Chat analyze commands")
       .setDesc("Edit chat prompt templates for the analyze commands.")
       .addButton((btn) =>
         btn
@@ -607,7 +580,7 @@ class PureChatLLMSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Auto Reverse Roles")
+      .setName("Auto reverse roles")
       .setDesc("Automatically switch roles when the last message is empty, for replying to self.")
       .addToggle((toggle) => {
         toggle.setValue(settings.AutoReverseRoles).onChange(async (value) => {
@@ -641,6 +614,32 @@ class PureChatLLMSettingTab extends PluginSettingTab {
           this.plugin.console = new BrowserConsole(settings.debug, "PureChatLLM");
           console.log("reload the plugin to apply the changes");
         })
+      );
+    new Setting(containerEl)
+      .setName("Version")
+      .setDesc(`v${version}`)
+      .addButton((btn) =>
+        btn
+          .setButtonText("Reset settings")
+          .setTooltip("Won't delete the API keys.")
+          .onClick((e) => {
+            const oldSettings = { ...this.plugin.settings };
+            this.plugin.settings = { ...DEFAULT_SETTINGS };
+            for (const endpoint in this.plugin.settings.endpoints) {
+              if (DEFAULT_SETTINGS.endpoints[endpoint])
+                this.plugin.settings.endpoints[endpoint].apiKey =
+                  oldSettings.endpoints[endpoint].apiKey;
+            }
+            this.plugin.saveSettings();
+            this.display();
+            new Notice("Settings reset to defaults.  API keys are unchanged.");
+          })
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText("Hot keys")
+          .setCta()
+          .onClick((e) => this.plugin.openHotkeys())
       );
   }
 }

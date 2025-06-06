@@ -1,4 +1,4 @@
-import { Modal, App, Setting, Notice } from "obsidian";
+import { App, Modal, Notice, Setting } from "obsidian";
 import { PureChatLLMChat } from "./Chat";
 import PureChatLLM from "./main";
 import { CodeAreaComponent, EditSelectionModal } from "./models";
@@ -12,7 +12,7 @@ import { CodeAreaComponent, EditSelectionModal } from "./models";
  * @remarks
  * - Utilizes the `PureChatLLMChat.extractAllCodeBlocks` method to parse code blocks from the input string.
  * - Each code block is displayed with its language as a heading, an editable textarea, and action buttons.
- * - The modal is titled "Code Handling".
+ * - The modal is titled "Code handling".
  *
  * @example
  * const modal = new CodeHandling(app, plugin, codeString);
@@ -30,7 +30,7 @@ export class CodeHandling extends Modal {
     super(app);
     this.plugin = plugin;
     this.code = this.getCode(code);
-    this.setTitle("Code Handling");
+    this.setTitle("Code handling");
     this.renderCodeBlocks();
   }
 
@@ -40,7 +40,7 @@ export class CodeHandling extends Modal {
       return;
     }
     this.code.forEach((c, idx) => {
-      new Setting(this.contentEl).setName(c.language || `Code Block ${idx + 1}`).setHeading();
+      new Setting(this.contentEl).setName(c.language || `Code block ${idx + 1}`).setHeading();
 
       const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange((value) => {
         c.code = value;

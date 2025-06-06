@@ -17,10 +17,10 @@ import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
 import { CodeHandling, SectionHandling } from "./CodeHandling";
 import PureChatLLM from "./main";
-import { alloptions, EmptyApiKey, splash } from "./s.json";
+import { AskForAPI } from "./models";
+import { alloptions, EmptyApiKey } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
 import { PURE_CHAT_LLM_VIEW_TYPE } from "./types";
-import { AskForAPI } from "./models";
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -54,7 +54,7 @@ export class PureChatLLMSideView extends ItemView {
     this.icon = "text";
     this.plugin = plugin;
     this.console = new BrowserConsole(plugin.settings.debug, "PureChatLLMSideView");
-    this.viewText = "Conversation Overview";
+    this.viewText = "Conversation overview";
     this.navigation = false;
   }
 
@@ -143,13 +143,13 @@ export class PureChatLLMSideView extends ItemView {
     );
     new Setting(this.contentEl).setName("Available commands").setHeading();
     new Setting(this.contentEl)
-      .setName("Complete Chat Response")
+      .setName("Complete chat response")
       .setDesc("This will start a new chat with the current editor content.");
     new Setting(this.contentEl)
       .setName("Generate title")
       .setDesc("This will generate a title for the current editor content.");
     new Setting(this.contentEl)
-      .setName("Edit Selection")
+      .setName("Edit selection")
       .setDesc("This will edit the selected text in the current editor.");
     new Setting(this.contentEl)
       .setName("Analyze conversation")
@@ -158,7 +158,7 @@ export class PureChatLLMSideView extends ItemView {
       .setName("Reverse roles")
       .setDesc("This will reverse the roles of the current conversation.");
     new Setting(this.contentEl)
-      .setName("Speak Chat")
+      .setName("Speak chat")
       .setDesc("This will speak the current chat using two voices.");
   }
 

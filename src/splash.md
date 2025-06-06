@@ -4,19 +4,19 @@ Type `>go` at the end of the file to start a chat session.
 
 For workflow, bind these commands to hotkeys:
 
-- **`Complete Chat Response`** (Shift + Enter)
+- **`Complete chat response`** (Shift + Enter)
   _Generate reply and continue chat._
 
-- **`Generate Title`** (Ctrl + Shift + D)
+- **`Generate title`** (Ctrl + Shift + D)
   _Create a note or chat title._
 
-- **`Edit Selection`** (Ctrl + Shift + S)
+- **`Edit selection`** (Ctrl + Shift + S)
   _Edit selected text._
 
-- **`Analyze Conversation`**
+- **`Analyze conversation`**
   _Summarize or review chats._
 
-- **`Open Hotkeys`**
+- **`Open hotkeys`**
   _Customize shortcuts._
 
 Start exploring and enjoy seamless AI conversations!

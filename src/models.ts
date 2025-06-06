@@ -43,7 +43,7 @@ export class AskForAPI extends Modal {
     const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
 
     new Setting(this.contentEl)
-      .setName("API Key")
+      .setName("API key")
       .setDesc(`Enter your ${endpoint.name} API key.`)
       .addText((text) => {
         text
@@ -59,7 +59,7 @@ export class AskForAPI extends Modal {
         });
       });
     new Setting(this.contentEl)
-      .setName("Default Model")
+      .setName("Default model")
       .setDesc(`Enter the default model for ${endpoint.name}.`)
       .addText((text) => {
         text
@@ -74,7 +74,7 @@ export class AskForAPI extends Modal {
       .setName(
         createFragment((el) => el.createEl("a", { href: endpoint.getapiKey, text: endpoint.name }))
       )
-      .setDesc(`Link to Get API key from ${endpoint.name}`)
+      .setDesc(`Link to get API key from ${endpoint.name}`)
       .addButton((btn) =>
         btn
           .setButtonText("Save")
@@ -161,7 +161,7 @@ export class EditSelectionModal extends Modal {
     // Initialize history with the initial selection
     this.hist = [selection, selection];
 
-    this.setTitle("Change Selection with Prompt");
+    this.setTitle("Change selection with prompt");
 
     // Setup navigation buttons
     this.setupNavigationButtons();
