@@ -15,6 +15,7 @@ import {
   Setting,
   TextComponent,
   TFile,
+  TFolder,
   WorkspaceLeaf,
 } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
@@ -155,10 +156,42 @@ export default class PureChatLLM extends Plugin {
       })
     );
 
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (file instanceof TFolder) {
+          menu.addItem((item) => {
+            item
+              .setTitle("New conversation")
+              .setIcon("message-square-plus")
+              .setSection("action")
+              .onClick(async () => {
+                const fileName = this.generateUniqueFileName(file, "Untitled Conversation");
+                const newFile = await this.app.vault.create(
+                  `${file.path}/${fileName}.md`,
+                  new PureChatLLMChat(this).setMarkdown("Type your message...").Markdown
+                );
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.openFile(newFile);
+                this.activateView();
+              });
+          });
+        }
+      })
+    );
+
     this.registerEditorSuggest(new PureChatEditorSuggest(this.app, this));
 
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
+  }
+
+  private generateUniqueFileName(folder: TFolder, baseName: string) {
+    // Generate a unique file name in the specified folder
+    const files = folder.children.filter((f) => f instanceof TFile).map((f) => f.name);
+    let name = baseName;
+    let i = 1;
+    while (files.includes(`${name}.md`)) name = `${baseName} ${i++}`;
+    return name;
   }
 
   async openHotkeys(): Promise<void> {
