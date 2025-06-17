@@ -58,6 +58,14 @@ export const StatSett = {
       listmodels: "https://api.deepseek.com/v1/models",
       getapiKey: "https://platform.deepseek.com/api_keys",
     },
+    {
+      name: "Olama",
+      apiKey: "ollama",
+      endpoint: "http://localhost:11434/v1/chat/completions",
+      defaultmodel: "qwen3:0.6b",
+      listmodels: "http://localhost:11434/v1/models",
+      getapiKey: "",
+    },
   ],
   chatParser: [
     {
