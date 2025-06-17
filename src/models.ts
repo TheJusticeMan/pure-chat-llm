@@ -304,6 +304,15 @@ const endpointDescriptions: PureChatLLMAPI = {
   getapiKey: "Optional URL the API key page for the provider.",
 };
 
+const endpointInputPlaceholders: PureChatLLMAPI = {
+  name: "Enter the name of the LLM provider...",
+  apiKey: "Enter your API key...",
+  endpoint: "https://api.example.com/v1/chat/completions",
+  defaultmodel: "gpt-3.5-turbo",
+  listmodels: "https://api.example.com/v1/models (Optional)",
+  getapiKey: "https://example.com/get-api-key (Optional)",
+};
+
 export class EditModalProviders extends Modal {
   plugin: PureChatLLM;
   app: App;
@@ -351,7 +360,7 @@ export class EditModalProviders extends Modal {
         .setTooltip("Add a new endpoint")
         .onClick(() => {
           this.plugin.settings.endpoints.push({
-            name: "New Endpoint",
+            name: "",
             apiKey: "",
             endpoint: "",
             defaultmodel: "",
@@ -370,7 +379,7 @@ export class EditModalProviders extends Modal {
         .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
         .addText((text) => {
           text
-            .setPlaceholder(selectedEndpoint[key as keyof PureChatLLMAPI] || "")
+            .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
             .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
             .onChange((value) => {
               selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
@@ -381,6 +390,8 @@ export class EditModalProviders extends Modal {
     this.setTitle(selectedEndpoint.name);
   }
   onClose(): void {
+    const { settings } = this.plugin;
+    settings.endpoints = settings.endpoints.filter((endpoint) => endpoint.name);
     this.plugin.saveSettings();
     super.onClose();
   }
