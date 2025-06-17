@@ -92,6 +92,17 @@ export class PureChatLLMSideView extends ItemView {
         if (!(v instanceof MarkdownView)) return;
         const e = v.editor;
         this.update(e, v);
+        e.setCursor({
+          line: e.lastLine(),
+          ch: e.getLine(e.lastLine()).length,
+        });
+        e.scrollIntoView(
+          {
+            from: { line: e.lastLine(), ch: 0 },
+            to: { line: e.lastLine(), ch: e.getLine(e.lastLine()).length },
+          },
+          true
+        );
       })
     );
     // check it the editor is open

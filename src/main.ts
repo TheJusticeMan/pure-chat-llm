@@ -21,7 +21,7 @@ import {
 import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
 import { codelanguages } from "./codelanguages";
-import { AskForAPI, CodeAreaComponent, EditSelectionModal } from "./models";
+import { AskForAPI, CodeAreaComponent, EditWand } from "./models";
 import { EmptyApiKey, version } from "./s.json";
 import { StatSett } from "./settings";
 import { PureChatLLMSideView } from "./SideView";
@@ -147,11 +147,42 @@ export default class PureChatLLM extends Plugin {
         ).startStreaming();
       },
     });
+    Object.entries(this.settings.CMDchatTemplates).forEach(([key, value]) => {
+      if (value) {
+        this.addCommand({
+          id: `chat-template-${key.toLowerCase().replace(/\s+/g, "-")}`,
+          name: `Chat: ${key}`,
+          icon: "wand",
+          editorCallback: (editor: Editor, view: MarkdownView) => {
+            new PureChatLLMChat(this)
+              .setMarkdown(editor.getValue())
+              .ProcessChatWithTemplate(this.settings.chatTemplates[key])
+              .then((response) => editor.replaceSelection(response.content));
+          },
+        });
+      }
+    });
+    Object.entries(this.settings.CMDselectionTemplates).forEach(([key, value]) => {
+      const template = this.settings.selectionTemplates[key];
+      const { addfiletocontext } = this.settings;
+      if (value && template) {
+        this.addCommand({
+          id: `selection-template-${key.toLowerCase().replace(/\s+/g, "-")}`,
+          name: `Selection: ${key}`,
+          icon: "wand",
+          editorCheckCallback: (checking, e: Editor) => {
+            const selected = e.getSelection();
+            if (checking) return !!selected;
+            new PureChatLLMChat(this)
+              .SelectionResponse(template, selected, addfiletocontext ? e.getValue() : undefined)
+              .then((response) => e.replaceSelection(response.content));
+          },
+        });
+      }
+    });
 
-    // Add a context menu item for simplifying the selection
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
-        //menu.addChild(new MenuItem().setTitle("Pure Chat LLM").setIcon("wand"))
         this.addItemsToMenu(menu, editor, view);
       })
     );
@@ -258,7 +289,7 @@ export default class PureChatLLM extends Plugin {
             .setTitle("wand")
             .setIcon("wand")
             .onClick(async () => {
-              new EditSelectionModal(this.app, this, editor.getSelection(), (s) =>
+              new EditWand(this.app, this, editor.getSelection(), (s) =>
                 editor.replaceSelection(s)
               ).open();
             })
@@ -274,15 +305,14 @@ export default class PureChatLLM extends Plugin {
       (s) =>
         s
           ? new PureChatLLMChat(this)
-              .SelectionResponse(s, selected)
+              .SelectionResponse(
+                s,
+                selected,
+                this.settings.addfiletocontext ? editor.getValue() : undefined
+              )
               .then((response) => editor.replaceSelection(response.content))
-          : new EditSelectionModal(this.app, this, selected, (text) =>
-              editor.replaceSelection(text)
-            ).open(),
-      {
-        ...this.settings.selectionTemplates,
-        "Custom prompt": "",
-      }
+          : new EditWand(this.app, this, selected, (text) => editor.replaceSelection(text)).open(),
+      { ...this.settings.selectionTemplates, "Custom prompt": "" }
     ).open();
   }
 
@@ -380,16 +410,39 @@ export default class PureChatLLM extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    /* this.settings = {
-      ...DEFAULT_SETTINGS,
-      selectionTemplates: { ...DEFAULT_SETTINGS.selectionTemplates },
-      endpoints: { ...DEFAULT_SETTINGS.endpoints },
-      ...(await this.loadData()),
-    }; */
+    const loadedData = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+    this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+    this.settings = {
+      ...loadedData,
+      chatTemplates: {
+        ...DEFAULT_SETTINGS.chatTemplates,
+        ...loadedData.chatTemplates,
+      },
+      selectionTemplates: {
+        ...DEFAULT_SETTINGS.selectionTemplates,
+        ...loadedData.selectionTemplates,
+      },
+    };
+    DEFAULT_SETTINGS.endpoints.forEach(
+      (endpoint) =>
+        this.settings.endpoints.find((e) => e.name === endpoint.name) ||
+        this.settings.endpoints.push(endpoint)
+    );
   }
 
   async saveSettings() {
+    this.settings.selectionTemplates = Object.fromEntries(
+      Object.keys(this.settings.selectionTemplates)
+        .sort()
+        .map((key) => [key, this.settings.selectionTemplates[key]])
+        .filter(([key, value]) => key && value)
+    );
+    this.settings.chatTemplates = Object.fromEntries(
+      Object.keys(this.settings.chatTemplates)
+        .sort()
+        .map((key) => [key, this.settings.chatTemplates[key]])
+        .filter(([key, value]) => key && value)
+    );
     await this.saveData(this.settings);
   }
 
@@ -429,12 +482,12 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
     return Object.keys(this.templates);
   }
 
-  getItemText(book: string): string {
-    return book;
+  getItemText(templateKey: string): string {
+    return templateKey;
   }
 
-  onChooseItem(book: string, evt: MouseEvent | KeyboardEvent) {
-    this.onSubmit(this.templates[book]);
+  onChooseItem(templateKey: string, evt: MouseEvent | KeyboardEvent) {
+    this.onSubmit(this.templates[templateKey]);
   }
 }
 
@@ -539,56 +592,38 @@ class PureChatLLMSettingTab extends PluginSettingTab {
       .setDesc("Edit selection prompt templates for the selection commands.")
       .addButton((btn) =>
         btn
-          .setButtonText("Edit")
-          .setCta()
+          .setButtonText("Edit prompts")
+          //.setCta()
           .setTooltip("Edit selection prompt templates")
           .onClick(() =>
             new SelectionPromptEditor(
               this.app,
               this.plugin,
-              this.plugin.settings.selectionTemplates
+              this.plugin.settings.selectionTemplates,
+              { ...DEFAULT_SETTINGS.selectionTemplates },
+              this.plugin.settings.CMDselectionTemplates
             ).open()
           )
-      )
-      .addButton((btn) =>
-        btn
-          .setButtonText("Reset")
-          .setTooltip("Reset selection prompt templates to default")
-          .onClick(async () => {
-            this.plugin.settings.selectionTemplates = { ...DEFAULT_SETTINGS.selectionTemplates };
-            await this.plugin.saveSettings();
-            this.display();
-            new Notice("Selection prompt templates reset to default.");
-          })
       );
     new Setting(containerEl)
       .setName("Chat analyze commands")
       .setDesc("Edit chat prompt templates for the analyze commands.")
       .addButton((btn) =>
         btn
-          .setButtonText("Edit")
-          .setCta()
+          .setButtonText("Edit prompts")
+          //.setCta()
           .setTooltip("Edit chat prompt templates")
           .onClick(() =>
             new SelectionPromptEditor(
               this.app,
               this.plugin,
-              this.plugin.settings.chatTemplates
+              this.plugin.settings.chatTemplates,
+              {
+                ...DEFAULT_SETTINGS.chatTemplates,
+              },
+              settings.CMDchatTemplates
             ).open()
           )
-      )
-      .addButton((btn) =>
-        btn
-          .setButtonText("Reset")
-          .setTooltip("Reset chat prompt templates to default")
-          .onClick(async () => {
-            this.plugin.settings.chatTemplates = {
-              ...DEFAULT_SETTINGS.chatTemplates,
-            };
-            await this.plugin.saveSettings();
-            this.display();
-            new Notice("Chat prompt templates reset to default.");
-          })
       );
 
     new Setting(containerEl).setName("Advanced").setHeading();
@@ -618,6 +653,15 @@ class PureChatLLMSettingTab extends PluginSettingTab {
       .addToggle((toggle) => {
         toggle.setValue(settings.AutoReverseRoles).onChange(async (value) => {
           settings.AutoReverseRoles = value;
+          await this.plugin.saveSettings();
+        });
+      });
+    new Setting(containerEl)
+      .setName("Add file to context for editing")
+      .setDesc("Include the current file content in the context for selection editing.")
+      .addToggle((toggle) => {
+        toggle.setValue(settings.addfiletocontext).onChange(async (value) => {
+          settings.addfiletocontext = value;
           await this.plugin.saveSettings();
         });
       });
@@ -655,6 +699,7 @@ class PureChatLLMSettingTab extends PluginSettingTab {
         btn
           .setButtonText("Reset settings")
           .setTooltip("Won't delete the API keys.")
+          .setWarning()
           .onClick((e) => {
             const oldSettings = { ...this.plugin.settings };
             this.plugin.settings = { ...DEFAULT_SETTINGS };
@@ -687,44 +732,138 @@ class PureChatLLMSettingTab extends PluginSettingTab {
  * @extends Modal
  */
 class SelectionPromptEditor extends Modal {
-  plugin: PureChatLLM;
-  name: string;
-  promptTemplates: { [key: string]: string };
-  constructor(app: App, plugin: PureChatLLM, promptTemplates: { [key: string]: string }) {
+  promptTitle: string;
+  constructor(
+    app: App,
+    private plugin: PureChatLLM,
+    private promptTemplates: { [key: string]: string },
+    private defaultTemplates: { [key: string]: string } = {},
+    private inCMD: { [key: string]: boolean } = {}
+  ) {
     super(app);
     this.plugin = plugin;
-    this.promptTemplates = promptTemplates;
     this.update();
   }
   update() {
     this.contentEl.empty();
-    if (this.name && !this.promptTemplates[this.name]) this.promptTemplates[this.name] = "";
-    new Setting(this.contentEl)
-      .addExtraButton((btn) =>
-        btn.setIcon("plus").onClick(() => {
-          new PromptName(this.app, "What title", "title", (value) => {
-            this.name = value;
-            this.update();
-          }).open();
-        })
-      )
-      .addDropdown((drop) => {
-        drop
-          .addOptions(
-            Object.fromEntries(Object.entries(this.promptTemplates).map((t) => [t[0], t[0]]))
+    if (!this.promptTitle)
+      this.promptTitle = Object.keys(this.promptTemplates)[0] || "New template";
+    if (this.promptTitle && !this.promptTemplates[this.promptTitle])
+      this.promptTemplates[this.promptTitle] = "";
+    this.setTitle("Selection prompt templates");
+    Object.keys(this.promptTemplates)
+      .sort()
+      .forEach((key) =>
+        new Setting(this.contentEl)
+          .setName(key !== this.promptTitle ? key : "Editing...")
+          .addExtraButton((btn) =>
+            btn.setIcon(this.inCMD[key] ? "minus" : "plus").onClick(() => {
+              this.inCMD[key] = !this.inCMD[key];
+              this.update();
+            })
           )
+          .addExtraButton((btn) =>
+            btn
+              .setIcon("trash")
+              .setTooltip("Delete this template")
+              .onClick(() => {
+                delete this.promptTemplates[key];
+                this.promptTitle = Object.keys(this.promptTemplates)[0];
+                this.update();
+              })
+          )
+          .addButton((btn) => {
+            btn
+              .setIcon("pencil")
+              .setTooltip("Edit this template")
+              .onClick(() => {
+                this.promptTitle = key;
+                this.update();
+              });
+            if (key === this.promptTitle) btn.setCta();
+          })
+      );
+    new Setting(this.contentEl).setName("Add a new template").addText((text) =>
+      text
+        .setPlaceholder("New template title")
+        .setValue("")
+        .inputEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            const value = text.getValue().trim();
+            if (value) {
+              this.promptTitle = value;
+              if (!this.promptTemplates[this.promptTitle])
+                this.promptTemplates[this.promptTitle] = "";
+              const promptTemplatesSummary = Object.entries(this.promptTemplates)
+                .map(([k, v]) => `## template: ${k} \n\n ${v}`)
+                .join("\n");
+              new PureChatLLMChat(this.plugin)
+                .appendMessage({
+                  role: "system",
+                  content: `You are editing templates for the PureChatLLM plugin.  # Here are the templates:\n\n${promptTemplatesSummary}`,
+                })
+                .appendMessage({
+                  role: "user",
+                  content: `You are creating a new template called: \`"${this.promptTitle}"\`.  Please predict the content for this prompt template.`,
+                })
+                .CompleteChatResponse(null as any)
+                .then((chat) => {
+                  if (!this.promptTemplates[this.promptTitle]) {
+                    this.promptTemplates[this.promptTitle] =
+                      chat.messages
+                        .at(-2)
+                        ?.content.replace(/^#.+?\n/, "")
+                        .trim() || "";
+                    this.update();
+                  }
+                });
+
+              this.update();
+            }
+          }
+        })
+    );
+    new Setting(this.contentEl)
+      .setName("Template name")
+      .setHeading()
+
+      .setTooltip("Change the name of the current template.")
+      .addText((text) => {
+        text
+          .setPlaceholder("Template name")
+          .setValue(this.promptTitle)
           .onChange((value) => {
-            c.setValue(this.promptTemplates[value]);
-            this.setTitle(value);
-            this.name = value;
+            if (value && value !== this.promptTitle) {
+              this.promptTemplates[value] = this.promptTemplates[this.promptTitle];
+              delete this.promptTemplates[this.promptTitle];
+              this.promptTitle = value;
+              this.setTitle(this.promptTitle);
+              //this.update();
+            }
           });
-        if (this.name) drop.setValue(this.name);
-        else this.name = drop.getValue();
       });
-    const c = new CodeAreaComponent(this.contentEl)
-      .setValue(this.promptTemplates[this.name])
-      .onChange((value) => (this.promptTemplates[this.name] = value));
-    this.setTitle(this.name);
+    new CodeAreaComponent(this.contentEl)
+      .setValue(this.promptTemplates[this.promptTitle])
+      .onChange((value) => (this.promptTemplates[this.promptTitle] = value));
+    new Setting(this.contentEl)
+      .addButton((btn) =>
+        btn
+          .setButtonText("Save")
+          .setCta()
+          .onClick(async () => this.close())
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText("Reset all")
+          .setTooltip("Reset all templates to default values.")
+          .setWarning()
+          .onClick(async () => {
+            Object.assign(this.promptTemplates, this.defaultTemplates);
+            this.promptTitle = Object.keys(this.promptTemplates)[0] || "New template";
+            this.update();
+          })
+      );
+    this.setTitle(this.promptTitle);
   }
   onClose(): void {
     this.plugin.saveSettings();
@@ -746,7 +885,8 @@ class SelectionPromptEditor extends Modal {
 class PromptName extends Modal {
   constructor(app: App, title: string, placeholder: string, cb?: (value: string) => void) {
     super(app);
-    const t = new TextComponent(this.contentEl);
+    this.setTitle(title);
+    const t = new TextComponent(this.contentEl).setPlaceholder(placeholder);
     new Setting(this.contentEl)
       .addButton((btn) =>
         btn

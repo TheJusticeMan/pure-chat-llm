@@ -38,7 +38,7 @@ type RoleType = "system" | "user" | "assistant" | "developer";
  */
 export class PureChatLLMChat {
   options;
-  messages: ChatMessage[];
+  messages: ChatMessage[] = [];
   plugin: PureChatLLM;
   console: BrowserConsole;
   pretext: string = "";
@@ -106,8 +106,7 @@ export class PureChatLLMChat {
       this.appendMessage({
         role: "system",
         content: this.plugin.settings.SystemPrompt,
-      });
-      this.appendMessage({ role: "user", content: prechat });
+      }).appendMessage({ role: "user", content: prechat });
       return;
     }
 
@@ -264,6 +263,7 @@ export class PureChatLLMChat {
         to: { line: 0, ch: 0 },
       },
     });
+    return this;
   }
 
   /**
@@ -402,7 +402,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
    * @returns A Promise resolving to the LLM's response containing the processed markdown,
    *          or an empty response if no text is selected.
    */
-  SelectionResponse(templatePrompt: string, selectedText: string) {
+  SelectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
     if (!selectedText) return Promise.resolve({ role: "assistant", content: selectedText });
     if (this.endpoint.apiKey === EmptyApiKey) {
       this.plugin.askForApiKey();
@@ -422,17 +422,26 @@ Your job:
 
 Use this workflow to help modify markdown content accurately.`;
     //const systemprompt = `You are a ${templatePrompt.name}.`;
+    const messages = [
+      ...(fileText
+        ? [
+            {
+              role: "system",
+              content: `Here's the whole file that's being edited:\n<Markdown>\n${fileText}\n</Markdown>`,
+            },
+          ]
+        : []),
+      { role: "system", content: systemprompt },
+      {
+        role: "user",
+        content: `<Selection>\n${selectedText}\n\n</Selection>`,
+      },
+      { role: "user", content: templatePrompt },
+    ];
     new Notice("Generating response for selection...");
     return this.sendChatRequest({
       model: this.endpoint.defaultmodel,
-      messages: [
-        { role: "system", content: systemprompt },
-        {
-          role: "user",
-          content: `<Selection>\n${selectedText}\n\n</Selection>`,
-        },
-        { role: "user", content: templatePrompt },
-      ],
+      messages: messages,
       max_completion_tokens: 4096,
     }).then((r) => {
       return {
@@ -469,8 +478,7 @@ Use this workflow to help modify markdown content accurately.`;
     return this.getChatGPTinstructions(file, this.plugin.app)
       .then((options) => this.sendChatRequest(options, streamcallback))
       .then((content) => {
-        this.appendMessage(content);
-        this.appendMessage({ role: "user", content: "" });
+        this.appendMessage(content).appendMessage({ role: "user", content: "" });
         return this;
       })
       .catch((error) => {

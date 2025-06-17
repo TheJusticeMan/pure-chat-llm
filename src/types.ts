@@ -11,6 +11,9 @@ export interface PureChatLLMSettings {
   AutoReverseRoles: boolean;
   selectionTemplates: { [key: string]: string };
   chatTemplates: { [key: string]: string };
+  addfiletocontext: boolean;
+  CMDselectionTemplates: { [key: string]: boolean };
+  CMDchatTemplates: { [key: string]: boolean };
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -23,6 +26,9 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   AutoReverseRoles: true,
   selectionTemplates: selectionTemplates,
   chatTemplates: chatTemplates,
+  addfiletocontext: false,
+  CMDselectionTemplates: {},
+  CMDchatTemplates: {},
 };
 
 export interface PureChatLLMAPI {

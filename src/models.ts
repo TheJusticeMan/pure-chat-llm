@@ -127,7 +127,7 @@ export class CodeAreaComponent extends TextAreaComponent {
  * @param selection - The initial text selected for modification.
  * @param onSubmit - Callback invoked with the final modified text.
  */
-export class EditSelectionModal extends Modal {
+export class EditWand extends Modal {
   plugin: PureChatLLM;
   app: App;
 

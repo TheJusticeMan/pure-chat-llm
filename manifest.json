@@ -1,7 +1,7 @@
 {
 	"id": "pure-chat-llm",
 	"name": "Pure Chat LLM",
-	"version": "1.2.8",
+	"version": "1.2.9Refactor README.md installation instructions, update package-lock.json dependencies, initialize messages array in PureChatLLMChat, replace EditSelectionModal with EditWand, enhance SideView cursor behavior, and improve settings management in main.ts and types.ts.",
 	"minAppVersion": "1.8.10",
 	"description": "Turn notes into conversations with chatGPT",
 	"author": "Justice Vellacott",

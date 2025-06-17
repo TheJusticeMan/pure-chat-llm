@@ -71,18 +71,6 @@
 
 ## Installation
 
-### Manual installation (BRAT - Recommended)
-
-If the plugin is not yet available in the community plugins directory, you can install it using [BRAT (Beta Reviewers Auto-update Tool)](https://github.com/TfTHacker/obsidian42-brat):
-
-1. Install the **BRAT** plugin from the community plugins directory.
-2. Open BRAT settings and click **Add Beta Plugin**.
-3. Enter this repository link: `https://github.com/TheJusticeMan/pure-chat-llm`
-4. Select **Latest version** and click **Add plugin**.
-5. (Optional) Configure plugin settings as desired.
-
-### When available in Community Plugins
-
 1. Open **Settings** -> **Community Plugins**
 2. Turn off **Safe Mode**
 3. Click **Browse** and search for **Pure Chat LLM**

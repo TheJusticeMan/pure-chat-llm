@@ -20,5 +20,6 @@
 	"1.2.5": "1.8.10",
 	"1.2.6": "1.8.10",
 	"1.2.7": "1.8.10",
-	"1.2.8": "1.8.10"
+	"1.2.8": "1.8.10",
+	"1.2.9Refactor README.md installation instructions, update package-lock.json dependencies, initialize messages array in PureChatLLMChat, replace EditSelectionModal with EditWand, enhance SideView cursor behavior, and improve settings management in main.ts and types.ts.": "1.8.10"
 }
