@@ -750,17 +750,49 @@ class SelectionPromptEditor extends Modal {
       this.promptTitle = Object.keys(this.promptTemplates)[0] || "New template";
     if (this.promptTitle && !this.promptTemplates[this.promptTitle])
       this.promptTemplates[this.promptTitle] = "";
-    this.setTitle("Selection prompt templates");
+    Object.keys(this.promptTemplates).forEach(
+      (key) => (this.inCMD[key] = Boolean(this.inCMD[key]))
+    );
+    const isAllinCMD = Object.values(this.inCMD).every((v) => v);
+    new Setting(this.contentEl)
+      .setName("All templates")
+      .setDesc("Manage all prompt templates for the PureChatLLM plugin.")
+      .setHeading()
+      .addExtraButton((btn) =>
+        btn
+          .setIcon(isAllinCMD ? "minus" : "plus")
+          .setTooltip(isAllinCMD ? "Remove all from command palette" : "Add all to command palette")
+          .onClick(() => {
+            Object.keys(this.inCMD).forEach((key) => (this.inCMD[key] = !isAllinCMD));
+            this.update();
+          })
+      )
+      .addExtraButton((btn) =>
+        btn
+          .setIcon("trash")
+          .setTooltip("Delete all templates")
+          .onClick(() => {
+            Object.keys(this.promptTemplates).forEach((key) => {
+              delete this.promptTemplates[key];
+              delete this.inCMD[key];
+            });
+            this.promptTitle = "New template";
+            this.update();
+          })
+      );
     Object.keys(this.promptTemplates)
       .sort()
       .forEach((key) =>
         new Setting(this.contentEl)
           .setName(key !== this.promptTitle ? key : "Editing...")
           .addExtraButton((btn) =>
-            btn.setIcon(this.inCMD[key] ? "minus" : "plus").onClick(() => {
-              this.inCMD[key] = !this.inCMD[key];
-              this.update();
-            })
+            btn
+              .setIcon(this.inCMD[key] ? "minus" : "plus")
+              .setTooltip("Use this template in the command palette")
+              .onClick(() => {
+                this.inCMD[key] = !this.inCMD[key];
+                this.update();
+              })
           )
           .addExtraButton((btn) =>
             btn
