@@ -21,7 +21,7 @@ import {
 import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
 import { codelanguages } from "./codelanguages";
-import { AskForAPI, CodeAreaComponent, EditWand } from "./models";
+import { AskForAPI, CodeAreaComponent, EditModalProviders, EditWand } from "./models";
 import { EmptyApiKey, version } from "./s.json";
 import { StatSett } from "./settings";
 import { PureChatLLMSideView } from "./SideView";
@@ -628,6 +628,19 @@ class PureChatLLMSettingTab extends PluginSettingTab {
 
     new Setting(containerEl).setName("Advanced").setHeading();
     new Setting(containerEl)
+      .setName("Custom LLM Providers")
+      .setDesc(
+        "Add custom LLM providers with API keys. These will be available in the model provider dropdown."
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText("Add custom provider")
+          .setCta()
+          .onClick(() => {
+            new EditModalProviders(this.app, this.plugin).open();
+          })
+      );
+    new Setting(containerEl)
       .setName("Autogenerate title")
       .setDesc(
         "How many responses to wait for before automatically creating a conversation title (set to 0 to disable)."
@@ -646,7 +659,6 @@ class PureChatLLMSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
-
     new Setting(containerEl)
       .setName("Auto reverse roles")
       .setDesc("Automatically switch roles when the last message is empty, for replying to self.")

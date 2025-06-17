@@ -10,6 +10,7 @@ import {
 import { PureChatLLMChat } from "./Chat";
 import PureChatLLM from "./main";
 import { EmptyApiKey } from "./s.json";
+import { PureChatLLMAPI } from "./types";
 
 /**
  * Modal dialog prompting the user to enter an OpenAI API key for the PureChatLLM plugin.
@@ -280,5 +281,107 @@ export class EditWand extends Modal {
     element.setValue(value);
     // Select all text for easy editing
     element.inputEl.select();
+  }
+}
+
+const endpointNames: PureChatLLMAPI = {
+  name: "Endpoint name",
+  apiKey: "API key",
+  endpoint: "Endpoint URL",
+  defaultmodel: "Default model",
+  listmodels: "Available models URL (Optional)",
+  getapiKey: "API key retrieval URL (Optional)",
+};
+
+const endpointDescriptions: PureChatLLMAPI = {
+  name: "The name of the LLM provider.",
+  apiKey: "Your API key for the LLM provider.",
+  endpoint:
+    "The URL for the LLM provider's chat completions endpoint, including /v1/chat/completions.",
+  defaultmodel:
+    "The default model to use for requests. This is required for the plugin to function.",
+  listmodels: "Optional URL to retrieve available models from the provider.",
+  getapiKey: "Optional URL the API key page for the provider.",
+};
+
+export class EditModalProviders extends Modal {
+  plugin: PureChatLLM;
+  app: App;
+  selectedIndex: number = 0; // Index of the currently selected endpoint
+
+  constructor(app: App, plugin: PureChatLLM) {
+    super(app);
+    this.plugin = plugin;
+    this.app = app;
+    this.setTitle("Edit LLM Providers");
+    this.buildUI();
+  }
+
+  buildUI() {
+    this.contentEl.empty();
+    const { endpoints, endpoint } = this.plugin.settings;
+    const selectedEndpoint = endpoints[this.selectedIndex] || endpoints[endpoint];
+
+    endpoints.forEach((key, i) =>
+      new Setting(this.contentEl)
+        .setName(i !== this.selectedIndex ? key.name : "Editing...")
+        .addExtraButton((btn) => {
+          btn
+            .setIcon("trash")
+            .setTooltip(`Remove ${key.name}`)
+            .onClick(() => {
+              this.plugin.settings.endpoints.splice(i, 1);
+              this.buildUI(); // Rebuild UI after removal
+            });
+        })
+        .addButton((btn) => {
+          btn
+            .setIcon("pencil")
+            .setTooltip(`Edit ${key.name}`)
+            .onClick(() => {
+              this.selectedIndex = i;
+              this.buildUI(); // Rebuild UI to show the selected endpoint details
+            });
+          if (i === this.selectedIndex) btn.setCta();
+        })
+    );
+    new Setting(this.contentEl).setName("Add new endpoint").addButton((btn) => {
+      btn
+        .setIcon("plus")
+        .setTooltip("Add a new endpoint")
+        .onClick(() => {
+          this.plugin.settings.endpoints.push({
+            name: "New Endpoint",
+            apiKey: "",
+            endpoint: "",
+            defaultmodel: "",
+            listmodels: "",
+            getapiKey: "",
+          });
+          this.selectedIndex = this.plugin.settings.endpoints.length - 1;
+          this.buildUI(); // Rebuild UI to show the new endpoint
+        });
+    });
+
+    new Setting(this.contentEl).setName("Edit").setHeading();
+    Object.entries(endpointNames).forEach(([key, label]) => {
+      new Setting(this.contentEl)
+        .setName(label)
+        .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
+        .addText((text) => {
+          text
+            .setPlaceholder(selectedEndpoint[key as keyof PureChatLLMAPI] || "")
+            .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
+            .onChange((value) => {
+              selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
+              if (key === "name") this.setTitle(value.trim());
+            });
+        });
+    });
+    this.setTitle(selectedEndpoint.name);
+  }
+  onClose(): void {
+    this.plugin.saveSettings();
+    super.onClose();
   }
 }
