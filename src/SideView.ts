@@ -1,9 +1,11 @@
 import {
+  App,
   ButtonComponent,
   DropdownComponent,
   Editor,
   EditorRange,
   ExtraButtonComponent,
+  FuzzySuggestModal,
   ItemView,
   MarkdownRenderer,
   MarkdownView,
@@ -127,20 +129,12 @@ export class PureChatLLMSideView extends ItemView {
       return;
     }
     new PureChatLLMChat(this.plugin).getAllModels().then((models) => {
-      const m = new Menu();
       this.plugin.modellist = models;
-      models.forEach((model) => {
-        m.addItem((item) => {
-          item.setTitle(model);
-          item.onClick(() => {
-            editor.setValue(
-              new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).setModel(model)
-                .Markdown
-            );
-          });
-        });
-      });
-      m.showAtMouseEvent(e);
+      new modelChooser(this.app, this.plugin.modellist, (model) =>
+        editor.setValue(
+          new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).setModel(model).Markdown
+        )
+      ).open();
     });
   }
 
@@ -325,5 +319,28 @@ export class PureChatLLMSideView extends ItemView {
 
   async onClose() {
     // Nothing to clean up.
+  }
+}
+
+class modelChooser extends FuzzySuggestModal<string> {
+  items: string[];
+  onChoose: (item: string) => void;
+
+  constructor(app: App, items: string[], onChoose: (item: string) => void) {
+    super(app);
+    this.items = items;
+    this.onChoose = onChoose;
+  }
+
+  getItems(): string[] {
+    return this.items;
+  }
+
+  getItemText(item: string): string {
+    return item;
+  }
+
+  onChooseItem(item: string, evt: MouseEvent | KeyboardEvent): void {
+    this.onChoose(item);
   }
 }

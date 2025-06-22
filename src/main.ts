@@ -28,6 +28,7 @@ import { PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
 import { toTitleCase } from "./toTitleCase";
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
+import { replaceNonKeyboardChars } from "./replaceNonKeyboard";
 
 declare module "obsidian" {
   interface App {
@@ -147,6 +148,15 @@ export default class PureChatLLM extends Plugin {
         ).startStreaming();
       },
     });
+    // replaceNonKeyboardChars is used to replace non-keyboard characters with their keyboard equivalents
+    this.addCommand({
+      id: "replace-non-keyboard-chars",
+      name: "Replace non-keyboard characters",
+      icon: "text-cursor-input",
+      editorCallback: (editor: Editor) => {
+        editor.setValue(replaceNonKeyboardChars(this, editor.getValue()));
+      },
+    });
     Object.entries(this.settings.CMDchatTemplates).forEach(([key, value]) => {
       if (value) {
         this.addCommand({
@@ -194,7 +204,7 @@ export default class PureChatLLM extends Plugin {
             item
               .setTitle("New conversation")
               .setIcon("message-square-plus")
-              .setSection("action")
+              .setSection("action-primary")
               .onClick(async () => {
                 const fileName = this.generateUniqueFileName(file, "Untitled Conversation");
                 const newFile = await this.app.vault.create(
