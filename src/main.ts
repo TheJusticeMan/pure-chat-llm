@@ -72,8 +72,11 @@ export default class PureChatLLM extends Plugin {
   isresponding: boolean;
   console: BrowserConsole;
   modellist: string[] = [];
+  pureChatStatusElement: HTMLElement;
 
   async onload() {
+    this.pureChatStatusElement = this.addStatusBarItem();
+    this.status("Loading...");
     await this.loadSettings();
     this.console = new BrowserConsole(this.settings.debug, "PureChatLLM");
     this.console.log("settings loaded", this.settings);
@@ -224,6 +227,13 @@ export default class PureChatLLM extends Plugin {
 
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
+    this.status("");
+    //this.pureChatStatusElement.empty();
+  }
+
+  status(text: string) {
+    // Display a message in the status bar
+    this.pureChatStatusElement.setText(`[Pure Chat LLM] ${text}`);
   }
 
   private generateUniqueFileName(folder: TFolder, baseName: string) {
@@ -346,7 +356,7 @@ export default class PureChatLLM extends Plugin {
         .ProcessChatWithTemplate(this.settings.chatTemplates["Conversation titler"])
         .then((title) => {
           const sanitizedTitle = `${ActiveFile.parent?.path}/${title.content
-            .replace(/[^a-zA-Z0-9 ]/g, "")
+            .replace(/[^a-zA-Z0-9 !@$%&*_+()~`1-=;'{};'"<>?,.]/g, "")
             .trim()}.${ActiveFile.extension}`;
           this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
           new Notice(`File renamed to: ${sanitizedTitle}`);
@@ -433,6 +443,12 @@ export default class PureChatLLM extends Plugin {
         ...loadedData.selectionTemplates,
       },
     };
+
+    if (
+      this.settings.SystemPrompt ===
+      "You are ChatGPT, a large language model trained by OpenAI. Carefully heed the user's instructions. Respond using Markdown.\n\nBe attentive, thoughtful, and precise—provide clear, well-structured answers that honor the complexity of each query. Avoid generic responses; instead, offer insights that encourage creativity, reflection, and learning. Employ subtle, dry humor or depth when appropriate. Respect the user’s individuality and values, adapting your tone and approach as needed to foster a conversational, meaningful, and genuinely supportive exchange."
+    )
+      this.settings.SystemPrompt = DEFAULT_SETTINGS.SystemPrompt;
     DEFAULT_SETTINGS.endpoints.forEach(
       (endpoint) =>
         this.settings.endpoints.find((e) => e.name === endpoint.name) ||

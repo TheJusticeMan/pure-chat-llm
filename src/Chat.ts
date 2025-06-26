@@ -569,6 +569,7 @@ Use this workflow to help modify markdown content accurately.`;
    */
   async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean) {
     this.console.log("Sending chat request with options:", options);
+    this.plugin.status(`running: ${options.model}`);
     const response = await fetch(this.endpoint.endpoint, {
       method: "POST",
       headers: {
@@ -583,14 +584,20 @@ Use this workflow to help modify markdown content accurately.`;
 
     if (!response.ok) {
       this.console.error(`Network error: ${response.statusText}`);
+      this.plugin.status("");
       throw new Error(`Network error: ${response.statusText}`);
     }
 
     if (options.stream && !!streamcallback) {
       const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
+      this.plugin.status("");
       return { role: "assistant", content: fullText };
     } else {
       const data = await response.json();
+      if (data.choices[0].message.tool_calls) {
+        this.console.log("Tool calls detected in response:", data.choices[0].message.tool_calls);
+      }
+      this.plugin.status("");
       return data.choices[0].message;
     }
   }

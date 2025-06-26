@@ -1,5 +1,3 @@
-import * as exp from "constants";
-import { App } from "obsidian";
 import PureChatLLM from "./main";
 
 export const nonKeyboardCharMap: [RegExp, string][] = [
