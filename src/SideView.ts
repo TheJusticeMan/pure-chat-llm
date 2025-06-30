@@ -9,7 +9,6 @@ import {
   ItemView,
   MarkdownRenderer,
   MarkdownView,
-  Menu,
   Notice,
   Platform,
   Setting,
@@ -130,6 +129,8 @@ export class PureChatLLMSideView extends ItemView {
     }
     new PureChatLLMChat(this.plugin).getAllModels().then((models) => {
       this.plugin.modellist = models;
+      this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
+      this.plugin.saveSettings();
       new modelChooser(this.app, this.plugin.modellist, (model) =>
         editor.setValue(
           new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).setModel(model).Markdown
@@ -180,6 +181,9 @@ export class PureChatLLMSideView extends ItemView {
       this.defaultContent();
       return;
     }
+    const index =
+      (this.plugin.settings.endpoints.findIndex((e) => e.name === chat.endpoint.name) + 1 || 1) - 1;
+
     container.createDiv({ text: "" }, (contain) => {
       contain.addClass("PURE", "floattop");
       new ButtonComponent(contain)
@@ -193,14 +197,14 @@ export class PureChatLLMSideView extends ItemView {
         .addOptions(
           Object.fromEntries(this.plugin.settings.endpoints.map((e, i) => [i.toString(), e.name]))
         )
-        .setValue(this.plugin.settings.endpoint.toString())
+        .setValue(index.toString())
         .onChange(async (value) => {
           this.plugin.settings.endpoint = parseInt(value, 10);
+          const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
           editor.setValue(
             new PureChatLLMChat(this.plugin)
               .setMarkdown(editor.getValue())
-              .setModel(this.plugin.settings.endpoints[this.plugin.settings.endpoint].defaultmodel)
-              .Markdown
+              .setModel(endpoint.defaultmodel).Markdown
           );
           this.plugin.modellist = [];
           await this.plugin.saveSettings();

@@ -187,6 +187,7 @@ export default class PureChatLLM extends Plugin {
             const selected = e.getSelection();
             if (checking) return !!selected;
             new PureChatLLMChat(this)
+              .setMarkdown(e.getValue())
               .SelectionResponse(template, selected, addfiletocontext ? e.getValue() : undefined)
               .then((response) => e.replaceSelection(response.content));
           },
@@ -325,6 +326,7 @@ export default class PureChatLLM extends Plugin {
       (s) =>
         s
           ? new PureChatLLMChat(this)
+              .setMarkdown(editor.getValue())
               .SelectionResponse(
                 s,
                 selected,
