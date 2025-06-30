@@ -14,6 +14,7 @@ export interface PureChatLLMSettings {
   addfiletocontext: boolean;
   CMDselectionTemplates: { [key: string]: boolean };
   CMDchatTemplates: { [key: string]: boolean };
+  ModelsOnEndpoint: { [key: string]: string[] };
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -29,6 +30,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   addfiletocontext: false,
   CMDselectionTemplates: {},
   CMDchatTemplates: {},
+  ModelsOnEndpoint: {},
 };
 
 export interface PureChatLLMAPI {

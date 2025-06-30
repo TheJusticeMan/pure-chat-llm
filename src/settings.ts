@@ -13,7 +13,7 @@ export const StatSett = {
     {
       name: "Gemini",
       apiKey: EmptyApiKey,
-      defaultmodel: "gemini-2.0-flash-lite",
+      defaultmodel: "models/gemini-2.0-flash-lite",
       endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       listmodels: "https://generativelanguage.googleapis.com/v1beta/openai/models",
       getapiKey: "https://aistudio.google.com/apikey",

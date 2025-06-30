@@ -126,6 +126,18 @@ export class PureChatLLMChat {
     this.pretext = prechat;
     const optionsStr = PureChatLLMChat.extractCodeBlockMD(prechat, "json") || "";
     this.options = PureChatLLMChat.tryJSONParse(optionsStr) || this.options;
+    this.updateEndpointFromModel();
+  }
+
+  updateEndpointFromModel() {
+    const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
+    const endpointName = Object.keys(ModelsOnEndpoint).find((name) =>
+      ModelsOnEndpoint[name].includes(this.options.model)
+    );
+    if (endpointName) {
+      this.endpoint = endpoints.find((e) => e.name === endpointName) ?? this.endpoint;
+    }
+    return this;
   }
 
   /**
@@ -148,6 +160,7 @@ export class PureChatLLMChat {
    */
   setModel(modal: string) {
     this.options.model = modal;
+    this.updateEndpointFromModel();
     return this;
   }
 
@@ -368,7 +381,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
     //const systemprompt = `You are a ${templatePrompt.name}.`;
     new Notice("Generating chat response from template...");
     return this.sendChatRequest({
-      model: this.endpoint.defaultmodel,
+      ...this.options,
       messages: [
         { role: "system", content: systemprompt },
         {
@@ -377,7 +390,6 @@ Use this workflow to accurately handle the chat based on the instruction.`;
         },
         { role: "user", content: templatePrompt },
       ],
-      max_completion_tokens: 4096,
     }).then((r) => {
       return {
         role: "assistant",
@@ -408,7 +420,6 @@ Use this workflow to accurately handle the chat based on the instruction.`;
       this.plugin.askForApiKey();
       return Promise.resolve({ role: "assistant", content: selectedText });
     }
-    //const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     const systemprompt = `You are a markdown content processor. 
 
 You will receive:
@@ -439,11 +450,7 @@ Use this workflow to help modify markdown content accurately.`;
       { role: "user", content: templatePrompt },
     ];
     new Notice("Generating response for selection...");
-    return this.sendChatRequest({
-      model: this.endpoint.defaultmodel,
-      messages: messages,
-      max_completion_tokens: 4096,
-    }).then((r) => {
+    return this.sendChatRequest({ ...this.options, messages: messages }).then((r) => {
       return {
         role: "assistant",
         content: r.content
@@ -479,9 +486,16 @@ Use this workflow to help modify markdown content accurately.`;
       .then((options) => this.sendChatRequest(options, streamcallback))
       .then((content) => {
         this.appendMessage(content).appendMessage({ role: "user", content: "" });
+        // Add the model to the endpoint's model list if not already present
+        const models = (this.plugin.settings.ModelsOnEndpoint[this.endpoint.name] ??= []);
+        if (!models.includes(this.options.model)) {
+          models.push(this.options.model);
+          this.plugin.saveSettings();
+        }
         return this;
       })
       .catch((error) => {
+        new Notice("Error in chat completion. Check console for details.");
         this.plugin.console.error(`Error in chat completion:`, error);
         return this;
       });
@@ -655,7 +669,7 @@ Use this workflow to help modify markdown content accurately.`;
       .join("\n");
   }
 
-  thencb(cb: (chat: PureChatLLMChat) => any): PureChatLLMChat {
+  thencb(cb: (chat: this) => any): this {
     cb(this);
     return this;
   }
