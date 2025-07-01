@@ -15,6 +15,7 @@ export interface PureChatLLMSettings {
   CMDselectionTemplates: { [key: string]: boolean };
   CMDchatTemplates: { [key: string]: boolean };
   ModelsOnEndpoint: { [key: string]: string[] };
+  useImageGeneration: boolean;
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -31,6 +32,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   CMDselectionTemplates: {},
   CMDchatTemplates: {},
   ModelsOnEndpoint: {},
+  useImageGeneration: true, // Default to true for OpenAI image generation
 };
 
 export interface PureChatLLMAPI {

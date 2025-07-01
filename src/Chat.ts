@@ -6,6 +6,7 @@ import { EmptyApiKey } from "./s.json";
 import { StatSett } from "./settings";
 import { toTitleCase } from "./toTitleCase";
 import { PureChatLLMAPI } from "./types";
+import { PureChatLLMImageGen } from "./ImageGen";
 
 interface ChatMessage {
   role: RoleType;
@@ -14,6 +15,16 @@ interface ChatMessage {
 }
 
 type RoleType = "system" | "user" | "assistant" | "developer";
+
+type MessageImg =
+  | {
+      type: "image_url";
+      image_url: { url: string };
+    }
+  | {
+      type: "text";
+      text: string;
+    };
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -37,7 +48,13 @@ type RoleType = "system" | "user" | "assistant" | "developer";
  * @public
  */
 export class PureChatLLMChat {
-  options;
+  options: {
+    model: string;
+    max_completion_tokens: number;
+    stream: boolean;
+    tools?: any[];
+    [key: string]: any;
+  };
   messages: ChatMessage[] = [];
   plugin: PureChatLLM;
   console: BrowserConsole;
@@ -45,6 +62,8 @@ export class PureChatLLMChat {
   endpoint: PureChatLLMAPI;
   Parser = StatSett.chatParser[0];
   validChat = true;
+  file: TFile;
+  imageOutputUrls: { normalizedPath: string; revised_prompt?: string }[] | null = null;
 
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
@@ -268,9 +287,16 @@ export class PureChatLLMChat {
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
    */
   appendMessage(message: { role: string; content: string }) {
+    let extras = "";
+    if (this.imageOutputUrls)
+      extras =
+        this.imageOutputUrls
+          .map((img) => `![${img.revised_prompt || "image"}](${img.normalizedPath})`)
+          .join("\n") + "\n\n";
+    this.imageOutputUrls = null;
     this.messages.push({
       role: message.role as RoleType,
-      content: message.content,
+      content: (extras + message.content).trim(),
       cline: {
         from: { line: 0, ch: 0 },
         to: { line: 0, ch: 0 },
@@ -319,6 +345,106 @@ export class PureChatLLMChat {
     return result;
   }
 
+  static async resolveFilesWithImages(
+    markdown: string,
+    activeFile: TFile,
+    app: App,
+    role: string
+  ): Promise<MessageImg[] | string> {
+    const regex = /(!)?\[\[([^\]]+)\]\]/g;
+    const matches = Array.from(markdown.matchAll(regex));
+
+    const resolved: MessageImg[] = await Promise.all(
+      matches.map(async (match) => {
+        const isEmbed = !!match[1];
+        const filename = match[2];
+        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        const isImage = /^(png|jpg|jpeg|gif|webp)$/i.test(file?.extension || "");
+
+        if (!(file instanceof TFile) || (isImage && role !== "user")) {
+          // Not found, return as text
+          return { type: "text", text: match[0] };
+        }
+        if (isImage) {
+          const mime = {
+            png: "image/png",
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            gif: "image/gif",
+            webp: "image/webp",
+          }[file.extension.toLowerCase()]!;
+
+          const data = await app.vault.readBinary(file);
+          const url = await this.arrayBufferToBase64DataURL(data, mime);
+          return { type: "image_url", image_url: { url } };
+        } else {
+          // Read as text
+          const content = await app.vault.cachedRead(file);
+          return { type: "text", text: content };
+        }
+      })
+    );
+
+    //get the surrounding text around the matches
+    let lastIndex = 0;
+    const allParts: MessageImg[] = [];
+    for (const match of matches) {
+      const start = match.index ?? 0;
+      const end = start + match[0].length;
+
+      // Add text before the match
+      if (start > lastIndex) {
+        allParts.push({
+          type: "text",
+          text: markdown.slice(lastIndex, start).trim(),
+        });
+      }
+
+      // Add the resolved match
+      allParts.push(resolved.shift()!);
+
+      lastIndex = end;
+    }
+    // Add any remaining text after the last match
+    if (lastIndex < markdown.length) {
+      allParts.push({
+        type: "text",
+        text: markdown.slice(lastIndex).trim(),
+      });
+    }
+
+    const final = allParts.reduce((acc, item) => {
+      if (item.type === "text" && acc.at(-1)?.type === "text") {
+        (acc.at(-1) as { type: "text"; text: string }).text += `\n${item.text}`;
+      } else {
+        acc.push(item);
+      }
+      return acc;
+    }, [] as MessageImg[]);
+
+    if (final.length === 0) {
+      return markdown; // If no valid parts, return original markdown
+    }
+    if (final.length === 1 && final[0].type === "text") {
+      return final[0].text; // If only one text part, return it directly
+    }
+
+    // Combine consecutive text items into one
+    return final;
+  }
+
+  // Helper function
+  static arrayBufferToBase64DataURL(buffer: ArrayBuffer, mime: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const blob = new Blob([buffer], { type: mime }); // Pass the mime type here
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result as string); // This is a data URL: data:image/png;base64,xxxx
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
   // Instance method: get chat instructions with resolved files
 
   /**
@@ -332,19 +458,25 @@ export class PureChatLLMChat {
   async getChatGPTinstructions(
     activeFile: TFile,
     app: App
-  ): Promise<{ messages: { role: RoleType; content: string }[] }> {
+  ): Promise<{ messages: { role: RoleType; content: MessageImg[] | string }[]; tools?: any[] }> {
+    this.file = activeFile;
     const resolvedMessages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
         role: role,
-        content: await PureChatLLMChat.resolveFiles(content, activeFile, app),
+        content: await PureChatLLMChat.resolveFilesWithImages(content, activeFile, app, role),
       }))
     );
 
     // return the whole object sent to the API
-
     return {
       ...this.options,
       messages: resolvedMessages,
+      tools: [
+        ...(this.options.tools ?? []),
+        ...(this.plugin.settings.useImageGeneration && this.plugin.settings.endpoint === 0
+          ? [PureChatLLMImageGen.tool]
+          : []),
+      ],
     };
   }
 
@@ -509,7 +641,7 @@ Use this workflow to help modify markdown content accurately.`;
   static async handleStreamingResponse(
     response: Response,
     streamcallback: (textFragment: any) => boolean
-  ): Promise<string> {
+  ): Promise<{ role: string; content?: string; tool_calls?: any[] }> {
     if (!response.body) {
       throw new Error("Response body is null. Streaming is not supported in this environment.");
     }
@@ -518,6 +650,7 @@ Use this workflow to help modify markdown content accurately.`;
     let done = false;
     let buffer = "";
     let fullText = "";
+    let fullcalls: any[] = [];
 
     while (!done) {
       const { value, done: streamDone } = await reader.read();
@@ -545,6 +678,17 @@ Use this workflow to help modify markdown content accurately.`;
                 done = true;
                 break;
               }
+            } else if (delta?.tool_calls) {
+              (delta.tool_calls as any[]).forEach((call: any) => {
+                const index = call.index;
+                if (!fullcalls[index]) fullcalls[index] = call;
+                if (call.function.arguments) {
+                  if (!fullcalls[index].function.arguments) {
+                    fullcalls[index].function.arguments = "";
+                  }
+                  fullcalls[index].function.arguments += `${call.function.arguments}`;
+                }
+              });
             }
           } catch (err) {
             // Optionally handle parse errors
@@ -552,7 +696,15 @@ Use this workflow to help modify markdown content accurately.`;
         }
       }
     }
-    return fullText;
+
+    if (fullcalls.length > 0) {
+      fullcalls.forEach((call) => {
+        delete call.index; // Remove index from tool calls
+      });
+      console.log("Full tool calls:", fullcalls);
+      return { role: "assistant", tool_calls: fullcalls };
+    }
+    return { role: "assistant", content: fullText };
   }
 
   ReverseRoles() {
@@ -581,7 +733,10 @@ Use this workflow to help modify markdown content accurately.`;
    * it returns the first message choice from the API response.
    * @throws An error if the network request fails or the response is not successful.
    */
-  async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean) {
+  async sendChatRequest(
+    options: any,
+    streamcallback?: (textFragment: any) => boolean
+  ): Promise<any> {
     this.console.log("Sending chat request with options:", options);
     this.plugin.status(`running: ${options.model}`);
     const response = await fetch(this.endpoint.endpoint, {
@@ -605,15 +760,87 @@ Use this workflow to help modify markdown content accurately.`;
     if (options.stream && !!streamcallback) {
       const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
       this.plugin.status("");
-      return { role: "assistant", content: fullText };
+      if (fullText.tool_calls) {
+        const toolCalls = fullText.tool_calls;
+        const imageGenCall = toolCalls.find(
+          (call: any) => call.function.name === PureChatLLMImageGen.tool.function.name
+        );
+        if (imageGenCall) {
+          streamcallback({
+            role: "tool",
+            content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
+          });
+          const l = await this.GenerateImage(imageGenCall, fullText);
+          options.messages.push(...l.msgs);
+          return this.sendChatRequest(options, streamcallback);
+        }
+      }
+      return fullText;
     } else {
       const data = await response.json();
       if (data.choices[0].message.tool_calls) {
-        this.console.log("Tool calls detected in response:", data.choices[0].message.tool_calls);
+        const toolCalls = data.choices[0].message.tool_calls;
+        const imageGenCall = toolCalls.find(
+          (call: any) => call.function.name === PureChatLLMImageGen.tool.function.name
+        );
+        if (imageGenCall) {
+          streamcallback?.({
+            role: "tool",
+            content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
+          });
+          const l = await this.GenerateImage(imageGenCall, data.choices[0].message);
+          options.messages.push(...l.msgs);
+          return this.sendChatRequest(options, streamcallback);
+        }
       }
       this.plugin.status("");
       return data.choices[0].message;
     }
+  }
+
+  filterOutUncalledToolCalls([agent, ...Responses]: {
+    role: string;
+    content: string;
+    tool_call_id?: string;
+    tool_calls: any[];
+  }[]): { role: string; content: string; tool_call_id?: string; tool_calls: any[] }[] {
+    agent.tool_calls = agent.tool_calls.filter((call) =>
+      Responses.some((i) => i.tool_call_id === call.id)
+    );
+    //if (msg.role === "tool" && msg.tool_call_id) {
+    return [agent, ...Responses];
+  }
+
+  private async GenerateImage(imageGenCall: any, data: any) {
+    const imageGen = new PureChatLLMImageGen(this.plugin.app, this.endpoint.apiKey, this.file);
+    const imageOutputUrls = await imageGen.sendImageGenerationRequest(
+      JSON.parse(imageGenCall.function.arguments)
+    );
+    const message = imageOutputUrls
+      .map((img) => {
+        return [
+          `![Generated Image](${img.normalizedPath})`,
+          `Revised Image prompt: ${img.revised_prompt}`,
+        ];
+      })
+      .flat()
+      .join("\n");
+    this.imageOutputUrls = imageOutputUrls;
+    return {
+      imageOutputUrls,
+      msgs: this.filterOutUncalledToolCalls([
+        data,
+        {
+          role: "tool",
+          content: message || "",
+          tool_call_id: imageGenCall.id,
+          cline: {
+            from: { line: 0, ch: 0 },
+            to: { line: 0, ch: 0 },
+          },
+        },
+      ]),
+    };
   }
 
   /**

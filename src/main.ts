@@ -22,13 +22,13 @@ import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
 import { codelanguages } from "./codelanguages";
 import { AskForAPI, CodeAreaComponent, EditModalProviders, EditWand } from "./models";
+import { replaceNonKeyboardChars } from "./replaceNonKeyboard";
 import { EmptyApiKey, version } from "./s.json";
 import { StatSett } from "./settings";
 import { PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
 import { toTitleCase } from "./toTitleCase";
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
-import { replaceNonKeyboardChars } from "./replaceNonKeyboard";
 
 declare module "obsidian" {
   interface App {
@@ -80,6 +80,7 @@ export default class PureChatLLM extends Plugin {
     await this.loadSettings();
     this.console = new BrowserConsole(this.settings.debug, "PureChatLLM");
     this.console.log("settings loaded", this.settings);
+    //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
 
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, (leaf) => new PureChatLLMSideView(leaf, this));
 
@@ -358,6 +359,7 @@ export default class PureChatLLM extends Plugin {
         .ProcessChatWithTemplate(this.settings.chatTemplates["Conversation titler"])
         .then((title) => {
           const sanitizedTitle = `${ActiveFile.parent?.path}/${title.content
+            .replace(/^<think>[\s\S]+?<\/think>/gm, "") // Remove <think> tags for ollama
             .replace(/[^a-zA-Z0-9 !@$%&*_+()~`1-=;'{};'"<>?,.]/g, "")
             .trim()}.${ActiveFile.extension}`;
           this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
@@ -653,6 +655,16 @@ class PureChatLLMSettingTab extends PluginSettingTab {
             ).open()
           )
       );
+    new Setting(containerEl)
+      .setName("Use OpenAI image generation")
+      .setDesc(
+        "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key."
+      )
+      .addToggle((toggle) => {
+        toggle.setValue(settings.useImageGeneration).onChange(async (value) => {
+          settings.useImageGeneration = value;
+        });
+      });
 
     new Setting(containerEl).setName("Advanced").setHeading();
     new Setting(containerEl)
