@@ -345,6 +345,13 @@ export class PureChatLLMChat {
     return result;
   }
 
+  static getfileForLink(str: string, activeFile: TFile, app: App): TFile | null {
+    return app.metadataCache.getFirstLinkpathDest(
+      str.trim().replace(/^\!?\[\[|(#.+|\|.+)?\]\]$/g, ""),
+      activeFile.path
+    );
+  }
+
   static async resolveFilesWithImages(
     markdown: string,
     activeFile: TFile,
@@ -356,9 +363,7 @@ export class PureChatLLMChat {
 
     const resolved: MessageImg[] = await Promise.all(
       matches.map(async (match) => {
-        const isEmbed = !!match[1];
-        const filename = match[2];
-        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        const file = this.getfileForLink(match[0], activeFile, app);
         const isImage = /^(png|jpg|jpeg|gif|webp)$/i.test(file?.extension || "");
 
         if (!(file instanceof TFile) || (isImage && role !== "user")) {

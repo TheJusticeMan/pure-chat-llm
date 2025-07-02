@@ -221,6 +221,49 @@ export default class PureChatLLM extends Plugin {
                 this.activateView();
               });
           });
+        } else if (file instanceof TFile && file.extension === "md") {
+          menu.addItem((item) => {
+            item
+              .setTitle("New chat from file")
+              .setIcon("message-square-plus")
+              .setSection("action")
+              .onClick(async () => {
+                const fileName = this.generateUniqueFileName(
+                  file.parent!,
+                  `Untitled ${file.basename}`
+                );
+
+                const newFile = await this.app.vault.create(
+                  `${file.parent!.path}/${fileName}.md`,
+                  new PureChatLLMChat(this).setMarkdown(`[[${file.path}]]`).Markdown
+                );
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.openFile(newFile);
+                this.activateView();
+              });
+          });
+          menu.addItem((item) => {
+            item
+              .setTitle("New chat from file system prompt")
+              .setIcon("message-square-plus")
+              .setSection("action")
+              .onClick(async () => {
+                const fileName = this.generateUniqueFileName(
+                  file.parent!,
+                  `Untitled ${file.basename}`
+                );
+
+                const newFile = await this.app.vault.create(
+                  `${file.parent!.path}/${fileName}.md`,
+                  new PureChatLLMChat(this).setMarkdown(
+                    `# role: System\n[[${file.path}]]\n# role: User\n`
+                  ).Markdown
+                );
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.openFile(newFile);
+                this.activateView();
+              });
+          });
         }
       })
     );
@@ -360,7 +403,7 @@ export default class PureChatLLM extends Plugin {
         .then((title) => {
           const sanitizedTitle = `${ActiveFile.parent?.path}/${title.content
             .replace(/^<think>[\s\S]+?<\/think>/gm, "") // Remove <think> tags for ollama
-            .replace(/[^a-zA-Z0-9 !@$%&*_+()~`1-=;'{};'"<>?,.]/g, "")
+            .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, "")
             .trim()}.${ActiveFile.extension}`;
           this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
           new Notice(`File renamed to: ${sanitizedTitle}`);
