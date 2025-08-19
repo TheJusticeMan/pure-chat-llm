@@ -472,6 +472,18 @@ export class PureChatLLMChat {
       }))
     );
 
+    // For Gemini endpoint: ensure at least one user message exists
+    if (
+      resolvedMessages.length === 1 &&
+      resolvedMessages[0].role === "system" &&
+      this.endpoint.endpoint.includes("generativelanguage.googleapis.com")
+    ) {
+      resolvedMessages.push({
+        role: "user",
+        content: "Introduce yourself.",
+      });
+    }
+
     // return the whole object sent to the API
     return {
       ...this.options,
@@ -746,10 +758,7 @@ Use this workflow to help modify markdown content accurately.`;
     this.plugin.status(`running: ${options.model}`);
     const response = await fetch(this.endpoint.endpoint, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.endpoint.apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: this.Headers,
       body: JSON.stringify({
         ...options,
         stream: options.stream && !!streamcallback,
@@ -870,10 +879,7 @@ Use this workflow to help modify markdown content accurately.`;
     this.console.log(`Fetching models from ${endpoint.name} API...`);
     return fetch(endpoint.listmodels, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${endpoint.apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: this.Headers,
     })
       .then((response) => response.json())
       .then((data) =>
@@ -904,6 +910,20 @@ Use this workflow to help modify markdown content accurately.`;
   thencb(cb: (chat: this) => any): this {
     cb(this);
     return this;
+  }
+
+  get Headers(): Record<string, string> {
+    if (this.endpoint.endpoint.includes("api.anthropic.com")) {
+      return {
+        "x-api-key": this.endpoint.apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      };
+    }
+    return {
+      Authorization: `Bearer ${this.endpoint.apiKey}`,
+      "content-type": "application/json",
+    };
   }
 
   /**

@@ -104,6 +104,7 @@ export default class PureChatLLM extends Plugin {
     this.addCommand({
       id: "edit-selection",
       name: "Edit selection",
+      icon: "wand",
       editorCheckCallback: (checking, e: Editor) => {
         const selected = e.getSelection();
         if (checking) return !!selected;
@@ -130,7 +131,7 @@ export default class PureChatLLM extends Plugin {
     this.addCommand({
       id: "reverse-roles",
       name: "Reverse roles",
-      icon: "swap-horizontal",
+      icon: "arrow-left-right",
       editorCallback: (editor: Editor) => {
         const content = new PureChatLLMChat(this).setMarkdown(editor.getValue()).ReverseRoles();
         editor.setValue(content.Markdown);
@@ -140,7 +141,7 @@ export default class PureChatLLM extends Plugin {
     this.addCommand({
       id: "speak-chat",
       name: "Speak chat",
-      icon: "mic",
+      icon: "audio-lines",
       editorCallback: (editor: Editor, view: MarkdownView) => {
         new PureChatLLMSpeech(
           this,

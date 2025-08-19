@@ -2,21 +2,21 @@
   "type": "function",
   "function": {
     "name": "generate_image",
-    "description": "Create high-quality, customized images from detailed textual prompts. Supports multiple outputs and aspect ratio customization for precise visual storytelling.",
+    "description": "Create high-quality, customized images from detailed Markdown prompts. Supports multiple outputs and aspect ratio customization for precise visual storytelling.",
     "parameters": {
       "type": "object",
       "properties": {
         "prompt": {
           "type": "string",
-          "description": "A comprehensive, vivid description of the scene, mood, or idea you wish to visualize. With a maximum of **4,000 characters**, you have ample space to specify elements like environment, lighting, textures, emotions, and finer details—allowing your imagination to run wild. The more detailed and inventive your description, the more your generated images will resonate with your original vision."
+          "description": "A detailed and vivid description of the scene, mood, or concept you wish to visualize. You may include multiple lines to specify elements such as environment, lighting, textures, and emotions, formatted as a Markdown text block. Please ensure your prompt is comprehensive, as it will directly influence the quality and accuracy of the generated image. (Maximum of 4,000 characters)"
         },
         "ratio": {
           "type": "string",
-          "description": "Selects the aspect ratio of the image: 'landscape' (wider than tall), 'portrait' (taller than wide), or 'square' (equal dimensions). Defaults to 'square' if omitted."
+          "description": "Specify the aspect ratio of the image: 'landscape' (wider than tall), 'portrait' (taller than wide), or 'square' (equal dimensions). Defaults to 'square' if omitted."
         },
         "n": {
           "type": "integer",
-          "description": "Number of images to generate for each prompt. Useful for exploring different interpretations or selecting the best fit. Note that higher values may increase resource usage."
+          "description": "Number of images to generate based on the prompt. Useful for exploring different interpretations or selecting the best fit. Be mindful that higher values may consume more resources."
         }
       },
       "required": ["prompt"]
