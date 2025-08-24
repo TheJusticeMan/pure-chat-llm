@@ -22,6 +22,7 @@ import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat } from "./Chat";
 import { codelanguages } from "./codelanguages";
 import { AskForAPI, CodeAreaComponent, EditModalProviders, EditWand } from "./models";
+import { ImportChatGPT } from "./ImportChatGPT";
 import { replaceNonKeyboardChars } from "./replaceNonKeyboard";
 import { EmptyApiKey, version } from "./s.json";
 import { StatSett } from "./settings";
@@ -29,6 +30,7 @@ import { PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
 import { toTitleCase } from "./toTitleCase";
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
+import * as exp from "constants";
 
 declare module "obsidian" {
   interface App {
@@ -223,6 +225,7 @@ export default class PureChatLLM extends Plugin {
               });
           });
         } else if (file instanceof TFile && file.extension === "md") {
+          const link = this.app.fileManager.generateMarkdownLink(file, file.path);
           menu.addItem((item) => {
             item
               .setTitle("New chat from file")
@@ -236,7 +239,7 @@ export default class PureChatLLM extends Plugin {
 
                 const newFile = await this.app.vault.create(
                   `${file.parent!.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown(`[[${file.path}]]`).Markdown
+                  new PureChatLLMChat(this).setMarkdown(link).Markdown
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
@@ -256,9 +259,8 @@ export default class PureChatLLM extends Plugin {
 
                 const newFile = await this.app.vault.create(
                   `${file.parent!.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown(
-                    `# role: System\n[[${file.path}]]\n# role: User\n`
-                  ).Markdown
+                  new PureChatLLMChat(this).setMarkdown(`# role: System\n${link}\n# role: User\n`)
+                    .Markdown
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
@@ -282,7 +284,7 @@ export default class PureChatLLM extends Plugin {
     this.pureChatStatusElement.setText(`[Pure Chat LLM] ${text}`);
   }
 
-  private generateUniqueFileName(folder: TFolder, baseName: string) {
+  generateUniqueFileName(folder: TFolder, baseName: string) {
     // Generate a unique file name in the specified folder
     const files = folder.children.filter((f) => f instanceof TFile).map((f) => f.name);
     let name = baseName;
@@ -709,6 +711,17 @@ class PureChatLLMSettingTab extends PluginSettingTab {
           settings.useImageGeneration = value;
         });
       });
+    new Setting(containerEl)
+      .setName("Import ChatGPT conversations")
+      .setDesc("Import conversations exported from chat.openai.com.")
+      .addButton((btn) => {
+        btn
+          .setButtonText("Import")
+          .setCta()
+          .onClick(() => {
+            new ImportChatGPT(this.app, this.plugin);
+          });
+      });
 
     new Setting(containerEl).setName("Advanced").setHeading();
     new Setting(containerEl)
@@ -1065,6 +1078,26 @@ class FileSuggest extends FuzzySuggestModal<string> {
   }
   onChooseItem(file: string, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(file);
+  }
+}
+
+export class folderSuggest extends FuzzySuggestModal<string> {
+  onSubmit: (result: string) => void;
+  folders: TFolder[];
+  constructor(app: App, onSubmit: (result: string) => void, prompt?: string) {
+    super(app);
+    this.onSubmit = onSubmit;
+    this.folders = app.vault.getAllLoadedFiles().filter((f) => f instanceof TFolder) as TFolder[];
+    this.setPlaceholder(prompt || "Search for a folder...");
+  }
+  getItems(): string[] {
+    return this.folders.map((f) => f.path);
+  }
+  getItemText(folder: string): string {
+    return folder;
+  }
+  onChooseItem(folder: string, evt: MouseEvent | KeyboardEvent) {
+    this.onSubmit(folder);
   }
 }
 
