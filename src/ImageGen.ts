@@ -18,7 +18,7 @@ export class PureChatLLMImageGen {
     prompt: string;
     ratio?: "square" | "portrait" | "landscape";
     n?: number;
-  }): Promise<{ normalizedPath: string; revised_prompt?: string }[]> {
+  }): Promise<{ normalizedPath: string; revised_prompt?: string; file: TFile }[]> {
     const url = "https://api.openai.com/v1/images/generations";
 
     const size =
@@ -72,9 +72,9 @@ export class PureChatLLMImageGen {
         if (!imgResp) throw new Error(`Failed to fetch image from URL: ${imageUrl}`);
 
         // Convert string to ArrayBuffer for createBinary
-        await this.app.vault.createBinary(normalizedPath, imgResp.arrayBuffer);
+        const file = await this.app.vault.createBinary(normalizedPath, imgResp.arrayBuffer);
         //await this.app.vault.create(normalizedPath, imgResp);
-        savedPaths.push({ normalizedPath, revised_prompt: images[i].revised_prompt });
+        savedPaths.push({ normalizedPath, revised_prompt: images[i].revised_prompt, file });
       }
 
       return savedPaths;

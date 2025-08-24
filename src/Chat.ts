@@ -159,6 +159,28 @@ export class PureChatLLMChat {
     return this;
   }
 
+  cleanUpChat() {
+    // remove any empty messages except system
+    this.messages = this.messages.filter(
+      (msg) => msg.role === "system" || msg.content.trim() !== ""
+    );
+    // ensure first message is system
+    if (this.messages[0]?.role !== "system") {
+      this.messages.unshift({
+        role: "system",
+        content: this.plugin.settings.SystemPrompt,
+        cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
+      });
+    } else {
+      this.messages[0].content ||= this.plugin.settings.SystemPrompt;
+    }
+    // ensure last message is user and empty
+    if (this.messages.length === 0 || this.messages[this.messages.length - 1].role !== "user") {
+      this.appendMessage({ role: "user", content: "" });
+    }
+    return this;
+  }
+
   /**
    * Sets the markdown content for the current instance.
    *

@@ -11,6 +11,7 @@ import { PureChatLLMChat } from "./Chat";
 import PureChatLLM from "./main";
 import { EmptyApiKey } from "./s.json";
 import { PureChatLLMAPI } from "./types";
+import { get } from "http";
 
 /**
  * Modal dialog prompting the user to enter an OpenAI API key for the PureChatLLM plugin.
