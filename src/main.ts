@@ -24,7 +24,7 @@ import { AskForAPI, CodeAreaComponent, EditWand } from "./models";
 import { replaceNonKeyboardChars } from "./replaceNonKeyboard";
 import { EmptyApiKey } from "./s.json";
 import { PureChatLLMSettingTab } from "./settings";
-import { PureChatLLMSideView } from "./SideView";
+import { modelAndProviderChooser, PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
 import { toTitleCase } from "./toTitleCase";
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
@@ -92,6 +92,13 @@ export default class PureChatLLM extends Plugin {
       name: "Complete chat response",
       icon: "send",
       editorCallback: this.CompleteChatResponse.bind(this),
+    });
+    // Add command for choosing model and provider
+    this.addCommand({
+      id: "choose-model-and-provider",
+      name: "Choose model and provider",
+      icon: "cpu",
+      editorCallback: (editor: Editor) => new modelAndProviderChooser(this.app, this, editor),
     });
     // Add command for settings
     this.addCommand({

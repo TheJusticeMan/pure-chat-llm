@@ -21,7 +21,6 @@ import { AskForAPI } from "./models";
 import { alloptions, EmptyApiKey } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
 import { PURE_CHAT_LLM_VIEW_TYPE } from "./types";
-import { it } from "node:test";
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -46,17 +45,17 @@ import { it } from "node:test";
  * @see Editor
  */
 export class PureChatLLMSideView extends ItemView {
-  plugin: PureChatLLM;
   console: BrowserConsole;
-  viewText: string;
   ischat = false;
 
-  constructor(leaf: WorkspaceLeaf, plugin: PureChatLLM) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    public plugin: PureChatLLM,
+    public viewText = "Conversation overview"
+  ) {
     super(leaf);
     this.icon = "text";
-    this.plugin = plugin;
     this.console = new BrowserConsole(plugin.settings.debug, "PureChatLLMSideView");
-    this.viewText = "Conversation overview";
     this.navigation = false;
   }
 
@@ -124,9 +123,20 @@ export class PureChatLLMSideView extends ItemView {
   defaultContent() {
     //MarkdownRenderer.render(this.app, splash, this.contentEl, view.file?.basename || "", this);
     this.contentEl.empty();
+
     new Setting(this.contentEl)
       .setName("Pure Chat LLM")
       .setHeading()
+      .then(b => {
+        const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
+        if (editor)
+          b.addExtraButton(btn =>
+            btn
+              .setIcon("cpu")
+              .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor))
+              .setTooltip("Choose model and provider")
+          );
+      })
       .addExtraButton(btn => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
       .addButton(btn => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
     new Setting(this.contentEl).setName(
@@ -197,7 +207,7 @@ export class PureChatLLMSideView extends ItemView {
 
     container.addClass("PURESideView");
     // Process markdown messages
-    chat.messages.forEach(message => {
+    chat.messages.forEach((message, index) => {
       const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
@@ -250,6 +260,21 @@ export class PureChatLLMSideView extends ItemView {
                 .onClick(() => {
                   new CodeHandling(this.app, this.plugin, message.content).open();
                 });
+            if (/> \[!important\] assistant/gm.test(message.content))
+              new ExtraButtonComponent(div)
+                .setIcon("star")
+                .setTooltip("Remove the header from this message")
+                .onClick(() => {
+                  editor.setValue(
+                    chat.thencb(
+                      c =>
+                        (c.messages[index].content = c.messages[index].content.replace(
+                          /[\W\w]+?> \[!important\] assistant\n*/,
+                          ""
+                        ))
+                    ).Markdown
+                  );
+                });
             new ExtraButtonComponent(div)
               .setIcon("refresh-cw")
               .setTooltip("Regenerate response")
@@ -280,17 +305,14 @@ export class PureChatLLMSideView extends ItemView {
     if (select) {
       editor.setSelections([{ anchor: position.from, head: position.to }]);
       editor.scrollIntoView(position);
+      // if it's mobile, wait 100ms to focus the editor again
+      // this will make the selection work on mobile
+      editor.focus();
+      if (Platform.isMobile) window.setTimeout(() => editor.focus(), 100);
     } else {
       editor.setCursor(position.from);
       editor.scrollTo(0, editor.posToOffset(position.from));
-    }
-    editor.focus();
-    // if it's mobile, wait 100ms to focus the editor again
-    // this will make the selection work on mobile
-    if (Platform.isMobile) {
-      window.setTimeout(() => {
-        editor.focus();
-      }, 100);
+      editor.focus();
     }
   }
 
@@ -301,7 +323,7 @@ export class PureChatLLMSideView extends ItemView {
 
 type ModelAndProvider = { name: string; ismodel: boolean };
 
-class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
+export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
   items: ModelAndProvider[];
   modellist: ModelAndProvider[] = [];
   currentmodel = "";
@@ -321,8 +343,6 @@ class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
   }
 
   getItemText(item: ModelAndProvider): string {
-    const n = item.name.length;
-    // make a string of n spaces to pad the model names to the same length
     return item.name + (item.ismodel ? "" : "       (provider)");
   }
 
