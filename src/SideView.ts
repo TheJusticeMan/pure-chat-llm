@@ -1,7 +1,6 @@
 import {
   App,
   ButtonComponent,
-  DropdownComponent,
   Editor,
   EditorRange,
   ExtraButtonComponent,
@@ -22,6 +21,7 @@ import { AskForAPI } from "./models";
 import { alloptions, EmptyApiKey } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
 import { PURE_CHAT_LLM_VIEW_TYPE } from "./types";
+import { it } from "node:test";
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -49,6 +49,7 @@ export class PureChatLLMSideView extends ItemView {
   plugin: PureChatLLM;
   console: BrowserConsole;
   viewText: string;
+  ischat = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: PureChatLLM) {
     super(leaf);
@@ -87,14 +88,14 @@ export class PureChatLLMSideView extends ItemView {
       })
     );
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", (leaf) => {
+      this.app.workspace.on("active-leaf-change", leaf => {
         if (!leaf) return;
         const v = leaf.view;
         if (!(v instanceof MarkdownView)) return;
         const e = v.editor;
         this.update(e, v);
         const c = e.getCursor();
-        if (c.ch === 0 && c.line === 0) {
+        if (c.ch === 0 && c.line === 0 && this.ischat) {
           e.setCursor({
             line: e.lastLine(),
             ch: e.getLine(e.lastLine()).length,
@@ -120,33 +121,14 @@ export class PureChatLLMSideView extends ItemView {
     }
   }
 
-  menumodels(e: MouseEvent, editor: Editor) {
-    //if (!this.plugin.isresponding) return;
-    const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-    if (endpoint.apiKey === EmptyApiKey) {
-      new AskForAPI(this.app, this.plugin).open();
-      return;
-    }
-    new PureChatLLMChat(this.plugin).getAllModels().then((models) => {
-      this.plugin.modellist = models;
-      this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
-      this.plugin.saveSettings();
-      new modelChooser(this.app, this.plugin.modellist, (model) =>
-        editor.setValue(
-          new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).setModel(model).Markdown
-        )
-      ).open();
-    });
-  }
-
   defaultContent() {
     //MarkdownRenderer.render(this.app, splash, this.contentEl, view.file?.basename || "", this);
     this.contentEl.empty();
     new Setting(this.contentEl)
       .setName("Pure Chat LLM")
       .setHeading()
-      .addExtraButton((btn) => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
-      .addButton((btn) => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
+      .addExtraButton(btn => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
+      .addButton(btn => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
     new Setting(this.contentEl).setName(
       "The current editor does not contain a valid conversation."
     );
@@ -175,6 +157,8 @@ export class PureChatLLMSideView extends ItemView {
     const editorValue = editor.getValue().trim();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
+    const allshown: boolean = Object.keys(alloptions).every(k => chat.options.hasOwnProperty(k));
+    this.ischat = chat.validChat;
     const container = this.contentEl;
     container.empty();
     if (!chat.validChat || !editorValue) {
@@ -182,63 +166,52 @@ export class PureChatLLMSideView extends ItemView {
       return;
     }
     const index =
-      (this.plugin.settings.endpoints.findIndex((e) => e.name === chat.endpoint.name) + 1 || 1) - 1;
+      (this.plugin.settings.endpoints.findIndex(e => e.name === chat.endpoint.name) + 1 || 1) - 1;
 
-    container.createDiv({ text: "" }, (contain) => {
+    container.createDiv({ text: "" }, contain => {
       contain.addClass("PURE", "floattop");
+
       new ButtonComponent(contain)
-        //.setIcon("box")
-        .setButtonText(chat.options.model)
-        .setTooltip("Change model")
-        .onClick((e) => {
-          this.menumodels(e, editor);
-        });
-      new DropdownComponent(contain)
-        .addOptions(
-          Object.fromEntries(this.plugin.settings.endpoints.map((e, i) => [i.toString(), e.name]))
-        )
-        .setValue(index.toString())
-        .onChange(async (value) => {
-          this.plugin.settings.endpoint = parseInt(value, 10);
-          const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-          editor.setValue(
-            new PureChatLLMChat(this.plugin)
-              .setMarkdown(editor.getValue())
-              .setModel(endpoint.defaultmodel).Markdown
-          );
-          this.plugin.modellist = [];
-          await this.plugin.saveSettings();
-        });
+        .setButtonText(`${chat.endpoint.name} (${chat.options.model})`)
+        .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor));
+
       new ButtonComponent(contain)
-        .setButtonText("Show all")
+        .setIcon(allshown ? "chevrons-down-up" : "chevrons-up-down")
+        //.setButtonText(allshown ? "Hide" : "Show all")
         .setTooltip("Show all options")
         .onClick(() =>
+          //new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat => )
           editor.setValue(
-            new PureChatLLMChat(this.plugin)
-              .setMarkdown(editor.getValue())
-              .thencb((chat) => Object.assign(chat.options, { ...alloptions }, { ...chat.options }))
-              .Markdown
+            new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat =>
+              allshown
+                ? (chat.options = {
+                    model: chat.options.model,
+                    max_completion_tokens: chat.options.max_completion_tokens,
+                    stream: chat.options.stream,
+                  })
+                : Object.assign(chat.options, { ...alloptions }, { ...chat.options })
+            ).Markdown
           )
         );
     });
 
     container.addClass("PURESideView");
     // Process markdown messages
-    chat.messages.forEach((message) => {
+    chat.messages.forEach(message => {
       const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
-      container.createDiv({ text: "" }, (contain) => {
+      container.createDiv({ text: "" }, contain => {
         contain.addClass("PURE", "messageContainer", message.role);
-        contain.createEl("h1", { text: toTitleCase(message.role) }, (el) => {
+        contain.createEl("h1", { text: toTitleCase(message.role) }, el => {
           el.onClickEvent(() => this.goToPostion(editor, message.cline));
           el.addClass("PURE", "messageHeader", message.role);
         });
         // Preview of message content with copy button
         if (preview)
-          contain.createEl("div", "", (div) => {
+          contain.createEl("div", "", div => {
             div.addClass("PURE", "preview", message.role);
-            div.createDiv({ text: "" }, (el) => {
+            div.createDiv({ text: "" }, el => {
               el.onClickEvent(() => this.goToPostion(editor, message.cline, true));
               el.addClass("PURE", "messageMarkdown", message.role);
               MarkdownRenderer.render(this.app, preview, el, view.file?.basename || "", this);
@@ -326,25 +299,66 @@ export class PureChatLLMSideView extends ItemView {
   }
 }
 
-class modelChooser extends FuzzySuggestModal<string> {
-  items: string[];
-  onChoose: (item: string) => void;
+type ModelAndProvider = { name: string; ismodel: boolean };
 
-  constructor(app: App, items: string[], onChoose: (item: string) => void) {
+class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
+  items: ModelAndProvider[];
+  modellist: ModelAndProvider[] = [];
+  currentmodel = "";
+  firstrun = true;
+
+  constructor(app: App, private plugin: PureChatLLM, private editor: Editor) {
     super(app);
-    this.items = items;
-    this.onChoose = onChoose;
+    const name = new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).endpoint.name;
+    const endpointIndex = this.plugin.settings.endpoints.findIndex(e => e.name === name);
+    this.items = this.plugin.settings.endpoints.map(e => ({ name: e.name, ismodel: false }));
+    this.updatemodelist(endpointIndex === -1 ? 0 : endpointIndex);
+    this.firstrun = false;
   }
 
-  getItems(): string[] {
-    return this.items;
+  getItems(): ModelAndProvider[] {
+    return [...this.items, ...this.modellist];
   }
 
-  getItemText(item: string): string {
-    return item;
+  getItemText(item: ModelAndProvider): string {
+    const n = item.name.length;
+    // make a string of n spaces to pad the model names to the same length
+    return item.name + (item.ismodel ? "" : "       (provider)");
   }
 
-  onChooseItem(item: string, evt: MouseEvent | KeyboardEvent): void {
-    this.onChoose(item);
+  onChooseItem(item: ModelAndProvider, evt: MouseEvent | KeyboardEvent): void {
+    // see if it's a provider or a model
+    const endpointnum = this.plugin.settings.endpoints.findIndex(e => e.name === item.name);
+    if (endpointnum !== -1) {
+      this.editor.setValue(
+        new PureChatLLMChat(this.plugin)
+          .setMarkdown(this.editor.getValue())
+          .setModel(this.plugin.settings.endpoints[endpointnum].defaultmodel).Markdown
+      );
+      this.updatemodelist(endpointnum);
+    } else
+      this.editor.setValue(
+        new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).setModel(item.name)
+          .Markdown
+      );
+  }
+
+  updatemodelist(endpointIndex: number): void {
+    this.currentmodel = this.plugin.settings.endpoints[endpointIndex].name;
+    this.plugin.settings.endpoint = endpointIndex;
+    const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    if (endpoint.apiKey === EmptyApiKey) {
+      if (this.firstrun) return this.updatemodelist(0);
+      new AskForAPI(this.app, this.plugin).open();
+      return;
+    }
+    this.plugin.modellist = [];
+    new PureChatLLMChat(this.plugin).getAllModels().then(models => {
+      this.plugin.modellist = models;
+      this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
+      this.plugin.saveSettings();
+      this.modellist = models.map(m => ({ name: m, ismodel: true }));
+      this.open();
+    });
   }
 }

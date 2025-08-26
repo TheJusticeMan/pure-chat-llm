@@ -1,88 +1,269 @@
-import { EmptyApiKey } from "./s.json";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { BrowserConsole } from "./BrowserConsole";
+import { ImportChatGPT } from "./ImportChatGPT";
+import PureChatLLM, { FileSuggest, SelectionPromptEditor } from "./main";
+import { AskForAPI, EditModalProviders } from "./models";
+import { version } from "./s.json";
+import { DEFAULT_SETTINGS, PureChatLLMSettings, StatSett } from "./types";
 
-export const StatSett = {
-  ENDPOINTS: [
-    {
-      name: "OpenAI",
-      apiKey: EmptyApiKey,
-      defaultmodel: "gpt-4.1-nano",
-      endpoint: "https://api.openai.com/v1/chat/completions",
-      listmodels: "https://api.openai.com/v1/models",
-      getapiKey: "https://platform.openai.com/api-keys",
-    },
-    {
-      name: "Gemini",
-      apiKey: EmptyApiKey,
-      defaultmodel: "models/gemini-2.0-flash-lite",
-      endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      listmodels: "https://generativelanguage.googleapis.com/v1beta/openai/models",
-      getapiKey: "https://aistudio.google.com/apikey",
-    },
-    {
-      name: "xAI",
-      apiKey: EmptyApiKey,
-      defaultmodel: "grok-3-mini",
-      endpoint: "https://api.x.ai/v1/chat/completions",
-      listmodels: "https://api.x.ai/v1/models",
-      getapiKey: "https://console.x.ai",
-    },
-    {
-      name: "Anthropic",
-      apiKey: EmptyApiKey,
-      defaultmodel: "claude-3-7-sonnet-20250219",
-      endpoint: "https://api.anthropic.com/v1/messages",
-      listmodels: "https://api.anthropic.com/v1/models",
-      getapiKey: "https://console.anthropic.com/settings/keys",
-    },
-    {
-      name: "Cohere",
-      apiKey: EmptyApiKey,
-      defaultmodel: "command",
-      endpoint: "https://api.cohere.ai/v1/generate",
-      listmodels: "https://api.cohere.ai/v1/models",
-      getapiKey: "https://dashboard.cohere.com/api-keys",
-    },
-    {
-      name: "Mistral AI",
-      apiKey: EmptyApiKey,
-      defaultmodel: "mixtral-8x7b",
-      endpoint: "https://api.mistral.ai/v1/chat/completions",
-      listmodels: "https://api.mistral.ai/v1/models",
-      getapiKey: "https://console.mistral.ai/api-keys",
-    },
-    {
-      name: "DeepSeek",
-      apiKey: EmptyApiKey,
-      defaultmodel: "deepseek-llm",
-      endpoint: "https://api.deepseek.com/v1/chat/completions",
-      listmodels: "https://api.deepseek.com/v1/models",
-      getapiKey: "https://platform.deepseek.com/api_keys",
-    },
-    {
-      name: "Olama",
-      apiKey: "ollama",
-      endpoint: "http://localhost:11434/v1/chat/completions",
-      defaultmodel: "qwen3:0.6b",
-      listmodels: "http://localhost:11434/v1/models",
-      getapiKey: "",
-    },
-  ],
-  chatParser: [
-    {
-      name: "SimpleMarkdownHeader",
-      description: "Simple markdown header parser",
-      SplitMessages: /^# role: (?=system|user|assistant|developer)/im,
-      getRole: /^(system|user|assistant|developer)[^\n]+\n/i,
-      rolePlacement: "# role: {role}",
-      isChat: /^# role: (system|user|assistant|developer)/i,
-    },
-    {
-      name: "NoteMarkdownHeader",
-      description: "Note markdown header parser",
-      SplitMessages: /^\n> \[!note\] \w+\n> # role: (?=system|user|assistant|developer)/im,
-      getRole: /^(system|user|assistant|developer)[^\n]+\n/i,
-      rolePlacement: "\n> [!note] {role}\n> # role: {role}\n",
-      isChat: /^> \[!note\] \w+\n> # role: (system|user|assistant|developer)/i,
-    },
-  ],
-};
+/**
+ * Represents the settings tab for the PureChatLLM plugin in Obsidian.
+ *
+ * This class extends `PluginSettingTab` and provides a user interface for configuring
+ * various settings related to the PureChatLLM plugin, such as selecting endpoints,
+ * managing API keys, setting the default system prompt, enabling debug mode, and
+ * configuring the auto-generation of conversation titles.
+ *
+ * @remarks
+ * The settings tab dynamically generates UI elements based on the plugin's current settings.
+ * It allows users to interactively update settings, which are then persisted using the plugin's
+ * `saveSettings` method.
+ *
+ * @extends PluginSettingTab
+ *
+ * @see PureChatLLM
+ */
+export class PureChatLLMSettingTab extends PluginSettingTab {
+  plugin: PureChatLLM;
+
+  constructor(app: App, plugin: PureChatLLM) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+
+  ifdefault(key: keyof PureChatLLMSettings): string {
+    const { settings } = this.plugin;
+    return settings[key] !== DEFAULT_SETTINGS[key] ? settings[key].toString() : "";
+  }
+
+  display(): void {
+    const {
+      containerEl,
+      plugin: { settings },
+    } = this;
+
+    containerEl.empty();
+    new Setting(containerEl)
+      .setName("Model provider")
+      .setDesc("Choose the default model provider. Configure API keys.")
+      .addDropdown(dropdown =>
+        dropdown
+          .addOptions(Object.fromEntries(settings.endpoints.map((e, i) => [i.toString(), e.name])))
+          .setValue(settings.endpoint.toString())
+          .onChange(async value => {
+            settings.endpoint = parseInt(value, 10);
+            this.plugin.modellist = [];
+            await this.plugin.saveSettings();
+          })
+      )
+      .addButton(btn =>
+        btn
+          .setIcon("key")
+          .setTooltip("Add API key")
+          .onClick(async () => new AskForAPI(this.app, this.plugin).open())
+      );
+    new Setting(containerEl)
+      .setName("Default system prompt")
+      .setDesc("System message for each new chat.  Press [ to link a file.")
+      .setClass("PURE")
+      .addTextArea(text =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
+          .setValue(this.ifdefault("SystemPrompt"))
+          .onChange(async value => {
+            settings.SystemPrompt = value || DEFAULT_SETTINGS.SystemPrompt;
+            await this.plugin.saveSettings();
+          })
+          .inputEl.addEventListener("keydown", (e: KeyboardEvent) => {
+            if (e.key === "/" || e.key === "[") {
+              e.preventDefault();
+              new FileSuggest(this.app, file => {
+                // Insert the selected file at the cursor position
+                const cursorPos = text.inputEl.selectionStart ?? 0;
+                const before = text.inputEl.value.slice(0, cursorPos);
+                const after = text.inputEl.value.slice(cursorPos);
+                const insert = this.app.fileManager.generateMarkdownLink(file, file.path);
+                text.setValue(before + insert + after);
+                // Move cursor after inserted text
+                setTimeout(() => {
+                  text.inputEl.selectionStart = text.inputEl.selectionEnd =
+                    before.length + insert.length;
+                  text.inputEl.focus();
+                }, 0);
+              }).open();
+            }
+          })
+      );
+    new Setting(containerEl)
+      .setName("Default token count")
+      .setDesc("Default max tokens for models that support it.")
+      .addText(text =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.defaultmaxTokens.toString())
+          .setValue(this.ifdefault("defaultmaxTokens"))
+          .onChange(async value => {
+            const num = value ? Number(value) : DEFAULT_SETTINGS.defaultmaxTokens;
+            settings.defaultmaxTokens = num || 4096;
+            await this.plugin.saveSettings();
+          })
+      );
+    new Setting(containerEl)
+      .setName("Selection commands")
+      .setDesc("Edit selection prompt templates for the selection commands.")
+      .addButton(btn =>
+        btn
+          .setButtonText("Edit prompts")
+          //.setCta()
+          .setTooltip("Edit selection prompt templates")
+          .onClick(() =>
+            new SelectionPromptEditor(
+              this.app,
+              this.plugin,
+              this.plugin.settings.selectionTemplates,
+              { ...DEFAULT_SETTINGS.selectionTemplates },
+              this.plugin.settings.CMDselectionTemplates
+            ).open()
+          )
+      );
+    new Setting(containerEl)
+      .setName("Chat analyze commands")
+      .setDesc("Edit chat prompt templates for the analyze commands.")
+      .addButton(btn =>
+        btn
+          .setButtonText("Edit prompts")
+          //.setCta()
+          .setTooltip("Edit chat prompt templates")
+          .onClick(() =>
+            new SelectionPromptEditor(
+              this.app,
+              this.plugin,
+              this.plugin.settings.chatTemplates,
+              {
+                ...DEFAULT_SETTINGS.chatTemplates,
+              },
+              settings.CMDchatTemplates
+            ).open()
+          )
+      );
+    new Setting(containerEl)
+      .setName("Use OpenAI image generation")
+      .setDesc(
+        "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key."
+      )
+      .addToggle(toggle =>
+        toggle.setValue(settings.useImageGeneration).onChange(async value => {
+          settings.useImageGeneration = value;
+          await this.plugin.saveSettings();
+        })
+      );
+    new Setting(containerEl)
+      .setName("Import ChatGPT conversations")
+      .setDesc("Import conversations exported from chat.openai.com.")
+      .addButton(btn => {
+        btn
+          .setButtonText("Import")
+          .setCta()
+          .onClick(() => new ImportChatGPT(this.app, this.plugin));
+      });
+
+    new Setting(containerEl).setName("Advanced").setHeading();
+    new Setting(containerEl)
+      .setName("Custom LLM Providers")
+      .setDesc(
+        "Add custom LLM providers with API keys. These will be available in the model provider dropdown."
+      )
+      .addButton(btn =>
+        btn
+          .setButtonText("Add custom provider")
+          .setCta()
+          .onClick(() => new EditModalProviders(this.app, this.plugin).open())
+      );
+    new Setting(containerEl)
+      .setName("Autogenerate title")
+      .setDesc(
+        "How many responses to wait for before automatically creating a conversation title (set to 0 to disable)."
+      )
+      .addText(text =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.AutogenerateTitle.toString())
+          .setValue(this.ifdefault("AutogenerateTitle"))
+          .onChange(async value => {
+            const num = value ? Number(value) : DEFAULT_SETTINGS.AutogenerateTitle;
+            settings.AutogenerateTitle = num || 0;
+            await this.plugin.saveSettings();
+          })
+      );
+    new Setting(containerEl)
+      .setName("Auto reverse roles")
+      .setDesc("Automatically switch roles when the last message is empty, for replying to self.")
+      .addToggle(toggle =>
+        toggle.setValue(settings.AutoReverseRoles).onChange(async value => {
+          settings.AutoReverseRoles = value;
+          await this.plugin.saveSettings();
+        })
+      );
+    new Setting(containerEl)
+      .setName("Add file to context for editing")
+      .setDesc("Include the current file content in the context for selection editing.")
+      .addToggle(toggle =>
+        toggle.setValue(settings.addfiletocontext).onChange(async value => {
+          settings.addfiletocontext = value;
+          await this.plugin.saveSettings();
+        })
+      );
+    new Setting(containerEl)
+      .setName("Chat style")
+      .setDesc("Select how chats are written and interpreted in markdown.")
+      .addDropdown(dropdown =>
+        dropdown
+          .addOptions(
+            Object.fromEntries(
+              Object.entries(StatSett.chatParser).map(([key, value]) => [key, value.description])
+            )
+          )
+          .setValue(settings.chatParser.toString())
+          .onChange(async value => {
+            settings.chatParser = parseInt(value, 10);
+            await this.plugin.saveSettings();
+          })
+      );
+    new Setting(containerEl)
+      .setName("Debug")
+      .setDesc("Enable logging of detailed debug information in the console for troubleshooting.")
+      .addToggle(toggle =>
+        toggle.setValue(settings.debug).onChange(async value => {
+          settings.debug = value;
+          await this.plugin.saveSettings();
+          this.plugin.console = new BrowserConsole(settings.debug, "PureChatLLM");
+          console.log("reload the plugin to apply the changes");
+        })
+      );
+    new Setting(containerEl)
+      .setName("Version")
+      .setDesc(`v${version}`)
+      .addButton(btn =>
+        btn
+          .setButtonText("Reset settings")
+          .setTooltip("Won't delete the API keys.")
+          .setWarning()
+          .onClick(e => {
+            const oldSettings = { ...this.plugin.settings };
+            this.plugin.settings = { ...DEFAULT_SETTINGS };
+            for (const endpoint in this.plugin.settings.endpoints) {
+              if (DEFAULT_SETTINGS.endpoints[endpoint])
+                this.plugin.settings.endpoints[endpoint].apiKey =
+                  oldSettings.endpoints[endpoint].apiKey;
+            }
+            this.plugin.saveSettings();
+            this.display();
+            new Notice("Settings reset to defaults.  API keys are unchanged.");
+          })
+      )
+      .addButton(btn =>
+        btn
+          .setButtonText("Hot keys")
+          .setCta()
+          .onClick(e => this.plugin.openHotkeys())
+      );
+  }
+}

@@ -29,7 +29,7 @@ type ChatCompletion = { prompt: string; ratio?: "square" | "portrait" | "landsca
 export function runTest(API_KEY: string) {
   //return;
   requestChatCompletion("Make a picture of blue a dog.", API_KEY)
-    .then((completion) => {
+    .then(completion => {
       console.log("Chat completion received:", completion);
       generateImage(
         JSON.parse(completion.tool_calls[0].function.arguments || "{}") as ChatCompletion,
@@ -37,7 +37,7 @@ export function runTest(API_KEY: string) {
       );
       return;
     })
-    .catch((err) => console.error(err));
+    .catch(err => console.error(err));
 }
 
 function generateImage(arg0: ChatCompletion, API_KEY: string) {
@@ -69,11 +69,11 @@ function generateImage(arg0: ChatCompletion, API_KEY: string) {
     },
     body: JSON.stringify(body),
   })
-    .then((response) => {
+    .then(response => {
       if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
       return response.json();
     })
-    .then((data) => {
+    .then(data => {
       console.log("Image generation successful:", data);
       if (data.data && data.data.length > 0) {
         const imageUrl = data.data[0].url;
@@ -85,7 +85,7 @@ function generateImage(arg0: ChatCompletion, API_KEY: string) {
         console.error("No image data returned from OpenAI API.");
       }
     })
-    .catch((error) => {
+    .catch(error => {
       console.error("Error generating image:", error);
     });
 }

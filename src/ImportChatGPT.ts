@@ -1,8 +1,8 @@
 /** @format */
 
-import { App, Notice } from "obsidian";
+import { App, Notice, TFolder } from "obsidian";
 import { PureChatLLMChat } from "./Chat";
-import PureChatLLM, { folderSuggest } from "./main";
+import PureChatLLM, { FolderSuggest } from "./main";
 
 // Author of a message
 interface ChatAuthor {
@@ -84,16 +84,16 @@ export class ImportChatGPT {
       const file = await this.getFileFromUser();
       const folderPath = await this.getFolderPath();
       if (!file) throw new Error("No file selected");
-      await this.processChatFile(file, folderPath);
+      await this.processChatFile(file, folderPath.path);
     } catch (error) {
       new Notice(error.message || "Error importing ChatGPT JSON");
     }
   }
 
   // Prompts user to select a folder; returns a Promise
-  private getFolderPath(): Promise<string> {
+  private getFolderPath(): Promise<TFolder> {
     return new Promise(resolve => {
-      new folderSuggest(this.app, resolve, "Where to load the files").open();
+      new FolderSuggest(this.app, resolve, "Where to load the files").open();
     });
   }
 

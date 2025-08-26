@@ -51,7 +51,7 @@ export class PureChatLLMImageGen {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    }).then(async (response) => {
+    }).then(async response => {
       if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
       const data = await response.json();
       // Map each image to an object containing its url and revised_prompt (if available)
@@ -85,7 +85,7 @@ export class PureChatLLMImageGen {
     tool_calls: { function: { name: string; arguments: string }; id: string }[];
   }) {
     const toolCall = message.tool_calls.find(
-      (call) => call.function.name === PureChatLLMImageGen.TOOL_NAME
+      call => call.function.name === PureChatLLMImageGen.TOOL_NAME
     );
     if (!toolCall) {
       throw new Error(`No tool call found for ${PureChatLLMImageGen.TOOL_NAME}`);
@@ -98,7 +98,7 @@ export class PureChatLLMImageGen {
     });
 
     let messageContent = "";
-    result.forEach((image) => {
+    result.forEach(image => {
       messageContent += `![[${image.normalizedPath}]]\n`;
       if (image.revised_prompt) {
         messageContent += `Revised prompt: ${image.revised_prompt}\n`;

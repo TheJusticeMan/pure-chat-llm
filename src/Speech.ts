@@ -143,9 +143,9 @@ export class PureChatLLMSpeech {
 
     while (this.speechQueue.length > 0) {
       const segment = this.speechQueue.shift()!;
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         segment.audio.onended = () => resolve();
-        segment.audio.play().catch((err) => {
+        segment.audio.play().catch(err => {
           this.console.error("Audio play error:", err);
           resolve();
         });

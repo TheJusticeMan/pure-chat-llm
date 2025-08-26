@@ -3,9 +3,8 @@ import { BrowserConsole } from "./BrowserConsole";
 import { codeContent } from "./CodeHandling";
 import PureChatLLM from "./main";
 import { EmptyApiKey } from "./s.json";
-import { StatSett } from "./settings";
 import { toTitleCase } from "./toTitleCase";
-import { PureChatLLMAPI } from "./types";
+import { PureChatLLMAPI, StatSett } from "./types";
 import { PureChatLLMImageGen } from "./ImageGen";
 
 interface ChatMessage {
@@ -71,7 +70,7 @@ export class PureChatLLMChat {
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.options = {
       model: this.endpoint.defaultmodel,
-      max_completion_tokens: 4096,
+      max_completion_tokens: this.plugin.settings.defaultmaxTokens,
       stream: true,
     };
     this.Parser = StatSett.chatParser[this.plugin.settings.chatParser];
@@ -129,7 +128,7 @@ export class PureChatLLMChat {
       return;
     }
 
-    this.messages = chat.map((text) => {
+    this.messages = chat.map(text => {
       const [role, ...contentLines] = text.replace(this.Parser.getRole, "$1\n").split(/\n/);
       const cline: EditorRange = {
         from: { line: lengthtoHere, ch: 0 },
@@ -150,20 +149,18 @@ export class PureChatLLMChat {
 
   updateEndpointFromModel() {
     const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
-    const endpointName = Object.keys(ModelsOnEndpoint).find((name) =>
+    const endpointName = Object.keys(ModelsOnEndpoint).find(name =>
       ModelsOnEndpoint[name].includes(this.options.model)
     );
     if (endpointName) {
-      this.endpoint = endpoints.find((e) => e.name === endpointName) ?? this.endpoint;
+      this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
     }
     return this;
   }
 
   cleanUpChat() {
     // remove any empty messages except system
-    this.messages = this.messages.filter(
-      (msg) => msg.role === "system" || msg.content.trim() !== ""
-    );
+    this.messages = this.messages.filter(msg => msg.role === "system" || msg.content.trim() !== "");
     // ensure first message is system
     if (this.messages[0]?.role !== "system") {
       this.messages.unshift({
@@ -313,7 +310,7 @@ export class PureChatLLMChat {
     if (this.imageOutputUrls)
       extras =
         this.imageOutputUrls
-          .map((img) => `![${img.revised_prompt || "image"}](${img.normalizedPath})`)
+          .map(img => `![${img.revised_prompt || "image"}](${img.normalizedPath})`)
           .join("\n") + "\n\n";
     this.imageOutputUrls = null;
     this.messages.push({
@@ -384,7 +381,7 @@ export class PureChatLLMChat {
     const matches = Array.from(markdown.matchAll(regex));
 
     const resolved: MessageImg[] = await Promise.all(
-      matches.map(async (match) => {
+      matches.map(async match => {
         const file = this.getfileForLink(match[0], activeFile, app);
         const isImage = /^(png|jpg|jpeg|gif|webp)$/i.test(file?.extension || "");
 
@@ -561,7 +558,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
         },
         { role: "user", content: templatePrompt },
       ],
-    }).then((r) => {
+    }).then(r => {
       return {
         role: "assistant",
         content: r.content
@@ -621,7 +618,7 @@ Use this workflow to help modify markdown content accurately.`;
       { role: "user", content: templatePrompt },
     ];
     new Notice("Generating response for selection...");
-    return this.sendChatRequest({ ...this.options, messages: messages }).then((r) => {
+    return this.sendChatRequest({ ...this.options, messages: messages }).then(r => {
       return {
         role: "assistant",
         content: r.content
@@ -654,8 +651,8 @@ Use this workflow to help modify markdown content accurately.`;
       return Promise.resolve(this);
     }
     return this.getChatGPTinstructions(file, this.plugin.app)
-      .then((options) => this.sendChatRequest(options, streamcallback))
-      .then((content) => {
+      .then(options => this.sendChatRequest(options, streamcallback))
+      .then(content => {
         this.appendMessage(content).appendMessage({ role: "user", content: "" });
         // Add the model to the endpoint's model list if not already present
         const models = (this.plugin.settings.ModelsOnEndpoint[this.endpoint.name] ??= []);
@@ -665,7 +662,7 @@ Use this workflow to help modify markdown content accurately.`;
         }
         return this;
       })
-      .catch((error) => {
+      .catch(error => {
         new Notice("Error in chat completion. Check console for details.");
         this.plugin.console.error(`Error in chat completion:`, error);
         return this;
@@ -737,7 +734,7 @@ Use this workflow to help modify markdown content accurately.`;
     }
 
     if (fullcalls.length > 0) {
-      fullcalls.forEach((call) => {
+      fullcalls.forEach(call => {
         delete call.index; // Remove index from tool calls
       });
       console.log("Full tool calls:", fullcalls);
@@ -747,7 +744,7 @@ Use this workflow to help modify markdown content accurately.`;
   }
 
   ReverseRoles() {
-    this.messages = this.messages.map((msg) => {
+    this.messages = this.messages.map(msg => {
       if (msg.role === "user") {
         msg.role = "assistant";
       } else if (msg.role === "assistant") {
@@ -840,8 +837,8 @@ Use this workflow to help modify markdown content accurately.`;
     tool_call_id?: string;
     tool_calls: any[];
   }[]): { role: string; content: string; tool_call_id?: string; tool_calls: any[] }[] {
-    agent.tool_calls = agent.tool_calls.filter((call) =>
-      Responses.some((i) => i.tool_call_id === call.id)
+    agent.tool_calls = agent.tool_calls.filter(call =>
+      Responses.some(i => i.tool_call_id === call.id)
     );
     //if (msg.role === "tool" && msg.tool_call_id) {
     return [agent, ...Responses];
@@ -853,7 +850,7 @@ Use this workflow to help modify markdown content accurately.`;
       JSON.parse(imageGenCall.function.arguments)
     );
     const message = imageOutputUrls
-      .map((img) => {
+      .map(img => {
         return [
           `![Generated Image](${img.normalizedPath})`,
           `Revised Image prompt: ${img.revised_prompt}`,
@@ -893,20 +890,26 @@ Use this workflow to help modify markdown content accurately.`;
    *
    * @throws {Error} If the API request fails or the response is invalid.
    */
-  getAllModels(): Promise<any[]> {
-    const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-    if (this.plugin.modellist.length > 0) {
-      return Promise.resolve(this.plugin.modellist);
-    }
-    this.console.log(`Fetching models from ${endpoint.name} API...`);
-    return fetch(endpoint.listmodels, {
+  getAllModels(): Promise<string[]> {
+    const { name: endpointName, listmodels } =
+      this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    const cached = this.plugin.settings.ModelsOnEndpoint[endpointName];
+    if (cached?.length) return Promise.resolve(cached);
+    this.console.log(`Fetching models from ${endpointName} API...`);
+    return fetch(listmodels, {
       method: "GET",
       headers: this.Headers,
     })
-      .then((response) => response.json())
-      .then((data) =>
-        data.data.map(({ id }: any) => id).sort((a: string, b: string) => a.localeCompare(b))
-      );
+      .then(response => response.json())
+      .then(data => {
+        return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (
+          data.data.map((item: { id: string }) => item.id) as string[]
+        ).map(id => id.replace(/.+\//g, "") || id));
+      })
+      .catch(error => {
+        this.console.error("Error fetching models:", error);
+        return [];
+      });
   }
 
   // Instance method: convert chat back to markdown
@@ -920,7 +923,7 @@ Use this workflow to help modify markdown content accurately.`;
   get ChatText(): string {
     return this.messages
       .map(
-        (msg) =>
+        msg =>
           `${this.Parser.rolePlacement.replace(
             /{role}/g,
             toTitleCase(msg.role)

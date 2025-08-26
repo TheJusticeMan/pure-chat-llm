@@ -42,12 +42,12 @@ export class CodeHandling extends Modal {
     this.code.forEach((c, idx) => {
       new Setting(this.contentEl).setName(c.language || `Code block ${idx + 1}`).setHeading();
 
-      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange((value) => {
+      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange(value => {
         c.code = value;
       });
 
       new Setting(this.contentEl)
-        .addExtraButton((btn) =>
+        .addExtraButton(btn =>
           btn
             .setIcon("copy")
             .setTooltip("Copy to clipboard")
@@ -56,12 +56,12 @@ export class CodeHandling extends Modal {
               new Notice("Code copied to clipboard");
             })
         )
-        .addExtraButton((btn) =>
+        .addExtraButton(btn =>
           btn
             .setIcon("pencil")
             .setTooltip("Edit with prompt")
             .onClick(() =>
-              new EditWand(this.app, this.plugin, c.code, (newCode) =>
+              new EditWand(this.app, this.plugin, c.code, newCode =>
                 textArea.setValue((c.code = newCode))
               ).open()
             )

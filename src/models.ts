@@ -47,14 +47,14 @@ export class AskForAPI extends Modal {
     new Setting(this.contentEl)
       .setName("API key")
       .setDesc(`Enter your ${endpoint.name} API key.`)
-      .addText((text) => {
+      .addText(text => {
         text
           .setPlaceholder(this.apiKey)
           .setValue(this.apiKey)
-          .onChange((value) => {
+          .onChange(value => {
             this.apiKey = value.trim();
           });
-        text.inputEl.addEventListener("keydown", (e) => {
+        text.inputEl.addEventListener("keydown", e => {
           if (e.key === "Enter") {
             this.saveAndClose();
           }
@@ -63,21 +63,21 @@ export class AskForAPI extends Modal {
     new Setting(this.contentEl)
       .setName("Default model")
       .setDesc(`Enter the default model for ${endpoint.name}.`)
-      .addText((text) => {
+      .addText(text => {
         text
           .setPlaceholder(endpoint.defaultmodel)
           .setValue(endpoint.defaultmodel)
-          .onChange((value) => {
+          .onChange(value => {
             endpoint.defaultmodel = value || endpoint.defaultmodel;
             this.plugin.saveSettings();
           });
       });
     new Setting(this.contentEl)
       .setName(
-        createFragment((el) => el.createEl("a", { href: endpoint.getapiKey, text: endpoint.name }))
+        createFragment(el => el.createEl("a", { href: endpoint.getapiKey, text: endpoint.name }))
       )
       .setDesc(`Link to get API key from ${endpoint.name}`)
-      .addButton((btn) =>
+      .addButton(btn =>
         btn
           .setButtonText("Save")
           .setCta()
@@ -85,7 +85,7 @@ export class AskForAPI extends Modal {
             this.saveAndClose();
           })
       )
-      .addButton((btn) => btn.setButtonText("Cancel").onClick(() => this.close()));
+      .addButton(btn => btn.setButtonText("Cancel").onClick(() => this.close()));
   }
 
   private async saveAndClose() {
@@ -172,7 +172,7 @@ export class EditWand extends Modal {
     this.selectionEl = new CodeAreaComponent(this.contentEl)
       .setPlaceholder("Selection")
       .setValue(this.selection)
-      .onChange((value) => {
+      .onChange(value => {
         // Update the latest history entry when user edits selection
         this.hist[this.hist.length - 1] = value;
       });
@@ -180,7 +180,7 @@ export class EditWand extends Modal {
     // Create prompt textarea
     this.promptEl = new CodeAreaComponent(this.contentEl)
       .setPlaceholder("Enter the prompt")
-      .onChange((value) => {
+      .onChange(value => {
         if (value.endsWith(">go")) {
           this.promptEl.setValue(value.slice(0, -3));
           this.send();
@@ -200,21 +200,21 @@ export class EditWand extends Modal {
   private setupNavigationButtons() {
     new Setting(this.contentEl)
       // Copy selection to clipboard
-      .addExtraButton((btn) =>
+      .addExtraButton(btn =>
         btn.setIcon("copy").onClick(async () => {
           await navigator.clipboard.writeText(this.selectionEl.getValue());
           new Notice("Selection copied to clipboard");
         })
       )
       .addExtraButton(
-        (btn) =>
+        btn =>
           (this.navButtons[0] = btn.setIcon("undo-2").onClick(async () => {
             this.iHist = Math.max(this.iHist - 1, 0);
             this.update(this.selectionEl, this.hist[this.iHist]);
           }))
       )
       .addExtraButton(
-        (btn) =>
+        btn =>
           (this.navButtons[1] = btn.setIcon("redo-2").onClick(async () => {
             this.iHist = Math.min(this.iHist + 1, this.hist.length - 1);
             this.update(this.selectionEl, this.hist[this.iHist]);
@@ -228,9 +228,9 @@ export class EditWand extends Modal {
   private setupActionButtons() {
     new Setting(this.contentEl)
       // Send prompt to LLM and update selection with response
-      .addExtraButton((btn) => btn.setIcon("send").onClick(this.send.bind(this)))
+      .addExtraButton(btn => btn.setIcon("send").onClick(this.send.bind(this)))
       // Confirm button
-      .addButton((btn) =>
+      .addButton(btn =>
         btn
           .setIcon("check")
           .setCta()
@@ -240,7 +240,7 @@ export class EditWand extends Modal {
           })
       )
       // Cancel button
-      .addButton((btn) => btn.setIcon("x").onClick(() => this.close()));
+      .addButton(btn => btn.setIcon("x").onClick(() => this.close()));
   }
 
   async send() {
@@ -335,7 +335,7 @@ export class EditModalProviders extends Modal {
     endpoints.forEach((key, i) =>
       new Setting(this.contentEl)
         .setName(i !== this.selectedIndex ? key.name : "Editing...")
-        .addExtraButton((btn) => {
+        .addExtraButton(btn => {
           btn
             .setIcon("trash")
             .setTooltip(`Remove ${key.name}`)
@@ -344,7 +344,7 @@ export class EditModalProviders extends Modal {
               this.buildUI(); // Rebuild UI after removal
             });
         })
-        .addButton((btn) => {
+        .addButton(btn => {
           btn
             .setIcon("pencil")
             .setTooltip(`Edit ${key.name}`)
@@ -355,7 +355,7 @@ export class EditModalProviders extends Modal {
           if (i === this.selectedIndex) btn.setCta();
         })
     );
-    new Setting(this.contentEl).setName("Add new endpoint").addButton((btn) => {
+    new Setting(this.contentEl).setName("Add new endpoint").addButton(btn => {
       btn
         .setIcon("plus")
         .setTooltip("Add a new endpoint")
@@ -378,11 +378,11 @@ export class EditModalProviders extends Modal {
       new Setting(this.contentEl)
         .setName(label)
         .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
-        .addText((text) => {
+        .addText(text => {
           text
             .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
             .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
-            .onChange((value) => {
+            .onChange(value => {
               selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
               if (key === "name") this.setTitle(value.trim());
             });
@@ -392,7 +392,7 @@ export class EditModalProviders extends Modal {
   }
   onClose(): void {
     const { settings } = this.plugin;
-    settings.endpoints = settings.endpoints.filter((endpoint) => endpoint.name);
+    settings.endpoints = settings.endpoints.filter(endpoint => endpoint.name);
     this.plugin.saveSettings();
     super.onClose();
   }
