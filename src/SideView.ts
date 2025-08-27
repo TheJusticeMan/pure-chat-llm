@@ -48,11 +48,7 @@ export class PureChatLLMSideView extends ItemView {
   console: BrowserConsole;
   ischat = false;
 
-  constructor(
-    leaf: WorkspaceLeaf,
-    public plugin: PureChatLLM,
-    public viewText = "Conversation overview"
-  ) {
+  constructor(leaf: WorkspaceLeaf, public plugin: PureChatLLM, public viewText = "Conversation overview") {
     super(leaf);
     this.icon = "text";
     this.console = new BrowserConsole(plugin.settings.debug, "PureChatLLMSideView");
@@ -139,9 +135,7 @@ export class PureChatLLMSideView extends ItemView {
       })
       .addExtraButton(btn => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
       .addButton(btn => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
-    new Setting(this.contentEl).setName(
-      "The current editor does not contain a valid conversation."
-    );
+    new Setting(this.contentEl).setName("The current editor does not contain a valid conversation.");
     new Setting(this.contentEl).setName("Available commands").setHeading();
     new Setting(this.contentEl)
       .setName("Complete chat response")
@@ -152,15 +146,11 @@ export class PureChatLLMSideView extends ItemView {
     new Setting(this.contentEl)
       .setName("Edit selection")
       .setDesc("This will edit the selected text in the current editor.");
-    new Setting(this.contentEl)
-      .setName("Analyze conversation")
-      .setDesc("This will analyze the current conversation.");
+    new Setting(this.contentEl).setName("Analyze conversation").setDesc("This will analyze the current conversation.");
     new Setting(this.contentEl)
       .setName("Reverse roles")
       .setDesc("This will reverse the roles of the current conversation.");
-    new Setting(this.contentEl)
-      .setName("Speak chat")
-      .setDesc("This will speak the current chat using two voices.");
+    new Setting(this.contentEl).setName("Speak chat").setDesc("This will speak the current chat using two voices.");
   }
 
   update(editor: Editor, view: MarkdownView) {
@@ -175,8 +165,7 @@ export class PureChatLLMSideView extends ItemView {
       this.defaultContent();
       return;
     }
-    const index =
-      (this.plugin.settings.endpoints.findIndex(e => e.name === chat.endpoint.name) + 1 || 1) - 1;
+    const index = (this.plugin.settings.endpoints.findIndex(e => e.name === chat.endpoint.name) + 1 || 1) - 1;
 
     container.createDiv({ text: "" }, contain => {
       contain.addClass("PURE", "floattop");
@@ -218,80 +207,64 @@ export class PureChatLLMSideView extends ItemView {
           el.addClass("PURE", "messageHeader", message.role);
         });
         // Preview of message content with copy button
-        if (preview)
-          contain.createEl("div", "", div => {
-            div.addClass("PURE", "preview", message.role);
+        contain.createEl("div", "", div => {
+          div.addClass("PURE", "preview", message.role);
+          if (preview)
             div.createDiv({ text: "" }, el => {
               el.onClickEvent(() => this.goToPostion(editor, message.cline, true));
               el.addClass("PURE", "messageMarkdown", message.role);
               MarkdownRenderer.render(this.app, preview, el, view.file?.basename || "", this);
             });
+          new ExtraButtonComponent(div)
+            .setIcon("copy")
+            .setTooltip("Copy message to clipboard")
+            .onClick(() => {
+              navigator.clipboard.writeText(message.content);
+              new Notice("Copied message to clipboard");
+            });
+          new ExtraButtonComponent(div)
+            .setIcon("message-square-x")
+            .setTooltip("Delete message")
+            .onClick(() => {
+              editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).Markdown);
+            });
+          if (/# \w+/gm.test(message.content))
             new ExtraButtonComponent(div)
-              .setIcon("copy")
-              .setTooltip("Copy message to clipboard")
+              .setIcon("table-of-contents")
+              .setTooltip("View and edit sections")
               .onClick(() => {
-                navigator.clipboard.writeText(message.content);
-                new Notice("Copied message to clipboard");
+                new SectionHandling(this.app, this.plugin, message.content).open();
               });
+          if (/```[\w\W]*?```/gm.test(message.content))
             new ExtraButtonComponent(div)
-              .setIcon("message-square-x")
-              .setTooltip("Delete message")
+              .setIcon("code")
+              .setTooltip("View and edit code")
               .onClick(() => {
-                editor.replaceRange(
-                  "",
-                  {
-                    line: message.cline.from.line - 1,
-                    ch: 0,
-                  },
-                  message.cline.to
+                new CodeHandling(this.app, this.plugin, message.content).open();
+              });
+          if (/> [!assistant]/gm.test(message.content))
+            new ExtraButtonComponent(div)
+              .setIcon("star")
+              .setTooltip("Remove the header from this message")
+              .onClick(() => {
+                editor.setValue(
+                  chat.thencb(
+                    c =>
+                      (c.messages[index].content = c.messages[index].content.replace(
+                        /[\W\w]+?> \[!important\] assistant\n*/,
+                        ""
+                      ))
+                  ).Markdown
                 );
               });
-            if (/# \w+/gm.test(message.content))
-              new ExtraButtonComponent(div)
-                .setIcon("table-of-contents")
-                .setTooltip("View and edit sections")
-                .onClick(() => {
-                  new SectionHandling(this.app, this.plugin, message.content).open();
-                });
-            if (/```[\w\W]*?```/gm.test(message.content))
-              new ExtraButtonComponent(div)
-                .setIcon("code")
-                .setTooltip("View and edit code")
-                .onClick(() => {
-                  new CodeHandling(this.app, this.plugin, message.content).open();
-                });
-            if (/> \[!important\] assistant/gm.test(message.content))
-              new ExtraButtonComponent(div)
-                .setIcon("star")
-                .setTooltip("Remove the header from this message")
-                .onClick(() => {
-                  editor.setValue(
-                    chat.thencb(
-                      c =>
-                        (c.messages[index].content = c.messages[index].content.replace(
-                          /[\W\w]+?> \[!important\] assistant\n*/,
-                          ""
-                        ))
-                    ).Markdown
-                  );
-                });
-            new ExtraButtonComponent(div)
-              .setIcon("refresh-cw")
-              .setTooltip("Regenerate response")
-              .onClick(() => {
-                new Notice(`${message.cline.to.line} ${editor.lastLine()}`);
-                if (message.cline.to.line !== editor.lastLine())
-                  editor.replaceRange(
-                    "",
-                    { line: message.cline.to.line, ch: 0 },
-                    {
-                      line: editor.lastLine(),
-                      ch: editor.getLine(editor.lastLine()).length,
-                    }
-                  );
-                this.plugin.CompleteChatResponse(editor, view);
-              });
-          });
+          new ExtraButtonComponent(div)
+            .setIcon("refresh-cw")
+            .setTooltip("Regenerate response")
+            .onClick(() => {
+              editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).Markdown);
+              this.plugin.CompleteChatResponse(editor, view);
+            });
+        });
       });
     });
     // scroll to bottom of container
@@ -358,8 +331,7 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       this.updatemodelist(endpointnum);
     } else
       this.editor.setValue(
-        new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).setModel(item.name)
-          .Markdown
+        new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).setModel(item.name).Markdown
       );
   }
 

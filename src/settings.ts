@@ -167,6 +167,18 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl).setName("Advanced").setHeading();
+    // resolveFilesForChatAnalysis
+    new Setting(containerEl)
+      .setName("File resolution in chat analysis")
+      .setDesc(
+        "Enable this to automatically resolve and include file contents when using chat analysis commands. This helps provide context from linked files in the conversation."
+      )
+      .addToggle(toggle =>
+        toggle.setValue(settings.resolveFilesForChatAnalysis).onChange(async value => {
+          settings.resolveFilesForChatAnalysis = value;
+          await this.plugin.saveSettings();
+        })
+      );
     new Setting(containerEl)
       .setName("Custom LLM Providers")
       .setDesc(

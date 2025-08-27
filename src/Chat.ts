@@ -316,10 +316,7 @@ export class PureChatLLMChat {
     this.messages.push({
       role: message.role as RoleType,
       content: (extras + message.content).trim(),
-      cline: {
-        from: { line: 0, ch: 0 },
-        to: { line: 0, ch: 0 },
-      },
+      cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
     });
     return this;
   }
@@ -529,7 +526,7 @@ export class PureChatLLMChat {
    * @param templatePrompt - The template prompt containing the instruction and template name to guide the chat processing.
    * @returns A Promise resolving to the processed chat response from the model.
    */
-  ProcessChatWithTemplate(templatePrompt: string) {
+  async ProcessChatWithTemplate(templatePrompt: string) {
     if (this.endpoint.apiKey === EmptyApiKey) {
       this.plugin.askForApiKey();
       return Promise.resolve({ role: "assistant", content: "" });
@@ -546,9 +543,23 @@ Your task:
 3. Return only the final processed chat in markdown format, without any tags or instructions.
 
 Use this workflow to accurately handle the chat based on the instruction.`;
-    //const systemprompt = `You are a ${templatePrompt.name}.`;
+    // Remove trailing empty message if present
+    if (!this.messages.at(-1)?.content.trim()) {
+      this.messages.pop();
+    }
+    this.file = this.file || this.plugin.app.workspace.getActiveFile()!;
+
+    if (this.plugin.settings.resolveFilesForChatAnalysis)
+      this.messages = await Promise.all(
+        this.messages.map(async ({ role, content, cline }) => ({
+          role,
+          content: await PureChatLLMChat.resolveFiles(content, this.file, this.plugin.app),
+          cline,
+        }))
+      );
+
     new Notice("Generating chat response from template...");
-    return this.sendChatRequest({
+    const r = await this.sendChatRequest({
       ...this.options,
       messages: [
         { role: "system", content: systemprompt },
@@ -558,15 +569,14 @@ Use this workflow to accurately handle the chat based on the instruction.`;
         },
         { role: "user", content: templatePrompt },
       ],
-    }).then(r => {
-      return {
-        role: "assistant",
-        content: r.content
-          .trim()
-          .replace(/^<Conversation>|<\/Conversation>$/g, "")
-          .trim(),
-      };
     });
+    return {
+      role: "assistant",
+      content: r.content
+        .trim()
+        .replace(/^<Conversation>|<\/Conversation>$/g, "")
+        .trim(),
+    };
   }
 
   /**
