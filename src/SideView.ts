@@ -242,7 +242,7 @@ export class PureChatLLMSideView extends ItemView {
               .onClick(() => {
                 new CodeHandling(this.app, this.plugin, message.content).open();
               });
-          if (/> [!assistant]/gm.test(message.content))
+          if (/> \[!assistant\]/gim.test(message.content))
             new ExtraButtonComponent(div)
               .setIcon("star")
               .setTooltip("Remove the header from this message")
@@ -251,7 +251,7 @@ export class PureChatLLMSideView extends ItemView {
                   chat.thencb(
                     c =>
                       (c.messages[index].content = c.messages[index].content.replace(
-                        /[\W\w]+?> \[!important\] assistant\n*/,
+                        /[\W\w]+?> \[!assistant\]\n*/i,
                         ""
                       ))
                   ).Markdown
