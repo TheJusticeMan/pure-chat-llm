@@ -1,4 +1,4 @@
-import { App, EditorRange, Notice, TFile } from "obsidian";
+import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
 import { codeContent } from "./CodeHandling";
 import PureChatLLM from "./main";
@@ -86,11 +86,7 @@ export class PureChatLLMChat {
    * of the chat options and the chat text.
    */
   get Markdown(): string {
-    const prechat = PureChatLLMChat.changeCodeBlockMD(
-      this.pretext,
-      "json",
-      JSON.stringify(this.options, null, 2)
-    );
+    const prechat = PureChatLLMChat.changeCodeBlockMD(this.pretext, "json", JSON.stringify(this.options, null, 2));
     return `${prechat.trim()}\n${this.ChatText}`;
   }
 
@@ -258,7 +254,7 @@ export class PureChatLLMChat {
     let match;
     while ((match = regex.exec(markdown)) !== null) {
       const [, language, code] = match;
-      const lang = ((language || "plaintext").trim() as string) || "plaintext";
+      const lang = (language || "plaintext").trim() || "plaintext";
       matches.push({
         language: lang,
         code: code.trim(),
@@ -290,8 +286,7 @@ export class PureChatLLMChat {
   static changeCodeBlockMD(text: string, language: string, newText: string) {
     const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "im");
     return (
-      text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) ||
-      `${text}\n\`\`\`${language}\n${newText}\n\`\`\``
+      text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) || `${text}\n\`\`\`${language}\n${newText}\n\`\`\``
     );
   }
 
@@ -305,16 +300,15 @@ export class PureChatLLMChat {
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
    */
-  appendMessage(message: { role: string; content: string }) {
+  appendMessage(message: { role: RoleType; content: string }) {
     let extras = "";
     if (this.imageOutputUrls)
       extras =
-        this.imageOutputUrls
-          .map(img => `![${img.revised_prompt || "image"}](${img.normalizedPath})`)
-          .join("\n") + "\n\n";
+        this.imageOutputUrls.map(img => `![${img.revised_prompt || "image"}](${img.normalizedPath})`).join("\n") +
+        "\n\n";
     this.imageOutputUrls = null;
     this.messages.push({
-      role: message.role as RoleType,
+      role: message.role,
       content: (extras + message.content).trim(),
       cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
     });
@@ -362,10 +356,35 @@ export class PureChatLLMChat {
   }
 
   static getfileForLink(str: string, activeFile: TFile, app: App): TFile | null {
-    return app.metadataCache.getFirstLinkpathDest(
-      str.trim().replace(/^\!?\[\[|(#.+|\|.+)?\]\]$/g, ""),
-      activeFile.path
-    );
+    return app.metadataCache.getFirstLinkpathDest(parseLinktext(str).path, activeFile.path);
+  }
+
+  /**
+   * Major new function
+   * Retrieves the content of a linked file or a specific subpath within a file in Obsidian.
+   *
+   * Given a link string, the currently active file, and the Obsidian app instance, this method:
+   * - Parses the link to extract the file path and optional subpath.
+   * - Resolves the file reference using Obsidian's metadata cache.
+   * - If the file does not exist, returns the original link in double brackets.
+   * - If a subpath is specified and found, returns the corresponding substring from the file.
+   * - Otherwise, returns the entire file content.
+   *
+   * @param str - The link string to resolve (e.g., "MyNote#Section").
+   * @param activeFile - The currently active file, used as context for relative links.
+   * @param app - The Obsidian app instance, providing access to the vault and metadata cache.
+   * @returns A promise that resolves to the content of the linked file or subpath, or the original link if not found.
+   */
+  static retrieveLinkContent(str: string, activeFile: TFile, app: App): Promise<string> {
+    const { subpath, path } = parseLinktext(str);
+    const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+    if (!file) return Promise.resolve(`[[${str}]]`);
+    if (subpath) {
+      const cache = app.metadataCache.getFileCache(file);
+      const ref = cache && resolveSubpath(cache, subpath);
+      if (ref) return app.vault.cachedRead(file).then(text => text.substring(ref.start.offset, ref.end?.offset).trim());
+    }
+    return app.vault.cachedRead(file);
   }
 
   static async resolveFilesWithImages(
@@ -374,35 +393,30 @@ export class PureChatLLMChat {
     app: App,
     role: string
   ): Promise<MessageImg[] | string> {
-    const regex = /(!)?\[\[([^\]]+)\]\]/g;
-    const matches = Array.from(markdown.matchAll(regex));
+    const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
 
     const resolved: MessageImg[] = await Promise.all(
       matches.map(async match => {
-        const file = this.getfileForLink(match[0], activeFile, app);
-        const isImage = /^(png|jpg|jpeg|gif|webp)$/i.test(file?.extension || "");
+        const [originalLink, Link] = match;
+        const file = this.getfileForLink(Link, activeFile, app);
 
-        if (!(file instanceof TFile) || (isImage && role !== "user")) {
-          // Not found, return as text
-          return { type: "text", text: match[0] };
-        }
-        if (isImage) {
-          const mime = {
-            png: "image/png",
-            jpg: "image/jpeg",
-            jpeg: "image/jpeg",
-            gif: "image/gif",
-            webp: "image/webp",
-          }[file.extension.toLowerCase()]!;
+        // Not found, return as text
+        if (!(file instanceof TFile)) return { type: "text", text: originalLink };
 
+        const imageMime = {
+          png: "image/png",
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          gif: "image/gif",
+          webp: "image/webp",
+        }[file.extension.toLowerCase()];
+
+        if (imageMime && role === "user") {
           const data = await app.vault.readBinary(file);
-          const url = await this.arrayBufferToBase64DataURL(data, mime);
+          const url = await this.arrayBufferToBase64DataURL(data, imageMime);
           return { type: "image_url", image_url: { url } };
-        } else {
-          // Read as text
-          const content = await app.vault.cachedRead(file);
-          return { type: "text", text: content };
-        }
+        } else if (imageMime) return { type: "text", text: originalLink };
+        else return { type: "text", text: await this.retrieveLinkContent(Link, activeFile, app) };
       })
     );
 
@@ -427,28 +441,25 @@ export class PureChatLLMChat {
       lastIndex = end;
     }
     // Add any remaining text after the last match
-    if (lastIndex < markdown.length) {
+    if (lastIndex < markdown.length)
       allParts.push({
         type: "text",
         text: markdown.slice(lastIndex).trim(),
       });
-    }
 
     const final = allParts.reduce((acc, item) => {
-      if (item.type === "text" && acc.at(-1)?.type === "text") {
-        (acc.at(-1) as { type: "text"; text: string }).text += `\n${item.text}`;
+      const prev = acc.at(-1);
+      if (item.type === "text" && prev?.type === "text") {
+        prev.text += `\n${item.text}`;
       } else {
         acc.push(item);
       }
       return acc;
     }, [] as MessageImg[]);
 
-    if (final.length === 0) {
-      return markdown; // If no valid parts, return original markdown
-    }
-    if (final.length === 1 && final[0].type === "text") {
-      return final[0].text; // If only one text part, return it directly
-    }
+    if (final.length === 0) return markdown; // If no valid parts, return original markdown
+
+    if (final.length === 1 && final[0].type === "text") return final[0].text; // If only one text part, return it directly
 
     // Combine consecutive text items into one
     return final;
@@ -653,10 +664,7 @@ Use this workflow to help modify markdown content accurately.`;
    * 3. Appends the received content as a message and adds an empty user message for continuity.
    * 4. Handles any errors by logging them to the plugin's console.
    */
-  CompleteChatResponse(
-    file: TFile,
-    streamcallback?: (textFragment: any) => boolean
-  ): Promise<this> {
+  CompleteChatResponse(file: TFile, streamcallback?: (textFragment: any) => boolean): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
       return Promise.resolve(this);
     }
@@ -779,10 +787,7 @@ Use this workflow to help modify markdown content accurately.`;
    * it returns the first message choice from the API response.
    * @throws An error if the network request fails or the response is not successful.
    */
-  async sendChatRequest(
-    options: any,
-    streamcallback?: (textFragment: any) => boolean
-  ): Promise<any> {
+  async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean): Promise<any> {
     this.console.log("Sending chat request with options:", options);
     this.plugin.status(`running: ${options.model}`);
     const response = await fetch(this.endpoint.endpoint, {
@@ -847,24 +852,17 @@ Use this workflow to help modify markdown content accurately.`;
     tool_call_id?: string;
     tool_calls: any[];
   }[]): { role: string; content: string; tool_call_id?: string; tool_calls: any[] }[] {
-    agent.tool_calls = agent.tool_calls.filter(call =>
-      Responses.some(i => i.tool_call_id === call.id)
-    );
+    agent.tool_calls = agent.tool_calls.filter(call => Responses.some(i => i.tool_call_id === call.id));
     //if (msg.role === "tool" && msg.tool_call_id) {
     return [agent, ...Responses];
   }
 
   private async GenerateImage(imageGenCall: any, data: any) {
     const imageGen = new PureChatLLMImageGen(this.plugin.app, this.endpoint.apiKey, this.file);
-    const imageOutputUrls = await imageGen.sendImageGenerationRequest(
-      JSON.parse(imageGenCall.function.arguments)
-    );
+    const imageOutputUrls = await imageGen.sendImageGenerationRequest(JSON.parse(imageGenCall.function.arguments));
     const message = imageOutputUrls
       .map(img => {
-        return [
-          `![Generated Image](${img.normalizedPath})`,
-          `Revised Image prompt: ${img.revised_prompt}`,
-        ];
+        return [`![Generated Image](${img.normalizedPath})`, `Revised Image prompt: ${img.revised_prompt}`];
       })
       .flat()
       .join("\n");
@@ -901,8 +899,7 @@ Use this workflow to help modify markdown content accurately.`;
    * @throws {Error} If the API request fails or the response is invalid.
    */
   getAllModels(): Promise<string[]> {
-    const { name: endpointName, listmodels } =
-      this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    const { name: endpointName, listmodels } = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     const cached = this.plugin.settings.ModelsOnEndpoint[endpointName];
     if (cached?.length) return Promise.resolve(cached);
     this.console.log(`Fetching models from ${endpointName} API...`);
@@ -912,9 +909,9 @@ Use this workflow to help modify markdown content accurately.`;
     })
       .then(response => response.json())
       .then(data => {
-        return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (
-          data.data.map((item: { id: string }) => item.id) as string[]
-        ).map(id => id.replace(/.+\//g, "") || id));
+        return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (data.data as { id: string }[])
+          .map(item => item.id)
+          .map(id => id.replace(/.+\//g, "") || id));
       })
       .catch(error => {
         this.console.error("Error fetching models:", error);
@@ -932,13 +929,7 @@ Use this workflow to help modify markdown content accurately.`;
    */
   get ChatText(): string {
     return this.messages
-      .map(
-        msg =>
-          `${this.Parser.rolePlacement.replace(
-            /{role}/g,
-            toTitleCase(msg.role)
-          )}\n${msg.content.trim()}`
-      )
+      .map(msg => `${this.Parser.rolePlacement.replace(/{role}/g, toTitleCase(msg.role))}\n${msg.content.trim()}`)
       .join("\n");
   }
 

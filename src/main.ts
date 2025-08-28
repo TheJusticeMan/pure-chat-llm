@@ -10,6 +10,7 @@ import {
   Menu,
   Modal,
   Notice,
+  parseLinktext,
   Plugin,
   Setting,
   TextComponent,
@@ -28,21 +29,6 @@ import { modelAndProviderChooser, PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
 import { toTitleCase } from "./toTitleCase";
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
-
-declare module "obsidian" {
-  interface App {
-    commands: {
-      commands: {
-        [commandId: string]: {
-          id: string;
-          name: string;
-          callback: () => void;
-        };
-      };
-      executeCommandById(commandId: string): boolean;
-    };
-  }
-}
 
 /**
  * The main plugin class for the Pure Chat LLM Obsidian plugin.
@@ -152,9 +138,7 @@ export default class PureChatLLM extends Plugin {
         new PureChatLLMSpeech(
           this,
           new PureChatLLMChat(this).setMarkdown(editor.getValue()).thencb(chat => {
-            chat.messages = chat.messages.filter(
-              message => message.role === "user" || message.role === "assistant"
-            );
+            chat.messages = chat.messages.filter(message => message.role === "user" || message.role === "assistant");
           })
         ).startStreaming();
       },
@@ -236,10 +220,7 @@ export default class PureChatLLM extends Plugin {
               .setIcon("message-square-plus")
               .setSection("action")
               .onClick(async () => {
-                const fileName = this.generateUniqueFileName(
-                  file.parent!,
-                  `Untitled ${file.basename}`
-                );
+                const fileName = this.generateUniqueFileName(file.parent!, `Untitled ${file.basename}`);
 
                 const newFile = await this.app.vault.create(
                   `${file.parent!.path}/${fileName}.md`,
@@ -256,15 +237,11 @@ export default class PureChatLLM extends Plugin {
               .setIcon("message-square-plus")
               .setSection("action")
               .onClick(async () => {
-                const fileName = this.generateUniqueFileName(
-                  file.parent!,
-                  `Untitled ${file.basename}`
-                );
+                const fileName = this.generateUniqueFileName(file.parent!, `Untitled ${file.basename}`);
 
                 const newFile = await this.app.vault.create(
                   `${file.parent!.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown(`# role: System\n${link}\n# role: User\n`)
-                    .Markdown
+                  new PureChatLLMChat(this).setMarkdown(`# role: System\n${link}\n# role: User\n`).Markdown
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
@@ -361,9 +338,7 @@ export default class PureChatLLM extends Plugin {
             .setTitle("wand")
             .setIcon("wand")
             .onClick(async () => {
-              new EditWand(this.app, this, editor.getSelection(), s =>
-                editor.replaceSelection(s)
-              ).open();
+              new EditWand(this.app, this, editor.getSelection(), s => editor.replaceSelection(s)).open();
             })
             .setSection("selection")
         );
@@ -378,11 +353,7 @@ export default class PureChatLLM extends Plugin {
         s
           ? new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
-              .SelectionResponse(
-                s,
-                selected,
-                this.settings.addfiletocontext ? editor.getValue() : undefined
-              )
+              .SelectionResponse(s, selected, this.settings.addfiletocontext ? editor.getValue() : undefined)
               .then(response => editor.replaceSelection(response.content))
           : new EditWand(this.app, this, selected, text => editor.replaceSelection(text)).open(),
       { ...this.settings.selectionTemplates, "Custom prompt": "" }
@@ -441,8 +412,7 @@ export default class PureChatLLM extends Plugin {
     const editorcontent = editor.getValue();
     const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
     if (chat.messages[chat.messages.length - 1].content === "" && chat.validChat) {
-      if (chat.messages.pop()?.role == "user" && this.settings.AutoReverseRoles)
-        chat.ReverseRoles();
+      if (chat.messages.pop()?.role == "user" && this.settings.AutoReverseRoles) chat.ReverseRoles();
     }
     editor.setValue(chat.Markdown);
     this.setCursorEnd(editor, true);
@@ -504,9 +474,7 @@ export default class PureChatLLM extends Plugin {
     )
       this.settings.SystemPrompt = DEFAULT_SETTINGS.SystemPrompt;
     DEFAULT_SETTINGS.endpoints.forEach(
-      endpoint =>
-        this.settings.endpoints.find(e => e.name === endpoint.name) ||
-        this.settings.endpoints.push(endpoint)
+      endpoint => this.settings.endpoints.find(e => e.name === endpoint.name) || this.settings.endpoints.push(endpoint)
     );
   }
 
@@ -595,10 +563,8 @@ export class SelectionPromptEditor extends Modal {
   }
   update() {
     this.contentEl.empty();
-    if (!this.promptTitle)
-      this.promptTitle = Object.keys(this.promptTemplates)[0] || "New template";
-    if (this.promptTitle && !this.promptTemplates[this.promptTitle])
-      this.promptTemplates[this.promptTitle] = "";
+    if (!this.promptTitle) this.promptTitle = Object.keys(this.promptTemplates)[0] || "New template";
+    if (this.promptTitle && !this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = "";
     Object.keys(this.promptTemplates).forEach(key => (this.inCMD[key] = Boolean(this.inCMD[key])));
     const isAllinCMD = Object.values(this.inCMD).every(v => v);
     new Setting(this.contentEl)
@@ -671,8 +637,7 @@ export class SelectionPromptEditor extends Modal {
             const value = text.getValue().trim();
             if (value) {
               this.promptTitle = value;
-              if (!this.promptTemplates[this.promptTitle])
-                this.promptTemplates[this.promptTitle] = "";
+              if (!this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = "";
               const promptTemplatesSummary = Object.entries(this.promptTemplates)
                 .map(([k, v]) => `## template: ${k} \n\n ${v}`)
                 .join("\n");
@@ -869,11 +834,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     this.plugin = plugin;
   }
 
-  onTrigger(
-    cursor: EditorPosition,
-    editor: Editor,
-    file: TFile | null
-  ): EditorSuggestTriggerInfo | null {
+  onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
     //const line = editor.getLine(cursor.line);
     const line = editor.getRange({ ...cursor, ch: 0 }, cursor); // Get the line text
     if (/^(```|# |send)/i.test(line))

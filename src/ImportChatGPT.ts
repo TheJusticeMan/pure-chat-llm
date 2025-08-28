@@ -152,14 +152,9 @@ export class ImportChatGPT {
     while (currentId && mapping[currentId]) {
       const node = mapping[currentId];
       const message = node.message;
-      if (
-        message &&
-        message.content &&
-        message.content.content_type === "text" &&
-        message.author.role !== "tool"
-      ) {
+      if (message && message.content && message.content.content_type === "text" && message.author.role !== "tool") {
         result.appendMessage({
-          role: message.author.role,
+          role: message.author.role as "user" | "assistant" | "system",
           content: message.content.parts?.[0] ?? "",
         });
       }

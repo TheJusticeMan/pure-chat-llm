@@ -8,9 +8,13 @@ import {
   ItemView,
   MarkdownRenderer,
   MarkdownView,
+  MetadataCache,
   Notice,
+  parseLinktext,
   Platform,
+  resolveSubpath,
   Setting,
+  TFile,
   WorkspaceLeaf,
 } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
@@ -154,6 +158,8 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   update(editor: Editor, view: MarkdownView) {
+    //MetadataCache
+    //resolveSubpath
     const editorValue = editor.getValue().trim();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
@@ -215,19 +221,49 @@ export class PureChatLLMSideView extends ItemView {
               el.addClass("PURE", "messageMarkdown", message.role);
               MarkdownRenderer.render(this.app, preview, el, view.file?.basename || "", this);
             });
-          new ExtraButtonComponent(div)
-            .setIcon("copy")
-            .setTooltip("Copy message to clipboard")
-            .onClick(() => {
-              navigator.clipboard.writeText(message.content);
-              new Notice("Copied message to clipboard");
-            });
+          if (preview)
+            new ExtraButtonComponent(div)
+              .setIcon("copy")
+              .setTooltip("Copy message to clipboard")
+              .onClick(() => {
+                navigator.clipboard.writeText(message.content);
+                new Notice("Copied message to clipboard");
+              });
+          if (preview)
+            new ExtraButtonComponent(div)
+              .setIcon("save")
+              .setTooltip("Save message to a new note")
+              .onClick(() => {
+                const title = message.content.match(/^#+? (.+)$/m)?.[0] || view.file?.basename || "Untitled";
+                this.app.fileManager
+                  .getAvailablePathForAttachment(`Message ${title.replace(/^# /, "")}.md`, view.file?.path)
+                  .then(path =>
+                    this.app.vault
+                      .create(path, message.content)
+                      .then(() => this.app.workspace.openLinkText(path, "", true))
+                  );
+              });
           new ExtraButtonComponent(div)
             .setIcon("message-square-x")
             .setTooltip("Delete message")
             .onClick(() => {
               editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).Markdown);
             });
+          if (/> \[!assistant\]/gim.test(message.content))
+            new ExtraButtonComponent(div)
+              .setIcon("brain-cog")
+              .setTooltip("Remove the thinking process from this message")
+              .onClick(() => {
+                editor.setValue(
+                  chat.thencb(
+                    c =>
+                      (c.messages[index].content = c.messages[index].content.replace(
+                        /[\W\w]+?> \[!assistant\]\n*/i,
+                        ""
+                      ))
+                  ).Markdown
+                );
+              });
           if (/# \w+/gm.test(message.content))
             new ExtraButtonComponent(div)
               .setIcon("table-of-contents")
@@ -241,21 +277,6 @@ export class PureChatLLMSideView extends ItemView {
               .setTooltip("View and edit code")
               .onClick(() => {
                 new CodeHandling(this.app, this.plugin, message.content).open();
-              });
-          if (/> \[!assistant\]/gim.test(message.content))
-            new ExtraButtonComponent(div)
-              .setIcon("star")
-              .setTooltip("Remove the header from this message")
-              .onClick(() => {
-                editor.setValue(
-                  chat.thencb(
-                    c =>
-                      (c.messages[index].content = c.messages[index].content.replace(
-                        /[\W\w]+?> \[!assistant\]\n*/i,
-                        ""
-                      ))
-                  ).Markdown
-                );
               });
           new ExtraButtonComponent(div)
             .setIcon("refresh-cw")
