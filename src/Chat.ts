@@ -3,7 +3,7 @@ import { BrowserConsole } from "./BrowserConsole";
 import { codeContent } from "./CodeHandling";
 import { PureChatLLMImageGen } from "./ImageGen";
 import PureChatLLM, { StreamNotice } from "./main";
-import { EmptyApiKey } from "./s.json";
+import { EmptyApiKey, Chatsysprompt, Selectionsysprompt } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
 import { PureChatLLMAPI, StatSett } from "./types";
 
@@ -542,18 +542,6 @@ export class PureChatLLMChat {
       this.plugin.askForApiKey();
       return Promise.resolve({ role: "assistant", content: "" });
     }
-    const systemprompt = `You are a markdown chat processor.
-
-You will receive:
-- A chat conversation enclosed within <Conversation> and </Conversation> tags.
-- A command or instruction immediately after the conversation.
-
-Your task:
-1. Extract the chat content inside the <Conversation> tags.
-2. Follow the command to process, summarize, clarify, or modify the chat.
-3. Return only the final processed chat in markdown format, without any tags or instructions.
-
-Use this workflow to accurately handle the chat based on the instruction.`;
     // Remove trailing empty message if present
     if (!this.messages.at(-1)?.content.trim()) {
       this.messages.pop();
@@ -571,7 +559,7 @@ Use this workflow to accurately handle the chat based on the instruction.`;
 
     new Notice("Generating chat response from template...");
     const messages = [
-      { role: "system", content: systemprompt },
+      { role: "system", content: Chatsysprompt },
       {
         role: "user",
         content: `<Conversation>\n${this.ChatText}\n\n</Conversation>`,
@@ -606,18 +594,6 @@ Use this workflow to accurately handle the chat based on the instruction.`;
       this.plugin.askForApiKey();
       return Promise.resolve({ role: "assistant", content: selectedText });
     }
-    const systemprompt = `You are a markdown content processor. 
-
-You will receive:
-- A selected piece of markdown text inside <Selection> and </Selection> tags.
-- A command or instruction immediately after the selection.
-
-Your job:
-1. Extract the markdown inside the <Selection> tags.
-2. Follow the command to process or expand that markdown.
-3. Return only the processed markdown content, without tags or instructions.
-
-Use this workflow to help modify markdown content accurately.`;
     //const systemprompt = `You are a ${templatePrompt.name}.`;
     const messages = [
       ...(fileText
@@ -628,7 +604,7 @@ Use this workflow to help modify markdown content accurately.`;
             },
           ]
         : []),
-      { role: "system", content: systemprompt },
+      { role: "system", content: Selectionsysprompt },
       {
         role: "user",
         content: `<Selection>\n${selectedText}\n\n</Selection>`,

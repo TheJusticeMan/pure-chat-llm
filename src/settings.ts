@@ -1,10 +1,11 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
 import { ImportChatGPT } from "./ImportChatGPT";
-import PureChatLLM, { FileSuggest, SelectionPromptEditor } from "./main";
+import PureChatLLM, { FileSuggest, getMarkdownFromObject, getObjectFromMarkdown, SelectionPromptEditor } from "./main";
 import { AskForAPI, EditModalProviders } from "./models";
 import { version } from "./s.json";
 import { DEFAULT_SETTINGS, PureChatLLMSettings, StatSett } from "./types";
+import { get } from "http";
 
 /**
  * Represents the settings tab for the PureChatLLM plugin in Obsidian.
@@ -143,6 +144,32 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               settings.CMDchatTemplates
             ).open()
           )
+      );
+    new Setting(containerEl)
+      .setName("Import/Export templates")
+      .setDesc("Import or export selection and chat prompt templates to/from a markdown file.")
+      .addButton(btn =>
+        btn.setButtonText("Write to PureChatLLM-Templates.md").onClick(() => {
+          const { selectionTemplates, chatTemplates } = this.plugin.settings;
+          const content = getMarkdownFromObject({ selectionTemplates, chatTemplates });
+          const filePath = "PureChatLLM-Templates.md";
+          const file = this.app.vault.getFileByPath(filePath);
+          if (file) this.app.vault.modify(file, content);
+          else this.app.vault.create(filePath, content);
+          new Notice("Templates exported to PureChatLLM-Templates.md");
+        })
+      )
+      .addButton(btn =>
+        btn
+          .setButtonText("Import from PureChatLLM-Templates.md")
+          .then(btn => (this.app.vault.getFileByPath("PureChatLLM-Templates.md") ? btn : btn.setDisabled(true)))
+          .onClick(() => {
+            this.app.vault.cachedRead(this.app.vault.getFileByPath("PureChatLLM-Templates.md")!).then(data => {
+              this.plugin.settings = { ...this.plugin.settings, ...getObjectFromMarkdown(data, 1, 2) };
+              this.plugin.saveSettings();
+              new Notice("Templates imported. Please review them in the prompt editor.");
+            });
+          })
       );
     new Setting(containerEl)
       .setName("Use OpenAI image generation")

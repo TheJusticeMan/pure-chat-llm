@@ -925,3 +925,37 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     }
   }
 }
+
+export function getObjectFromMarkdown(
+  rawMarkdown: string,
+  level = 1,
+  maxlevel = 6
+): Record<string, string | Record<string, any>> {
+  return Object.fromEntries(
+    rawMarkdown
+      .trim()
+      .split(new RegExp(`^${"#".repeat(level)} `, "gm"))
+      .slice(1)
+      .map((s): [string, string | Record<string, any>] => {
+        const [title, ...content] = s.split("\n");
+        const joinedContent = content.join("\n");
+        if (level < maxlevel && joinedContent.includes("\n" + "#".repeat(level + 1) + " ")) {
+          return [title.trim(), getObjectFromMarkdown(joinedContent, level + 1, maxlevel)];
+        }
+        return [title.trim(), joinedContent.trim()];
+      })
+  );
+}
+
+export function getMarkdownFromObject(obj: Record<string, string | Record<string, any>>, level = 1): string {
+  return Object.entries(obj)
+    .map(([key, value]) => {
+      const prefix = "#".repeat(level);
+      if (typeof value === "string") {
+        return `${prefix} ${key}\n\n${value}\n`;
+      } else {
+        return `${prefix} ${key}\n\n${getMarkdownFromObject(value, level + 1)}`;
+      }
+    })
+    .join("\n");
+}
