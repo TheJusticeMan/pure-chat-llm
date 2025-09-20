@@ -1,57 +1,19 @@
-# Chatsysprompt
-
-You are a markdown chat processor.
-
-You will receive:
-
-- A chat conversation enclosed within <Conversation> and </Conversation> tags.
-- A command or instruction immediately after the conversation.
-
-Your task:
-
-1. Extract the chat content inside the <Conversation> tags.
-2. Follow the command to process, summarize, clarify, or modify the chat.
-3. Return only the final processed chat in markdown format, without any tags or instructions.
-
-Use this workflow to accurately handle the chat based on the instruction.
-
-# Selectionsysprompt
-
-You are a markdown content processor.
-
-You will receive:
-
-- A selected piece of markdown text inside <Selection> and </Selection> tags.
-- A command or instruction immediately after the selection.
-
-Your job:
-
-1. Extract the markdown inside the <Selection> tags.
-2. Follow the command to process or expand that markdown.
-3. Return only the processed markdown content, without tags or instructions.
-
-Use this workflow to help modify markdown content accurately.
-
 # selectionTemplates
 
 ## Add emojis
 
 Add relevant emojis to enhance the provided selection. Follow these rules:
 
-1. Insert emojis at natural breaks in the text
-2. Never place two emojis next to each other
-3. Keep all original text unchanged
-4. Choose emojis that match the context and tone
+1. Insert emojis at natural breaks in the text.
+2. Never place two emojis next to each other.
+3. Keep all original text unchanged.
+4. Choose emojis that match the context and tone.
 
 Return only the emojified selection.
 
 ## Change "Me" to "You" and vice versa to swap perspective
 
-Rewrite the provided selection by swapping the perspective: change first-person pronouns (e.g., "I", "Me", "My", "Mine", "We", "Us", "Our", "Ours") to second-person (e.g., "You", "Your", "Yours"), and change second-person pronouns to first-person. Ensure all grammatical and contextual adjustments are made to reflect this bidirectional shift accurately. Maintain the original meaning, tone, and style of the text. Return only the rewritten selection.
-
-## Change "Me" to "You" to change perspective
-
-Rewrite the provided selection by changing the perspective from first-person ("Me", "I", "My", "Mine") to second-person ("You", "Your", "Yours"). Ensure all grammatical and contextual adjustments are made to reflect this shift in perspective accurately. Maintain the original meaning, tone, and style of the text. Return only the rewritten selection.
+Rewrite the provided selection by swapping the perspective: change first-person pronouns (e.g., "I", "me", "my", "mine", "we", "us", "our", "ours") to second-person (e.g., "you", "your", "yours"), and change second-person pronouns to first-person. Ensure all grammatical and contextual adjustments are made to reflect this bidirectional shift accurately. Maintain the original meaning, tone, and style of the text. Return only the rewritten selection.
 
 ## Clarify & expand instructions
 
@@ -77,25 +39,25 @@ Keep the original intent intact while providing a comprehensive, easy-to-underst
 
 Return only the **expanded** role description within the `<Selection>` tags, with no additional text or comments.
 
-## Concentrate
+## Concentrate: Bullets
 
-Reduce the provided selection to half its length while preserving the following elements:
+Create a bullet-point summary of the provided selection, with each bullet capturing a distinct key point or main idea. Limit to 5-8 bullets for brevity, focusing on essential details while eliminating fluff, repetition, or minor examples. Preserve the original tone and style by phrasing bullets concisely and naturally.
 
-1. Main ideas and key points
-2. Essential details
-3. Original tone and style
+Return only the bullet-point summary.
+
+## Concentrate: Half-Length
+
+Reduce the provided selection to approximately half its original word count while preserving the main ideas, key points, essential details, original tone, and style. Remove redundant phrases, examples, or elaborations without losing core substance.
 
 Return only the shortened selection.
 
-## Concentrate 2.0
+## Concentrate: Paragraph
 
-Condense the provided selection into its most essential components, retaining the core message and key information. Aim for a significant reduction in word count while ensuring clarity and coherence. Remove all non-essential details, examples, and elaborations. Maintain the original tone and style as much as possible. Return only the condensed text.
+Condense the provided selection into a single, cohesive paragraph while preserving the main ideas and key points. Remove unnecessary details, repetition, or extraneous examples, and ensure logical flow from start to finish. Maintain the original tone and style, using transitional phrasing where needed to connect ideas smoothly.
 
-## Concentrate into a paragraph
+Return only the condensed paragraph.
 
-Concentrate the provided selection into a single paragraph while preserving the main ideas and key points. Remove any unnecessary details or repetition, and ensure the paragraph flows logically. Maintain the original tone and style. Return only the condensed paragraph.
-
-## Condence selected system prompt
+## Condense selected system prompt
 
 Condense the provided system prompt to half its length.
 Preserve all core instructions, the role of the AI, and the desired output format.
@@ -120,25 +82,50 @@ Fix the grammar and spelling of the provided selection. Preserve all formatting,
 
 ## Expand
 
-Expand the provided selection to twice its length by:
+Expand the provided selection to 1.5-2 times its original length, making it more detailed and comprehensive while enhancing its informational value. Your expansion should:
 
-1. Adding relevant details and examples
-2. Elaborating on key points
-3. Maintaining the original tone and style
+1. **Elaborate on each key point:** Provide further explanation, context, or supporting details for every main idea in the original text.
+2. **Add relevant details and examples:** Incorporate concrete examples, scenarios, or illustrations to clarify concepts and make abstract ideas more relatable.
+3. **Explore related aspects or implications:** Discuss natural extensions, consequences, or connected considerations that stem from the content, without introducing unrelated information.
+4. **Maintain the original tone, style, and structure:** Ensure the expanded text flows naturally, preserving the voice, formatting, line breaks, and intent of the selection.
+5. **Focus on depth and breadth:** Significantly increase thoroughness by building on existing elements, but avoid redundancy or fluff—aim for meaningful additions that enrich understanding.
 
-Return only the expanded selection.
+If the original is very short, prioritize examples and implications for balance. Return only the expanded selection.
 
-## Expand 2.0
+## Inject Subtle Wit
 
-Expand the provided selection to be more detailed and comprehensive. Your expansion should:
+Rewrite the provided selection by incorporating subtle wit—dry, ironic, or cleverly understated humor that enhances the original text without altering its core meaning, tone, or structure. Follow these rules:
 
-1. **Elaborate on each key point:** Provide further explanation, context, or supporting details for every main idea present in the original text.
-2. **Incorporate relevant examples or scenarios:** Use concrete examples to illustrate abstract concepts or clarify instructions.
-3. **Explore related aspects or implications:** Discuss any natural extensions, consequences, or related considerations that stem from the original content.
-4. **Maintain the original tone and style:** Ensure the expanded text flows naturally and is consistent with the voice of the original selection.
-5. **Add depth and breadth:** Aim to significantly increase the informational value and thoroughness of the provided text without introducing extraneous information.
+1. **Identify opportunities for wit:** Look for straightforward statements, descriptions, or advice where a gentle twist (e.g., ironic observation, playful understatement, or reflective quip) can add depth or amusement.
+2. **Keep it subtle:** Use wit sparingly—aim for 1-3 instances per paragraph. Avoid puns, exaggeration, or anything overt; opt for dry humor that feels insightful rather than comedic.
+3. **Preserve intent and style:** Maintain the original length (within 10% variance), vocabulary level, and seriousness. The wit should feel organic, like a natural extension of the author's voice.
+4. **Contextual fit:** Ensure the humor respects the topic—e.g., lighten heavy advice with self-aware irony, or add a wry note to narratives about everyday absurdities.
+5. **No additions or removals:** Do not introduce new ideas, facts, or content; only rephrase existing elements to infuse wit.
 
-Return only the expanded selection.
+Return only the wittily enhanced selection.
+
+## Polish These Templates
+
+The provided selection contains one or more templates from your app's library (e.g., from selectionTemplates or chatTemplates). Your task is to polish them for improved quality, making them clearer, more consistent, and more effective at guiding LLM outputs. Treat this as a meta-editing exercise: refine the prompts without altering their core purpose, while eliminating inefficiencies—like a barber trimming split ends from a prompt's hairdo.
+
+Follow this structured workflow:
+
+1. **Extract and Analyze**: Identify each individual template in the selection. For each, note its type (selection or chat), core function, and any issues such as redundancy (e.g., overlapping rules), inconsistencies (e.g., varying output formats), vagueness (e.g., undefined terms), or bloat (e.g., unnecessary verbosity). Consider edge cases like short/long inputs, non-English text, or ambiguous user selections.
+
+2. **Apply Polishing Rules**:
+
+   - **Enhance Clarity and Specificity**: Rephrase ambiguous instructions into precise, actionable steps. Use consistent language (e.g., always start with "You are [role]" if applicable, and define terms like "<Selection> handling upfront).
+   - **Standardize Structure**: Ensure uniform formatting: Begin with role/system context, followed by input handling, numbered rules/guidelines, and end with a strict "Return only the [output]" directive. For chatTemplates, always explain roles (user/assistant/system) explicitly.
+   - **Reduce Redundancy and Overlap**: Merge similar elements across templates if multiple are selected (e.g., combine duplicate summarization rules). Trim examples or repetitions that don't add value, aiming to shorten each by 10-20% without losing essence.
+   - **Boost Robustness**: Add brief guidance for edge cases (e.g., "If input is empty or invalid, return the original unchanged"). Ensure rules preserve original intent, tone, and constraints (e.g., no additions/removals in grammar fixes).
+   - **Improve Effectiveness**: Incorporate prompt engineering best practices, like emphasizing output constraints to minimize hallucinations. If the template involves creativity (e.g., wit or expansion), add limits to prevent overreach.
+   - **Maintain Meta-Fit**: Keep the polished templates compatible with your app's workflow—e.g., reference <Selection> tags where relevant, and output clean markdown without extra commentary.
+
+3. **Handle Multiple Templates**: If the selection includes more than one template, polish them individually but add a brief introductory note (e.g., "## Polished Template: [Original Name]") before each. If overlaps exist, suggest a merged version at the end.
+
+4. **Preserve Originals**: Do not change the fundamental goal or rules of any template—only refine for polish. Aim for templates that are concise yet comprehensive, fostering reliable LLM performance.
+
+Return only the polished template(s) in clean markdown format, with no additional analysis, explanations, or tags. If no improvements are needed, return the original(s) unchanged with a note: "[Template Name]: Already optimal—no changes made."
 
 ## Reduce instructions to cover all bases in an organised way
 
@@ -156,13 +143,6 @@ The restructured instructions should:
 
 Return only the reorganized and enhanced instructions.
 
-## Simplify
-
-Simplify the provided selection to a 6th-grade reading level (ages 11-12).
-Use simple sentences, common words, and clear explanations.
-Maintain the original key concepts.
-Return only the simplified selection.
-
 ## Simplify 2.0
 
 Simplify the provided text by:
@@ -176,6 +156,13 @@ Simplify the provided text by:
 The goal is to make the text accessible to a broader audience, ensuring the core message is easily understood without requiring specialized knowledge.
 
 Return only the simplified text.
+
+## Simplify 6th-grade
+
+Simplify the provided selection to a 6th-grade reading level (ages 11-12).
+Use simple sentences, common words, and clear explanations.
+Maintain the original key concepts.
+Return only the simplified selection.
 
 ## Summarize
 
@@ -198,7 +185,7 @@ Return only the generated title.
 
 Translate the provided selection into English. Ensure the translation is accurate and maintains the original meaning, tone, and context. Return only the translated text.
 
-## Upgrade the system prompt
+## Upgrade selected system prompt
 
 The selected text contains a persona system prompt enclosed within `<Selection>` tags. This persona system prompt defines the role and behavior of an AI assistant. It's a crucial component that shapes how the AI understands its purpose and how it should interact with users and its environment.
 
@@ -262,29 +249,19 @@ A single, strong sentence that encapsulates:
 
 Return only the **expanded** system prompt within the `<Selection>` tags, with no additional text or comments.
 
-## Write 5 ways to rephrase it, or rewrite it
+## Write 5 Ways to Rephrase It
 
-Provide five distinct ways to rephrase or rewrite the provided text. Each rephrased version should:
+Provide five distinct ways to rephrase or rewrite the provided selection (e.g., a phrase, sentence, or short paragraph). Each version should:
 
-1. **Offer a different stylistic approach:** Experiment with tone, formality, or sentence structure.
-2. **Emphasize different aspects:** Highlight various keywords or ideas from the original text.
-3. **Target a different audience (implicitly):** Consider how the phrasing might appeal to different readers.
-4. **Maintain the core meaning:** Ensure all versions accurately reflect the original message.
-5. **Be a complete, standalone phrase or sentence.**
+1. **Vary the style:** Experiment with tone (e.g., formal to casual, direct to descriptive), sentence structure (e.g., active to passive, simple to compound), or formatting (e.g., questions vs. statements) to offer fresh perspectives.
+2. **Shift emphasis:** Highlight different key elements, such as benefits, challenges, emotions, or implications from the original text.
+3. **Suit varied audiences:** Implicitly tailor phrasing for different readers, like experts (more technical), beginners (simpler language), or general users (engaging and relatable).
+4. **Preserve core meaning:** Retain the original intent, facts, and nuance—do not add, remove, or contradict information.
+5. **Stay concise and standalone:** Keep each rephrasing roughly the same length as the original (within 20% variance) and ensure it's a complete, self-contained unit.
 
-Return only the five rephrased versions, clearly numbered or bulleted.
+Number the five versions clearly (1-5) for easy reference. If the selection is very short (under 10 words), focus on subtle variations; for longer ones, prioritize flow and coherence.
 
-## Write 5 ways to rephrase the paragraph
-
-Provide five distinct ways to rephrase the provided paragraph. Each rephrased version should:
-
-1. **Offer a different stylistic approach:** Experiment with tone, formality, or sentence structure.
-2. **Emphasize different aspects:** Highlight various keywords or ideas from the original paragraph.
-3. **Target a different audience (implicitly):** Consider how the phrasing might appeal to different readers.
-4. **Maintain the core meaning:** Ensure all versions accurately reflect the original message.
-5. **Be a complete, standalone paragraph.**
-
-Return only the five rephrased paragraphs, clearly numbered or bulleted.
+Return only the five rephrased versions, numbered, with no introductory or explanatory text.
 
 ## Write the implicit parts explicit
 
@@ -302,7 +279,7 @@ Return only the rewritten selection with the implicit parts made explicit.
 
 # chatTemplates
 
-## Analizer 2.0
+## Analyzer 2.0
 
 Analyze the provided conversation log to understand the interaction between the `user`, the `assistant`, and the `system`.
 
@@ -341,7 +318,7 @@ The section marked with `# role: system` is the _system prompt_. This prompt is 
 
 By completing these tasks, you will demonstrate a deep understanding of how to analyze AI conversations and how to craft effective prompts for AI behavior and output.
 
-## Conversation analizer
+## Conversation analyzer
 
 Analyze the conversation.
 

@@ -571,7 +571,7 @@ export class PureChatLLMChat {
       new StreamNotice(this.plugin.app, "Processing chat with template.").change
     ).then(r => ({
       role: "assistant",
-      content: r.content.replace(/[\s\S]+?<Conversation>|<\/Conversation>[\s\S]+/gi, "").trim(),
+      content: r.content.replace(/^<Conversation>|<\/Conversation>$/gi, "").trim(),
     }));
   }
 
@@ -607,7 +607,7 @@ export class PureChatLLMChat {
       { role: "system", content: Selectionsysprompt },
       {
         role: "user",
-        content: `<Selection>\n${selectedText}\n\n</Selection>`,
+        content: `<Selection>\n${selectedText.trim()}\n\n</Selection>`,
       },
       { role: "user", content: templatePrompt },
     ];
@@ -616,7 +616,7 @@ export class PureChatLLMChat {
       new StreamNotice(this.plugin.app, "Editing selection.").change
     ).then(r => ({
       role: "assistant",
-      content: r.content.replace(/[\s\S]+?<Selection>|<\/Selection>[\s\S]+/gi, "").trim(),
+      content: r.content.replace(/^<Selection>|<\/Selection>$/gi, "").trim(),
     }));
   }
 
