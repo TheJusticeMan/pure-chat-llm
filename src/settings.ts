@@ -86,8 +86,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 text.setValue(before + insert + after);
                 // Move cursor after inserted text
                 setTimeout(() => {
-                  text.inputEl.selectionStart = text.inputEl.selectionEnd =
-                    before.length + insert.length;
+                  text.inputEl.selectionStart = text.inputEl.selectionEnd = before.length + insert.length;
                   text.inputEl.focus();
                 }, 0);
               }).open();
@@ -147,9 +146,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName("Use OpenAI image generation")
-      .setDesc(
-        "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key."
-      )
+      .setDesc("Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key.")
       .addToggle(toggle =>
         toggle.setValue(settings.useImageGeneration).onChange(async value => {
           settings.useImageGeneration = value;
@@ -181,9 +178,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName("Custom LLM Providers")
-      .setDesc(
-        "Add custom LLM providers with API keys. These will be available in the model provider dropdown."
-      )
+      .setDesc("Add custom LLM providers with API keys. These will be available in the model provider dropdown.")
       .addButton(btn =>
         btn
           .setButtonText("Add custom provider")
@@ -229,9 +224,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       .addDropdown(dropdown =>
         dropdown
           .addOptions(
-            Object.fromEntries(
-              Object.entries(StatSett.chatParser).map(([key, value]) => [key, value.description])
-            )
+            Object.fromEntries(Object.entries(StatSett.chatParser).map(([key, value]) => [key, value.description]))
           )
           .setValue(settings.chatParser.toString())
           .onChange(async value => {
@@ -263,8 +256,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
             this.plugin.settings = { ...DEFAULT_SETTINGS };
             for (const endpoint in this.plugin.settings.endpoints) {
               if (DEFAULT_SETTINGS.endpoints[endpoint])
-                this.plugin.settings.endpoints[endpoint].apiKey =
-                  oldSettings.endpoints[endpoint].apiKey;
+                this.plugin.settings.endpoints[endpoint].apiKey = oldSettings.endpoints[endpoint].apiKey;
             }
             this.plugin.saveSettings();
             this.display();

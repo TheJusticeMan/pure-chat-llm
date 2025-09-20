@@ -1,11 +1,11 @@
 import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
 import { codeContent } from "./CodeHandling";
-import PureChatLLM from "./main";
+import { PureChatLLMImageGen } from "./ImageGen";
+import PureChatLLM, { StreamNotice } from "./main";
 import { EmptyApiKey } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
 import { PureChatLLMAPI, StatSett } from "./types";
-import { PureChatLLMImageGen } from "./ImageGen";
 
 interface ChatMessage {
   role: RoleType;
@@ -570,24 +570,21 @@ Use this workflow to accurately handle the chat based on the instruction.`;
       );
 
     new Notice("Generating chat response from template...");
-    const r = await this.sendChatRequest({
-      ...this.options,
-      messages: [
-        { role: "system", content: systemprompt },
-        {
-          role: "user",
-          content: `<Conversation>\n${this.ChatText}\n\n</Conversation>`,
-        },
-        { role: "user", content: templatePrompt },
-      ],
-    });
-    return {
+    const messages = [
+      { role: "system", content: systemprompt },
+      {
+        role: "user",
+        content: `<Conversation>\n${this.ChatText}\n\n</Conversation>`,
+      },
+      { role: "user", content: templatePrompt },
+    ];
+    return this.sendChatRequest(
+      { ...this.options, messages: messages },
+      new StreamNotice(this.plugin.app, "Processing chat with template.").change
+    ).then(r => ({
       role: "assistant",
-      content: r.content
-        .trim()
-        .replace(/^<Conversation>|<\/Conversation>$/g, "")
-        .trim(),
-    };
+      content: r.content.replace(/[\s\S]+?<Conversation>|<\/Conversation>[\s\S]+/gi, "").trim(),
+    }));
   }
 
   /**
@@ -638,16 +635,13 @@ Use this workflow to help modify markdown content accurately.`;
       },
       { role: "user", content: templatePrompt },
     ];
-    new Notice("Generating response for selection...");
-    return this.sendChatRequest({ ...this.options, messages: messages }).then(r => {
-      return {
-        role: "assistant",
-        content: r.content
-          .trim()
-          .replace(/^<Selection>|<\/Selection>$/g, "")
-          .trim(),
-      };
-    });
+    return this.sendChatRequest(
+      { ...this.options, messages: messages },
+      new StreamNotice(this.plugin.app, "Editing selection.").change
+    ).then(r => ({
+      role: "assistant",
+      content: r.content.replace(/[\s\S]+?<Selection>|<\/Selection>[\s\S]+/gi, "").trim(),
+    }));
   }
 
   /**
@@ -761,18 +755,6 @@ Use this workflow to help modify markdown content accurately.`;
     return { role: "assistant", content: fullText };
   }
 
-  ReverseRoles() {
-    this.messages = this.messages.map(msg => {
-      if (msg.role === "user") {
-        msg.role = "assistant";
-      } else if (msg.role === "assistant") {
-        msg.role = "user";
-      }
-      return msg;
-    });
-    return this;
-  }
-
   /**
    * Sends a chat request to the specified endpoint with the provided options.
    *
@@ -844,6 +826,18 @@ Use this workflow to help modify markdown content accurately.`;
       this.plugin.status("");
       return data.choices[0].message;
     }
+  }
+
+  ReverseRoles() {
+    this.messages = this.messages.map(msg => {
+      if (msg.role === "user") {
+        msg.role = "assistant";
+      } else if (msg.role === "assistant") {
+        msg.role = "user";
+      }
+      return msg;
+    });
+    return this;
   }
 
   filterOutUncalledToolCalls([agent, ...Responses]: {

@@ -1,17 +1,8 @@
-import {
-  App,
-  ButtonComponent,
-  ExtraButtonComponent,
-  Modal,
-  Notice,
-  Setting,
-  TextAreaComponent,
-} from "obsidian";
+import { App, ButtonComponent, ExtraButtonComponent, Modal, Notice, Setting, TextAreaComponent } from "obsidian";
 import { PureChatLLMChat } from "./Chat";
 import PureChatLLM from "./main";
 import { EmptyApiKey } from "./s.json";
 import { PureChatLLMAPI } from "./types";
-import { get } from "http";
 
 /**
  * Modal dialog prompting the user to enter an OpenAI API key for the PureChatLLM plugin.
@@ -73,9 +64,7 @@ export class AskForAPI extends Modal {
           });
       });
     new Setting(this.contentEl)
-      .setName(
-        createFragment(el => el.createEl("a", { href: endpoint.getapiKey, text: endpoint.name }))
-      )
+      .setName(createFragment(el => el.createEl("a", { href: endpoint.getapiKey, text: endpoint.name })))
       .setDesc(`Link to get API key from ${endpoint.name}`)
       .addButton(btn =>
         btn
@@ -89,8 +78,7 @@ export class AskForAPI extends Modal {
   }
 
   private async saveAndClose() {
-    this.plugin.settings.endpoints[this.plugin.settings.endpoint].apiKey =
-      this.apiKey || EmptyApiKey;
+    this.plugin.settings.endpoints[this.plugin.settings.endpoint].apiKey = this.apiKey || EmptyApiKey;
     await this.plugin.saveSettings();
     this.close();
   }
@@ -148,12 +136,7 @@ export class EditWand extends Modal {
   // Callback for when user confirms the change
   onSubmit: (modifiedText: string) => void;
 
-  constructor(
-    app: App,
-    plugin: PureChatLLM,
-    selection: string,
-    onSubmit: (modifiedText: string) => void
-  ) {
+  constructor(app: App, plugin: PureChatLLM, selection: string, onSubmit: (modifiedText: string) => void) {
     super(app);
     this.plugin = plugin;
     this.app = app;
@@ -178,14 +161,12 @@ export class EditWand extends Modal {
       });
 
     // Create prompt textarea
-    this.promptEl = new CodeAreaComponent(this.contentEl)
-      .setPlaceholder("Enter the prompt")
-      .onChange(value => {
-        if (value.endsWith(">go")) {
-          this.promptEl.setValue(value.slice(0, -3));
-          this.send();
-        }
-      });
+    this.promptEl = new CodeAreaComponent(this.contentEl).setPlaceholder("Enter the prompt").onChange(value => {
+      if (value.endsWith(">go")) {
+        this.promptEl.setValue(value.slice(0, -3));
+        this.send();
+      }
+    });
 
     // Setup action buttons
     this.setupActionButtons();
@@ -297,10 +278,8 @@ const endpointNames: PureChatLLMAPI = {
 const endpointDescriptions: PureChatLLMAPI = {
   name: "The name of the LLM provider.",
   apiKey: "Your API key for the LLM provider.",
-  endpoint:
-    "The URL for the LLM provider's chat completions endpoint, including /v1/chat/completions.",
-  defaultmodel:
-    "The default model to use for requests. This is required for the plugin to function.",
+  endpoint: "The URL for the LLM provider's chat completions endpoint, including /v1/chat/completions.",
+  defaultmodel: "The default model to use for requests. This is required for the plugin to function.",
   listmodels: "Optional URL to retrieve available models from the provider.",
   getapiKey: "Optional URL the API key page for the provider.",
 };

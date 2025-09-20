@@ -61,9 +61,7 @@ export class CodeHandling extends Modal {
             .setIcon("pencil")
             .setTooltip("Edit with prompt")
             .onClick(() =>
-              new EditWand(this.app, this.plugin, c.code, newCode =>
-                textArea.setValue((c.code = newCode))
-              ).open()
+              new EditWand(this.app, this.plugin, c.code, newCode => textArea.setValue((c.code = newCode))).open()
             )
         );
     });

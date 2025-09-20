@@ -25,10 +25,7 @@ export const nonKeyboardCharMap: [RegExp, string][] = [
 export const nonSafeCharacterFilter = /[^a-zA-Z`0-9~!@#$%^&*()_+\\=\[\]{}|;:'",.<>/? \n\t-]/gu;
 
 export function replaceNonKeyboardChars(plugin: PureChatLLM, input: string): string {
-  const output = nonKeyboardCharMap.reduce(
-    (acc, [regex, replacement]) => acc.replace(regex, replacement),
-    input
-  );
+  const output = nonKeyboardCharMap.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), input);
   if (nonSafeCharacterFilter.test(output)) {
     plugin.console.warn("Input contains undocumented characters");
   }

@@ -1,5 +1,6 @@
 import {
   App,
+  Component,
   Editor,
   EditorPosition,
   EditorSuggest,
@@ -10,7 +11,6 @@ import {
   Menu,
   Modal,
   Notice,
-  parseLinktext,
   Plugin,
   Setting,
   TextComponent,
@@ -60,9 +60,9 @@ export default class PureChatLLM extends Plugin {
   pureChatStatusElement: HTMLElement;
 
   async onload() {
+    await this.loadSettings();
     this.pureChatStatusElement = this.addStatusBarItem();
     this.status("Loading...");
-    await this.loadSettings();
     this.console = new BrowserConsole(this.settings.debug, "PureChatLLM");
     this.console.log("settings loaded", this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
@@ -71,8 +71,85 @@ export default class PureChatLLM extends Plugin {
 
     this.addRibbonIcon("text", "Open conversation overview", this.activateView.bind(this));
 
-    // Add command for completing chat response
-    // No default hotkey
+    this.setupChatCommandHandlers();
+
+    this.setupContextMenuActions();
+
+    this.registerEditorSuggest(new PureChatEditorSuggest(this.app, this));
+
+    // Add settings tab
+    this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
+    this.status("");
+  }
+
+  private setupContextMenuActions() {
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
+        this.addItemsToMenu(menu, editor, view);
+      })
+    );
+
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (file instanceof TFolder) {
+          menu.addItem(item => {
+            item
+              .setTitle("New conversation")
+              .setIcon("message-square-plus")
+              .setSection("action-primary")
+              .onClick(async () => {
+                const fileName = this.generateUniqueFileName(file, "Untitled Conversation");
+                const newFile = await this.app.vault.create(
+                  `${file.path}/${fileName}.md`,
+                  new PureChatLLMChat(this).setMarkdown("Type your message...").Markdown
+                );
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.openFile(newFile);
+                this.activateView();
+              });
+          });
+        } else if (file instanceof TFile && file.extension === "md") {
+          const link = this.app.fileManager.generateMarkdownLink(file, file.path);
+          menu.addItem(item => {
+            item
+              .setTitle("New chat from file")
+              .setIcon("message-square-plus")
+              .setSection("action")
+              .onClick(async () => {
+                const fileName = this.generateUniqueFileName(file.parent!, `Untitled ${file.basename}`);
+
+                const newFile = await this.app.vault.create(
+                  `${file.parent!.path}/${fileName}.md`,
+                  new PureChatLLMChat(this).setMarkdown(link).Markdown
+                );
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.openFile(newFile);
+                this.activateView();
+              });
+          });
+          menu.addItem(item => {
+            item
+              .setTitle("New chat from file system prompt")
+              .setIcon("message-square-plus")
+              .setSection("action")
+              .onClick(async () => {
+                const fileName = this.generateUniqueFileName(file.parent!, `Untitled ${file.basename}`);
+
+                const newFile = await this.app.vault.create(
+                  `${file.parent!.path}/${fileName}.md`,
+                  new PureChatLLMChat(this).setMarkdown(`# role: System\n${link}\n# role: User\n`).Markdown
+                );
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.openFile(newFile);
+                this.activateView();
+              });
+          });
+        }
+      })
+    );
+  }
+
+  private setupChatCommandHandlers() {
     this.addCommand({
       id: "complete-chat-response",
       name: "Complete chat response",
@@ -186,78 +263,6 @@ export default class PureChatLLM extends Plugin {
         });
       }
     });
-
-    this.registerEvent(
-      this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
-        this.addItemsToMenu(menu, editor, view);
-      })
-    );
-
-    this.registerEvent(
-      this.app.workspace.on("file-menu", (menu, file) => {
-        if (file instanceof TFolder) {
-          menu.addItem(item => {
-            item
-              .setTitle("New conversation")
-              .setIcon("message-square-plus")
-              .setSection("action-primary")
-              .onClick(async () => {
-                const fileName = this.generateUniqueFileName(file, "Untitled Conversation");
-                const newFile = await this.app.vault.create(
-                  `${file.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown("Type your message...").Markdown
-                );
-                const leaf = this.app.workspace.getLeaf(true);
-                await leaf.openFile(newFile);
-                this.activateView();
-              });
-          });
-        } else if (file instanceof TFile && file.extension === "md") {
-          const link = this.app.fileManager.generateMarkdownLink(file, file.path);
-          menu.addItem(item => {
-            item
-              .setTitle("New chat from file")
-              .setIcon("message-square-plus")
-              .setSection("action")
-              .onClick(async () => {
-                const fileName = this.generateUniqueFileName(file.parent!, `Untitled ${file.basename}`);
-
-                const newFile = await this.app.vault.create(
-                  `${file.parent!.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown(link).Markdown
-                );
-                const leaf = this.app.workspace.getLeaf(true);
-                await leaf.openFile(newFile);
-                this.activateView();
-              });
-          });
-          menu.addItem(item => {
-            item
-              .setTitle("New chat from file system prompt")
-              .setIcon("message-square-plus")
-              .setSection("action")
-              .onClick(async () => {
-                const fileName = this.generateUniqueFileName(file.parent!, `Untitled ${file.basename}`);
-
-                const newFile = await this.app.vault.create(
-                  `${file.parent!.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown(`# role: System\n${link}\n# role: User\n`).Markdown
-                );
-                const leaf = this.app.workspace.getLeaf(true);
-                await leaf.openFile(newFile);
-                this.activateView();
-              });
-          });
-        }
-      })
-    );
-
-    this.registerEditorSuggest(new PureChatEditorSuggest(this.app, this));
-
-    // Add settings tab
-    this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
-    this.status("");
-    //this.pureChatStatusElement.empty();
   }
 
   status(text: string) {
@@ -497,6 +502,20 @@ export default class PureChatLLM extends Plugin {
   onunload() {
     // Cleanup code if needed
   }
+}
+
+export class StreamNotice {
+  fulltext: string = "";
+  notice: Notice;
+  constructor(public app: App, init?: string) {
+    this.notice = new Notice(init || "Generating response for selection...");
+  }
+  change = (e: any) => {
+    if (!e?.content) return true;
+    this.fulltext += e.content;
+    this.notice.setMessage(this.fulltext);
+    return true;
+  };
 }
 
 /**

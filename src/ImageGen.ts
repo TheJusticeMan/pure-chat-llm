@@ -1,5 +1,5 @@
+import { App, requestUrl, TFile } from "obsidian";
 import * as imageGeneration from "./imageGen.json";
-import { App, request, requestUrl, TFile } from "obsidian";
 
 export class PureChatLLMImageGen {
   static readonly TOOL_NAME = "image_generation"; // Name of the tool as it will be used in the chat completion request
@@ -62,10 +62,7 @@ export class PureChatLLMImageGen {
         const imageUrl = images[i].url;
         const filename = `generated-image-${Date.now()}-${i}.png`;
 
-        const normalizedPath = await this.app.fileManager.getAvailablePathForAttachment(
-          filename,
-          this.file.path
-        );
+        const normalizedPath = await this.app.fileManager.getAvailablePathForAttachment(filename, this.file.path);
 
         const imgResp = await requestUrl(imageUrl); // Fetch the image from the URL
         // imgResp is the binary response of the image as a string
@@ -81,12 +78,8 @@ export class PureChatLLMImageGen {
     });
   }
 
-  async getToolCall(message: {
-    tool_calls: { function: { name: string; arguments: string }; id: string }[];
-  }) {
-    const toolCall = message.tool_calls.find(
-      call => call.function.name === PureChatLLMImageGen.TOOL_NAME
-    );
+  async getToolCall(message: { tool_calls: { function: { name: string; arguments: string }; id: string }[] }) {
+    const toolCall = message.tool_calls.find(call => call.function.name === PureChatLLMImageGen.TOOL_NAME);
     if (!toolCall) {
       throw new Error(`No tool call found for ${PureChatLLMImageGen.TOOL_NAME}`);
     }

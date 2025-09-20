@@ -1,5 +1,3 @@
-/** @format */
-
 import { App, Notice, TFolder } from "obsidian";
 import { PureChatLLMChat } from "./Chat";
 import PureChatLLM, { FolderSuggest } from "./main";

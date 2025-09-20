@@ -8,13 +8,9 @@ import {
   ItemView,
   MarkdownRenderer,
   MarkdownView,
-  MetadataCache,
   Notice,
-  parseLinktext,
   Platform,
-  resolveSubpath,
   Setting,
-  TFile,
   WorkspaceLeaf,
 } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";

@@ -31,10 +31,7 @@ export function runTest(API_KEY: string) {
   requestChatCompletion("Make a picture of blue a dog.", API_KEY)
     .then(completion => {
       console.log("Chat completion received:", completion);
-      generateImage(
-        JSON.parse(completion.tool_calls[0].function.arguments || "{}") as ChatCompletion,
-        API_KEY
-      );
+      generateImage(JSON.parse(completion.tool_calls[0].function.arguments || "{}") as ChatCompletion, API_KEY);
       return;
     })
     .catch(err => console.error(err));
