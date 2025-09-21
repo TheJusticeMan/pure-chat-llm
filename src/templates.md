@@ -57,12 +57,12 @@ Condense the provided selection into a single, cohesive paragraph while preservi
 
 Return only the condensed paragraph.
 
-## Condense selected system prompt
+## Condense Selected System Prompt
 
-Condense the provided system prompt to half its length.
-Preserve all core instructions, the role of the AI, and the desired output format.
-Remove any redundant phrases or examples that do not contribute to the essential directives.
-Maintain the original tone and style.
+Condense the provided system prompt within `<Selection>` tags to about half its original length. Preserve the AI's role, core instructions, and output format. Remove redundant phrases and non-essential examples while maintaining the original tone and style.
+
+If the selection is empty or invalid, return it unchanged.
+
 Return only the condensed system prompt.
 
 ## Convert talk into actions
@@ -76,9 +76,9 @@ Take the provided selection, which contains dialogue, instructions, or descripti
 
 Return only the list of converted actions as bullet points.
 
-## Correct grammar & spelling
+## Correct Grammar & Spelling
 
-Fix the grammar and spelling of the provided selection. Preserve all formatting, line breaks, and special characters. Do not add or remove any content. Return only the corrected text.
+Correct the grammar and spelling errors in the provided selection. Preserve all original formatting, line breaks, special characters, and content—do not add, remove, or alter any text beyond necessary fixes. If the input is empty, invalid, or already correct, return it unchanged. Return only the corrected text.
 
 ## Expand
 
@@ -106,26 +106,25 @@ Return only the wittily enhanced selection.
 
 ## Polish These Templates
 
-The provided selection contains one or more templates from your app's library (e.g., from selectionTemplates or chatTemplates). Your task is to polish them for improved quality, making them clearer, more consistent, and more effective at guiding LLM outputs. Treat this as a meta-editing exercise: refine the prompts without altering their core purpose, while eliminating inefficiencies—like a barber trimming split ends from a prompt's hairdo.
+The provided selection contains templates from your app's library (e.g., selectionTemplates or chatTemplates). Polish them for clarity, consistency, and effectiveness in guiding LLM outputs. Treat this as meta-editing: refine prompts without changing their core purpose, trimming inefficiencies like redundancy or bloat.
 
-Follow this structured workflow:
+Follow this workflow:
 
-1. **Extract and Analyze**: Identify each individual template in the selection. For each, note its type (selection or chat), core function, and any issues such as redundancy (e.g., overlapping rules), inconsistencies (e.g., varying output formats), vagueness (e.g., undefined terms), or bloat (e.g., unnecessary verbosity). Consider edge cases like short/long inputs, non-English text, or ambiguous user selections.
+1. **Extract and Analyze**: Identify each template (selection or chat type). Note its function and issues like redundancy, inconsistencies, vagueness, or excess verbosity. Consider edge cases such as short/long inputs, non-English text, or ambiguous selections.
 
 2. **Apply Polishing Rules**:
 
-   - **Enhance Clarity and Specificity**: Rephrase ambiguous instructions into precise, actionable steps. Use consistent language (e.g., always start with "You are [role]" if applicable, and define terms like "<Selection> handling upfront).
-   - **Standardize Structure**: Ensure uniform formatting: Begin with role/system context, followed by input handling, numbered rules/guidelines, and end with a strict "Return only the [output]" directive. For chatTemplates, always explain roles (user/assistant/system) explicitly.
-   - **Reduce Redundancy and Overlap**: Merge similar elements across templates if multiple are selected (e.g., combine duplicate summarization rules). Trim examples or repetitions that don't add value, aiming to shorten each by 10-20% without losing essence.
-   - **Boost Robustness**: Add brief guidance for edge cases (e.g., "If input is empty or invalid, return the original unchanged"). Ensure rules preserve original intent, tone, and constraints (e.g., no additions/removals in grammar fixes).
-   - **Improve Effectiveness**: Incorporate prompt engineering best practices, like emphasizing output constraints to minimize hallucinations. If the template involves creativity (e.g., wit or expansion), add limits to prevent overreach.
-   - **Maintain Meta-Fit**: Keep the polished templates compatible with your app's workflow—e.g., reference <Selection> tags where relevant, and output clean markdown without extra commentary.
+   - **Clarity and Specificity**: Rephrase ambiguities into precise steps. Use consistent language (e.g., start with "...the provided selection" or "...the provided conversation" if fitting; define terms like `<Selection>` handling).
+   - **Structure**: Standardize format: role/system context first, then input handling, numbered rules, and end with "Return only the [output]" directive. For chatTemplates, explain roles (user/assistant/system) explicitly.
+   - **Reduce Redundancy**: Merge overlaps (e.g., duplicate rules). Trim unhelpful examples or repetitions, shortening by 10-20% without losing essence.
+   - **Effectiveness**: Use best practices like strict output limits to curb hallucinations. For creative tasks, add bounds to avoid excess.
+   - **Meta-Fit**: Ensure compatibility with app workflow—reference `<Selection>` tags; output clean markdown sans commentary.
 
-3. **Handle Multiple Templates**: If the selection includes more than one template, polish them individually but add a brief introductory note (e.g., "## Polished Template: [Original Name]") before each. If overlaps exist, suggest a merged version at the end.
+3. **Multiple Templates**: Polish individually; prefix each with "## Polished Template: [Original Name]". Suggest merged version if overlaps.
 
-4. **Preserve Originals**: Do not change the fundamental goal or rules of any template—only refine for polish. Aim for templates that are concise yet comprehensive, fostering reliable LLM performance.
+4. **Preserve Originals**: Retain core goals and rules—refine only for conciseness and reliability.
 
-Return only the polished template(s) in clean markdown format, with no additional analysis, explanations, or tags. If no improvements are needed, return the original(s) unchanged with a note: "[Template Name]: Already optimal—no changes made."
+Return only polished template(s) in clean markdown, no analysis or tags. If optimal, return original with note: "[Template Name]: Already optimal—no changes made."
 
 ## Reduce instructions to cover all bases in an organised way
 
@@ -187,67 +186,7 @@ Translate the provided selection into English. Ensure the translation is accurat
 
 ## Upgrade selected system prompt
 
-The selected text contains a persona system prompt enclosed within `<Selection>` tags. This persona system prompt defines the role and behavior of an AI assistant. It's a crucial component that shapes how the AI understands its purpose and how it should interact with users and its environment.
-
-Rewrite the system prompt using this outline, ensuring it becomes a robust and clear guide for AI behavior.
-
-A single, strong sentence that encapsulates:
-
-- **The AI's specific role or identity.**
-- **Its primary characteristic or mission.**
-- _(Optionally)_ A key descriptor of its nature or how it operates.
-- _This sentence is paramount; it should serve as the AI's foundational internal compass, guiding all subsequent behavior and responses._
-
-### 1. Core Identity & Purpose
-
-- **Role/Persona Name:** A clear, concise identifier. This is the name by which the AI should know itself and be referred to.
-  - _Why it matters:_ Establishes the fundamental "who" of the AI.
-- **Primary Objective/Mission:** What is the AI's overarching goal? What is it trying to achieve in its interactions?
-  - _Why it matters:_ Provides a guiding star for all responses, ensuring consistency and focus.
-- **Target Audience/User:** Who is the AI designed to interact with? Understanding the user helps tailor the language and complexity.
-  - _Why it matters:_ Dictates the appropriate level of technicality, formality, and empathy.
-
-### 2. Behavioral Guidelines & Tone
-
-- **Tone of Voice:** Describe the desired emotional and stylistic register. (e.g., formal, informal, empathetic, humorous, authoritative, curious, neutral).
-  - _Why it matters:_ Sets the mood and emotional resonance of the AI's communication. A helpful assistant might be empathetic, while a historical advisor might be more formal.
-- **Communication Style:** How should the AI communicate? (e.g., concise, verbose, uses analogies, asks clarifying questions, avoids jargon, prefers bullet points).
-  - _Why it matters:_ Ensures clarity and efficiency in information exchange. Some users appreciate brevity, others detail.
-- **Key Principles/Values:** What are the fundamental tenets that guide the AI's behavior and decision-making? (e.g., accuracy, helpfulness, objectivity, creativity, safety, respect).
-  - _Why it matters:_ Acts as an ethical compass, ensuring responsible and beneficial interactions.
-
-### 3. Knowledge & Expertise
-
-- **Domain of Expertise:** What specific areas does the AI have knowledge in? What are its areas of proficiency? *Consider specifying the *depth* of knowledge required (e.g., 'broad overview,' 'expert-level understanding,' 'familiarity with foundational concepts').*
-  - _Why it matters:_ Clearly defines the boundaries of its knowledge, preventing overconfidence or irrelevant information.
-- **Knowledge Limitations:** What does the AI _not_ know or is not supposed to discuss? Are there topics it should politely decline to engage with?
-  - _Why it matters:_ Manages user expectations and prevents the AI from venturing into areas where it might provide misinformation or inappropriate content.
-- **Information Sources (if applicable):** Where does the AI draw its information from? This can be a general description.
-  - _Why it matters:_ Informs the user (and the AI itself) about the basis of its knowledge.
-
-### 4. Interaction Mechanics & Constraints
-
-- **Response Format Preferences:** How should the AI structure its responses? (e.g., use markdown, limit response length, always provide a summary, ask follow-up questions).
-  - _Why it matters:_ Facilitates easier consumption of information and guides the AI towards producing output that is user-friendly.
-- **Handling Ambiguity/Uncertainty:** What should the AI do when it doesn't understand a query or is unsure of an answer?
-  - _Why it matters:_ Prevents the AI from fabricating answers and encourages a more robust and transparent interaction.
-- **Error Handling:** How should the AI acknowledge, correct, and _learn_ from mistakes or instances where it provides incorrect information? _Should it solicit feedback or adapt its future behavior based on corrections?_
-  - _Why it matters:_ Fosters trust and allows for correction, crucial for learning and improvement.
-- **Contextual Awareness:** How should the AI manage and leverage conversational history, user-provided context, and implicit cues across turns?
-  - _Why it matters:_ Ensures the AI maintains coherence, avoids repetition, and builds effectively on prior interactions, making multi-turn conversations feel natural and efficient.
-- **Engagement Strategies:** How should the AI encourage continued interaction or deeper exploration of a topic? _Should it proactively ask clarifying questions, suggest related topics, offer next steps, or inquire about user goals?_
-  - _Why it matters:_ Can make the AI feel more dynamic and helpful, guiding the user through complex subjects.
-
-### 5. Specific Persona Traits & Quirks
-
-- **Personality Traits:** Beyond tone, what are the deeper personality characteristics? (e.g., curious, analytical, witty, calm, energetic).
-  - _Why it matters:_ Adds depth and a sense of individuality to the AI, making it more engaging.
-- **Metaphorical Representations (optional):** Sometimes, framing the AI as something can be illustrative (e.g., "You are a seasoned librarian," "You are a helpful guide on a journey").
-  - _Why it matters:_ Can provide an intuitive shortcut to understanding the desired behavior and attitude.
-- **Specific Examples of Good/Bad Responses:** Illustrative examples can be incredibly powerful in guiding the AI's behavior. _Ensure these examples are concise, pointed, and clearly highlight the desired or undesired traits._
-  - _Why it matters:_ Provides concrete, actionable guidance that goes beyond abstract descriptions.
-
-Return only the **expanded** system prompt within the `<Selection>` tags, with no additional text or comments.
+You will receive a persona system prompt enclosed within `<Selection>` tags, defining an AI assistant's role and behavior. Your task is to rewrite it into a robust, clear guide using the provided outline, enhancing clarity, completeness, and effectiveness while preserving the original intent, persona, and constraints—making it comprehensive yet concise with actionable guidance. Follow this workflow: Extract the content inside the tags; analyze the original for core elements like role, goals, and tone, plus any gaps, ambiguities, or redundancies; restructure using the outline, expanding for depth where needed but avoiding fluff and integrating original details seamlessly; if the input is empty, invalid, or already optimal, return it unchanged with a note: "Original prompt is already robust—no upgrades needed." The outline for the upgraded system prompt starts with a single, foundational sentence encapsulating the AI's role, identity, primary mission, and optionally a key descriptor of its nature, followed by: **1. Core Identity & Purpose**—concise role/persona name, primary objective/mission, and target audience; **2. Behavioral Guidelines & Tone**—tone of voice, communication style, and key principles/values; **3. Knowledge & Expertise**—domain of expertise, knowledge limitations, and information sources; **4. Interaction Mechanics & Constraints**—response format, handling ambiguity/uncertainty, error handling, contextual awareness, and engagement strategies; **5. Specific Persona Traits & Quirks**—personality traits, optional metaphorical representations, and 1-2 concise examples of good/bad responses. Return only the upgraded system prompt in clean markdown format, with no additional text, analysis, or comments.
 
 ## Write 5 Ways to Rephrase It
 
@@ -279,57 +218,42 @@ Return only the rewritten selection with the implicit parts made explicit.
 
 # chatTemplates
 
-## Analyzer 2.0
+## Analyzer Pro
 
-Analyze the provided conversation log to understand the interaction between the `user`, the `assistant`, and the `system`.
+Process the conversation provided in the previous message as a conversation analysis expert, specializing in refining AI interactions through prompt engineering.
 
-**Understanding the Roles:**
+**Task Overview:**
 
-- **`user`**: This role represents the end-user who is interacting with the AI. Their messages are the direct prompts and questions.
-- **`assistant`**: This role represents the AI model's responses. These are the outputs generated based on the user's input and the system's instructions.
-- **`system`**: This role encapsulates the underlying instructions or guidelines given to the AI model. It dictates how the `assistant` should behave, what its persona is, and what constraints it should adhere to.
+1. Extract the conversation from the `<Conversation>` tags.
+2. Analyze roles, patterns, and goals briefly (<100 words).
+3. Perform the core tasks below with concise rationales.  
+   Output in markdown: "## Analysis" section, followed by "## Better System Prompt" and "## Condensed User Prompt." Limit total output to 300 words; no extra tags or commentary.
 
-**Key Instruction:**
+**Roles:**
 
-The section marked with `# role: system` is the _system prompt_. This prompt is crucial as it directly instructs the `assistant` on how to function. Think of it as the AI's core programming or its "job description."
+- **user**: Prompts/questions driving interaction (# role: user).
+- **assistant**: AI responses shaped by input and system rules (# role: assistant).
+- **system**: Core instructions (# role: system)—AI's persona, guidelines, and constraints.
 
-**Your Tasks:**
+**Analysis Guidelines:** Scan for query types, response style, implicit goals/gaps, strengths/weaknesses (e.g., tone consistency), and ethics (e.g., biases).
 
-1. **Write a Better System Prompt:**
+**Tasks:**
 
-- **Objective:** Based on the overall pattern of user requests and the assistant's responses observed in the conversation, identify the _intended_ purpose or goal of the AI.
-- **Action:** Create a new, more effective `system` prompt that better guides the `assistant` to fulfill this identified purpose.
-- **Considerations:**
-  - What kind of information was the user consistently trying to elicit?
-  - What was the desired output format or style?
-  - Were there any implicit instructions or expectations from the user's side?
-  - The new prompt should be clear, concise, and actionable for the AI.
-- **Example:** If the user was repeatedly asking for summaries of complex topics in simple terms, a good system prompt might be: "You are a helpful AI assistant that excels at simplifying complex information. Respond to user queries by providing clear, concise, and easy-to-understand explanations, avoiding jargon where possible."
+1. **Better System Prompt:** Infer purpose from patterns; rewrite for clarity (<200 words), including role, objectives, tone, format, constraints, and edge handling. Preserve intent; address gaps.  
+   **Output Format:**
 
-2. **Condense User Requests into a Single Prompt:**
+   ## Better System Prompt
 
-- **Objective:** Imagine you need to achieve the _final_ desired outcome from the `assistant` using only _one_ single message from the `user`.
-- **Action:** Review all the individual requests made by the `user` throughout the conversation. Combine the essence of all these requests into a single, coherent prompt.
-- **Considerations:**
-  - What is the ultimate goal the user was trying to reach across all their messages?
-  - Can you frame this ultimate goal as a single, comprehensive request?
-  - Ensure the condensed prompt captures all the necessary information and constraints implied by the previous user messages.
-- **Example:** If a user first asked for data on topic A, then asked to analyze it, and finally asked for a summary in bullet points, a condensed prompt could be: "Provide data on topic A, analyze it, and present the key findings in bullet points."
+   [Upgraded prompt]  
+   _Rationale:_ [One sentence on key changes.]
 
-By completing these tasks, you will demonstrate a deep understanding of how to analyze AI conversations and how to craft effective prompts for AI behavior and output.
+2. **Condensed User Prompt:** Synthesize user messages into one standalone prompt (<80 words) capturing intents, constraints, and ultimate goals.  
+   **Output Format:**
+   ## Condensed User Prompt
+   [Single prompt]  
+   _Rationale:_ [One sentence on synthesis.]
 
-## Conversation analyzer
-
-Analyze the conversation.
-
-The role's are the `user` chatting with the `assistant` on the `system`.
-
-- The roles include the `user`, the `assistant`, and the `system` (instructions).
-  The `# role: system` is the instructions to the `system`. In other words it's the system prompt.
-
-Write a better system prompt based on what the user was trying to use the system for.
-
-Write another prompt by condensing all the user requests into one to get the final assistant response with just one user message.
+If the conversation is empty or invalid, return "## No Valid Conversation" unchanged.
 
 ## Conversation titler
 
@@ -354,16 +278,19 @@ Use the following rules:
 
 Return only the predicted user message.
 
-## Title
+## Refine Last User Message
 
-Generate a concise and engaging title for the provided conversation based on its main ideas, key points, and overall theme. Follow these rules:
+Analyze the provided conversation and refine the user's most recent message to make it clearer, more concise, and more effective while preserving the original intent.
 
-1. Ensure the title is 5-10 words long to keep it brief yet descriptive.
-2. Use title case (capitalize the first letter of major words).
-3. Make it relevant and appealing, reflecting the tone and context of the original text.
-4. Avoid adding new information not present in the selection.
+**Instructions:**
 
-Return only the generated title.
+- **Objective:** Identify the core purpose of the user's last message and rewrite it to enhance usability for the assistant, eliminating redundancy, improving clarity, and strengthening structure.
+- **Key Steps:**
+  1. Review the overall conversation context, including previous exchanges between user and assistant, to understand the user's goals and any implicit needs.
+  2. Pinpoint ambiguities, wordiness, or structural issues in the last user message (e.g., vague phrasing, unnecessary details).
+  3. Rewrite the message to be polite, direct, and aligned with the conversation's flow—use simpler language where possible, ensure logical progression, and maintain the original meaning without additions or alterations.
+  4. Consider edge cases: If the original is already optimal, make minimal tweaks for polish; if context suggests escalation (e.g., frustration), add subtle empathy without changing intent.
+- **Output:** Provide only the refined user message, without additional explanations, analysis, or commentary.
 
 ## Upgrade system prompt
 
@@ -377,24 +304,3 @@ Analyze the provided conversation log. Your task is to identify the core purpose
 - **Conciseness:** While being comprehensive, avoid unnecessary verbosity.
 
 **Output:** Provide only the upgraded system prompt.
-
-## Write the better version of the last user request
-
-Analyze the conversation and provide a more concise and effective version of the last user request.
-
-Consider the overall context of the conversation and the user's intent to refine their last message.
-
-## Write the user message better
-
-Analyze the conversation and improve the most recent user message.
-
-**Instructions:**
-
-- **Objective:** Take the user's last message and rewrite it to make it clearer, more concise, and more effective while preserving the original intent.
-- **Key Steps:**
-  1. Identify the core purpose of the user's message.
-  2. Consider the overall conversation context, including previous exchanges.
-  3. Refine the message by eliminating redundancy, improving clarity, and enhancing structure without altering the meaning.
-  4. Ensure the improved version is polite, direct, and aligned with the user's goals.
-- **Output:** Provide only the rewritten user message, without additional explanations.
-- **Example:** If the original user message is: "Can you tell me more about that thing from earlier, I think it was important but I'm not sure," an improved version could be: "Please elaborate on the key point from our earlier discussion."

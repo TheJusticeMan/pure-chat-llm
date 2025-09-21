@@ -607,7 +607,7 @@ export class PureChatLLMChat {
       { role: "system", content: Selectionsysprompt },
       {
         role: "user",
-        content: `<Selection>\n${selectedText.trim()}\n\n</Selection>`,
+        content: `<Selection>${selectedText}</Selection>`,
       },
       { role: "user", content: templatePrompt },
     ];
