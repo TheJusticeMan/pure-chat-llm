@@ -230,9 +230,12 @@ export class PureChatLLMSideView extends ItemView {
               .setIcon("save")
               .setTooltip("Save message to a new note")
               .onClick(() => {
-                const title = message.content.match(/^#+? (.+)$/m)?.[0] || view.file?.basename || "Untitled";
+                const title = (message.content.match(/^#+? (.+)$/m)?.[0] || view.file?.basename || "Untitled")
+                  .replace(/^#+ /, "")
+                  .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, "")
+                  .trim();
                 this.app.fileManager
-                  .getAvailablePathForAttachment(`Message ${title.replace(/^# /, "")}.md`, view.file?.path)
+                  .getAvailablePathForAttachment(`Message ${title}.md`, view.file?.path)
                   .then(path =>
                     this.app.vault
                       .create(path, message.content)
