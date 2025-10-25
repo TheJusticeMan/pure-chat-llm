@@ -748,12 +748,22 @@ export class PureChatLLMChat {
   async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean): Promise<any> {
     this.console.log("Sending chat request with options:", options);
     this.plugin.status(`running: ${options.model}`);
+    
+    // Transform options for API compatibility
+    const requestOptions = { ...options };
+    
+    // Mistral AI uses max_tokens instead of max_completion_tokens
+    if (this.endpoint.name === "Mistral AI" && requestOptions.max_completion_tokens) {
+      requestOptions.max_tokens = requestOptions.max_completion_tokens;
+      delete requestOptions.max_completion_tokens;
+    }
+    
     const response = await fetch(this.endpoint.endpoint, {
       method: "POST",
       headers: this.Headers,
       body: JSON.stringify({
-        ...options,
-        stream: options.stream && !!streamcallback,
+        ...requestOptions,
+        stream: requestOptions.stream && !!streamcallback,
       }),
     });
 
