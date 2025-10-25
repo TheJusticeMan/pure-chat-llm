@@ -87,7 +87,7 @@ export class PureChatLLMChat {
    */
   get Markdown(): string {
     const prechat = PureChatLLMChat.changeCodeBlockMD(this.pretext, "json", JSON.stringify(this.options, null, 2));
-    return `${prechat.trim()}\n${this.ChatText}`;
+    return `${prechat.trim()}\n${this.ChatText}\n`;
   }
 
   /**
@@ -909,7 +909,7 @@ export class PureChatLLMChat {
    */
   get ChatText(): string {
     return this.messages
-      .map(msg => `${this.Parser.rolePlacement.replace(/{role}/g, toTitleCase(msg.role))}\n${msg.content.trim()}`)
+      .map(msg => `${this.Parser.rolePlacement.replace(/{role}/g, toTitleCase(msg.role))}\n\n${msg.content.trim()}\n`)
       .join("\n");
   }
 
