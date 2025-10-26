@@ -145,6 +145,7 @@ export class PureChatLLMChat {
         role: "system",
         content: this.plugin.settings.SystemPrompt,
       }).appendMessage({ role: "user", content: this.pretext });
+      this.pretext = "";
       return;
     }
 
@@ -295,6 +296,7 @@ export class PureChatLLMChat {
    */
   static changeCodeBlockMD(text: string, language: string, newText: string) {
     const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "im");
+    if (!regex.test(text)) return `${text}\n\`\`\`${language}\n${newText}\n\`\`\``;
     return (
       text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) || `${text}\n\`\`\`${language}\n${newText}\n\`\`\``
     );
