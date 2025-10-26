@@ -3,9 +3,9 @@ import { BrowserConsole } from "./BrowserConsole";
 import { codeContent } from "./CodeHandling";
 import { PureChatLLMImageGen } from "./ImageGen";
 import PureChatLLM, { StreamNotice } from "./main";
-import { EmptyApiKey, Chatsysprompt, Selectionsysprompt } from "./s.json";
+import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from "./s.json";
 import { toTitleCase } from "./toTitleCase";
-import { PureChatLLMAPI, StatSett } from "./types";
+import { PureChatLLMAPI } from "./types";
 
 interface ChatMessage {
   role: RoleType;
@@ -59,7 +59,7 @@ export class PureChatLLMChat {
   console: BrowserConsole;
   pretext: string = "";
   endpoint: PureChatLLMAPI;
-  Parser = StatSett.chatParser[0];
+  Parser = "# role: {role}";
   validChat = true;
   file: TFile;
   imageOutputUrls: { normalizedPath: string; revised_prompt?: string }[] | null = null;
@@ -73,7 +73,7 @@ export class PureChatLLMChat {
       max_completion_tokens: this.plugin.settings.defaultmaxTokens,
       stream: true,
     };
-    this.Parser = StatSett.chatParser[this.plugin.settings.chatParser];
+    this.Parser = this.plugin.settings.messageRoleFormatter;
   }
 
   /**
@@ -110,35 +110,45 @@ export class PureChatLLMChat {
    * - The `options` property is updated if valid JSON is found in the prechat section.
    */
   set Markdown(markdown: string) {
-    let [prechat, ...chat] = markdown.split(this.Parser.SplitMessages);
-    let lengthtoHere = prechat.split("\n").length;
+    const matches = Array.from(
+      markdown.matchAll(
+        new RegExp(
+          this.Parser.replace(/([\^\$\*\+\?\.\(\)\|\[\]])/g, "\\$1").replace(
+            /{role}/g,
+            "(system|user|assistant|developer)"
+          ),
+          "gim"
+        )
+      )
+    );
+
+    this.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
+    this.messages = matches.map((match, index) => {
+      const contentStart = match.index! + match[0].length;
+      const contentEnd = index + 1 < matches.length ? matches[index + 1].index! : markdown.length;
+      return {
+        role: match[1].toLowerCase() as RoleType,
+        content: markdown.substring(contentStart, contentEnd).trim(),
+        cline: {
+          from: { line: markdown.substring(0, contentStart).split("\n").length - 1, ch: 0 },
+          to: { line: markdown.substring(0, contentEnd).split("\n").length - 1, ch: 0 },
+        },
+      };
+    });
+
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-    if (chat.length === 0) {
+    if (this.messages.length === 0) {
       // if the file has no # role: system|user|assistant|developer
       this.validChat = false;
       this.messages = [];
       this.appendMessage({
         role: "system",
         content: this.plugin.settings.SystemPrompt,
-      }).appendMessage({ role: "user", content: prechat });
+      }).appendMessage({ role: "user", content: this.pretext });
       return;
     }
 
-    this.messages = chat.map(text => {
-      const [role, ...contentLines] = text.replace(this.Parser.getRole, "$1\n").split(/\n/);
-      const cline: EditorRange = {
-        from: { line: lengthtoHere, ch: 0 },
-        to: { line: lengthtoHere + contentLines.length - 1, ch: 0 },
-      };
-      lengthtoHere += contentLines.length;
-      return {
-        role: role.toLowerCase().trim() as RoleType,
-        content: contentLines.join("\n").trim(),
-        cline,
-      };
-    });
-    this.pretext = prechat;
-    const optionsStr = PureChatLLMChat.extractCodeBlockMD(prechat, "json") || "";
+    const optionsStr = PureChatLLMChat.extractCodeBlockMD(this.pretext, "json") || "";
     this.options = PureChatLLMChat.tryJSONParse(optionsStr) || this.options;
     this.updateEndpointFromModel();
   }
@@ -748,16 +758,16 @@ export class PureChatLLMChat {
   async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean): Promise<any> {
     this.console.log("Sending chat request with options:", options);
     this.plugin.status(`running: ${options.model}`);
-    
+
     // Transform options for API compatibility
     const requestOptions = { ...options };
-    
+
     // Mistral AI uses max_tokens instead of max_completion_tokens
     if (this.endpoint.name === "Mistral AI" && requestOptions.max_completion_tokens) {
       requestOptions.max_tokens = requestOptions.max_completion_tokens;
       delete requestOptions.max_completion_tokens;
     }
-    
+
     const response = await fetch(this.endpoint.endpoint, {
       method: "POST",
       headers: this.Headers,
@@ -908,8 +918,9 @@ export class PureChatLLMChat {
    * @returns {string} A formatted string containing all chat messages.
    */
   get ChatText(): string {
+    const parsed = JSON.parse(`"${this.Parser}"`);
     return this.messages
-      .map(msg => `${this.Parser.rolePlacement.replace(/{role}/g, toTitleCase(msg.role))}\n${msg.content.trim()}`)
+      .map(msg => `${parsed.replace(/{role}/g, toTitleCase(msg.role))}\n${msg.content.trim()}`)
       .join("\n");
   }
 

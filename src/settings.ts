@@ -4,8 +4,7 @@ import { ImportChatGPT } from "./ImportChatGPT";
 import PureChatLLM, { FileSuggest, getMarkdownFromObject, getObjectFromMarkdown, SelectionPromptEditor } from "./main";
 import { AskForAPI, EditModalProviders } from "./models";
 import { version } from "./s.json";
-import { DEFAULT_SETTINGS, PureChatLLMSettings, StatSett } from "./types";
-import { get } from "http";
+import { DEFAULT_SETTINGS, PureChatLLMSettings } from "./types";
 
 /**
  * Represents the settings tab for the PureChatLLM plugin in Obsidian.
@@ -85,11 +84,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 const after = text.inputEl.value.slice(cursorPos);
                 const insert = this.app.fileManager.generateMarkdownLink(file, file.path);
                 text.setValue(before + insert + after);
+                text.onChanged();
                 // Move cursor after inserted text
-                setTimeout(() => {
-                  text.inputEl.selectionStart = text.inputEl.selectionEnd = before.length + insert.length;
-                  text.inputEl.focus();
-                }, 0);
+                text.inputEl.selectionStart = text.inputEl.selectionEnd = before.length + insert.length;
               }).open();
             }
           })
@@ -248,14 +245,14 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Chat style")
       .setDesc("Select how chats are written and interpreted in markdown.")
-      .addDropdown(dropdown =>
-        dropdown
-          .addOptions(
-            Object.fromEntries(Object.entries(StatSett.chatParser).map(([key, value]) => [key, value.description]))
-          )
-          .setValue(settings.chatParser.toString())
+      .addText(text =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.messageRoleFormatter)
+          .setValue(this.ifdefault("messageRoleFormatter"))
           .onChange(async value => {
-            settings.chatParser = parseInt(value, 10);
+            settings.messageRoleFormatter = value || DEFAULT_SETTINGS.messageRoleFormatter;
+            // make sure {role} is present
+            if (!settings.messageRoleFormatter.includes("{role}")) settings.messageRoleFormatter += " {role}";
             await this.plugin.saveSettings();
           })
       );

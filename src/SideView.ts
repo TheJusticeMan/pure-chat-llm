@@ -156,7 +156,7 @@ export class PureChatLLMSideView extends ItemView {
   update(editor: Editor, view: MarkdownView) {
     //MetadataCache
     //resolveSubpath
-    const editorValue = editor.getValue().trim();
+    const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
     const allshown: boolean = Object.keys(alloptions).every(k => chat.options.hasOwnProperty(k));

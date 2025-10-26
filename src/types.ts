@@ -69,16 +69,21 @@ export const StatSett = {
   ],
   chatParser: [
     {
-      name: "SimpleMarkdownHeader",
-      description: "Simple markdown header parser",
+      name: "Simple markdown header parser",
       SplitMessages: /^# role: (?=system|user|assistant|developer)/im,
       getRole: /^(system|user|assistant|developer)[^\n]+\n/i,
       rolePlacement: "# role: {role}",
       isChat: /^# role: (system|user|assistant|developer)/i,
     },
     {
-      name: "NoteMarkdownHeader",
-      description: "Note markdown header parser",
+      name: "Double hash markdown header parser",
+      SplitMessages: /^## role: (?=system|user|assistant|developer)/im,
+      getRole: /^(system|user|assistant|developer)[^\n]+\n/i,
+      rolePlacement: "\n## role: {role}\n",
+      isChat: /^## role: (system|user|assistant|developer)/i,
+    },
+    {
+      name: "Note markdown header parser",
       SplitMessages: /^\n> \[!note\] \w+\n> # role: (?=system|user|assistant|developer)/im,
       getRole: /^(system|user|assistant|developer)[^\n]+\n/i,
       rolePlacement: "\n> [!note] {role}\n> # role: {role}\n",
@@ -94,7 +99,7 @@ export interface PureChatLLMSettings {
   endpoint: number;
   endpoints: PureChatLLMAPI[];
   defaultmaxTokens: number;
-  chatParser: number;
+  messageRoleFormatter: string;
   AutoReverseRoles: boolean;
   selectionTemplates: { [key: string]: string };
   chatTemplates: { [key: string]: string };
@@ -113,7 +118,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   endpoint: 0,
   endpoints: StatSett.ENDPOINTS,
   defaultmaxTokens: 4096,
-  chatParser: 0,
+  messageRoleFormatter: "# role: {role}",
   AutoReverseRoles: true,
   selectionTemplates: selectionTemplates,
   chatTemplates: chatTemplates,
@@ -136,7 +141,6 @@ export interface PureChatLLMAPI {
 
 export interface ChatParser {
   name: string;
-  description: string;
   SplitMessages: RegExp;
   getRole: RegExp;
   rolePlacement: string;

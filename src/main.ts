@@ -1,6 +1,5 @@
 import {
   App,
-  Component,
   Editor,
   EditorPosition,
   EditorSuggest,
@@ -13,7 +12,6 @@ import {
   Notice,
   Plugin,
   Setting,
-  TextComponent,
   TFile,
   TFolder,
   WorkspaceLeaf,
@@ -425,7 +423,7 @@ export default class PureChatLLM extends Plugin {
 
     this.isresponding = true;
 
-    editor.replaceSelection("\n# role: Assistant...\n");
+    editor.replaceSelection(`\n${JSON.parse(`"${chat.Parser}"`).replace(/{role}/g, "assistant...")}\n`);
     chat
       .CompleteChatResponse(activeFile, e => {
         this.setCursorEnd(editor);
@@ -460,6 +458,7 @@ export default class PureChatLLM extends Plugin {
 
   async loadSettings() {
     const loadedData = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+
     this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
     this.settings = {
       ...loadedData,
@@ -473,11 +472,17 @@ export default class PureChatLLM extends Plugin {
       },
     };
 
-    if (
-      this.settings.SystemPrompt ===
-      "You are ChatGPT, a large language model trained by OpenAI. Carefully heed the user's instructions. Respond using Markdown.\n\nBe attentive, thoughtful, and precise—provide clear, well-structured answers that honor the complexity of each query. Avoid generic responses; instead, offer insights that encourage creativity, reflection, and learning. Employ subtle, dry humor or depth when appropriate. Respect the user’s individuality and values, adapting your tone and approach as needed to foster a conversational, meaningful, and genuinely supportive exchange."
-    )
-      this.settings.SystemPrompt = DEFAULT_SETTINGS.SystemPrompt;
+    // Compatibility fixes for older versions
+
+    if (loadedData.chatParser === 1) {
+      this.settings.messageRoleFormatter = "\\n> [!note] {role}\\n> # role: {role}\\n";
+      // @ts-ignore
+      delete this.settings.chatParser;
+    }
+    const oldSystemPrompt =
+      "You are ChatGPT, a large language model trained by OpenAI. Carefully heed the user's instructions. Respond using Markdown.\n\nBe attentive, thoughtful, and precise—provide clear, well-structured answers that honor the complexity of each query. Avoid generic responses; instead, offer insights that encourage creativity, reflection, and learning. Employ subtle, dry humor or depth when appropriate. Respect the user’s individuality and values, adapting your tone and approach as needed to foster a conversational, meaningful, and genuinely supportive exchange.";
+    if (this.settings.SystemPrompt === oldSystemPrompt) this.settings.SystemPrompt = DEFAULT_SETTINGS.SystemPrompt;
+
     DEFAULT_SETTINGS.endpoints.forEach(
       endpoint => this.settings.endpoints.find(e => e.name === endpoint.name) || this.settings.endpoints.push(endpoint)
     );
@@ -730,37 +735,6 @@ export class SelectionPromptEditor extends Modal {
   }
   onClose(): void {
     this.plugin.saveSettings();
-  }
-}
-
-/**
- * A modal dialog for prompting the user to enter a string value.
- *
- * Displays a text input field and "OK" and "Cancel" buttons.
- * When "OK" is clicked, the provided callback is invoked with the entered value.
- *
- * @extends Modal
- * @param app - The Obsidian application instance.
- * @param title - The title of the modal dialog.
- * @param placeholder - The placeholder text for the input field.
- * @param cb - Optional callback function to receive the entered value when "OK" is clicked.
- */
-class PromptName extends Modal {
-  constructor(app: App, title: string, placeholder: string, cb?: (value: string) => void) {
-    super(app);
-    this.setTitle(title);
-    const t = new TextComponent(this.contentEl).setPlaceholder(placeholder);
-    new Setting(this.contentEl)
-      .addButton(btn =>
-        btn
-          .setButtonText("OK")
-          .setCta()
-          .onClick(() => {
-            cb?.(t.getValue());
-            this.close();
-          })
-      )
-      .addButton(btn => btn.setButtonText("Cancel").onClick(() => this.close()));
   }
 }
 
