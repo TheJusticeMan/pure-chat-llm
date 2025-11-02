@@ -657,40 +657,13 @@ export class SelectionPromptEditor extends Modal {
         .setPlaceholder("New template title")
         .setValue("")
         .inputEl.addEventListener("keydown", e => {
-          if (e.key === "Enter") {
+          if (e.key === "Enter" || e.key === "Tab") {
             const value = text.getValue().trim();
-            if (value) {
-              this.promptTitle = value;
-              if (!this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = "";
-              const promptTemplatesSummary = Object.entries(this.promptTemplates)
-                .map(([k, v]) => `## template: ${k} \n\n ${v}`)
-                .join("\n");
-              new PureChatLLMChat(this.plugin)
-                .appendMessage({
-                  role: "system",
-                  content: `You are editing templates for the PureChatLLM plugin.\n\n# Here are the templates:\n\n${promptTemplatesSummary}`,
-                })
-                .appendMessage({
-                  role: "user",
-                  content: `You are creating a new template called: \`"${this.promptTitle}"\`.  Please predict the content for this prompt template.`,
-                })
-                .CompleteChatResponse(null as any)
-                .then(chat => {
-                  if (!this.promptTemplates[this.promptTitle]) {
-                    this.promptTemplates[this.promptTitle] =
-                      chat.messages
-                        .at(-2)
-                        ?.content.replace(/^#.+?\n/, "")
-                        .trim() || "";
-                    this.update();
-                  }
-                });
-
-              this.update();
-            }
+            if (value) this.generateTemplateContent(value);
           }
         })
     );
+
     new Setting(this.contentEl)
       .setName("Template name")
       .setHeading()
@@ -733,6 +706,34 @@ export class SelectionPromptEditor extends Modal {
       );
     this.setTitle(this.promptTitle);
   }
+
+  private generateTemplateContent(value: string) {
+    this.promptTitle = value;
+    if (!this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = "";
+    const promptTemplatesSummary = Object.entries(this.promptTemplates)
+      .map(([k, v]) => `## template: ${k} \n\n ${v}`)
+      .join("\n");
+    new PureChatLLMChat(this.plugin)
+      .appendMessage(
+        {
+          role: "system",
+          content: `You are editing templates for the PureChatLLM plugin.\n\n# Here are the templates:\n\n${promptTemplatesSummary}`,
+        },
+        {
+          role: "user",
+          content: `You are creating a new template called: \`"${this.promptTitle}"\`.  Please predict the content for this prompt template.`,
+        }
+      )
+      .CompleteChatResponse(null as any)
+      .then(chat => {
+        if (!this.promptTemplates[this.promptTitle]) {
+          this.promptTemplates[this.promptTitle] = chat.messages.at(-2)?.content.trim() || "";
+          this.update();
+        }
+      });
+    this.update();
+  }
+
   onClose(): void {
     this.plugin.saveSettings();
   }
