@@ -423,7 +423,7 @@ export default class PureChatLLM extends Plugin {
 
     this.isresponding = true;
 
-    editor.replaceSelection(`\n${JSON.parse(`"${chat.Parser}"`).replace(/{role}/g, "assistant...")}\n`);
+    editor.replaceSelection(`\n${chat.parseRole("assistant..." as any)}\n`);
     chat
       .CompleteChatResponse(activeFile, e => {
         this.setCursorEnd(editor);
@@ -830,7 +830,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
   onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
     //const line = editor.getLine(cursor.line);
     const line = editor.getRange({ ...cursor, ch: 0 }, cursor); // Get the line text
-    if (/^(```|# |send)/i.test(line))
+    if (/^(```[a-z]|# |send)/i.test(line))
       return {
         start: { line: cursor.line, ch: 0 },
         end: { line: cursor.line, ch: line.length },
@@ -891,7 +891,8 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
         });
         break;
       case "role":
-        editor.replaceRange(`# role: ${toTitleCase(value)}\n`, start, end);
+        this.plugin.settings.messageRoleFormatter;
+        editor.replaceRange(`${new PureChatLLMChat(this.plugin).parseRole(value as any)}\n`, start, end);
         editor.setCursor({
           line: start.line + 1,
           ch: 0,

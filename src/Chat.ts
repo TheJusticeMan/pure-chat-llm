@@ -110,17 +110,7 @@ export class PureChatLLMChat {
    * - The `options` property is updated if valid JSON is found in the prechat section.
    */
   set Markdown(markdown: string) {
-    const matches = Array.from(
-      markdown.matchAll(
-        new RegExp(
-          this.Parser.replace(/([\^\$\*\+\?\.\(\)\|\[\]])/g, "\\$1").replace(
-            /{role}/g,
-            "(system|user|assistant|developer)"
-          ),
-          "gim"
-        )
-      )
-    );
+    const matches = Array.from(markdown.matchAll(this.regexForRoles));
 
     this.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
     this.messages = matches.map((match, index) => {
@@ -920,10 +910,21 @@ export class PureChatLLMChat {
    * @returns {string} A formatted string containing all chat messages.
    */
   get ChatText(): string {
-    const parsed = JSON.parse(`"${this.Parser}"`);
-    return this.messages
-      .map(msg => `${parsed.replace(/{role}/g, toTitleCase(msg.role))}\n${msg.content.trim()}`)
-      .join("\n");
+    return this.messages.map(msg => `${this.parseRole(msg.role)}\n${msg.content.trim()}`).join("\n");
+  }
+
+  parseRole(role: RoleType): string {
+    return JSON.parse(`"${this.Parser}"`).replace(/{role}/g, toTitleCase(role));
+  }
+
+  get regexForRoles() {
+    return new RegExp(
+      this.Parser.replace(/([\^\$\*\+\?\.\(\)\|\[\]])/g, "\\$1").replace(
+        /{role}/g,
+        "(system|user|assistant|developer)"
+      ),
+      "gim"
+    );
   }
 
   thencb(cb: (chat: this) => any): this {
