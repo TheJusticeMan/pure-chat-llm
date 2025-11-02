@@ -302,18 +302,20 @@ export class PureChatLLMChat {
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
    */
-  appendMessage(message: { role: RoleType; content: string }) {
+  appendMessage(...messages: { role: RoleType; content: string }[]) {
     let extras = "";
     if (this.imageOutputUrls)
       extras =
         this.imageOutputUrls.map(img => `![${img.revised_prompt || "image"}](${img.normalizedPath})`).join("\n") +
         "\n\n";
     this.imageOutputUrls = null;
-    this.messages.push({
-      role: message.role,
-      content: (extras + message.content).trim(),
-      cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
-    });
+    messages.forEach(message =>
+      this.messages.push({
+        role: message.role,
+        content: (extras + message.content).trim(),
+        cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
+      })
+    );
     return this;
   }
 
