@@ -652,17 +652,19 @@ export class SelectionPromptEditor extends Modal {
             if (key === this.promptTitle) btn.setCta();
           })
       );
-    new Setting(this.contentEl).setName("Add a new template").addText(text =>
-      text
-        .setPlaceholder("New template title")
-        .setValue("")
-        .inputEl.addEventListener("keydown", e => {
-          if (e.key === "Enter" || e.key === "Tab") {
-            const value = text.getValue().trim();
-            if (value) this.generateTemplateContent(value);
-          }
-        })
-    );
+    new Setting(this.contentEl).setName("Add a new template").addText(text => {
+      text.setPlaceholder("New template title").setValue("");
+      text.inputEl.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          const value = text.getValue().trim();
+          if (value) this.generateTemplateContent(value);
+        }
+      });
+      text.inputEl.addEventListener("blur", e => {
+        const value = text.getValue().trim();
+        if (value) this.generateTemplateContent(value);
+      });
+    });
 
     new Setting(this.contentEl)
       .setName("Template name")
