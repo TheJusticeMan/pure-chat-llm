@@ -8,9 +8,11 @@ import {
   ItemView,
   MarkdownRenderer,
   MarkdownView,
+  Menu,
   Notice,
   Platform,
   Setting,
+  ViewStateResult,
   WorkspaceLeaf,
 } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
@@ -277,6 +279,16 @@ export class PureChatLLMSideView extends ItemView {
               .onClick(() => {
                 new CodeHandling(this.app, this.plugin, message.content).open();
               });
+          if (/```[\w\W]*?```/gm.test(message.content))
+            new ExtraButtonComponent(div)
+              .setIcon("scan-eye")
+              .setTooltip("Preview code")
+              .onClick(() => {
+                this.openCodePreview(
+                  message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || "",
+                  message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || "text"
+                );
+              });
           new ExtraButtonComponent(div)
             .setIcon("refresh-cw")
             .setTooltip("Regenerate response")
@@ -307,6 +319,15 @@ export class PureChatLLMSideView extends ItemView {
       editor.scrollTo(0, editor.posToOffset(position.from));
       editor.focus();
     }
+  }
+
+  openCodePreview(code: string, language: string) {
+    this.console.log("Opening code preview", { code, language });
+    this.app.workspace.getLeaf("tab").setViewState({
+      type: "pure-chat-llm-code-preview",
+      active: true,
+      state: { code, language },
+    });
   }
 
   async onClose() {
@@ -372,5 +393,55 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       this.modellist = models.map(m => ({ name: m, ismodel: true }));
       this.open();
     });
+  }
+}
+
+export class CodePreview extends ItemView {
+  constructor(leaf: WorkspaceLeaf, public plugin: PureChatLLM) {
+    super(leaf);
+    this.icon = "code";
+  }
+
+  getViewType(): string {
+    return "pure-chat-llm-code-preview";
+  }
+
+  getDisplayText(): string {
+    return "Code Preview";
+  }
+
+  setState(state: unknown, result: ViewStateResult): Promise<void> {
+    console.log("Setting state", state, result);
+    this.renderCodePreview(state as { code: string; language: string });
+    return Promise.resolve();
+  }
+
+  async onOpen() {
+    //this.renderCodePreview();
+  }
+
+  private renderCodePreview(state: { code: string; language: string }) {
+    this.contentEl.empty();
+    this.contentEl.addClass("PURECodePreview");
+
+    const code = (state.code as string) || "";
+    const language: string = (state.language as string) || "text";
+
+    if (language.toLowerCase() === "html") {
+      const iframe = this.contentEl.createEl("iframe");
+      iframe.setAttr("sandbox", "allow-scripts allow-same-origin");
+      iframe.style.width = "100%";
+      iframe.style.height = "100%";
+      iframe.srcdoc = code;
+    } else {
+      this.contentEl.createEl("pre", {}, el => {
+        const codeEl = el.createEl("code", { text: code });
+        codeEl.addClass(`language-${language}`);
+      });
+    }
+  }
+
+  async onClose() {
+    this.contentEl.empty();
   }
 }

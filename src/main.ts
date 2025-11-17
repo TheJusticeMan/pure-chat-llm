@@ -23,7 +23,7 @@ import { AskForAPI, CodeAreaComponent, EditWand } from "./models";
 import { replaceNonKeyboardChars } from "./replaceNonKeyboard";
 import { EmptyApiKey } from "./s.json";
 import { PureChatLLMSettingTab } from "./settings";
-import { modelAndProviderChooser, PureChatLLMSideView } from "./SideView";
+import { CodePreview, modelAndProviderChooser, PureChatLLMSideView } from "./SideView";
 import { PureChatLLMSpeech } from "./Speech";
 import { toTitleCase } from "./toTitleCase";
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from "./types";
@@ -66,6 +66,7 @@ export default class PureChatLLM extends Plugin {
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
 
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, leaf => new PureChatLLMSideView(leaf, this));
+    this.registerView("pure-chat-llm-code-preview", leaf => new CodePreview(leaf, this));
 
     this.addRibbonIcon("text", "Open conversation overview", this.activateView.bind(this));
 
