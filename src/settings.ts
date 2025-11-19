@@ -1,5 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import { BrowserConsole } from "./BrowserConsole";
+import { PureChatLLMChat } from "./Chat";
 import { ImportChatGPT } from "./ImportChatGPT";
 import PureChatLLM, { FileSuggest, getMarkdownFromObject, getObjectFromMarkdown, SelectionPromptEditor } from "./main";
 import { AskForAPI, EditModalProviders } from "./models";
@@ -61,6 +62,22 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           .setIcon("key")
           .setTooltip("Add API key")
           .onClick(async () => new AskForAPI(this.app, this.plugin).open())
+      )
+      .addButton(
+        // fixes issue that you can't refresh models after the first time
+        btn =>
+          btn
+            .setIcon("refresh-cw")
+            .setTooltip("Refresh list of models")
+            .onClick(async () => {
+              this.plugin.settings.ModelsOnEndpoint[
+                this.plugin.settings.endpoints[this.plugin.settings.endpoint].name
+              ] = [];
+              new PureChatLLMChat(this.plugin).getAllModels().then(models => {
+                this.plugin.saveSettings();
+                new Notice("Model list refreshed");
+              });
+            })
       );
     new Setting(containerEl)
       .setName("Default system prompt")
