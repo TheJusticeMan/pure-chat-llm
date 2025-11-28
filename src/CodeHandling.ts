@@ -42,27 +42,29 @@ export class CodeHandling extends Modal {
     this.code.forEach((c, idx) => {
       new Setting(this.contentEl).setName(c.language || `Code block ${idx + 1}`).setHeading();
 
-      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange(value => {
+      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange((value) => {
         c.code = value;
       });
 
       new Setting(this.contentEl)
-        .addExtraButton(btn =>
+        .addExtraButton((btn) =>
           btn
             .setIcon("copy")
             .setTooltip("Copy to clipboard")
             .onClick(() => {
               navigator.clipboard.writeText(c.code);
               new Notice("Code copied to clipboard");
-            })
+            }),
         )
-        .addExtraButton(btn =>
+        .addExtraButton((btn) =>
           btn
             .setIcon("pencil")
             .setTooltip("Edit with prompt")
             .onClick(() =>
-              new EditWand(this.app, this.plugin, c.code, newCode => textArea.setValue((c.code = newCode))).open()
-            )
+              new EditWand(this.app, this.plugin, c.code, (newCode) =>
+                textArea.setValue((c.code = newCode)),
+              ).open(),
+            ),
         );
     });
   }
@@ -91,7 +93,6 @@ export class SectionHandling extends CodeHandling {
     for (const match of matches) {
       const header = match[2].trim();
       const content = match[3].trim();
-      const level = match[1].length;
       sections.push({ language: header, code: content });
     }
     return sections;

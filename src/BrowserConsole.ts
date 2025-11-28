@@ -35,7 +35,7 @@ export class BrowserConsole {
    *
    * @param {...any[]} args - The items to log to the console.
    */
-  log(...args: any[]): void {
+  log(...args: unknown[]): void {
     if (this.enabled) this.originalConsole.log(this.consoleName, ...args);
   }
 
@@ -45,7 +45,7 @@ export class BrowserConsole {
    *
    * @param {...any[]} args - The messages or objects to log.
    */
-  info(...args: any[]): void {
+  info(...args: unknown[]): void {
     if (this.enabled) this.originalConsole.info(this.consoleName, ...args);
   }
 
@@ -55,7 +55,7 @@ export class BrowserConsole {
    *
    * @param args - The items to log as a warning message.
    */
-  warn(...args: any[]): void {
+  warn(...args: unknown[]): void {
     if (this.enabled) this.originalConsole.warn(this.consoleName, ...args);
   }
 
@@ -65,7 +65,7 @@ export class BrowserConsole {
    *
    * @param args - The error messages or objects to log.
    */
-  error(...args: any[]): void {
+  error(...args: unknown[]): void {
     if (this.enabled) this.originalConsole.error(this.consoleName, ...args);
   }
 }

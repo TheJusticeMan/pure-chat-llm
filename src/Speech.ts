@@ -97,7 +97,7 @@ export class PureChatLLMSpeech {
    * @param maxLength - The maximum allowed length for each chunk. Defaults to 4096.
    * @returns An array of string chunks, each with a length up to `maxLength`.
    */
-  splitMessage(content: string, maxLength: number = 4096): string[] {
+  splitMessage(content: string, maxLength = 4096): string[] {
     const chunks: string[] = [];
     let remaining = content;
 
@@ -142,14 +142,16 @@ export class PureChatLLMSpeech {
     this.isPlaying = true;
 
     while (this.speechQueue.length > 0) {
-      const segment = this.speechQueue.shift()!;
-      await new Promise<void>(resolve => {
-        segment.audio.onended = () => resolve();
-        segment.audio.play().catch(err => {
-          this.console.error("Audio play error:", err);
-          resolve();
+      const segment = this.speechQueue.shift();
+      if (segment && segment.audio) {
+        await new Promise<void>((resolve) => {
+          segment.audio.onended = () => resolve();
+          segment.audio.play().catch((err) => {
+            this.console.error("Audio play error:", err);
+            resolve();
+          });
         });
-      });
+      }
     }
     this.isPlaying = false;
   }

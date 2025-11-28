@@ -6,7 +6,7 @@ import PureChatLLM, { FolderSuggest } from "./main";
 interface ChatAuthor {
   role: "user" | "assistant" | "system" | "tool" | string;
   name: string | null;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 // Message content
@@ -26,7 +26,7 @@ interface ChatMessage {
   status: string;
   end_turn: boolean | null;
   weight: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   recipient: string;
   channel: string | null;
 }
@@ -44,8 +44,14 @@ interface ChatMapping {
   [id: string]: ChatMappingNode;
 }
 
+type ChatMappingEntry = {
+  title: string;
+  mapping: ChatMapping;
+  [key: string]: unknown;
+};
+
 // Top-level chat object
-interface PureChatGPTExportedChat {
+/* interface PureChatGPTExportedChat {
   title: string;
   create_time: number;
   update_time: number;
@@ -71,9 +77,12 @@ interface PureChatGPTExportedChat {
   sugar_item_id: string | null;
   id: string;
 }
-
+ */
 export class ImportChatGPT {
-  constructor(public app: App, public plugin: PureChatLLM) {
+  constructor(
+    public app: App,
+    public plugin: PureChatLLM,
+  ) {
     this.promptAndImport();
   }
 
@@ -90,14 +99,14 @@ export class ImportChatGPT {
 
   // Prompts user to select a folder; returns a Promise
   private getFolderPath(): Promise<TFolder> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       new FolderSuggest(this.app, resolve, "Where to load the files").open();
     });
   }
 
   // Prompts user to select a file; returns a Promise<File>
   private getFileFromUser(): Promise<File | null> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = ".json,application/json";
@@ -113,7 +122,7 @@ export class ImportChatGPT {
 
   private async processChatFile(file: File, folderPath: string) {
     const text = await file.text();
-    let chats: { title: string; [key: string]: any }[];
+    let chats: { title: string; [key: string]: unknown }[];
     try {
       chats = JSON.parse(text);
       if (!Array.isArray(chats)) throw new Error();
@@ -123,11 +132,18 @@ export class ImportChatGPT {
 
     const folder = this.app.fileManager.getNewFileParent(folderPath || "/");
     for (const chat of chats) {
-      await this.saveChatConversation(chat, folder, folderPath);
+      if (
+        chat &&
+        typeof chat === "object" &&
+        "mapping" in chat &&
+        typeof chat.mapping === "object"
+      ) {
+        await this.saveChatConversation(chat as ChatMappingEntry, folder, folderPath);
+      }
     }
   }
 
-  private async saveChatConversation(chat: any, folder: any, folderPath: string) {
+  private async saveChatConversation(chat: ChatMappingEntry, folder: TFolder, folderPath: string) {
     const title = chat.title;
     const result = new PureChatLLMChat(this.plugin);
 
@@ -135,13 +151,13 @@ export class ImportChatGPT {
     const mapping = chat.mapping;
     const rootId =
       mapping["client-created-root"]?.children?.[0] ||
-      mapping[Object.keys(mapping).find(id => !mapping[id].parent) || ""]?.children?.[0];
+      mapping[Object.keys(mapping).find((id) => !mapping[id].parent) || ""]?.children?.[0];
 
     this.collectConversation(mapping, rootId, result);
 
     await this.app.vault.create(
       `${folderPath}/${this.plugin.generateUniqueFileName(folder, title)}.md`,
-      result.cleanUpChat().Markdown
+      result.cleanUpChat().Markdown,
     );
   }
 
@@ -150,7 +166,12 @@ export class ImportChatGPT {
     while (currentId && mapping[currentId]) {
       const node = mapping[currentId];
       const message = node.message;
-      if (message && message.content && message.content.content_type === "text" && message.author.role !== "tool") {
+      if (
+        message &&
+        message.content &&
+        message.content.content_type === "text" &&
+        message.author.role !== "tool"
+      ) {
         result.appendMessage({
           role: message.author.role as "user" | "assistant" | "system",
           content: message.content.parts?.[0] ?? "",

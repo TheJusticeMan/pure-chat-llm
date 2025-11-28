@@ -113,7 +113,6 @@ Follow this workflow:
 1. **Extract and Analyze**: Identify each template (selection or chat type). Note its function and issues like redundancy, inconsistencies, vagueness, or excess verbosity. Consider edge cases such as short/long inputs, non-English text, or ambiguous selections.
 
 2. **Apply Polishing Rules**:
-
    - **Clarity and Specificity**: Rephrase ambiguities into precise steps. Use consistent language (e.g., start with "...the provided selection" or "...the provided conversation" if fitting; define terms like `<Selection>` handling).
    - **Structure**: Standardize format: role/system context first, then input handling, numbered rules, and end with "Return only the [output]" directive. For chatTemplates, explain roles (user/assistant/system) explicitly.
    - **Reduce Redundancy**: Merge overlaps (e.g., duplicate rules). Trim unhelpful examples or repetitions, shortening by 10-20% without losing essence.

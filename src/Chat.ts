@@ -13,7 +13,23 @@ interface ChatMessage {
   cline: EditorRange;
 }
 
-type RoleType = "system" | "user" | "assistant" | "developer";
+export type RoleType = "system" | "user" | "assistant" | "developer" | "tool";
+
+interface ToolCall {
+  index?: number;
+  id?: string;
+  type?: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+interface StreamDelta {
+  content?: string;
+  tool_calls?: ToolCall[];
+  role?: string;
+}
 
 type MessageImg =
   | {
@@ -24,6 +40,28 @@ type MessageImg =
       type: "text";
       text: string;
     };
+
+export interface ChatResponse {
+  role: string;
+  content?: string | null;
+  tool_calls?: ToolCall[];
+}
+
+interface ChatRequestOptions {
+  model: string;
+  messages: {
+    role: string;
+    content?: string | MessageImg[] | null;
+    tool_calls?: ToolCall[];
+    tool_call_id?: string;
+    [key: string]: unknown;
+  }[];
+  stream?: boolean;
+  max_completion_tokens?: number;
+  max_tokens?: number;
+  tools?: object[];
+  [key: string]: unknown;
+}
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -51,13 +89,13 @@ export class PureChatLLMChat {
     model: string;
     max_completion_tokens: number;
     stream: boolean;
-    tools?: any[];
-    [key: string]: any;
+    tools?: object[];
+    [key: string]: unknown;
   };
   messages: ChatMessage[] = [];
   plugin: PureChatLLM;
   console: BrowserConsole;
-  pretext: string = "";
+  pretext = "";
   endpoint: PureChatLLMAPI;
   Parser = "# role: {role}";
   validChat = true;
@@ -86,7 +124,11 @@ export class PureChatLLMChat {
    * of the chat options and the chat text.
    */
   get Markdown(): string {
-    const prechat = PureChatLLMChat.changeCodeBlockMD(this.pretext, "json", JSON.stringify(this.options, null, 2));
+    const prechat = PureChatLLMChat.changeCodeBlockMD(
+      this.pretext,
+      "json",
+      JSON.stringify(this.options, null, 2),
+    );
     return `${prechat.trim()}\n${this.ChatText}`;
   }
 
@@ -114,8 +156,14 @@ export class PureChatLLMChat {
 
     this.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
     this.messages = matches.map((match, index) => {
-      const contentStart = match.index! + match[0].length;
-      const contentEnd = index + 1 < matches.length ? matches[index + 1].index! : markdown.length;
+      if (!match.index)
+        return {
+          role: "user",
+          content: "",
+          cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
+        };
+      const contentStart = match.index + match[0].length;
+      const contentEnd = index + 1 < matches.length ? matches[index + 1].index : markdown.length;
       return {
         role: match[1].toLowerCase() as RoleType,
         content: markdown.substring(contentStart, contentEnd).trim(),
@@ -146,18 +194,20 @@ export class PureChatLLMChat {
 
   updateEndpointFromModel() {
     const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
-    const endpointName = Object.keys(ModelsOnEndpoint).find(name =>
-      ModelsOnEndpoint[name].includes(this.options.model)
+    const endpointName = Object.keys(ModelsOnEndpoint).find((name) =>
+      ModelsOnEndpoint[name].includes(this.options.model),
     );
     if (endpointName) {
-      this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
+      this.endpoint = endpoints.find((e) => e.name === endpointName) ?? this.endpoint;
     }
     return this;
   }
 
   cleanUpChat() {
     // remove any empty messages except system
-    this.messages = this.messages.filter(msg => msg.role === "system" || msg.content.trim() !== "");
+    this.messages = this.messages.filter(
+      (msg) => msg.role === "system" || msg.content.trim() !== "",
+    );
     // ensure first message is system
     if (this.messages[0]?.role !== "system") {
       this.messages.unshift({
@@ -288,7 +338,8 @@ export class PureChatLLMChat {
     const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "im");
     if (!regex.test(text)) return `${text}\n\`\`\`${language}\n${newText}\n\`\`\``;
     return (
-      text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) || `${text}\n\`\`\`${language}\n${newText}\n\`\`\``
+      text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) ||
+      `${text}\n\`\`\`${language}\n${newText}\n\`\`\``
     );
   }
 
@@ -306,15 +357,16 @@ export class PureChatLLMChat {
     let extras = "";
     if (this.imageOutputUrls)
       extras =
-        this.imageOutputUrls.map(img => `![${img.revised_prompt || "image"}](${img.normalizedPath})`).join("\n") +
-        "\n\n";
+        this.imageOutputUrls
+          .map((img) => `![${img.revised_prompt || "image"}](${img.normalizedPath})`)
+          .join("\n") + "\n\n";
     this.imageOutputUrls = null;
-    messages.forEach(message =>
+    messages.forEach((message) =>
       this.messages.push({
         role: message.role,
         content: (extras + message.content).trim(),
         cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
-      })
+      }),
     );
     return this;
   }
@@ -334,7 +386,7 @@ export class PureChatLLMChat {
    * - This function uses asynchronous operations to read file contents, so it returns a promise.
    */
   static async resolveFiles(markdown: string, activeFile: TFile, app: App): Promise<string> {
-    const regex = /^\!?\[\[(.*?)\]\]$/gim;
+    const regex = /^!?\[\[(.*?)\]\]$/gim;
     //const regex2 = /^.+\!?\[\[([^\]]+)\]\].+$/gim;
     const matches = Array.from(markdown.matchAll(regex));
     //const matches2 = Array.from(markdown.matchAll(regex2));
@@ -386,7 +438,10 @@ export class PureChatLLMChat {
     if (subpath) {
       const cache = app.metadataCache.getFileCache(file);
       const ref = cache && resolveSubpath(cache, subpath);
-      if (ref) return app.vault.cachedRead(file).then(text => text.substring(ref.start.offset, ref.end?.offset).trim());
+      if (ref)
+        return app.vault
+          .cachedRead(file)
+          .then((text) => text.substring(ref.start.offset, ref.end?.offset).trim());
     }
     return app.vault.cachedRead(file);
   }
@@ -395,12 +450,12 @@ export class PureChatLLMChat {
     markdown: string,
     activeFile: TFile,
     app: App,
-    role: string
+    role: string,
   ): Promise<MessageImg[] | string> {
     const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
 
     const resolved: MessageImg[] = await Promise.all(
-      matches.map(async match => {
+      matches.map(async (match) => {
         const [originalLink, Link] = match;
         const file = this.getfileForLink(Link, activeFile, app);
 
@@ -421,7 +476,7 @@ export class PureChatLLMChat {
           return { type: "image_url", image_url: { url } };
         } else if (imageMime) return { type: "text", text: originalLink };
         else return { type: "text", text: await this.retrieveLinkContent(Link, activeFile, app) };
-      })
+      }),
     );
 
     //get the surrounding text around the matches
@@ -440,7 +495,8 @@ export class PureChatLLMChat {
       }
 
       // Add the resolved match
-      allParts.push(resolved.shift()!);
+      const resolvedItem = resolved.shift();
+      if (resolvedItem) allParts.push(resolvedItem);
 
       lastIndex = end;
     }
@@ -491,16 +547,13 @@ export class PureChatLLMChat {
    * @param app - The application instance, providing access to necessary utilities and context.
    * @returns A promise that resolves to an object containing the resolved messages with their roles and content.
    */
-  async getChatGPTinstructions(
-    activeFile: TFile,
-    app: App
-  ): Promise<{ messages: { role: RoleType; content: MessageImg[] | string }[]; tools?: any[] }> {
+  async getChatGPTinstructions(activeFile: TFile, app: App): Promise<ChatRequestOptions> {
     this.file = activeFile;
     const resolvedMessages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
         role: role,
         content: await PureChatLLMChat.resolveFilesWithImages(content, activeFile, app, role),
-      }))
+      })),
     );
 
     // For Gemini endpoint: ensure at least one user message exists
@@ -550,7 +603,7 @@ export class PureChatLLMChat {
     if (!this.messages.at(-1)?.content.trim()) {
       this.messages.pop();
     }
-    this.file = this.file || this.plugin.app.workspace.getActiveFile()!;
+    this.file = this.file || this.plugin.app.workspace.getActiveFile();
 
     if (this.plugin.settings.resolveFilesForChatAnalysis)
       this.messages = await Promise.all(
@@ -558,7 +611,7 @@ export class PureChatLLMChat {
           role,
           content: await PureChatLLMChat.resolveFiles(content, this.file, this.plugin.app),
           cline,
-        }))
+        })),
       );
 
     new Notice("Generating chat response from template...");
@@ -572,10 +625,10 @@ export class PureChatLLMChat {
     ];
     return this.sendChatRequest(
       { ...this.options, messages: messages },
-      new StreamNotice(this.plugin.app, "Processing chat with template.").change
-    ).then(r => ({
+      new StreamNotice(this.plugin.app, "Processing chat with template.").change,
+    ).then((r) => ({
       role: "assistant",
-      content: r.content.replace(/^<Conversation>|<\/Conversation>$/gi, "").trim(),
+      content: (r.content || "").replace(/^<Conversation>|<\/Conversation>$/gi, "").trim(),
     }));
   }
 
@@ -617,10 +670,10 @@ export class PureChatLLMChat {
     ];
     return this.sendChatRequest(
       { ...this.options, messages: messages },
-      new StreamNotice(this.plugin.app, "Editing selection.").change
-    ).then(r => ({
+      new StreamNotice(this.plugin.app, "Editing selection.").change,
+    ).then((r) => ({
       role: "assistant",
-      content: r.content.replace(/^<Selection>|<\/Selection>$/gi, "").trim(),
+      content: (r.content || "").replace(/^<Selection>|<\/Selection>$/gi, "").trim(),
     }));
   }
 
@@ -638,14 +691,23 @@ export class PureChatLLMChat {
    * 3. Appends the received content as a message and adds an empty user message for continuity.
    * 4. Handles any errors by logging them to the plugin's console.
    */
-  CompleteChatResponse(file: TFile, streamcallback?: (textFragment: any) => boolean): Promise<this> {
+  CompleteChatResponse(
+    file: TFile,
+    streamcallback?: (textFragment: { content: string }) => boolean,
+  ): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
       return Promise.resolve(this);
     }
     return this.getChatGPTinstructions(file, this.plugin.app)
-      .then(options => this.sendChatRequest(options, streamcallback))
-      .then(content => {
-        this.appendMessage(content).appendMessage({ role: "user", content: "" });
+      .then((options) => this.sendChatRequest(options, streamcallback))
+      .then((content) => {
+        this.appendMessage({
+          role: content.role as RoleType,
+          content: content.content || "",
+        }).appendMessage({
+          role: "user",
+          content: "",
+        });
         // Add the model to the endpoint's model list if not already present
         const models = (this.plugin.settings.ModelsOnEndpoint[this.endpoint.name] ??= []);
         if (!models.includes(this.options.model)) {
@@ -654,7 +716,7 @@ export class PureChatLLMChat {
         }
         return this;
       })
-      .catch(error => {
+      .catch((error) => {
         new Notice("Error in chat completion. Check console for details.");
         this.plugin.console.error(`Error in chat completion:`, error);
         return this;
@@ -668,8 +730,8 @@ export class PureChatLLMChat {
    */
   static async handleStreamingResponse(
     response: Response,
-    streamcallback: (textFragment: any) => boolean
-  ): Promise<{ role: string; content?: string; tool_calls?: any[] }> {
+    streamcallback: (textFragment: StreamDelta) => boolean,
+  ): Promise<{ role: string; content?: string; tool_calls?: ToolCall[] }> {
     if (!response.body) {
       throw new Error("Response body is null. Streaming is not supported in this environment.");
     }
@@ -678,14 +740,14 @@ export class PureChatLLMChat {
     let done = false;
     let buffer = "";
     let fullText = "";
-    let fullcalls: any[] = [];
+    const fullcalls: ToolCall[] = [];
 
     while (!done) {
       const { value, done: streamDone } = await reader.read();
       if (streamDone) break;
       buffer += decoder.decode(value, { stream: true });
 
-      let lines = buffer.split("\n");
+      const lines = buffer.split("\n");
       buffer = lines.pop() || "";
 
       for (const line of lines) {
@@ -707,8 +769,9 @@ export class PureChatLLMChat {
                 break;
               }
             } else if (delta?.tool_calls) {
-              (delta.tool_calls as any[]).forEach((call: any) => {
+              (delta.tool_calls as ToolCall[]).forEach((call: ToolCall) => {
                 const index = call.index;
+                if (index === undefined) return;
                 if (!fullcalls[index]) fullcalls[index] = call;
                 if (call.function.arguments) {
                   if (!fullcalls[index].function.arguments) {
@@ -726,7 +789,7 @@ export class PureChatLLMChat {
     }
 
     if (fullcalls.length > 0) {
-      fullcalls.forEach(call => {
+      fullcalls.forEach((call) => {
         delete call.index; // Remove index from tool calls
       });
       console.log("Full tool calls:", fullcalls);
@@ -749,7 +812,10 @@ export class PureChatLLMChat {
    * it returns the first message choice from the API response.
    * @throws An error if the network request fails or the response is not successful.
    */
-  async sendChatRequest(options: any, streamcallback?: (textFragment: any) => boolean): Promise<any> {
+  async sendChatRequest(
+    options: ChatRequestOptions,
+    streamcallback?: (textFragment: StreamDelta) => boolean,
+  ): Promise<ChatResponse> {
     this.console.log("Sending chat request with options:", options);
     this.plugin.status(`running: ${options.model}`);
 
@@ -783,7 +849,7 @@ export class PureChatLLMChat {
       if (fullText.tool_calls) {
         const toolCalls = fullText.tool_calls;
         const imageGenCall = toolCalls.find(
-          (call: any) => call.function.name === PureChatLLMImageGen.tool.function.name
+          (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
         );
         if (imageGenCall) {
           streamcallback({
@@ -801,7 +867,7 @@ export class PureChatLLMChat {
       if (data.choices[0].message.tool_calls) {
         const toolCalls = data.choices[0].message.tool_calls;
         const imageGenCall = toolCalls.find(
-          (call: any) => call.function.name === PureChatLLMImageGen.tool.function.name
+          (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
         );
         if (imageGenCall) {
           streamcallback?.({
@@ -819,7 +885,7 @@ export class PureChatLLMChat {
   }
 
   ReverseRoles() {
-    this.messages = this.messages.map(msg => {
+    this.messages = this.messages.map((msg) => {
       if (msg.role === "user") {
         msg.role = "assistant";
       } else if (msg.role === "assistant") {
@@ -830,23 +896,44 @@ export class PureChatLLMChat {
     return this;
   }
 
-  filterOutUncalledToolCalls([agent, ...Responses]: {
+  filterOutUncalledToolCalls(
+    msgs: {
+      role: string;
+      content?: string;
+      tool_call_id?: string;
+      tool_calls?: ToolCall[];
+      cline?: EditorRange;
+    }[],
+  ): {
     role: string;
-    content: string;
+    content?: string;
     tool_call_id?: string;
-    tool_calls: any[];
-  }[]): { role: string; content: string; tool_call_id?: string; tool_calls: any[] }[] {
-    agent.tool_calls = agent.tool_calls.filter(call => Responses.some(i => i.tool_call_id === call.id));
-    //if (msg.role === "tool" && msg.tool_call_id) {
+    tool_calls?: ToolCall[];
+    cline?: EditorRange;
+  }[] {
+    const [agent, ...Responses] = msgs;
+    if (agent.tool_calls) {
+      agent.tool_calls = agent.tool_calls.filter((call) =>
+        Responses.some((i) => i.tool_call_id === call.id),
+      );
+    }
     return [agent, ...Responses];
   }
 
-  private async GenerateImage(imageGenCall: any, data: any) {
+  private async GenerateImage(
+    imageGenCall: ToolCall,
+    data: { role: string; content?: string; tool_calls?: ToolCall[] },
+  ) {
     const imageGen = new PureChatLLMImageGen(this.plugin.app, this.endpoint.apiKey, this.file);
-    const imageOutputUrls = await imageGen.sendImageGenerationRequest(JSON.parse(imageGenCall.function.arguments));
+    const imageOutputUrls = await imageGen.sendImageGenerationRequest(
+      JSON.parse(imageGenCall.function.arguments),
+    );
     const message = imageOutputUrls
-      .map(img => {
-        return [`![Generated Image](${img.normalizedPath})`, `Revised Image prompt: ${img.revised_prompt}`];
+      .map((img) => {
+        return [
+          `![Generated Image](${img.normalizedPath})`,
+          `Revised Image prompt: ${img.revised_prompt}`,
+        ];
       })
       .flat()
       .join("\n");
@@ -883,7 +970,8 @@ export class PureChatLLMChat {
    * @throws {Error} If the API request fails or the response is invalid.
    */
   getAllModels(): Promise<string[]> {
-    const { name: endpointName, listmodels } = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    const { name: endpointName, listmodels } =
+      this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     const cached = this.plugin.settings.ModelsOnEndpoint[endpointName];
     if (cached?.length) return Promise.resolve(cached);
     this.console.log(`Fetching models from ${endpointName} API...`);
@@ -891,13 +979,15 @@ export class PureChatLLMChat {
       method: "GET",
       headers: this.Headers,
     })
-      .then(response => response.json())
-      .then(data => {
-        return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (data.data as { id: string }[])
-          .map(item => item.id)
-          .map(id => id.replace(/.+\//g, "") || id));
+      .then((response) => response.json())
+      .then((data) => {
+        return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (
+          data.data as { id: string }[]
+        )
+          .map((item) => item.id)
+          .map((id) => id.replace(/.+\//g, "") || id));
       })
-      .catch(error => {
+      .catch((error) => {
         this.console.error("Error fetching models:", error);
         return [];
       });
@@ -912,7 +1002,9 @@ export class PureChatLLMChat {
    * @returns {string} A formatted string containing all chat messages.
    */
   get ChatText(): string {
-    return this.messages.map(msg => `${this.parseRole(msg.role)}\n${msg.content.trim()}`).join("\n");
+    return this.messages
+      .map((msg) => `${this.parseRole(msg.role)}\n${msg.content.trim()}`)
+      .join("\n");
   }
 
   parseRole(role: RoleType): string {
@@ -921,15 +1013,15 @@ export class PureChatLLMChat {
 
   get regexForRoles() {
     return new RegExp(
-      this.Parser.replace(/([\^\$\*\+\?\.\(\)\|\[\]])/g, "\\$1").replace(
+      this.Parser.replace(/([\^$*+?.()|[\]])/g, "\\$1").replace(
         /{role}/g,
-        "(system|user|assistant|developer)"
+        "(system|user|assistant|developer)",
       ),
-      "gim"
+      "gim",
     );
   }
 
-  thencb(cb: (chat: this) => any): this {
+  thencb(cb: (chat: this) => unknown): this {
     cb(this);
     return this;
   }
@@ -955,6 +1047,7 @@ export class PureChatLLMChat {
    * @param str - The JSON string to parse.
    * @returns The parsed object if successful, or `null` if parsing fails.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static tryJSONParse(str: string): any {
     try {
       return JSON.parse(str);

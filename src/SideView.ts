@@ -8,7 +8,6 @@ import {
   ItemView,
   MarkdownRenderer,
   MarkdownView,
-  Menu,
   Notice,
   Platform,
   Setting,
@@ -50,7 +49,11 @@ export class PureChatLLMSideView extends ItemView {
   console: BrowserConsole;
   ischat = false;
 
-  constructor(leaf: WorkspaceLeaf, public plugin: PureChatLLM, public viewText = "Conversation overview") {
+  constructor(
+    leaf: WorkspaceLeaf,
+    public plugin: PureChatLLM,
+    public viewText = "Conversation overview",
+  ) {
     super(leaf);
     this.icon = "text";
     this.console = new BrowserConsole(plugin.settings.debug, "PureChatLLMSideView");
@@ -72,7 +75,7 @@ export class PureChatLLMSideView extends ItemView {
       this.app.workspace.on("editor-change", (editor: Editor, view: MarkdownView) => {
         // if the user is typing in the editor, update the view
         if (!this.plugin.isresponding) this.update(editor, view);
-      })
+      }),
     );
     this.registerEvent(
       this.app.workspace.on("file-open", () => {
@@ -82,10 +85,10 @@ export class PureChatLLMSideView extends ItemView {
         if (!view) return;
         if (!editor) return;
         this.update(editor, view);
-      })
+      }),
     );
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", leaf => {
+      this.app.workspace.on("active-leaf-change", (leaf) => {
         if (!leaf) return;
         const v = leaf.view;
         if (!(v instanceof MarkdownView)) return;
@@ -102,10 +105,10 @@ export class PureChatLLMSideView extends ItemView {
               from: { line: e.lastLine(), ch: 0 },
               to: { line: e.lastLine(), ch: e.getLine(e.lastLine()).length },
             },
-            true
+            true,
           );
         }
-      })
+      }),
     );
     // check it the editor is open
     this.defaultContent();
@@ -125,19 +128,21 @@ export class PureChatLLMSideView extends ItemView {
     new Setting(this.contentEl)
       .setName("Pure Chat LLM")
       .setHeading()
-      .then(b => {
+      .then((b) => {
         const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
         if (editor)
-          b.addExtraButton(btn =>
+          b.addExtraButton((btn) =>
             btn
               .setIcon("cpu")
               .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor))
-              .setTooltip("Choose model and provider")
+              .setTooltip("Choose model and provider"),
           );
       })
-      .addExtraButton(btn => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
-      .addButton(btn => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
-    new Setting(this.contentEl).setName("The current editor does not contain a valid conversation.");
+      .addExtraButton((btn) => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
+      .addButton((btn) => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
+    new Setting(this.contentEl).setName(
+      "The current editor does not contain a valid conversation.",
+    );
     new Setting(this.contentEl).setName("Available commands").setHeading();
     new Setting(this.contentEl)
       .setName("Complete chat response")
@@ -148,11 +153,15 @@ export class PureChatLLMSideView extends ItemView {
     new Setting(this.contentEl)
       .setName("Edit selection")
       .setDesc("This will edit the selected text in the current editor.");
-    new Setting(this.contentEl).setName("Analyze conversation").setDesc("This will analyze the current conversation.");
+    new Setting(this.contentEl)
+      .setName("Analyze conversation")
+      .setDesc("This will analyze the current conversation.");
     new Setting(this.contentEl)
       .setName("Reverse roles")
       .setDesc("This will reverse the roles of the current conversation.");
-    new Setting(this.contentEl).setName("Speak chat").setDesc("This will speak the current chat using two voices.");
+    new Setting(this.contentEl)
+      .setName("Speak chat")
+      .setDesc("This will speak the current chat using two voices.");
   }
 
   update(editor: Editor, view: MarkdownView) {
@@ -161,7 +170,7 @@ export class PureChatLLMSideView extends ItemView {
     const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
-    const allshown: boolean = Object.keys(alloptions).every(k => chat.options.hasOwnProperty(k));
+    const allshown: boolean = Object.keys(alloptions).every((k) => chat.options.hasOwnProperty(k));
     this.ischat = chat.validChat;
     const container = this.contentEl;
     container.empty();
@@ -169,9 +178,8 @@ export class PureChatLLMSideView extends ItemView {
       this.defaultContent();
       return;
     }
-    const index = (this.plugin.settings.endpoints.findIndex(e => e.name === chat.endpoint.name) + 1 || 1) - 1;
 
-    container.createDiv({ text: "" }, contain => {
+    container.createDiv({ text: "" }, (contain) => {
       contain.addClass("PURE", "floattop");
 
       new ButtonComponent(contain)
@@ -185,16 +193,16 @@ export class PureChatLLMSideView extends ItemView {
         .onClick(() =>
           //new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat => )
           editor.setValue(
-            new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat =>
+            new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb((chat) =>
               allshown
                 ? (chat.options = {
                     model: chat.options.model,
                     max_completion_tokens: chat.options.max_completion_tokens,
                     stream: chat.options.stream,
                   })
-                : Object.assign(chat.options, { ...alloptions }, { ...chat.options })
-            ).Markdown
-          )
+                : Object.assign(chat.options, { ...alloptions }, { ...chat.options }),
+            ).Markdown,
+          ),
         );
     });
 
@@ -204,17 +212,17 @@ export class PureChatLLMSideView extends ItemView {
       const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
-      container.createDiv({ text: "" }, contain => {
+      container.createDiv({ text: "" }, (contain) => {
         contain.addClass("PURE", "messageContainer", message.role);
-        contain.createEl("h1", { text: toTitleCase(message.role) }, el => {
+        contain.createEl("h1", { text: toTitleCase(message.role) }, (el) => {
           el.onClickEvent(() => this.goToPostion(editor, message.cline));
           el.addClass("PURE", "messageHeader", message.role);
         });
         // Preview of message content with copy button
-        contain.createEl("div", "", div => {
+        contain.createEl("div", "", (div) => {
           div.addClass("PURE", "preview", message.role);
           if (preview)
-            div.createDiv({ text: "" }, el => {
+            div.createDiv({ text: "" }, (el) => {
               el.onClickEvent(() => this.goToPostion(editor, message.cline, true));
               el.addClass("PURE", "messageMarkdown", message.role);
               MarkdownRenderer.render(this.app, preview, el, view.file?.basename || "", this);
@@ -232,23 +240,27 @@ export class PureChatLLMSideView extends ItemView {
               .setIcon("save")
               .setTooltip("Save message to a new note")
               .onClick(() => {
-                const title = (message.content.match(/^#+? (.+)$/m)?.[0] || view.file?.basename || "Untitled")
+                const title = (
+                  message.content.match(/^#+? (.+)$/m)?.[0] ||
+                  view.file?.basename ||
+                  "Untitled"
+                )
                   .replace(/^#+ /, "")
                   .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, "")
                   .trim();
                 this.app.fileManager
                   .getAvailablePathForAttachment(`Message ${title}.md`, view.file?.path)
-                  .then(path =>
+                  .then((path) =>
                     this.app.vault
                       .create(path, message.content)
-                      .then(() => this.app.workspace.openLinkText(path, "", true))
+                      .then(() => this.app.workspace.openLinkText(path, "", true)),
                   );
               });
           new ExtraButtonComponent(div)
             .setIcon("message-square-x")
             .setTooltip("Delete message")
             .onClick(() => {
-              editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).Markdown);
+              editor.setValue(chat.thencb((c) => c.messages.splice(index, 1)).Markdown);
             });
           if (/> \[!assistant\]/gim.test(message.content))
             new ExtraButtonComponent(div)
@@ -257,12 +269,12 @@ export class PureChatLLMSideView extends ItemView {
               .onClick(() => {
                 editor.setValue(
                   chat.thencb(
-                    c =>
+                    (c) =>
                       (c.messages[index].content = c.messages[index].content.replace(
                         /[\W\w]+?> \[!assistant\]\n*/i,
-                        ""
-                      ))
-                  ).Markdown
+                        "",
+                      )),
+                  ).Markdown,
                 );
               });
           if (/# \w+/gm.test(message.content))
@@ -286,14 +298,14 @@ export class PureChatLLMSideView extends ItemView {
               .onClick(() => {
                 this.openCodePreview(
                   message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || "",
-                  message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || "text"
+                  message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || "text",
                 );
               });
           new ExtraButtonComponent(div)
             .setIcon("refresh-cw")
             .setTooltip("Regenerate response")
             .onClick(() => {
-              editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).Markdown);
+              editor.setValue(chat.thencb((c) => c.messages.splice(index + 1)).Markdown);
               this.plugin.CompleteChatResponse(editor, view);
             });
         });
@@ -343,11 +355,15 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
   currentmodel = "";
   firstrun = true;
 
-  constructor(app: App, private plugin: PureChatLLM, private editor: Editor) {
+  constructor(
+    app: App,
+    private plugin: PureChatLLM,
+    private editor: Editor,
+  ) {
     super(app);
     const name = new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).endpoint.name;
-    const endpointIndex = this.plugin.settings.endpoints.findIndex(e => e.name === name);
-    this.items = this.plugin.settings.endpoints.map(e => ({ name: e.name, ismodel: false }));
+    const endpointIndex = this.plugin.settings.endpoints.findIndex((e) => e.name === name);
+    this.items = this.plugin.settings.endpoints.map((e) => ({ name: e.name, ismodel: false }));
     this.updatemodelist(endpointIndex === -1 ? 0 : endpointIndex);
     this.firstrun = false;
   }
@@ -362,17 +378,18 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
 
   onChooseItem(item: ModelAndProvider, evt: MouseEvent | KeyboardEvent): void {
     // see if it's a provider or a model
-    const endpointnum = this.plugin.settings.endpoints.findIndex(e => e.name === item.name);
+    const endpointnum = this.plugin.settings.endpoints.findIndex((e) => e.name === item.name);
     if (endpointnum !== -1) {
       this.editor.setValue(
         new PureChatLLMChat(this.plugin)
           .setMarkdown(this.editor.getValue())
-          .setModel(this.plugin.settings.endpoints[endpointnum].defaultmodel).Markdown
+          .setModel(this.plugin.settings.endpoints[endpointnum].defaultmodel).Markdown,
       );
       this.updatemodelist(endpointnum);
     } else
       this.editor.setValue(
-        new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).setModel(item.name).Markdown
+        new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).setModel(item.name)
+          .Markdown,
       );
   }
 
@@ -386,18 +403,21 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       return;
     }
     this.plugin.modellist = [];
-    new PureChatLLMChat(this.plugin).getAllModels().then(models => {
+    new PureChatLLMChat(this.plugin).getAllModels().then((models) => {
       this.plugin.modellist = models;
       this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
       this.plugin.saveSettings();
-      this.modellist = models.map(m => ({ name: m, ismodel: true }));
+      this.modellist = models.map((m) => ({ name: m, ismodel: true }));
       this.open();
     });
   }
 }
 
 export class CodePreview extends ItemView {
-  constructor(leaf: WorkspaceLeaf, public plugin: PureChatLLM) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    public plugin: PureChatLLM,
+  ) {
     super(leaf);
     this.icon = "code";
   }
@@ -434,7 +454,7 @@ export class CodePreview extends ItemView {
       iframe.style.height = "100%";
       iframe.srcdoc = code;
     } else {
-      this.contentEl.createEl("pre", {}, el => {
+      this.contentEl.createEl("pre", {}, (el) => {
         const codeEl = el.createEl("code", { text: code });
         codeEl.addClass(`language-${language}`);
       });

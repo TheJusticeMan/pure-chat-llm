@@ -10,6 +10,7 @@ const banner = `
  * version: ${process.env.npm_package_version}
  */`;
 const prod = process.argv[2] === "production";
+console.log(`Building for ${prod ? "production" : "development"}...`);
 
 const context = await esbuild.context({
   banner: {
