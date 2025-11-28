@@ -31,10 +31,14 @@ interface StreamDelta {
   role?: string;
 }
 
-type MessageImg =
+type MediaMessage =
   | {
       type: "image_url";
       image_url: { url: string };
+    }
+  | {
+      type: "input_audio";
+      input_audio: { data: string; format: "wav" | "mp3" };
     }
   | {
       type: "text";
@@ -51,7 +55,7 @@ interface ChatRequestOptions {
   model: string;
   messages: {
     role: string;
-    content?: string | MessageImg[] | null;
+    content?: string | MediaMessage[] | null;
     tool_calls?: ToolCall[];
     tool_call_id?: string;
     [key: string]: unknown;
@@ -353,7 +357,7 @@ export class PureChatLLMChat {
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
    */
-  appendMessage(...messages: { role: RoleType; content: string }[]) {
+  appendMessage(...messages: { role: RoleType; content: string | MediaMessage }[]) {
     let extras = "";
     if (this.imageOutputUrls)
       extras =
@@ -446,15 +450,72 @@ export class PureChatLLMChat {
     return app.vault.cachedRead(file);
   }
 
-  static async resolveFilesWithImages(
+  static async convertM4AToWav(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+    const audioContext = new (window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const audioBuffer = await audioContext.decodeAudioData(buffer);
+
+    const numOfChan = audioBuffer.numberOfChannels;
+    const length = audioBuffer.length * numOfChan * 2 + 44;
+    const buffer2 = new ArrayBuffer(length);
+    const view = new DataView(buffer2);
+    let pos = 0;
+
+    function setUint16(data: number) {
+      view.setUint16(pos, data, true);
+      pos += 2;
+    }
+
+    function setUint32(data: number) {
+      view.setUint32(pos, data, true);
+      pos += 4;
+    }
+
+    // write WAVE header
+    setUint32(0x46464952); // "RIFF"
+    setUint32(length - 8); // file length - 8
+    setUint32(0x45564157); // "WAVE"
+
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16); // length = 16
+    setUint16(1); // PCM (uncompressed)
+    setUint16(numOfChan);
+    setUint32(audioBuffer.sampleRate);
+    setUint32(audioBuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+    setUint16(numOfChan * 2); // block-align
+    setUint16(16); // 16-bit
+
+    setUint32(0x61746164); // "data" - chunk
+    setUint32(length - pos - 4); // chunk length
+
+    // write interleaved data
+    const channels = [];
+    for (let i = 0; i < numOfChan; i++) channels.push(audioBuffer.getChannelData(i));
+
+    let sampleIdx = 0;
+    while (sampleIdx < audioBuffer.length) {
+      for (let i = 0; i < numOfChan; i++) {
+        let sample = Math.max(-1, Math.min(1, channels[i][sampleIdx])); // clamp
+        // bitwise OR 0 to truncate to integer
+        sample = (sample < 0 ? sample * 0x8000 : sample * 0x7fff) | 0;
+        view.setInt16(pos, sample, true);
+        pos += 2;
+      }
+      sampleIdx++;
+    }
+
+    return buffer2;
+  }
+
+  static async resolveFilesWithImagesAndAudio(
     markdown: string,
     activeFile: TFile,
     app: App,
     role: string,
-  ): Promise<MessageImg[] | string> {
+  ): Promise<MediaMessage[] | string> {
     const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
 
-    const resolved: MessageImg[] = await Promise.all(
+    const resolved: MediaMessage[] = await Promise.all(
       matches.map(async (match) => {
         const [originalLink, Link] = match;
         const file = this.getfileForLink(Link, activeFile, app);
@@ -462,26 +523,42 @@ export class PureChatLLMChat {
         // Not found, return as text
         if (!(file instanceof TFile)) return { type: "text", text: originalLink };
 
-        const imageMime = {
-          png: "image/png",
-          jpg: "image/jpeg",
-          jpeg: "image/jpeg",
-          gif: "image/gif",
-          webp: "image/webp",
-        }[file.extension.toLowerCase()];
-
-        if (imageMime && role === "user") {
+        const ext = file.extension.toLowerCase();
+        if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext) && role === "user") {
           const data = await app.vault.readBinary(file);
-          const url = await this.arrayBufferToBase64DataURL(data, imageMime);
+          const mime =
+            ext === "jpg"
+              ? "image/jpeg"
+              : ext === "jpeg"
+                ? "image/jpeg"
+                : ext === "png"
+                  ? "image/png"
+                  : ext === "gif"
+                    ? "image/gif"
+                    : "image/webp";
+          const url = await this.arrayBufferToBase64DataURL(data, mime);
           return { type: "image_url", image_url: { url } };
-        } else if (imageMime) return { type: "text", text: originalLink };
-        else return { type: "text", text: await this.retrieveLinkContent(Link, activeFile, app) };
+        }
+        if (["mp3", "wav", "m4a"].includes(ext) && role === "user") {
+          let data = await app.vault.readBinary(file);
+          let format = ext;
+          if (ext === "m4a") {
+            data = await this.convertM4AToWav(data);
+            format = "wav";
+          }
+          const url = await this.arrayBufferToBase64DataURL(data, `audio/${format}`);
+          return {
+            type: "input_audio",
+            input_audio: { data: url.split(",")[1], format: format as "wav" | "mp3" },
+          };
+        }
+        return { type: "text", text: await this.retrieveLinkContent(Link, activeFile, app) };
       }),
     );
 
     //get the surrounding text around the matches
     let lastIndex = 0;
-    const allParts: MessageImg[] = [];
+    const allParts: MediaMessage[] = [];
     for (const match of matches) {
       const start = match.index ?? 0;
       const end = start + match[0].length;
@@ -515,7 +592,7 @@ export class PureChatLLMChat {
         acc.push(item);
       }
       return acc;
-    }, [] as MessageImg[]);
+    }, [] as MediaMessage[]);
 
     if (final.length === 0) return markdown; // If no valid parts, return original markdown
 
@@ -552,7 +629,12 @@ export class PureChatLLMChat {
     const resolvedMessages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
         role: role,
-        content: await PureChatLLMChat.resolveFilesWithImages(content, activeFile, app, role),
+        content: await PureChatLLMChat.resolveFilesWithImagesAndAudio(
+          content,
+          activeFile,
+          app,
+          role,
+        ),
       })),
     );
 
