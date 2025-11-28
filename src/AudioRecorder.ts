@@ -222,7 +222,7 @@ export class PureChatLLMAudioRecorder {
    * This is a convenience method that combines startRecording, stopRecording, and transcribeAudio.
    *
    * @param durationMs - Optional maximum recording duration in milliseconds.
-   *                     If not provided, recording continues until stopRecordingAndTranscribe is called.
+   *                     If not provided, recording continues until stopRecording is called manually.
    * @returns A Promise that resolves to the transcribed text.
    */
   async recordAndTranscribe(durationMs?: number): Promise<string> {
