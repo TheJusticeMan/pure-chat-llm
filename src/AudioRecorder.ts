@@ -158,7 +158,8 @@ export class PureChatLLMAudioRecorder {
 
   /**
    * Sends the recorded audio to the provider's transcription API for transcription.
-   * Uses the currently selected provider's endpoint to build the transcription URL.
+   * If no dedicated transcription endpoint is available, falls back to using the
+   * chat completions endpoint with audio embedded in the message (for Gemini, etc.).
    *
    * @param audioBlob - The recorded audio blob to transcribe.
    * @returns A Promise that resolves to the transcribed text,
@@ -173,13 +174,26 @@ export class PureChatLLMAudioRecorder {
       return "";
     }
 
-    // Build transcription endpoint URL from the provider's chat endpoint
+    // Check if endpoint has a dedicated transcription endpoint
     const transcriptionUrl = this.getTranscriptionUrl(endpoint);
-    if (!transcriptionUrl) {
-      new Notice("❌ Transcription is not supported for this provider.");
-      return "";
-    }
 
+    if (transcriptionUrl) {
+      // Use dedicated Whisper-style transcription API
+      return this.transcribeWithWhisperApi(audioBlob, endpoint, transcriptionUrl);
+    } else {
+      // Fallback: Use chat completions with embedded audio (for Gemini, etc.)
+      return this.transcribeWithChatCompletions(audioBlob, endpoint);
+    }
+  }
+
+  /**
+   * Transcribes audio using a Whisper-compatible API endpoint.
+   */
+  private async transcribeWithWhisperApi(
+    audioBlob: Blob,
+    endpoint: PureChatLLMAPI,
+    transcriptionUrl: string,
+  ): Promise<string> {
     // Determine file extension from MIME type
     const extension = this.getFileExtension(audioBlob.type);
     const fileName = `recording.${extension}`;
@@ -226,101 +240,169 @@ export class PureChatLLMAudioRecorder {
   }
 
   /**
+   * Transcribes audio using the chat completions endpoint with embedded audio.
+   * This is used for providers like Gemini that support audio in chat messages
+   * but don't have a dedicated Whisper-style transcription endpoint.
+   */
+  private async transcribeWithChatCompletions(
+    audioBlob: Blob,
+    endpoint: PureChatLLMAPI,
+  ): Promise<string> {
+    try {
+      new Notice("📝 Transcribing audio via chat...");
+      this.plugin.status(`Transcribing audio via ${endpoint.name} chat...`);
+
+      // Convert audio blob to base64
+      const base64Audio = await this.blobToBase64(audioBlob);
+      const audioFormat = this.getAudioFormat(audioBlob.type);
+
+      // Build the chat completion request with embedded audio
+      const requestBody = {
+        model: endpoint.defaultmodel,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Transcribe this audio file. Return only the transcribed text, nothing else.",
+              },
+              {
+                type: "input_audio",
+                input_audio: {
+                  data: base64Audio,
+                  format: audioFormat,
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const response = await fetch(endpoint.endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${endpoint.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.console.error("Chat transcription API error:", errorText);
+        new Notice(`❌ Transcription failed: ${response.statusText}`);
+        this.plugin.status("");
+        return "";
+      }
+
+      const data = await response.json();
+      this.plugin.status("");
+      new Notice("✅ Transcription complete!");
+
+      // Extract the transcribed text from the chat response
+      const transcribedText = data.choices?.[0]?.message?.content || "";
+      this.console.log("Chat transcription result:", transcribedText);
+      return transcribedText;
+    } catch (error) {
+      this.console.error("Error during chat transcription:", error);
+      new Notice("❌ Failed to transcribe audio. Check console for details.");
+      this.plugin.status("");
+      return "";
+    }
+  }
+
+  /**
+   * Converts a Blob to a base64 string (without the data URL prefix).
+   */
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:audio/webm;base64,")
+        const base64 = result.split(",")[1] || result;
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  /**
+   * Gets the audio format string for the chat completions API.
+   */
+  private getAudioFormat(mimeType: string): string {
+    if (mimeType.includes("webm")) return "webm";
+    if (mimeType.includes("mp4")) return "mp4";
+    if (mimeType.includes("ogg")) return "ogg";
+    if (mimeType.includes("wav")) return "wav";
+    if (mimeType.includes("mp3")) return "mp3";
+    if (mimeType.includes("mpeg")) return "mp3";
+    return "webm"; // Default
+  }
+
+  /**
    * Gets the transcription API URL for the given provider endpoint.
-   * Uses custom endpoint if configured, otherwise derives from provider.
+   * Uses endpoint-specific transcriptionEndpoint if configured.
+   * Returns null if no Whisper-style transcription is available (will fall back to chat completions).
    */
   private getTranscriptionUrl(endpoint: PureChatLLMAPI): string | null {
-    // If a custom transcription endpoint is configured, use it
-    const customEndpoint = this.plugin.settings.customTranscriptionEndpoint;
-    if (customEndpoint) {
-      this.console.log(`Using custom transcription endpoint: ${customEndpoint}`);
-      return customEndpoint;
+    // If endpoint has a transcription endpoint configured, use it
+    if (endpoint.transcriptionEndpoint) {
+      this.console.log(`Using endpoint transcription URL: ${endpoint.transcriptionEndpoint}`);
+      return endpoint.transcriptionEndpoint;
     }
 
+    // Check if this provider is known to NOT support Whisper-style transcription
+    // These providers will fall back to chat completions with embedded audio
     const chatEndpoint = endpoint.endpoint;
-
-    // Parse the URL to get the hostname for accurate matching
-    let hostname: string;
     try {
-      hostname = new URL(chatEndpoint).hostname;
+      const hostname = new URL(chatEndpoint).hostname;
+
+      // Providers that don't have Whisper-style transcription API
+      const noWhisperProviders = [
+        "generativelanguage.googleapis.com", // Gemini - uses chat completions with audio
+        "api.anthropic.com", // Anthropic - uses chat completions with audio
+      ];
+
+      if (noWhisperProviders.some((provider) => hostname === provider)) {
+        this.console.log(
+          `${endpoint.name} doesn't have Whisper API, will use chat completions with audio`,
+        );
+        return null;
+      }
     } catch {
-      this.console.warn(`Invalid endpoint URL: ${chatEndpoint}`);
-      return null;
+      // Invalid URL, continue with derivation attempt
     }
 
-    // Handle different providers with specific transcription endpoints
-    if (hostname === "api.openai.com") {
-      return "https://api.openai.com/v1/audio/transcriptions";
-    }
-
-    if (hostname === "api.groq.com") {
-      return "https://api.groq.com/openai/v1/audio/transcriptions";
-    }
-
-    // Google's Gemini API doesn't have a Whisper-compatible transcription endpoint
-    if (hostname === "generativelanguage.googleapis.com") {
-      this.console.warn(
-        "Gemini does not support OpenAI-compatible audio transcription. " +
-          "Set a custom transcription endpoint in settings to use a different provider.",
-      );
-      return null;
-    }
-
-    // Anthropic doesn't have a transcription API
-    if (hostname === "api.anthropic.com") {
-      this.console.warn(
-        "Anthropic does not support audio transcription. " +
-          "Set a custom transcription endpoint in settings to use a different provider.",
-      );
-      return null;
-    }
-
-    // For OpenAI-compatible providers (including Ollama and custom providers),
-    // derive the transcription URL from the chat endpoint
+    // Try to derive transcription URL from chat endpoint for OpenAI-compatible providers
     if (chatEndpoint.includes("/chat/completions")) {
-      return chatEndpoint.replace("/chat/completions", "/audio/transcriptions");
+      const derivedUrl = chatEndpoint.replace("/chat/completions", "/audio/transcriptions");
+      this.console.log(`Derived transcription URL: ${derivedUrl}`);
+      return derivedUrl;
     }
 
-    // Unknown endpoint format - suggest using custom endpoint
-    this.console.warn(
-      `Cannot determine transcription URL for endpoint: ${chatEndpoint}. ` +
-        `Set a custom transcription endpoint in settings.`,
+    // Cannot determine transcription URL - will fall back to chat completions
+    this.console.log(
+      `No transcription endpoint for ${endpoint.name}, will try chat completions with audio`,
     );
     return null;
   }
 
   /**
    * Gets the appropriate transcription model for the given provider.
-   * Uses custom model if configured, otherwise uses provider defaults.
+   * Uses endpoint-specific transcriptionModel if configured.
    */
   private getTranscriptionModel(endpoint: PureChatLLMAPI): string {
-    // If a custom transcription model is configured, use it
-    const customModel = this.plugin.settings.customTranscriptionModel;
-    if (customModel) {
-      this.console.log(`Using custom transcription model: ${customModel}`);
-      return customModel;
+    // If endpoint has a transcription model configured, use it
+    if (endpoint.transcriptionModel) {
+      this.console.log(`Using endpoint transcription model: ${endpoint.transcriptionModel}`);
+      return endpoint.transcriptionModel;
     }
 
-    const chatEndpoint = endpoint.endpoint;
-
-    // Parse the URL to get the hostname for accurate matching
-    let hostname: string;
-    try {
-      hostname = new URL(chatEndpoint).hostname;
-    } catch {
-      return "whisper-1"; // Default if URL is invalid
-    }
-
-    if (hostname === "api.groq.com") {
-      return "whisper-large-v3"; // Groq uses whisper-large-v3
-    }
-
-    // For Ollama and other local providers, use "whisper" as the model name
-    if (this.isLocalEndpoint(hostname)) {
-      return "whisper";
-    }
-
-    return "whisper-1"; // Default OpenAI model
+    // Default to whisper-1 (OpenAI default)
+    return "whisper-1";
   }
 
   /**

@@ -291,6 +291,8 @@ const endpointNames: PureChatLLMAPI = {
   defaultmodel: "Default model",
   listmodels: "Available models URL (Optional)",
   getapiKey: "API key retrieval URL (Optional)",
+  transcriptionEndpoint: "Transcription endpoint (Optional)",
+  transcriptionModel: "Transcription model (Optional)",
 };
 
 const endpointDescriptions: PureChatLLMAPI = {
@@ -302,6 +304,9 @@ const endpointDescriptions: PureChatLLMAPI = {
     "The default model to use for requests. This is required for the plugin to function.",
   listmodels: "Optional URL to retrieve available models from the provider.",
   getapiKey: "Optional URL the API key page for the provider.",
+  transcriptionEndpoint:
+    "Optional URL for audio transcription (e.g., https://api.openai.com/v1/audio/transcriptions).",
+  transcriptionModel: "Optional model name for transcription (e.g., whisper-1, whisper-large-v3).",
 };
 
 const endpointInputPlaceholders: PureChatLLMAPI = {
@@ -311,6 +316,8 @@ const endpointInputPlaceholders: PureChatLLMAPI = {
   defaultmodel: "gpt-3.5-turbo",
   listmodels: "https://api.example.com/v1/models (Optional)",
   getapiKey: "https://example.com/get-api-key (Optional)",
+  transcriptionEndpoint: "https://api.example.com/v1/audio/transcriptions",
+  transcriptionModel: "whisper-1",
 };
 
 export class EditModalProviders extends Modal {
@@ -366,6 +373,8 @@ export class EditModalProviders extends Modal {
             defaultmodel: "",
             listmodels: "",
             getapiKey: "",
+            transcriptionEndpoint: "",
+            transcriptionModel: "",
           });
           this.selectedIndex = this.plugin.settings.endpoints.length - 1;
           this.buildUI(); // Rebuild UI to show the new endpoint
@@ -375,14 +384,15 @@ export class EditModalProviders extends Modal {
     new Setting(this.contentEl).setName("Edit").setHeading();
     Object.entries(endpointNames).forEach(([key, label]) => {
       new Setting(this.contentEl)
-        .setName(label)
-        .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
+        .setName(label ?? "")
+        .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI] ?? "")
         .addText((text) => {
           text
-            .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
-            .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
+            .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI] ?? "")
+            .setValue(selectedEndpoint[key as keyof PureChatLLMAPI] ?? "")
             .onChange((value) => {
-              selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (selectedEndpoint as any)[key] = value.trim();
               if (key === "name") this.setTitle(value.trim());
             });
         });

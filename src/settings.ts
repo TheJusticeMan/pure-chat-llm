@@ -214,7 +214,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName("Use audio transcription")
-      .setDesc("Enable this to record audio and transcribe it using a Whisper-compatible API.")
+      .setDesc(
+        "Enable this to record audio and transcribe it using a Whisper-compatible API. Configure transcription endpoints per provider in 'Custom LLM Providers'.",
+      )
       .addToggle((toggle) =>
         toggle.setValue(settings.useAudioTranscription).onChange(async (value) => {
           settings.useAudioTranscription = value;
@@ -232,34 +234,6 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           .setValue(settings.transcriptionLanguage === "auto" ? "" : settings.transcriptionLanguage)
           .onChange(async (value) => {
             settings.transcriptionLanguage = value.trim() || "auto";
-            await this.plugin.saveSettings();
-          }),
-      );
-    new Setting(containerEl)
-      .setName("Custom transcription endpoint")
-      .setDesc(
-        "Override the transcription API endpoint URL. Leave empty to auto-detect from your provider. Example: http://localhost:11434/v1/audio/transcriptions",
-      )
-      .addText((text) =>
-        text
-          .setPlaceholder("Auto-detect from provider")
-          .setValue(settings.customTranscriptionEndpoint)
-          .onChange(async (value) => {
-            settings.customTranscriptionEndpoint = value.trim();
-            await this.plugin.saveSettings();
-          }),
-      );
-    new Setting(containerEl)
-      .setName("Custom transcription model")
-      .setDesc(
-        "Override the transcription model name. Leave empty to use the default for your provider. Examples: whisper-1, whisper-large-v3, whisper",
-      )
-      .addText((text) =>
-        text
-          .setPlaceholder("Auto-detect from provider")
-          .setValue(settings.customTranscriptionModel)
-          .onChange(async (value) => {
-            settings.customTranscriptionModel = value.trim();
             await this.plugin.saveSettings();
           }),
       );

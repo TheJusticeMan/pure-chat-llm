@@ -9,6 +9,8 @@ export const StatSett = {
       endpoint: "https://api.openai.com/v1/chat/completions",
       listmodels: "https://api.openai.com/v1/models",
       getapiKey: "https://platform.openai.com/api-keys",
+      transcriptionEndpoint: "https://api.openai.com/v1/audio/transcriptions",
+      transcriptionModel: "whisper-1",
     },
     {
       name: "Gemini",
@@ -17,6 +19,8 @@ export const StatSett = {
       endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       listmodels: "https://generativelanguage.googleapis.com/v1beta/openai/models",
       getapiKey: "https://aistudio.google.com/apikey",
+      transcriptionEndpoint: "",
+      transcriptionModel: "",
     },
     {
       name: "xAI",
@@ -25,6 +29,8 @@ export const StatSett = {
       endpoint: "https://api.x.ai/v1/chat/completions",
       listmodels: "https://api.x.ai/v1/models",
       getapiKey: "https://console.x.ai",
+      transcriptionEndpoint: "",
+      transcriptionModel: "",
     },
     {
       name: "Anthropic",
@@ -33,6 +39,8 @@ export const StatSett = {
       endpoint: "https://api.anthropic.com/v1/messages",
       listmodels: "https://api.anthropic.com/v1/models",
       getapiKey: "https://console.anthropic.com/settings/keys",
+      transcriptionEndpoint: "",
+      transcriptionModel: "",
     },
     {
       name: "Cohere",
@@ -41,6 +49,8 @@ export const StatSett = {
       endpoint: "https://api.cohere.ai/v1/generate",
       listmodels: "https://api.cohere.ai/v1/models",
       getapiKey: "https://dashboard.cohere.com/api-keys",
+      transcriptionEndpoint: "",
+      transcriptionModel: "",
     },
     {
       name: "Mistral AI",
@@ -49,6 +59,8 @@ export const StatSett = {
       endpoint: "https://api.mistral.ai/v1/chat/completions",
       listmodels: "https://api.mistral.ai/v1/models",
       getapiKey: "https://console.mistral.ai/api-keys",
+      transcriptionEndpoint: "",
+      transcriptionModel: "",
     },
     {
       name: "DeepSeek",
@@ -57,6 +69,8 @@ export const StatSett = {
       endpoint: "https://api.deepseek.com/v1/chat/completions",
       listmodels: "https://api.deepseek.com/v1/models",
       getapiKey: "https://platform.deepseek.com/api_keys",
+      transcriptionEndpoint: "",
+      transcriptionModel: "",
     },
     {
       name: "Ollama",
@@ -65,6 +79,18 @@ export const StatSett = {
       defaultmodel: "qwen3:0.6b",
       listmodels: "http://localhost:11434/v1/models",
       getapiKey: "",
+      transcriptionEndpoint: "http://localhost:11434/v1/audio/transcriptions",
+      transcriptionModel: "whisper",
+    },
+    {
+      name: "Groq",
+      apiKey: EmptyApiKey,
+      endpoint: "https://api.groq.com/openai/v1/chat/completions",
+      defaultmodel: "llama-3.3-70b-versatile",
+      listmodels: "https://api.groq.com/openai/v1/models",
+      getapiKey: "https://console.groq.com/keys",
+      transcriptionEndpoint: "https://api.groq.com/openai/v1/audio/transcriptions",
+      transcriptionModel: "whisper-large-v3",
     },
   ],
   chatParser: [
@@ -111,8 +137,6 @@ export interface PureChatLLMSettings {
   resolveFilesForChatAnalysis: boolean;
   useAudioTranscription: boolean;
   transcriptionLanguage: string;
-  customTranscriptionEndpoint: string;
-  customTranscriptionModel: string;
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -134,8 +158,6 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   resolveFilesForChatAnalysis: false,
   useAudioTranscription: true, // Default to true for audio transcription
   transcriptionLanguage: "auto", // Auto-detect language by default
-  customTranscriptionEndpoint: "", // Custom endpoint URL for transcription (leave empty to auto-detect)
-  customTranscriptionModel: "", // Custom model name for transcription (leave empty for default)
 };
 
 export interface PureChatLLMAPI {
@@ -145,6 +167,8 @@ export interface PureChatLLMAPI {
   defaultmodel: string;
   listmodels: string;
   getapiKey: string;
+  transcriptionEndpoint?: string;
+  transcriptionModel?: string;
 }
 
 export interface ChatParser {
