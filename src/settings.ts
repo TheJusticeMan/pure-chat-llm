@@ -213,6 +213,31 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         }),
       );
     new Setting(containerEl)
+      .setName("Use audio transcription")
+      .setDesc(
+        "Enable this to record audio and transcribe it using OpenAI's Whisper API. Requires an OpenAI API key.",
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(settings.useAudioTranscription).onChange(async (value) => {
+          settings.useAudioTranscription = value;
+          await this.plugin.saveSettings();
+        }),
+      );
+    new Setting(containerEl)
+      .setName("Transcription language")
+      .setDesc(
+        "Language for audio transcription. Use 'auto' for automatic detection, or specify a language code (e.g., 'en', 'es', 'fr').",
+      )
+      .addText((text) =>
+        text
+          .setPlaceholder("auto")
+          .setValue(settings.transcriptionLanguage === "auto" ? "" : settings.transcriptionLanguage)
+          .onChange(async (value) => {
+            settings.transcriptionLanguage = value.trim() || "auto";
+            await this.plugin.saveSettings();
+          }),
+      );
+    new Setting(containerEl)
       .setName("Import ChatGPT conversations")
       .setDesc("Import conversations exported from chat.openai.com.")
       .addButton((btn) => {

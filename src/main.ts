@@ -16,6 +16,7 @@ import {
   TFolder,
   WorkspaceLeaf,
 } from "obsidian";
+import { PureChatLLMAudioRecorder } from "./AudioRecorder";
 import { BrowserConsole } from "./BrowserConsole";
 import { PureChatLLMChat, RoleType } from "./Chat";
 import { codelanguages } from "./codelanguages";
@@ -56,6 +57,7 @@ export default class PureChatLLM extends Plugin {
   console: BrowserConsole;
   modellist: string[] = [];
   pureChatStatusElement: HTMLElement;
+  audioRecorder: PureChatLLMAudioRecorder;
 
   async onload() {
     await this.loadSettings();
@@ -64,6 +66,9 @@ export default class PureChatLLM extends Plugin {
     this.console = new BrowserConsole(this.settings.debug, "PureChatLLM");
     this.console.log("settings loaded", this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
+
+    // Initialize audio recorder
+    this.audioRecorder = new PureChatLLMAudioRecorder(this);
 
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, (leaf) => new PureChatLLMSideView(leaf, this));
     this.registerView("pure-chat-llm-code-preview", (leaf) => new CodePreview(leaf, this));
@@ -232,6 +237,17 @@ export default class PureChatLLM extends Plugin {
             );
           }),
         ).startStreaming();
+      },
+    });
+    // Record audio and transcribe it
+    this.addCommand({
+      id: "record-audio",
+      name: "Record audio",
+      icon: "mic",
+      editorCheckCallback: (checking, editor: Editor) => {
+        if (!this.settings.useAudioTranscription) return false;
+        if (checking) return true;
+        this.toggleAudioRecording(editor);
       },
     });
     // replaceNonKeyboardChars is used to replace non-keyboard characters with their keyboard equivalents
@@ -474,6 +490,30 @@ export default class PureChatLLM extends Plugin {
         this.isresponding = false;
         return;
       });
+  }
+
+  /**
+   * Toggles audio recording. If recording is in progress, stops it and transcribes.
+   * If not recording, starts a new recording session.
+   *
+   * @param editor - The active editor instance to insert the transcription into.
+   */
+  async toggleAudioRecording(editor: Editor): Promise<void> {
+    if (this.audioRecorder.isRecording) {
+      // Stop recording and transcribe
+      const audioBlob = await this.audioRecorder.stopRecording();
+      if (audioBlob) {
+        const transcription = await this.audioRecorder.transcribeAudio(audioBlob);
+        if (transcription) {
+          // Insert transcription at cursor position
+          editor.replaceSelection(transcription);
+          this.setCursorEnd(editor, true);
+        }
+      }
+    } else {
+      // Start recording
+      await this.audioRecorder.startRecording();
+    }
   }
 
   setCursorEnd(editor: Editor, intoview = false) {

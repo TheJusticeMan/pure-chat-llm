@@ -109,6 +109,8 @@ export interface PureChatLLMSettings {
   ModelsOnEndpoint: { [key: string]: string[] };
   useImageGeneration: boolean;
   resolveFilesForChatAnalysis: boolean;
+  useAudioTranscription: boolean;
+  transcriptionLanguage: string;
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -128,6 +130,8 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   ModelsOnEndpoint: {},
   useImageGeneration: true, // Default to true for OpenAI image generation
   resolveFilesForChatAnalysis: false,
+  useAudioTranscription: true, // Default to true for OpenAI Whisper transcription
+  transcriptionLanguage: "auto", // Auto-detect language by default
 };
 
 export interface PureChatLLMAPI {

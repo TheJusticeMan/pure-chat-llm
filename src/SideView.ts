@@ -162,6 +162,9 @@ export class PureChatLLMSideView extends ItemView {
     new Setting(this.contentEl)
       .setName("Speak chat")
       .setDesc("This will speak the current chat using two voices.");
+    new Setting(this.contentEl)
+      .setName("Record audio")
+      .setDesc("Record audio and transcribe it using OpenAI's Whisper API.");
   }
 
   update(editor: Editor, view: MarkdownView) {
@@ -204,6 +207,20 @@ export class PureChatLLMSideView extends ItemView {
             ).Markdown,
           ),
         );
+
+      // Add recording button if audio transcription is enabled
+      if (this.plugin.settings.useAudioTranscription) {
+        const isRecording = this.plugin.audioRecorder?.isRecording;
+        new ButtonComponent(contain)
+          .setIcon(isRecording ? "mic-off" : "mic")
+          .setTooltip(isRecording ? "Stop recording" : "Record audio")
+          .then((btn) => {
+            if (isRecording) {
+              btn.buttonEl.addClass("PURE-recording");
+            }
+          })
+          .onClick(() => this.plugin.toggleAudioRecording(editor));
+      }
     });
 
     container.addClass("PURESideView");

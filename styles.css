@@ -142,6 +142,22 @@ Customization:
   padding-top: 2em;
 }
 
+/* Recording indicator animation */
+.PURE-recording {
+  background-color: var(--text-error) !important;
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
 sup {
   font-weight: normal;
 }
