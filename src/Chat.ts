@@ -168,7 +168,9 @@ export class PureChatLLMChat {
         };
       const contentStart = match.index + match[0].length;
       const contentEnd =
-        index + 1 < matches.length ? (matches[index + 1].index ?? markdown.length) : markdown.length;
+        index + 1 < matches.length
+          ? (matches[index + 1].index ?? markdown.length)
+          : markdown.length;
       const rawContent = markdown.substring(contentStart, contentEnd);
       const content = rawContent.trim();
 
@@ -186,8 +188,8 @@ export class PureChatLLMChat {
       }
 
       // Calculate the actual content position after trimming leading/trailing whitespace
-      const leadingWhitespace = rawContent.match(/^(\s*)/)?.[0] || "";
-      const trailingWhitespace = rawContent.match(/(\s*)$/)?.[0] || "";
+      const leadingWhitespace = rawContent.match(/^(\s*)/)![0];
+      const trailingWhitespace = rawContent.match(/(\s*)$/)![0];
 
       const actualContentStart = contentStart + leadingWhitespace.length;
       const actualContentEnd = contentEnd - trailingWhitespace.length;
@@ -475,8 +477,10 @@ export class PureChatLLMChat {
   }
 
   static async convertM4AToWav(buffer: ArrayBuffer): Promise<ArrayBuffer> {
-    const audioContext = new (window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    )();
     const audioBuffer = await audioContext.decodeAudioData(buffer);
 
     const numOfChan = audioBuffer.numberOfChannels;
