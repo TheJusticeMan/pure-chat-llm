@@ -160,20 +160,44 @@ export class PureChatLLMChat {
 
     this.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
     this.messages = matches.map((match, index) => {
-      if (!match.index)
+      if (match.index === undefined)
         return {
           role: "user",
           content: "",
           cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
         };
       const contentStart = match.index + match[0].length;
-      const contentEnd = index + 1 < matches.length ? matches[index + 1].index : markdown.length;
+      const contentEnd =
+        index + 1 < matches.length ? (matches[index + 1].index ?? markdown.length) : markdown.length;
+      const rawContent = markdown.substring(contentStart, contentEnd);
+      const content = rawContent.trim();
+
+      // If content is empty, use the position right after the role header
+      if (content.length === 0) {
+        const lineAfterHeader = markdown.substring(0, contentStart).split("\n").length;
+        return {
+          role: match[1].toLowerCase() as RoleType,
+          content: content,
+          cline: {
+            from: { line: lineAfterHeader, ch: 0 },
+            to: { line: lineAfterHeader, ch: 0 },
+          },
+        };
+      }
+
+      // Calculate the actual content position after trimming leading/trailing whitespace
+      const leadingWhitespace = rawContent.match(/^(\s*)/)?.[0] || "";
+      const trailingWhitespace = rawContent.match(/(\s*)$/)?.[0] || "";
+
+      const actualContentStart = contentStart + leadingWhitespace.length;
+      const actualContentEnd = contentEnd - trailingWhitespace.length;
+
       return {
         role: match[1].toLowerCase() as RoleType,
-        content: markdown.substring(contentStart, contentEnd).trim(),
+        content: content,
         cline: {
-          from: { line: markdown.substring(0, contentStart).split("\n").length - 1, ch: 0 },
-          to: { line: markdown.substring(0, contentEnd).split("\n").length - 1, ch: 0 },
+          from: { line: markdown.substring(0, actualContentStart).split("\n").length - 1, ch: 0 },
+          to: { line: markdown.substring(0, actualContentEnd).split("\n").length - 1, ch: 0 },
         },
       };
     });
