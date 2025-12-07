@@ -923,8 +923,9 @@ export class PureChatLLMChat {
     } catch (error) {
       this.console.error(`Network request failed:`, error);
       this.plugin.status("");
+      const errorMsg = error instanceof Error ? error.message : String(error);
       new Notice(`Network error: Unable to connect to ${this.endpoint.name}. Check your internet connection.`);
-      throw new Error(`Network request failed: ${error.message}`);
+      throw new Error(`Network request failed: ${errorMsg}`);
     }
 
     if (!response.ok) {
@@ -936,7 +937,9 @@ export class PureChatLLMChat {
         const errorData = await response.json();
         // Extract error details from common API error formats
         if (errorData.error) {
-          const apiError = typeof errorData.error === 'string' ? errorData.error : errorData.error.message;
+          const apiError = typeof errorData.error === 'string' 
+            ? errorData.error 
+            : (errorData.error.message || JSON.stringify(errorData.error));
           if (apiError) {
             errorMessage = `API Error: ${apiError}`;
             userMessage = `${this.endpoint.name}: ${apiError}`;
@@ -992,7 +995,8 @@ export class PureChatLLMChat {
       } catch (error) {
         this.plugin.status("");
         this.console.error(`Error during streaming response:`, error);
-        new Notice(`Error processing streaming response: ${error.message}`);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        new Notice(`Error processing streaming response: ${errorMsg}`);
         throw error;
       }
     } else {
@@ -1033,13 +1037,14 @@ export class PureChatLLMChat {
         return data.choices[0].message;
       } catch (error) {
         this.plugin.status("");
-        if (error.message?.includes("Invalid API response structure")) {
-          // Already handled above
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (errorMsg.includes("Invalid API response structure")) {
+          // Already handled above with specific error
           throw error;
         }
         this.console.error(`Error parsing API response:`, error);
-        new Notice(`Error parsing response from ${this.endpoint.name}: ${error.message}`);
-        throw new Error(`Failed to parse API response: ${error.message}`);
+        new Notice(`Error parsing response from ${this.endpoint.name}: ${errorMsg}`);
+        throw new Error(`Failed to parse API response: ${errorMsg}`);
       }
     }
   }
