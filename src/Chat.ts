@@ -910,59 +910,137 @@ export class PureChatLLMChat {
       delete requestOptions.max_completion_tokens;
     }
 
-    const response = await fetch(this.endpoint.endpoint, {
-      method: "POST",
-      headers: this.Headers,
-      body: JSON.stringify({
-        ...requestOptions,
-        stream: requestOptions.stream && !!streamcallback,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(this.endpoint.endpoint, {
+        method: "POST",
+        headers: this.Headers,
+        body: JSON.stringify({
+          ...requestOptions,
+          stream: requestOptions.stream && !!streamcallback,
+        }),
+      });
+    } catch (error) {
+      this.console.error(`Network request failed:`, error);
+      this.plugin.status("");
+      new Notice(`Network error: Unable to connect to ${this.endpoint.name}. Check your internet connection.`);
+      throw new Error(`Network request failed: ${error.message}`);
+    }
 
     if (!response.ok) {
-      this.console.error(`Network error: ${response.statusText}`);
       this.plugin.status("");
-      throw new Error(`Network error: ${response.statusText}`);
+      let errorMessage = `API Error (${response.status}): ${response.statusText}`;
+      let userMessage = `Error from ${this.endpoint.name}: ${response.statusText}`;
+      
+      try {
+        const errorData = await response.json();
+        // Extract error details from common API error formats
+        if (errorData.error) {
+          const apiError = typeof errorData.error === 'string' ? errorData.error : errorData.error.message;
+          if (apiError) {
+            errorMessage = `API Error: ${apiError}`;
+            userMessage = `${this.endpoint.name}: ${apiError}`;
+          }
+        }
+      } catch (parseError) {
+        // If we can't parse the error response, use the status text
+        this.console.error(`Failed to parse error response:`, parseError);
+      }
+      
+      this.console.error(errorMessage);
+      
+      // Provide specific user-friendly messages for common errors
+      if (response.status === 401) {
+        new Notice(`Authentication failed: Please check your API key for ${this.endpoint.name}.`);
+      } else if (response.status === 429) {
+        new Notice(`Rate limit exceeded for ${this.endpoint.name}. Please wait and try again.`);
+      } else if (response.status === 400) {
+        new Notice(`Invalid request: ${userMessage}`);
+      } else if (response.status === 403) {
+        new Notice(`Access forbidden: Check your API permissions for ${this.endpoint.name}.`);
+      } else if (response.status === 404) {
+        new Notice(`Endpoint not found: ${this.endpoint.endpoint} may be incorrect.`);
+      } else if (response.status >= 500) {
+        new Notice(`Server error from ${this.endpoint.name}: ${response.statusText}. Try again later.`);
+      } else {
+        new Notice(userMessage);
+      }
+      
+      throw new Error(errorMessage);
     }
 
     if (options.stream && !!streamcallback) {
-      const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
-      this.plugin.status("");
-      if (fullText.tool_calls) {
-        const toolCalls = fullText.tool_calls;
-        const imageGenCall = toolCalls.find(
-          (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
-        );
-        if (imageGenCall) {
-          streamcallback({
-            role: "tool",
-            content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
-          });
-          const l = await this.GenerateImage(imageGenCall, fullText);
-          options.messages.push(...l.msgs);
-          return this.sendChatRequest(options, streamcallback);
+      try {
+        const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
+        this.plugin.status("");
+        if (fullText.tool_calls) {
+          const toolCalls = fullText.tool_calls;
+          const imageGenCall = toolCalls.find(
+            (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
+          );
+          if (imageGenCall) {
+            streamcallback({
+              role: "tool",
+              content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
+            });
+            const l = await this.GenerateImage(imageGenCall, fullText);
+            options.messages.push(...l.msgs);
+            return this.sendChatRequest(options, streamcallback);
+          }
         }
+        return fullText;
+      } catch (error) {
+        this.plugin.status("");
+        this.console.error(`Error during streaming response:`, error);
+        new Notice(`Error processing streaming response: ${error.message}`);
+        throw error;
       }
-      return fullText;
     } else {
-      const data = await response.json();
-      if (data.choices[0].message.tool_calls) {
-        const toolCalls = data.choices[0].message.tool_calls;
-        const imageGenCall = toolCalls.find(
-          (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
-        );
-        if (imageGenCall) {
-          streamcallback?.({
-            role: "tool",
-            content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
-          });
-          const l = await this.GenerateImage(imageGenCall, data.choices[0].message);
-          options.messages.push(...l.msgs);
-          return this.sendChatRequest(options, streamcallback);
+      try {
+        const data = await response.json();
+        
+        // Validate response structure
+        if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+          this.console.error(`Invalid API response structure:`, data);
+          this.plugin.status("");
+          new Notice(`Invalid response from ${this.endpoint.name}: Missing or empty choices array.`);
+          throw new Error("Invalid API response structure: Missing choices");
         }
+        
+        if (!data.choices[0].message) {
+          this.console.error(`Invalid API response structure:`, data);
+          this.plugin.status("");
+          new Notice(`Invalid response from ${this.endpoint.name}: Missing message in response.`);
+          throw new Error("Invalid API response structure: Missing message");
+        }
+        
+        if (data.choices[0].message.tool_calls) {
+          const toolCalls = data.choices[0].message.tool_calls;
+          const imageGenCall = toolCalls.find(
+            (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
+          );
+          if (imageGenCall) {
+            streamcallback?.({
+              role: "tool",
+              content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
+            });
+            const l = await this.GenerateImage(imageGenCall, data.choices[0].message);
+            options.messages.push(...l.msgs);
+            return this.sendChatRequest(options, streamcallback);
+          }
+        }
+        this.plugin.status("");
+        return data.choices[0].message;
+      } catch (error) {
+        this.plugin.status("");
+        if (error.message?.includes("Invalid API response structure")) {
+          // Already handled above
+          throw error;
+        }
+        this.console.error(`Error parsing API response:`, error);
+        new Notice(`Error parsing response from ${this.endpoint.name}: ${error.message}`);
+        throw new Error(`Failed to parse API response: ${error.message}`);
       }
-      this.plugin.status("");
-      return data.choices[0].message;
     }
   }
 
