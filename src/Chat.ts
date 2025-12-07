@@ -937,13 +937,16 @@ export class PureChatLLMChat {
         const errorData = await response.json();
         // Extract error details from common API error formats
         if (errorData.error) {
-          const apiError = typeof errorData.error === 'string' 
-            ? errorData.error 
-            : (errorData.error.message || JSON.stringify(errorData.error));
-          if (apiError) {
-            errorMessage = `API Error: ${apiError}`;
-            userMessage = `${this.endpoint.name}: ${apiError}`;
+          let apiError: string;
+          if (typeof errorData.error === 'string') {
+            apiError = errorData.error;
+          } else if (errorData.error.message) {
+            apiError = errorData.error.message;
+          } else {
+            apiError = JSON.stringify(errorData.error);
           }
+          errorMessage = `API Error: ${apiError}`;
+          userMessage = `${this.endpoint.name}: ${apiError}`;
         }
       } catch (parseError) {
         // If we can't parse the error response, use the status text
