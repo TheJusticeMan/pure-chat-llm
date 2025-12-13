@@ -302,7 +302,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           settings.debug = value;
           await this.plugin.saveSettings();
           this.plugin.console = new BrowserConsole(settings.debug, "PureChatLLM");
-          console.log("reload the plugin to apply the changes");
+          console.debug("reload the plugin to apply the changes");
         }),
       );
     new Setting(containerEl)
@@ -316,11 +316,11 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           .onClick((e) => {
             const oldSettings = { ...this.plugin.settings };
             this.plugin.settings = { ...DEFAULT_SETTINGS };
-            for (const endpoint in this.plugin.settings.endpoints) {
-              if (DEFAULT_SETTINGS.endpoints[endpoint])
-                this.plugin.settings.endpoints[endpoint].apiKey =
-                  oldSettings.endpoints[endpoint].apiKey;
-            }
+            this.plugin.settings.endpoints.forEach((endpoint, index) => {
+              if (DEFAULT_SETTINGS.endpoints[index]) {
+                this.plugin.settings.endpoints[index].apiKey = oldSettings.endpoints[index].apiKey;
+              }
+            });
             this.plugin.saveSettings();
             this.display();
             new Notice("Settings reset to defaults.  API keys are unchanged.");

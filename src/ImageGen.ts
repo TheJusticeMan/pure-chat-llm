@@ -46,7 +46,7 @@ export class PureChatLLMImageGen {
       n: n || 1,
       size,
     };
-    console.log("Generating image with body:", body);
+    console.debug("Generating image with body:", body);
 
     return fetch(url, {
       method: "POST",

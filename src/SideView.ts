@@ -431,7 +431,7 @@ export class CodePreview extends ItemView {
   }
 
   setState(state: unknown, result: ViewStateResult): Promise<void> {
-    console.log("Setting state", state, result);
+    console.debug("Setting state", state, result);
     this.renderCodePreview(state as { code: string; language: string });
     return Promise.resolve();
   }

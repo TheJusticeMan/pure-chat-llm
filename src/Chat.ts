@@ -876,7 +876,7 @@ export class PureChatLLMChat {
       fullcalls.forEach((call) => {
         delete call.index; // Remove index from tool calls
       });
-      console.log("Full tool calls:", fullcalls);
+      console.debug("Full tool calls:", fullcalls);
       return { role: "assistant", tool_calls: fullcalls };
     }
     return { role: "assistant", content: fullText };
