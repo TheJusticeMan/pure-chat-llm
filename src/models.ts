@@ -322,7 +322,7 @@ export class EditModalProviders extends Modal {
     super(app);
     this.plugin = plugin;
     this.app = app;
-    this.setTitle("Edit LLM Providers");
+    this.setTitle("Edit LLM providers");
     this.buildUI();
   }
 

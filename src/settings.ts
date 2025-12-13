@@ -39,7 +39,13 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 
   ifdefault(key: keyof PureChatLLMSettings): string {
     const { settings } = this.plugin;
-    return settings[key] !== DEFAULT_SETTINGS[key] ? settings[key].toString() : "";
+    if (settings[key] !== DEFAULT_SETTINGS[key]) {
+      const value = settings[key];
+      if (typeof value === "string") return value;
+      if (typeof value === "number" || typeof value === "boolean") return String(value);
+      return JSON.stringify(value);
+    }
+    return "";
   }
 
   display(): void {
@@ -166,22 +172,22 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           ),
       );
     new Setting(containerEl)
-      .setName("Import/Export templates")
+      .setName("Import/export templates")
       .setDesc("Import or export selection and chat prompt templates to/from a markdown file.")
       .addButton((btn) =>
-        btn.setButtonText("Write to PureChatLLM-Templates.md").onClick(() => {
+        btn.setButtonText("Write to PureChatLLM-templates.md").onClick(() => {
           const { selectionTemplates, chatTemplates } = this.plugin.settings;
           const content = getMarkdownFromObject({ selectionTemplates, chatTemplates });
           const filePath = "PureChatLLM-Templates.md";
           const file = this.app.vault.getFileByPath(filePath);
           if (file) this.app.vault.modify(file, content);
           else this.app.vault.create(filePath, content);
-          new Notice("Templates exported to PureChatLLM-Templates.md");
+          new Notice("Templates exported to PureChatLLM-templates.md");
         }),
       )
       .addButton((btn) =>
         btn
-          .setButtonText("Import from PureChatLLM-Templates.md")
+          .setButtonText("Import from PureChatLLM-templates.md")
           .then((btn) =>
             this.app.vault.getFileByPath("PureChatLLM-Templates.md") ? btn : btn.setDisabled(true),
           )
@@ -197,7 +203,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 new Notice("Templates imported. Please review them in the prompt editor.");
               });
             } else {
-              new Notice("PureChatLLM-Templates.md not found.");
+              new Notice("PureChatLLM-templates.md not found.");
             }
           }),
       );
@@ -236,7 +242,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         }),
       );
     new Setting(containerEl)
-      .setName("Custom LLM Providers")
+      .setName("Custom LLM providers")
       .setDesc(
         "Add custom LLM providers with API keys. These will be available in the model provider dropdown.",
       )
@@ -302,7 +308,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           settings.debug = value;
           await this.plugin.saveSettings();
           this.plugin.console = new BrowserConsole(settings.debug, "PureChatLLM");
-          console.log("reload the plugin to apply the changes");
+          console.debug("reload the plugin to apply the changes");
         }),
       );
     new Setting(containerEl)
@@ -316,11 +322,11 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           .onClick((e) => {
             const oldSettings = { ...this.plugin.settings };
             this.plugin.settings = { ...DEFAULT_SETTINGS };
-            for (const endpoint in this.plugin.settings.endpoints) {
-              if (DEFAULT_SETTINGS.endpoints[endpoint])
-                this.plugin.settings.endpoints[endpoint].apiKey =
-                  oldSettings.endpoints[endpoint].apiKey;
-            }
+            this.plugin.settings.endpoints.forEach((endpoint, index) => {
+              if (DEFAULT_SETTINGS.endpoints[index]) {
+                this.plugin.settings.endpoints[index].apiKey = oldSettings.endpoints[index].apiKey;
+              }
+            });
             this.plugin.saveSettings();
             this.display();
             new Notice("Settings reset to defaults.  API keys are unchanged.");
