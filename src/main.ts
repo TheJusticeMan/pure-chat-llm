@@ -356,7 +356,7 @@ export default class PureChatLLM extends Plugin {
         )
         .addItem((item) =>
           item
-            .setTitle("wand")
+            .setTitle("Wand")
             .setIcon("wand")
             .onClick(async () => {
               new EditWand(this.app, this, editor.getSelection(), (s) =>
