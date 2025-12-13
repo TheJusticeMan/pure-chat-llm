@@ -451,8 +451,10 @@ export class PureChatLLMChat {
   }
 
   static async convertM4AToWav(buffer: ArrayBuffer): Promise<ArrayBuffer> {
-    const audioContext = new (window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    )();
     const audioBuffer = await audioContext.decodeAudioData(buffer);
 
     const numOfChan = audioBuffer.numberOfChannels;
@@ -924,7 +926,9 @@ export class PureChatLLMChat {
       this.console.error(`Network request failed:`, error);
       this.plugin.status("");
       const errorMsg = error instanceof Error ? error.message : String(error);
-      new Notice(`Network error: Unable to connect to ${this.endpoint.name}. Check your internet connection.`);
+      new Notice(
+        `Network error: Unable to connect to ${this.endpoint.name}. Check your internet connection.`,
+      );
       throw new Error(`Network request failed: ${errorMsg}`);
     }
 
@@ -932,13 +936,13 @@ export class PureChatLLMChat {
       this.plugin.status("");
       let errorMessage = `API Error (${response.status}): ${response.statusText}`;
       let userMessage = `Error from ${this.endpoint.name}: ${response.statusText}`;
-      
+
       try {
         const errorData = await response.json();
         // Extract error details from common API error formats
         if (errorData.error) {
           let apiError: string;
-          if (typeof errorData.error === 'string') {
+          if (typeof errorData.error === "string") {
             apiError = errorData.error;
           } else if (errorData.error.message) {
             apiError = errorData.error.message;
@@ -952,9 +956,9 @@ export class PureChatLLMChat {
         // If we can't parse the error response, use the status text
         this.console.error(`Failed to parse error response:`, parseError);
       }
-      
+
       this.console.error(errorMessage);
-      
+
       // Provide specific user-friendly messages for common errors
       if (response.status === 401) {
         new Notice(`Authentication failed: Please check your API key for ${this.endpoint.name}.`);
@@ -967,11 +971,13 @@ export class PureChatLLMChat {
       } else if (response.status === 404) {
         new Notice(`Endpoint not found: ${this.endpoint.endpoint} may be incorrect.`);
       } else if (response.status >= 500) {
-        new Notice(`Server error from ${this.endpoint.name}: ${response.statusText}. Try again later.`);
+        new Notice(
+          `Server error from ${this.endpoint.name}: ${response.statusText}. Try again later.`,
+        );
       } else {
         new Notice(userMessage);
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -1005,22 +1011,24 @@ export class PureChatLLMChat {
     } else {
       try {
         const data = await response.json();
-        
+
         // Validate response structure
         if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
           this.console.error(`Invalid API response structure:`, data);
           this.plugin.status("");
-          new Notice(`Invalid response from ${this.endpoint.name}: Missing or empty choices array.`);
+          new Notice(
+            `Invalid response from ${this.endpoint.name}: Missing or empty choices array.`,
+          );
           throw new Error("Invalid API response structure: Missing choices");
         }
-        
+
         if (!data.choices[0].message) {
           this.console.error(`Invalid API response structure:`, data);
           this.plugin.status("");
           new Notice(`Invalid response from ${this.endpoint.name}: Missing message in response.`);
           throw new Error("Invalid API response structure: Missing message");
         }
-        
+
         if (data.choices[0].message.tool_calls) {
           const toolCalls = data.choices[0].message.tool_calls;
           const imageGenCall = toolCalls.find(
