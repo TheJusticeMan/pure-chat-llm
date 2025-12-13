@@ -39,7 +39,13 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 
   ifdefault(key: keyof PureChatLLMSettings): string {
     const { settings } = this.plugin;
-    return settings[key] !== DEFAULT_SETTINGS[key] ? settings[key].toString() : "";
+    if (settings[key] !== DEFAULT_SETTINGS[key]) {
+      const value = settings[key];
+      if (typeof value === "string") return value;
+      if (typeof value === "number" || typeof value === "boolean") return String(value);
+      return JSON.stringify(value);
+    }
+    return "";
   }
 
   display(): void {

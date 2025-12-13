@@ -365,13 +365,16 @@ export class PureChatLLMChat {
           .map((img) => `![${img.revised_prompt || "image"}](${img.normalizedPath})`)
           .join("\n") + "\n\n";
     this.imageOutputUrls = null;
-    messages.forEach((message) =>
-      this.messages.push({
-        role: message.role,
-        content: (extras + message.content).trim(),
-        cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
-      }),
-    );
+    messages.forEach((message) => {
+      // Only append string content - MediaMessage objects are handled elsewhere
+      if (typeof message.content === "string") {
+        this.messages.push({
+          role: message.role,
+          content: (extras + message.content).trim(),
+          cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
+        });
+      }
+    });
     return this;
   }
 

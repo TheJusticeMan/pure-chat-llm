@@ -4,7 +4,7 @@ import PureChatLLM, { FolderSuggest } from "./main";
 
 // Author of a message
 interface ChatAuthor {
-  role: "user" | "assistant" | "system" | "tool" | string;
+  role: string;
   name: string | null;
   metadata: Record<string, unknown>;
 }
@@ -110,7 +110,7 @@ export class ImportChatGPT {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = ".json,application/json";
-      input.style.display = "none";
+      input.setCssProps({ display: "none" });
       document.body.appendChild(input);
       input.onchange = () => {
         resolve(input.files?.[0] ?? null);

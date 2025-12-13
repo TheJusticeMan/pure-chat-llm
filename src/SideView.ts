@@ -170,7 +170,9 @@ export class PureChatLLMSideView extends ItemView {
     const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
-    const allshown: boolean = Object.keys(alloptions).every((k) => chat.options.hasOwnProperty(k));
+    const allshown: boolean = Object.keys(alloptions).every((k) =>
+      Object.prototype.hasOwnProperty.call(chat.options, k),
+    );
     this.ischat = chat.validChat;
     const container = this.contentEl;
     container.empty();
@@ -444,14 +446,16 @@ export class CodePreview extends ItemView {
     this.contentEl.empty();
     this.contentEl.addClass("PURECodePreview");
 
-    const code = (state.code) || "";
-    const language: string = (state.language) || "text";
+    const code = state.code || "";
+    const language: string = state.language || "text";
 
     if (language.toLowerCase() === "html") {
       const iframe = this.contentEl.createEl("iframe");
       iframe.setAttr("sandbox", "allow-scripts allow-same-origin");
-      iframe.style.width = "100%";
-      iframe.style.height = "100%";
+      iframe.setCssProps({
+        width: "100%",
+        height: "100%",
+      });
       iframe.srcdoc = code;
     } else {
       this.contentEl.createEl("pre", {}, (el) => {

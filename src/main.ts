@@ -933,7 +933,6 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
         });
         break;
       case "role":
-        this.plugin.settings.messageRoleFormatter;
         editor.replaceRange(
           `${new PureChatLLMChat(this.plugin).parseRole(value as RoleType)}\n`,
           start,

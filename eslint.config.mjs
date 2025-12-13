@@ -31,7 +31,14 @@ export default defineConfig([
       "@typescript-eslint/no-floating-promises": "warn",
       "@typescript-eslint/no-misused-promises": "warn",
       // Relax sentence case rule - product names and proper nouns should be capitalized
-      "obsidianmd/ui/sentence-case": "warn",
+      "obsidianmd/ui/sentence-case": [
+        "warn",
+        {
+          brands: ["YourBrand"],
+          acronyms: ["OK"],
+          enforceCamelCaseLower: true,
+        },
+      ],
       // Relax fetch restriction - refactoring to requestUrl would require extensive changes
       "no-restricted-globals": "warn",
     },
