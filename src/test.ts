@@ -1,3 +1,9 @@
+/* eslint-disable no-console */
+/* eslint-disable no-restricted-globals */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as imageGeneration from './imageGen.json';
 
 async function requestChatCompletion(prompt: string, apiKey: string) {

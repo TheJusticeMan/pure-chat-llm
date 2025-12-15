@@ -39,7 +39,16 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 
   ifdefault(key: keyof PureChatLLMSettings): string {
     const { settings } = this.plugin;
-    return settings[key] !== DEFAULT_SETTINGS[key] ? settings[key].toString() : '';
+    const settingsValue = settings[key];
+    const defaultValue = DEFAULT_SETTINGS[key];
+    if (settingsValue !== defaultValue) {
+      // Handle potential complex types by using JSON.stringify if needed
+      if (typeof settingsValue === 'object') {
+        return JSON.stringify(settingsValue);
+      }
+      return String(settingsValue);
+    }
+    return '';
   }
 
   display(): void {
@@ -78,8 +87,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               this.plugin.settings.ModelsOnEndpoint[
                 this.plugin.settings.endpoints[this.plugin.settings.endpoint].name
               ] = [];
-              new PureChatLLMChat(this.plugin).getAllModels().then(models => {
-                this.plugin.saveSettings();
+              void new PureChatLLMChat(this.plugin).getAllModels().then(models => {
+                void this.plugin.saveSettings();
                 new Notice('Model list refreshed');
               });
             }),
@@ -166,10 +175,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           ),
       );
     new Setting(containerEl)
-      .setName('Import/Export templates')
-      .setDesc('Import or export selection and chat prompt templates to/from a markdown file.')
+      .setName('Import/export templates')
+      .setDesc('import/export selection and chat prompt templates to/from a markdown file')
       .addButton(btn =>
-        btn.setButtonText('Write to PureChatLLM-Templates.md').onClick(() => {
+        btn.setButtonText('Write to pure chat LLM templates').onClick(() => {
           const { selectionTemplates, chatTemplates } = this.plugin.settings;
           const content = getMarkdownFromObject({
             selectionTemplates,
@@ -177,37 +186,37 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           });
           const filePath = 'PureChatLLM-Templates.md';
           const file = this.app.vault.getFileByPath(filePath);
-          if (file) this.app.vault.modify(file, content);
-          else this.app.vault.create(filePath, content);
-          new Notice('Templates exported to PureChatLLM-Templates.md');
+          if (file) void this.app.vault.modify(file, content);
+          else void this.app.vault.create(filePath, content);
+          new Notice('templates exported to PureChatLLM-templates.md');
         }),
       )
       .addButton(btn =>
         btn
-          .setButtonText('Import from PureChatLLM-Templates.md')
+          .setButtonText('Import from pure chat LLM templates')
           .then(btn =>
             this.app.vault.getFileByPath('PureChatLLM-Templates.md') ? btn : btn.setDisabled(true),
           )
           .onClick(() => {
             const file = this.app.vault.getFileByPath('PureChatLLM-Templates.md');
             if (file) {
-              this.app.vault.cachedRead(file).then(data => {
+              void this.app.vault.cachedRead(file).then(data => {
                 this.plugin.settings = {
                   ...this.plugin.settings,
                   ...getObjectFromMarkdown(data, 1, 2),
                 };
-                this.plugin.saveSettings();
-                new Notice('Templates imported. Please review them in the prompt editor.');
+                void this.plugin.saveSettings();
+                new Notice('Templates imported, please review them in the prompt editor');
               });
             } else {
-              new Notice('PureChatLLM-Templates.md not found.');
+              new Notice('pure chat LLM templates file not found');
             }
           }),
       );
     new Setting(containerEl)
       .setName('Use OpenAI image generation')
       .setDesc(
-        "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key.",
+        'enable this to use OpenAI\'s DALL-E for image generation - requires an OpenAI API key',
       )
       .addToggle(toggle =>
         toggle.setValue(settings.useImageGeneration).onChange(async value => {
@@ -217,7 +226,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName('Import ChatGPT conversations')
-      .setDesc('Import conversations exported from chat.openai.com.')
+      .setDesc('import conversations exported from chat.openai.com')
       .addButton(btn => {
         btn
           .setButtonText('Import')
@@ -239,9 +248,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         }),
       );
     new Setting(containerEl)
-      .setName('Custom LLM Providers')
+      .setName('Custom LLM providers')
       .setDesc(
-        'Add custom LLM providers with API keys. These will be available in the model provider dropdown.',
+        'add custom LLM providers with API keys - these will be available in the model provider dropdown',
       )
       .addButton(btn =>
         btn
@@ -284,7 +293,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName('Chat style')
-      .setDesc('Select how chats are written and interpreted in markdown.')
+      .setDesc('select how chats are written and interpreted in markdown')
       .addText(text =>
         text
           .setPlaceholder(DEFAULT_SETTINGS.messageRoleFormatter)
@@ -305,7 +314,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           settings.debug = value;
           await this.plugin.saveSettings();
           this.plugin.console = new BrowserConsole(settings.debug, 'PureChatLLM');
-          console.log('reload the plugin to apply the changes');
+          console.debug('reload the plugin to apply the changes');
         }),
       );
     new Setting(containerEl)
@@ -319,14 +328,16 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           .onClick(e => {
             const oldSettings = { ...this.plugin.settings };
             this.plugin.settings = { ...DEFAULT_SETTINGS };
-            for (const endpoint in this.plugin.settings.endpoints) {
+            for (const endpoint of Object.keys(this.plugin.settings.endpoints)) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
               if (DEFAULT_SETTINGS.endpoints[endpoint])
                 this.plugin.settings.endpoints[endpoint].apiKey =
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                   oldSettings.endpoints[endpoint].apiKey;
             }
-            this.plugin.saveSettings();
+            void this.plugin.saveSettings();
             this.display();
-            new Notice('Settings reset to defaults.  API keys are unchanged.');
+            new Notice('Settings reset to defaults - API keys are unchanged');
           }),
       )
       .addButton(btn =>
