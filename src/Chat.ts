@@ -1,4 +1,11 @@
-import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
+import {
+  App,
+  EditorRange,
+  Notice,
+  parseLinktext,
+  resolveSubpath,
+  TFile,
+} from 'obsidian';
 import { BrowserConsole } from './BrowserConsole';
 import { codeContent } from './CodeHandling';
 import { PureChatLLMImageGen } from './ImageGen';
@@ -104,12 +111,15 @@ export class PureChatLLMChat {
   Parser = '# role: {role}';
   validChat = true;
   file: TFile;
-  imageOutputUrls: { normalizedPath: string; revised_prompt?: string }[] | null = null;
+  imageOutputUrls:
+    | { normalizedPath: string; revised_prompt?: string }[]
+    | null = null;
 
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
     this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMChat');
-    this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    this.endpoint =
+      this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.options = {
       model: this.endpoint.defaultmodel,
       max_completion_tokens: this.plugin.settings.defaultmaxTokens,
@@ -158,7 +168,9 @@ export class PureChatLLMChat {
   set Markdown(markdown: string) {
     const matches = Array.from(markdown.matchAll(this.regexForRoles));
 
-    this.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
+    this.pretext = matches[0]
+      ? markdown.substring(0, matches[0].index).trim()
+      : markdown;
     this.messages = matches.map((match, index) => {
       if (!match.index)
         return {
@@ -167,7 +179,8 @@ export class PureChatLLMChat {
           cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
         };
       const contentStart = match.index + match[0].length;
-      const contentEnd = index + 1 < matches.length ? matches[index + 1].index : markdown.length;
+      const contentEnd =
+        index + 1 < matches.length ? matches[index + 1].index : markdown.length;
       return {
         role: match[1].toLowerCase() as RoleType,
         content: markdown.substring(contentStart, contentEnd).trim(),
@@ -184,7 +197,8 @@ export class PureChatLLMChat {
       };
     });
 
-    this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    this.endpoint =
+      this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     if (this.messages.length === 0) {
       // if the file has no # role: system|user|assistant|developer
       this.validChat = false;
@@ -197,7 +211,8 @@ export class PureChatLLMChat {
       return;
     }
 
-    const optionsStr = PureChatLLMChat.extractCodeBlockMD(this.pretext, 'json') || '';
+    const optionsStr =
+      PureChatLLMChat.extractCodeBlockMD(this.pretext, 'json') || '';
     this.options = PureChatLLMChat.tryJSONParse(optionsStr) || this.options;
     this.updateEndpointFromModel();
   }
@@ -208,14 +223,17 @@ export class PureChatLLMChat {
       ModelsOnEndpoint[name].includes(this.options.model),
     );
     if (endpointName) {
-      this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
+      this.endpoint =
+        endpoints.find(e => e.name === endpointName) ?? this.endpoint;
     }
     return this;
   }
 
   cleanUpChat() {
     // remove any empty messages except system
-    this.messages = this.messages.filter(msg => msg.role === 'system' || msg.content.trim() !== '');
+    this.messages = this.messages.filter(
+      msg => msg.role === 'system' || msg.content.trim() !== '',
+    );
     // ensure first message is system
     if (this.messages[0]?.role !== 'system') {
       this.messages.unshift({
@@ -227,7 +245,10 @@ export class PureChatLLMChat {
       this.messages[0].content ||= this.plugin.settings.SystemPrompt;
     }
     // ensure last message is user and empty
-    if (this.messages.length === 0 || this.messages[this.messages.length - 1].role !== 'user') {
+    if (
+      this.messages.length === 0 ||
+      this.messages[this.messages.length - 1].role !== 'user'
+    ) {
       this.appendMessage({ role: 'user', content: '' });
     }
     return this;
@@ -344,7 +365,8 @@ export class PureChatLLMChat {
    */
   static changeCodeBlockMD(text: string, language: string, newText: string) {
     const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, 'im');
-    if (!regex.test(text)) return `${text}\n\`\`\`${language}\n${newText}\n\`\`\``;
+    if (!regex.test(text))
+      return `${text}\n\`\`\`${language}\n${newText}\n\`\`\``;
     return (
       text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) ||
       `${text}\n\`\`\`${language}\n${newText}\n\`\`\``
@@ -361,12 +383,16 @@ export class PureChatLLMChat {
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
    */
-  appendMessage(...messages: { role: RoleType; content: string | MediaMessage }[]) {
+  appendMessage(
+    ...messages: { role: RoleType; content: string | MediaMessage }[]
+  ) {
     let extras = '';
     if (this.imageOutputUrls)
       extras =
         this.imageOutputUrls
-          .map(img => `![${img.revised_prompt || 'image'}](${img.normalizedPath})`)
+          .map(
+            img => `![${img.revised_prompt || 'image'}](${img.normalizedPath})`,
+          )
           .join('\n') + '\n\n';
     this.imageOutputUrls = null;
     messages.forEach(message =>
@@ -393,7 +419,11 @@ export class PureChatLLMChat {
    * - If a file cannot be found, the original link will remain in the output.
    * - This function uses asynchronous operations to read file contents, so it returns a promise.
    */
-  static async resolveFiles(markdown: string, activeFile: TFile, app: App): Promise<string> {
+  static async resolveFiles(
+    markdown: string,
+    activeFile: TFile,
+    app: App,
+  ): Promise<string> {
     const regex = /^!?\[\[(.*?)\]\]$/gim;
     //const regex2 = /^.+\!?\[\[([^\]]+)\]\].+$/gim;
     const matches = Array.from(markdown.matchAll(regex));
@@ -403,7 +433,10 @@ export class PureChatLLMChat {
 
     for (const match of matches) {
       const filename = match[1];
-      const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+      const file = app.metadataCache.getFirstLinkpathDest(
+        filename,
+        activeFile.path,
+      );
       if (file instanceof TFile) {
         replacements.push(app.vault.cachedRead(file));
       } else {
@@ -419,8 +452,15 @@ export class PureChatLLMChat {
     return result;
   }
 
-  static getfileForLink(str: string, activeFile: TFile, app: App): TFile | null {
-    return app.metadataCache.getFirstLinkpathDest(parseLinktext(str).path, activeFile.path);
+  static getfileForLink(
+    str: string,
+    activeFile: TFile,
+    app: App,
+  ): TFile | null {
+    return app.metadataCache.getFirstLinkpathDest(
+      parseLinktext(str).path,
+      activeFile.path,
+    );
   }
 
   /**
@@ -439,7 +479,11 @@ export class PureChatLLMChat {
    * @param app - The Obsidian app instance, providing access to the vault and metadata cache.
    * @returns A promise that resolves to the content of the linked file or subpath, or the original link if not found.
    */
-  static retrieveLinkContent(str: string, activeFile: TFile, app: App): Promise<string> {
+  static retrieveLinkContent(
+    str: string,
+    activeFile: TFile,
+    app: App,
+  ): Promise<string> {
     const { subpath, path } = parseLinktext(str);
     const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
     if (!file) return Promise.resolve(`[[${str}]]`);
@@ -449,7 +493,9 @@ export class PureChatLLMChat {
       if (ref)
         return app.vault
           .cachedRead(file)
-          .then(text => text.substring(ref.start.offset, ref.end?.offset).trim());
+          .then(text =>
+            text.substring(ref.start.offset, ref.end?.offset).trim(),
+          );
     }
     return app.vault.cachedRead(file);
   }
@@ -457,7 +503,8 @@ export class PureChatLLMChat {
   static async convertM4AToWav(buffer: ArrayBuffer): Promise<ArrayBuffer> {
     const audioContext = new (
       window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext
     )();
     const audioBuffer = await audioContext.decodeAudioData(buffer);
 
@@ -496,7 +543,8 @@ export class PureChatLLMChat {
 
     // write interleaved data
     const channels = [];
-    for (let i = 0; i < numOfChan; i++) channels.push(audioBuffer.getChannelData(i));
+    for (let i = 0; i < numOfChan; i++)
+      channels.push(audioBuffer.getChannelData(i));
 
     let sampleIdx = 0;
     while (sampleIdx < audioBuffer.length) {
@@ -527,10 +575,14 @@ export class PureChatLLMChat {
         const file = this.getfileForLink(Link, activeFile, app);
 
         // Not found, return as text
-        if (!(file instanceof TFile)) return { type: 'text', text: originalLink };
+        if (!(file instanceof TFile))
+          return { type: 'text', text: originalLink };
 
         const ext = file.extension.toLowerCase();
-        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
+        if (
+          ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) &&
+          role === 'user'
+        ) {
           const data = await app.vault.readBinary(file);
           const mime =
             ext === 'jpg'
@@ -552,7 +604,10 @@ export class PureChatLLMChat {
             data = await this.convertM4AToWav(data);
             format = 'wav';
           }
-          const url = await this.arrayBufferToBase64DataURL(data, `audio/${format}`);
+          const url = await this.arrayBufferToBase64DataURL(
+            data,
+            `audio/${format}`,
+          );
           return {
             type: 'input_audio',
             input_audio: {
@@ -597,7 +652,7 @@ export class PureChatLLMChat {
       });
 
     const final = allParts.reduce((acc, item) => {
-      const prev = acc.at(-1);
+      const prev = acc[acc.length - 1];
       if (item.type === 'text' && prev?.type === 'text') {
         prev.text += `\n${item.text}`;
       } else {
@@ -615,7 +670,10 @@ export class PureChatLLMChat {
   }
 
   // Helper function
-  static arrayBufferToBase64DataURL(buffer: ArrayBuffer, mime: string): Promise<string> {
+  static arrayBufferToBase64DataURL(
+    buffer: ArrayBuffer,
+    mime: string,
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const blob = new Blob([buffer], { type: mime }); // Pass the mime type here
       const reader = new FileReader();
@@ -636,7 +694,10 @@ export class PureChatLLMChat {
    * @param app - The application instance, providing access to necessary utilities and context.
    * @returns A promise that resolves to an object containing the resolved messages with their roles and content.
    */
-  async getChatGPTinstructions(activeFile: TFile, app: App): Promise<ChatRequestOptions> {
+  async getChatGPTinstructions(
+    activeFile: TFile,
+    app: App,
+  ): Promise<ChatRequestOptions> {
     this.file = activeFile;
     const resolvedMessages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
@@ -668,7 +729,8 @@ export class PureChatLLMChat {
       messages: resolvedMessages,
       tools: [
         ...(this.options.tools ?? []),
-        ...(this.plugin.settings.useImageGeneration && this.plugin.settings.endpoint === 0
+        ...(this.plugin.settings.useImageGeneration &&
+        this.plugin.settings.endpoint === 0
           ? [PureChatLLMImageGen.tool]
           : []),
       ],
@@ -694,7 +756,7 @@ export class PureChatLLMChat {
       return Promise.resolve({ role: 'assistant', content: '' });
     }
     // Remove trailing empty message if present
-    if (!this.messages.at(-1)?.content.trim()) {
+    if (!this.messages[this.messages.length - 1]?.content.trim()) {
       this.messages.pop();
     }
     this.file = this.file || this.plugin.app.workspace.getActiveFile();
@@ -703,7 +765,11 @@ export class PureChatLLMChat {
       this.messages = await Promise.all(
         this.messages.map(async ({ role, content, cline }) => ({
           role,
-          content: await PureChatLLMChat.resolveFiles(content, this.file, this.plugin.app),
+          content: await PureChatLLMChat.resolveFiles(
+            content,
+            this.file,
+            this.plugin.app,
+          ),
           cline,
         })),
       );
@@ -719,10 +785,13 @@ export class PureChatLLMChat {
     ];
     return this.sendChatRequest(
       { ...this.options, messages: messages },
-      new StreamNotice(this.plugin.app, 'Processing chat with template.').change,
+      new StreamNotice(this.plugin.app, 'Processing chat with template.')
+        .change,
     ).then(r => ({
       role: 'assistant',
-      content: (r.content || '').replace(/^<Conversation>|<\/Conversation>$/gi, '').trim(),
+      content: (r.content || '')
+        .replace(/^<Conversation>|<\/Conversation>$/gi, '')
+        .trim(),
     }));
   }
 
@@ -739,8 +808,13 @@ export class PureChatLLMChat {
    * @returns A Promise resolving to the LLM's response containing the processed markdown,
    *          or an empty response if no text is selected.
    */
-  SelectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
-    if (!selectedText) return Promise.resolve({ role: 'assistant', content: selectedText });
+  SelectionResponse(
+    templatePrompt: string,
+    selectedText: string,
+    fileText?: string,
+  ) {
+    if (!selectedText)
+      return Promise.resolve({ role: 'assistant', content: selectedText });
     if (this.endpoint.apiKey === EmptyApiKey) {
       this.plugin.askForApiKey();
       return Promise.resolve({ role: 'assistant', content: selectedText });
@@ -767,7 +841,9 @@ export class PureChatLLMChat {
       new StreamNotice(this.plugin.app, 'Editing selection.').change,
     ).then(r => ({
       role: 'assistant',
-      content: (r.content || '').replace(/^<Selection>|<\/Selection>$/gi, '').trim(),
+      content: (r.content || '')
+        .replace(/^<Selection>|<\/Selection>$/gi, '')
+        .trim(),
     }));
   }
 
@@ -803,7 +879,9 @@ export class PureChatLLMChat {
           content: '',
         });
         // Add the model to the endpoint's model list if not already present
-        const models = (this.plugin.settings.ModelsOnEndpoint[this.endpoint.name] ??= []);
+        const models = (this.plugin.settings.ModelsOnEndpoint[
+          this.endpoint.name
+        ] ??= []);
         if (!models.includes(this.options.model)) {
           models.push(this.options.model);
           this.plugin.saveSettings();
@@ -827,7 +905,9 @@ export class PureChatLLMChat {
     streamcallback: (textFragment: StreamDelta) => boolean,
   ): Promise<{ role: string; content?: string; tool_calls?: ToolCall[] }> {
     if (!response.body) {
-      throw new Error('Response body is null. Streaming is not supported in this environment.');
+      throw new Error(
+        'Response body is null. Streaming is not supported in this environment.',
+      );
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
@@ -871,7 +951,8 @@ export class PureChatLLMChat {
                   if (!fullcalls[index].function.arguments) {
                     fullcalls[index].function.arguments = '';
                   }
-                  fullcalls[index].function.arguments += `${call.function.arguments}`;
+                  fullcalls[index].function.arguments +=
+                    `${call.function.arguments}`;
                 }
               });
             }
@@ -917,7 +998,10 @@ export class PureChatLLMChat {
     const requestOptions = { ...options };
 
     // Mistral AI uses max_tokens instead of max_completion_tokens
-    if (this.endpoint.name === 'Mistral AI' && requestOptions.max_completion_tokens) {
+    if (
+      this.endpoint.name === 'Mistral AI' &&
+      requestOptions.max_completion_tokens
+    ) {
       requestOptions.max_tokens = requestOptions.max_completion_tokens;
       delete requestOptions.max_completion_tokens;
     }
@@ -971,15 +1055,23 @@ export class PureChatLLMChat {
 
       // Provide specific user-friendly messages for common errors
       if (response.status === 401) {
-        new Notice(`Authentication failed: Please check your API key for ${this.endpoint.name}.`);
+        new Notice(
+          `Authentication failed: Please check your API key for ${this.endpoint.name}.`,
+        );
       } else if (response.status === 429) {
-        new Notice(`Rate limit exceeded for ${this.endpoint.name}. Please wait and try again.`);
+        new Notice(
+          `Rate limit exceeded for ${this.endpoint.name}. Please wait and try again.`,
+        );
       } else if (response.status === 400) {
         new Notice(`Invalid request: ${userMessage}`);
       } else if (response.status === 403) {
-        new Notice(`Access forbidden: Check your API permissions for ${this.endpoint.name}.`);
+        new Notice(
+          `Access forbidden: Check your API permissions for ${this.endpoint.name}.`,
+        );
       } else if (response.status === 404) {
-        new Notice(`Endpoint not found: ${this.endpoint.endpoint} may be incorrect.`);
+        new Notice(
+          `Endpoint not found: ${this.endpoint.endpoint} may be incorrect.`,
+        );
       } else if (response.status >= 500) {
         new Notice(
           `Server error from ${this.endpoint.name}: ${response.statusText}. Try again later.`,
@@ -993,12 +1085,16 @@ export class PureChatLLMChat {
 
     if (options.stream && !!streamcallback) {
       try {
-        const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
+        const fullText = await PureChatLLMChat.handleStreamingResponse(
+          response,
+          streamcallback,
+        );
         this.plugin.status('');
         if (fullText.tool_calls) {
           const toolCalls = fullText.tool_calls;
           const imageGenCall = toolCalls.find(
-            (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
+            (call: ToolCall) =>
+              call.function.name === PureChatLLMImageGen.tool.function.name,
           );
           if (imageGenCall) {
             streamcallback({
@@ -1023,7 +1119,11 @@ export class PureChatLLMChat {
         const data = await response.json();
 
         // Validate response structure
-        if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+        if (
+          !data.choices ||
+          !Array.isArray(data.choices) ||
+          data.choices.length === 0
+        ) {
           this.console.error(`Invalid API response structure:`, data);
           this.plugin.status('');
           new Notice(
@@ -1035,21 +1135,27 @@ export class PureChatLLMChat {
         if (!data.choices[0].message) {
           this.console.error(`Invalid API response structure:`, data);
           this.plugin.status('');
-          new Notice(`Invalid response from ${this.endpoint.name}: Missing message in response.`);
+          new Notice(
+            `Invalid response from ${this.endpoint.name}: Missing message in response.`,
+          );
           throw new Error('Invalid API response structure: Missing message');
         }
 
         if (data.choices[0].message.tool_calls) {
           const toolCalls = data.choices[0].message.tool_calls;
           const imageGenCall = toolCalls.find(
-            (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
+            (call: ToolCall) =>
+              call.function.name === PureChatLLMImageGen.tool.function.name,
           );
           if (imageGenCall) {
             streamcallback?.({
               role: 'tool',
               content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
             });
-            const l = await this.GenerateImage(imageGenCall, data.choices[0].message);
+            const l = await this.GenerateImage(
+              imageGenCall,
+              data.choices[0].message,
+            );
             options.messages.push(...l.msgs);
             return this.sendChatRequest(options, streamcallback);
           }
@@ -1064,7 +1170,9 @@ export class PureChatLLMChat {
           throw error;
         }
         this.console.error(`Error parsing API response:`, error);
-        new Notice(`Error parsing response from ${this.endpoint.name}: ${errorMsg}`);
+        new Notice(
+          `Error parsing response from ${this.endpoint.name}: ${errorMsg}`,
+        );
         throw new Error(`Failed to parse API response: ${errorMsg}`);
       }
     }
@@ -1110,7 +1218,11 @@ export class PureChatLLMChat {
     imageGenCall: ToolCall,
     data: { role: string; content?: string; tool_calls?: ToolCall[] },
   ) {
-    const imageGen = new PureChatLLMImageGen(this.plugin.app, this.endpoint.apiKey, this.file);
+    const imageGen = new PureChatLLMImageGen(
+      this.plugin.app,
+      this.endpoint.apiKey,
+      this.file,
+    );
     const imageOutputUrls = await imageGen.sendImageGenerationRequest(
       JSON.parse(imageGenCall.function.arguments),
     );
