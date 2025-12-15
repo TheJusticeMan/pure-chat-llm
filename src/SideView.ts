@@ -13,15 +13,15 @@ import {
   Setting,
   ViewStateResult,
   WorkspaceLeaf,
-} from "obsidian";
-import { BrowserConsole } from "./BrowserConsole";
-import { PureChatLLMChat } from "./Chat";
-import { CodeHandling, SectionHandling } from "./CodeHandling";
-import PureChatLLM from "./main";
-import { AskForAPI } from "./models";
-import { alloptions, EmptyApiKey } from "./s.json";
-import { toTitleCase } from "./toTitleCase";
-import { PURE_CHAT_LLM_VIEW_TYPE } from "./types";
+} from 'obsidian';
+import { BrowserConsole } from './BrowserConsole';
+import { PureChatLLMChat } from './Chat';
+import { CodeHandling, SectionHandling } from './CodeHandling';
+import PureChatLLM from './main';
+import { AskForAPI } from './models';
+import { alloptions, EmptyApiKey } from './s.json';
+import { toTitleCase } from './toTitleCase';
+import { PURE_CHAT_LLM_VIEW_TYPE } from './types';
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -52,11 +52,11 @@ export class PureChatLLMSideView extends ItemView {
   constructor(
     leaf: WorkspaceLeaf,
     public plugin: PureChatLLM,
-    public viewText = "Conversation overview",
+    public viewText = 'Conversation overview',
   ) {
     super(leaf);
-    this.icon = "text";
-    this.console = new BrowserConsole(plugin.settings.debug, "PureChatLLMSideView");
+    this.icon = 'text';
+    this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMSideView');
     this.navigation = false;
   }
 
@@ -72,13 +72,13 @@ export class PureChatLLMSideView extends ItemView {
     // when a file is loaded or changed, update the view
 
     this.registerEvent(
-      this.app.workspace.on("editor-change", (editor: Editor, view: MarkdownView) => {
+      this.app.workspace.on('editor-change', (editor: Editor, view: MarkdownView) => {
         // if the user is typing in the editor, update the view
         if (!this.plugin.isresponding) this.update(editor, view);
       }),
     );
     this.registerEvent(
-      this.app.workspace.on("file-open", () => {
+      this.app.workspace.on('file-open', () => {
         this.defaultContent();
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
         const editor = view?.editor;
@@ -88,7 +88,7 @@ export class PureChatLLMSideView extends ItemView {
       }),
     );
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", (leaf) => {
+      this.app.workspace.on('active-leaf-change', leaf => {
         if (!leaf) return;
         const v = leaf.view;
         if (!(v instanceof MarkdownView)) return;
@@ -126,42 +126,42 @@ export class PureChatLLMSideView extends ItemView {
     this.contentEl.empty();
 
     new Setting(this.contentEl)
-      .setName("Pure Chat LLM")
+      .setName('Pure Chat LLM')
       .setHeading()
-      .then((b) => {
+      .then(b => {
         const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
         if (editor)
-          b.addExtraButton((btn) =>
+          b.addExtraButton(btn =>
             btn
-              .setIcon("cpu")
+              .setIcon('cpu')
               .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor))
-              .setTooltip("Choose model and provider"),
+              .setTooltip('Choose model and provider'),
           );
       })
-      .addExtraButton((btn) => btn.setIcon("settings").onClick(() => this.plugin.openSettings()))
-      .addButton((btn) => btn.setButtonText("Hot keys").onClick(() => this.plugin.openHotkeys()));
+      .addExtraButton(btn => btn.setIcon('settings').onClick(() => this.plugin.openSettings()))
+      .addButton(btn => btn.setButtonText('Hot keys').onClick(() => this.plugin.openHotkeys()));
     new Setting(this.contentEl).setName(
-      "The current editor does not contain a valid conversation.",
+      'The current editor does not contain a valid conversation.',
     );
-    new Setting(this.contentEl).setName("Available commands").setHeading();
+    new Setting(this.contentEl).setName('Available commands').setHeading();
     new Setting(this.contentEl)
-      .setName("Complete chat response")
-      .setDesc("This will start a new chat with the current editor content.");
+      .setName('Complete chat response')
+      .setDesc('This will start a new chat with the current editor content.');
     new Setting(this.contentEl)
-      .setName("Generate title")
-      .setDesc("This will generate a title for the current editor content.");
+      .setName('Generate title')
+      .setDesc('This will generate a title for the current editor content.');
     new Setting(this.contentEl)
-      .setName("Edit selection")
-      .setDesc("This will edit the selected text in the current editor.");
+      .setName('Edit selection')
+      .setDesc('This will edit the selected text in the current editor.');
     new Setting(this.contentEl)
-      .setName("Analyze conversation")
-      .setDesc("This will analyze the current conversation.");
+      .setName('Analyze conversation')
+      .setDesc('This will analyze the current conversation.');
     new Setting(this.contentEl)
-      .setName("Reverse roles")
-      .setDesc("This will reverse the roles of the current conversation.");
+      .setName('Reverse roles')
+      .setDesc('This will reverse the roles of the current conversation.');
     new Setting(this.contentEl)
-      .setName("Speak chat")
-      .setDesc("This will speak the current chat using two voices.");
+      .setName('Speak chat')
+      .setDesc('This will speak the current chat using two voices.');
   }
 
   update(editor: Editor, view: MarkdownView) {
@@ -170,7 +170,7 @@ export class PureChatLLMSideView extends ItemView {
     const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
-    const allshown: boolean = Object.keys(alloptions).every((k) => chat.options.hasOwnProperty(k));
+    const allshown: boolean = Object.keys(alloptions).every(k => chat.options.hasOwnProperty(k));
     this.ischat = chat.validChat;
     const container = this.contentEl;
     container.empty();
@@ -179,21 +179,21 @@ export class PureChatLLMSideView extends ItemView {
       return;
     }
 
-    container.createDiv({ text: "" }, (contain) => {
-      contain.addClass("PURE", "floattop");
+    container.createDiv({ text: '' }, contain => {
+      contain.addClass('PURE', 'floattop');
 
       new ButtonComponent(contain)
         .setButtonText(`${chat.endpoint.name} (${chat.options.model})`)
         .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor));
 
       new ButtonComponent(contain)
-        .setIcon(allshown ? "chevrons-down-up" : "chevrons-up-down")
+        .setIcon(allshown ? 'chevrons-down-up' : 'chevrons-up-down')
         //.setButtonText(allshown ? "Hide" : "Show all")
-        .setTooltip("Show all options")
+        .setTooltip('Show all options')
         .onClick(() =>
           //new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat => )
           editor.setValue(
-            new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb((chat) =>
+            new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat =>
               allshown
                 ? (chat.options = {
                     model: chat.options.model,
@@ -206,106 +206,106 @@ export class PureChatLLMSideView extends ItemView {
         );
     });
 
-    container.addClass("PURESideView");
+    container.addClass('PURESideView');
     // Process markdown messages
     chat.messages.forEach((message, index) => {
       const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
-      container.createDiv({ text: "" }, (contain) => {
-        contain.addClass("PURE", "messageContainer", message.role);
-        contain.createEl("h1", { text: toTitleCase(message.role) }, (el) => {
+      container.createDiv({ text: '' }, contain => {
+        contain.addClass('PURE', 'messageContainer', message.role);
+        contain.createEl('h1', { text: toTitleCase(message.role) }, el => {
           el.onClickEvent(() => this.goToPostion(editor, message.cline));
-          el.addClass("PURE", "messageHeader", message.role);
+          el.addClass('PURE', 'messageHeader', message.role);
         });
         // Preview of message content with copy button
-        contain.createEl("div", "", (div) => {
-          div.addClass("PURE", "preview", message.role);
+        contain.createEl('div', '', div => {
+          div.addClass('PURE', 'preview', message.role);
           if (preview)
-            div.createDiv({ text: "" }, (el) => {
+            div.createDiv({ text: '' }, el => {
               el.onClickEvent(() => this.goToPostion(editor, message.cline, true));
-              el.addClass("PURE", "messageMarkdown", message.role);
-              MarkdownRenderer.render(this.app, preview, el, view.file?.basename || "", this);
+              el.addClass('PURE', 'messageMarkdown', message.role);
+              MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
             });
           if (preview)
             new ExtraButtonComponent(div)
-              .setIcon("copy")
-              .setTooltip("Copy message to clipboard")
+              .setIcon('copy')
+              .setTooltip('Copy message to clipboard')
               .onClick(() => {
                 navigator.clipboard.writeText(message.content);
-                new Notice("Copied message to clipboard");
+                new Notice('Copied message to clipboard');
               });
           if (preview)
             new ExtraButtonComponent(div)
-              .setIcon("save")
-              .setTooltip("Save message to a new note")
+              .setIcon('save')
+              .setTooltip('Save message to a new note')
               .onClick(() => {
                 const title = (
                   message.content.match(/^#+? (.+)$/m)?.[0] ||
                   view.file?.basename ||
-                  "Untitled"
+                  'Untitled'
                 )
-                  .replace(/^#+ /, "")
-                  .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, "")
+                  .replace(/^#+ /, '')
+                  .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
                   .trim();
                 this.app.fileManager
                   .getAvailablePathForAttachment(`Message ${title}.md`, view.file?.path)
-                  .then((path) =>
+                  .then(path =>
                     this.app.vault
                       .create(path, message.content)
-                      .then(() => this.app.workspace.openLinkText(path, "", true)),
+                      .then(() => this.app.workspace.openLinkText(path, '', true)),
                   );
               });
           new ExtraButtonComponent(div)
-            .setIcon("message-square-x")
-            .setTooltip("Delete message")
+            .setIcon('message-square-x')
+            .setTooltip('Delete message')
             .onClick(() => {
-              editor.setValue(chat.thencb((c) => c.messages.splice(index, 1)).Markdown);
+              editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).Markdown);
             });
           if (/> \[!assistant\]/gim.test(message.content))
             new ExtraButtonComponent(div)
-              .setIcon("brain-cog")
-              .setTooltip("Remove the thinking process from this message")
+              .setIcon('brain-cog')
+              .setTooltip('Remove the thinking process from this message')
               .onClick(() => {
                 editor.setValue(
                   chat.thencb(
-                    (c) =>
+                    c =>
                       (c.messages[index].content = c.messages[index].content.replace(
                         /[\W\w]+?> \[!assistant\]\n*/i,
-                        "",
+                        '',
                       )),
                   ).Markdown,
                 );
               });
           if (/# \w+/gm.test(message.content))
             new ExtraButtonComponent(div)
-              .setIcon("table-of-contents")
-              .setTooltip("View and edit sections")
+              .setIcon('table-of-contents')
+              .setTooltip('View and edit sections')
               .onClick(() => {
                 new SectionHandling(this.app, this.plugin, message.content).open();
               });
           if (/```[\w\W]*?```/gm.test(message.content))
             new ExtraButtonComponent(div)
-              .setIcon("code")
-              .setTooltip("View and edit code")
+              .setIcon('code')
+              .setTooltip('View and edit code')
               .onClick(() => {
                 new CodeHandling(this.app, this.plugin, message.content).open();
               });
           if (/```[\w\W]*?```/gm.test(message.content))
             new ExtraButtonComponent(div)
-              .setIcon("scan-eye")
-              .setTooltip("Preview code")
+              .setIcon('scan-eye')
+              .setTooltip('Preview code')
               .onClick(() => {
                 this.openCodePreview(
-                  message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || "",
-                  message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || "text",
+                  message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
+                  message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
                 );
               });
           new ExtraButtonComponent(div)
-            .setIcon("refresh-cw")
-            .setTooltip("Regenerate response")
+            .setIcon('refresh-cw')
+            .setTooltip('Regenerate response')
             .onClick(() => {
-              editor.setValue(chat.thencb((c) => c.messages.splice(index + 1)).Markdown);
+              editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).Markdown);
               this.plugin.CompleteChatResponse(editor, view);
             });
         });
@@ -334,9 +334,9 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   openCodePreview(code: string, language: string) {
-    this.console.log("Opening code preview", { code, language });
-    this.app.workspace.getLeaf("tab").setViewState({
-      type: "pure-chat-llm-code-preview",
+    this.console.log('Opening code preview', { code, language });
+    this.app.workspace.getLeaf('tab').setViewState({
+      type: 'pure-chat-llm-code-preview',
       active: true,
       state: { code, language },
     });
@@ -352,7 +352,7 @@ type ModelAndProvider = { name: string; ismodel: boolean };
 export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
   items: ModelAndProvider[];
   modellist: ModelAndProvider[] = [];
-  currentmodel = "";
+  currentmodel = '';
   firstrun = true;
 
   constructor(
@@ -362,8 +362,11 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
   ) {
     super(app);
     const name = new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).endpoint.name;
-    const endpointIndex = this.plugin.settings.endpoints.findIndex((e) => e.name === name);
-    this.items = this.plugin.settings.endpoints.map((e) => ({ name: e.name, ismodel: false }));
+    const endpointIndex = this.plugin.settings.endpoints.findIndex(e => e.name === name);
+    this.items = this.plugin.settings.endpoints.map(e => ({
+      name: e.name,
+      ismodel: false,
+    }));
     this.updatemodelist(endpointIndex === -1 ? 0 : endpointIndex);
     this.firstrun = false;
   }
@@ -373,12 +376,12 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
   }
 
   getItemText(item: ModelAndProvider): string {
-    return item.name + (item.ismodel ? "" : "       (provider)");
+    return item.name + (item.ismodel ? '' : '       (provider)');
   }
 
   onChooseItem(item: ModelAndProvider, evt: MouseEvent | KeyboardEvent): void {
     // see if it's a provider or a model
-    const endpointnum = this.plugin.settings.endpoints.findIndex((e) => e.name === item.name);
+    const endpointnum = this.plugin.settings.endpoints.findIndex(e => e.name === item.name);
     if (endpointnum !== -1) {
       this.editor.setValue(
         new PureChatLLMChat(this.plugin)
@@ -403,11 +406,11 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       return;
     }
     this.plugin.modellist = [];
-    new PureChatLLMChat(this.plugin).getAllModels().then((models) => {
+    new PureChatLLMChat(this.plugin).getAllModels().then(models => {
       this.plugin.modellist = models;
       this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
       this.plugin.saveSettings();
-      this.modellist = models.map((m) => ({ name: m, ismodel: true }));
+      this.modellist = models.map(m => ({ name: m, ismodel: true }));
       this.open();
     });
   }
@@ -419,19 +422,19 @@ export class CodePreview extends ItemView {
     public plugin: PureChatLLM,
   ) {
     super(leaf);
-    this.icon = "code";
+    this.icon = 'code';
   }
 
   getViewType(): string {
-    return "pure-chat-llm-code-preview";
+    return 'pure-chat-llm-code-preview';
   }
 
   getDisplayText(): string {
-    return "Code Preview";
+    return 'Code Preview';
   }
 
   setState(state: unknown, result: ViewStateResult): Promise<void> {
-    console.log("Setting state", state, result);
+    console.log('Setting state', state, result);
     this.renderCodePreview(state as { code: string; language: string });
     return Promise.resolve();
   }
@@ -442,20 +445,20 @@ export class CodePreview extends ItemView {
 
   private renderCodePreview(state: { code: string; language: string }) {
     this.contentEl.empty();
-    this.contentEl.addClass("PURECodePreview");
+    this.contentEl.addClass('PURECodePreview');
 
-    const code = (state.code as string) || "";
-    const language: string = (state.language as string) || "text";
+    const code = (state.code as string) || '';
+    const language: string = (state.language as string) || 'text';
 
-    if (language.toLowerCase() === "html") {
-      const iframe = this.contentEl.createEl("iframe");
-      iframe.setAttr("sandbox", "allow-scripts allow-same-origin");
-      iframe.style.width = "100%";
-      iframe.style.height = "100%";
+    if (language.toLowerCase() === 'html') {
+      const iframe = this.contentEl.createEl('iframe');
+      iframe.setAttr('sandbox', 'allow-scripts allow-same-origin');
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
       iframe.srcdoc = code;
     } else {
-      this.contentEl.createEl("pre", {}, (el) => {
-        const codeEl = el.createEl("code", { text: code });
+      this.contentEl.createEl('pre', {}, el => {
+        const codeEl = el.createEl('code', { text: code });
         codeEl.addClass(`language-${language}`);
       });
     }

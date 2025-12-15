@@ -1,7 +1,7 @@
-import { App, Modal, Notice, Setting } from "obsidian";
-import { PureChatLLMChat } from "./Chat";
-import PureChatLLM from "./main";
-import { CodeAreaComponent, EditWand } from "./models";
+import { App, Modal, Notice, Setting } from 'obsidian';
+import { PureChatLLMChat } from './Chat';
+import PureChatLLM from './main';
+import { CodeAreaComponent, EditWand } from './models';
 
 /**
  * Modal dialog for displaying and handling code blocks extracted from a given string.
@@ -30,38 +30,38 @@ export class CodeHandling extends Modal {
     super(app);
     this.plugin = plugin;
     this.code = this.getCode(code);
-    this.setTitle("Code handling");
+    this.setTitle('Code handling');
     this.renderCodeBlocks();
   }
 
   private renderCodeBlocks() {
     if (!this.code.length) {
-      new Setting(this.contentEl).setName("No code blocks found.");
+      new Setting(this.contentEl).setName('No code blocks found.');
       return;
     }
     this.code.forEach((c, idx) => {
       new Setting(this.contentEl).setName(c.language || `Code block ${idx + 1}`).setHeading();
 
-      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange((value) => {
+      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange(value => {
         c.code = value;
       });
 
       new Setting(this.contentEl)
-        .addExtraButton((btn) =>
+        .addExtraButton(btn =>
           btn
-            .setIcon("copy")
-            .setTooltip("Copy to clipboard")
+            .setIcon('copy')
+            .setTooltip('Copy to clipboard')
             .onClick(() => {
               navigator.clipboard.writeText(c.code);
-              new Notice("Code copied to clipboard");
+              new Notice('Code copied to clipboard');
             }),
         )
-        .addExtraButton((btn) =>
+        .addExtraButton(btn =>
           btn
-            .setIcon("pencil")
-            .setTooltip("Edit with prompt")
+            .setIcon('pencil')
+            .setTooltip('Edit with prompt')
             .onClick(() =>
-              new EditWand(this.app, this.plugin, c.code, (newCode) =>
+              new EditWand(this.app, this.plugin, c.code, newCode =>
                 textArea.setValue((c.code = newCode)),
               ).open(),
             ),

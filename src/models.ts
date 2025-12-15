@@ -6,11 +6,11 @@ import {
   Notice,
   Setting,
   TextAreaComponent,
-} from "obsidian";
-import { PureChatLLMChat } from "./Chat";
-import PureChatLLM from "./main";
-import { EmptyApiKey } from "./s.json";
-import { PureChatLLMAPI } from "./types";
+} from 'obsidian';
+import { PureChatLLMChat } from './Chat';
+import PureChatLLM from './main';
+import { EmptyApiKey } from './s.json';
+import { PureChatLLMAPI } from './types';
 
 /**
  * Modal dialog prompting the user to enter an OpenAI API key for the PureChatLLM plugin.
@@ -44,47 +44,47 @@ export class AskForAPI extends Modal {
     const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
 
     new Setting(this.contentEl)
-      .setName("API key")
+      .setName('API key')
       .setDesc(`Enter your ${endpoint.name} API key.`)
-      .addText((text) => {
+      .addText(text => {
         text
           .setPlaceholder(this.apiKey)
           .setValue(this.apiKey)
-          .onChange((value) => {
+          .onChange(value => {
             this.apiKey = value.trim();
           });
-        text.inputEl.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
+        text.inputEl.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
             this.saveAndClose();
           }
         });
       });
     new Setting(this.contentEl)
-      .setName("Default model")
+      .setName('Default model')
       .setDesc(`Enter the default model for ${endpoint.name}.`)
-      .addText((text) => {
+      .addText(text => {
         text
           .setPlaceholder(endpoint.defaultmodel)
           .setValue(endpoint.defaultmodel)
-          .onChange((value) => {
+          .onChange(value => {
             endpoint.defaultmodel = value || endpoint.defaultmodel;
             this.plugin.saveSettings();
           });
       });
     new Setting(this.contentEl)
       .setName(
-        createFragment((el) => el.createEl("a", { href: endpoint.getapiKey, text: endpoint.name })),
+        createFragment(el => el.createEl('a', { href: endpoint.getapiKey, text: endpoint.name })),
       )
       .setDesc(`Link to get API key from ${endpoint.name}`)
-      .addButton((btn) =>
+      .addButton(btn =>
         btn
-          .setButtonText("Save")
+          .setButtonText('Save')
           .setCta()
           .onClick(() => {
             this.saveAndClose();
           }),
       )
-      .addButton((btn) => btn.setButtonText("Cancel").onClick(() => this.close()));
+      .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
   }
 
   private async saveAndClose() {
@@ -108,7 +108,7 @@ export class AskForAPI extends Modal {
 export class CodeAreaComponent extends TextAreaComponent {
   constructor(containerEl: HTMLElement) {
     super(containerEl);
-    this.inputEl.addClass("PUREcodePreview");
+    this.inputEl.addClass('PUREcodePreview');
   }
 }
 
@@ -162,25 +162,25 @@ export class EditWand extends Modal {
     // Initialize history with the initial selection
     this.hist = [selection, selection];
 
-    this.setTitle("Change selection with prompt");
+    this.setTitle('Change selection with prompt');
 
     // Setup navigation buttons
     this.setupNavigationButtons();
 
     // Create selection textarea
     this.selectionEl = new CodeAreaComponent(this.contentEl)
-      .setPlaceholder("Selection")
+      .setPlaceholder('Selection')
       .setValue(this.selection)
-      .onChange((value) => {
+      .onChange(value => {
         // Update the latest history entry when user edits selection
         this.hist[this.hist.length - 1] = value;
       });
 
     // Create prompt textarea
     this.promptEl = new CodeAreaComponent(this.contentEl)
-      .setPlaceholder("Enter the prompt")
-      .onChange((value) => {
-        if (value.endsWith(">go")) {
+      .setPlaceholder('Enter the prompt')
+      .onChange(value => {
+        if (value.endsWith('>go')) {
           this.promptEl.setValue(value.slice(0, -3));
           this.send();
         }
@@ -199,22 +199,22 @@ export class EditWand extends Modal {
   private setupNavigationButtons() {
     new Setting(this.contentEl)
       // Copy selection to clipboard
-      .addExtraButton((btn) =>
-        btn.setIcon("copy").onClick(async () => {
+      .addExtraButton(btn =>
+        btn.setIcon('copy').onClick(async () => {
           await navigator.clipboard.writeText(this.selectionEl.getValue());
-          new Notice("Selection copied to clipboard");
+          new Notice('Selection copied to clipboard');
         }),
       )
       .addExtraButton(
-        (btn) =>
-          (this.navButtons[0] = btn.setIcon("undo-2").onClick(async () => {
+        btn =>
+          (this.navButtons[0] = btn.setIcon('undo-2').onClick(async () => {
             this.iHist = Math.max(this.iHist - 1, 0);
             this.update(this.selectionEl, this.hist[this.iHist]);
           })),
       )
       .addExtraButton(
-        (btn) =>
-          (this.navButtons[1] = btn.setIcon("redo-2").onClick(async () => {
+        btn =>
+          (this.navButtons[1] = btn.setIcon('redo-2').onClick(async () => {
             this.iHist = Math.min(this.iHist + 1, this.hist.length - 1);
             this.update(this.selectionEl, this.hist[this.iHist]);
           })),
@@ -227,11 +227,11 @@ export class EditWand extends Modal {
   private setupActionButtons() {
     new Setting(this.contentEl)
       // Send prompt to LLM and update selection with response
-      .addExtraButton((btn) => btn.setIcon("send").onClick(this.send.bind(this)))
+      .addExtraButton(btn => btn.setIcon('send').onClick(this.send.bind(this)))
       // Confirm button
-      .addButton((btn) =>
+      .addButton(btn =>
         btn
-          .setIcon("check")
+          .setIcon('check')
           .setCta()
           .onClick(async () => {
             this.close();
@@ -239,7 +239,7 @@ export class EditWand extends Modal {
           }),
       )
       // Cancel button
-      .addButton((btn) => btn.setIcon("x").onClick(() => this.close()));
+      .addButton(btn => btn.setIcon('x').onClick(() => this.close()));
   }
 
   async send() {
@@ -285,32 +285,32 @@ export class EditWand extends Modal {
 }
 
 const endpointNames: PureChatLLMAPI = {
-  name: "Endpoint name",
-  apiKey: "API key",
-  endpoint: "Endpoint URL",
-  defaultmodel: "Default model",
-  listmodels: "Available models URL (Optional)",
-  getapiKey: "API key retrieval URL (Optional)",
+  name: 'Endpoint name',
+  apiKey: 'API key',
+  endpoint: 'Endpoint URL',
+  defaultmodel: 'Default model',
+  listmodels: 'Available models URL (Optional)',
+  getapiKey: 'API key retrieval URL (Optional)',
 };
 
 const endpointDescriptions: PureChatLLMAPI = {
-  name: "The name of the LLM provider.",
-  apiKey: "Your API key for the LLM provider.",
+  name: 'The name of the LLM provider.',
+  apiKey: 'Your API key for the LLM provider.',
   endpoint:
     "The URL for the LLM provider's chat completions endpoint, including /v1/chat/completions.",
   defaultmodel:
-    "The default model to use for requests. This is required for the plugin to function.",
-  listmodels: "Optional URL to retrieve available models from the provider.",
-  getapiKey: "Optional URL the API key page for the provider.",
+    'The default model to use for requests. This is required for the plugin to function.',
+  listmodels: 'Optional URL to retrieve available models from the provider.',
+  getapiKey: 'Optional URL the API key page for the provider.',
 };
 
 const endpointInputPlaceholders: PureChatLLMAPI = {
-  name: "Enter the name of the LLM provider...",
-  apiKey: "Enter your API key...",
-  endpoint: "https://api.example.com/v1/chat/completions",
-  defaultmodel: "gpt-3.5-turbo",
-  listmodels: "https://api.example.com/v1/models (Optional)",
-  getapiKey: "https://example.com/get-api-key (Optional)",
+  name: 'Enter the name of the LLM provider...',
+  apiKey: 'Enter your API key...',
+  endpoint: 'https://api.example.com/v1/chat/completions',
+  defaultmodel: 'gpt-3.5-turbo',
+  listmodels: 'https://api.example.com/v1/models (Optional)',
+  getapiKey: 'https://example.com/get-api-key (Optional)',
 };
 
 export class EditModalProviders extends Modal {
@@ -322,7 +322,7 @@ export class EditModalProviders extends Modal {
     super(app);
     this.plugin = plugin;
     this.app = app;
-    this.setTitle("Edit LLM Providers");
+    this.setTitle('Edit LLM Providers');
     this.buildUI();
   }
 
@@ -333,19 +333,19 @@ export class EditModalProviders extends Modal {
 
     endpoints.forEach((key, i) =>
       new Setting(this.contentEl)
-        .setName(i !== this.selectedIndex ? key.name : "Editing...")
-        .addExtraButton((btn) => {
+        .setName(i !== this.selectedIndex ? key.name : 'Editing...')
+        .addExtraButton(btn => {
           btn
-            .setIcon("trash")
+            .setIcon('trash')
             .setTooltip(`Remove ${key.name}`)
             .onClick(() => {
               this.plugin.settings.endpoints.splice(i, 1);
               this.buildUI(); // Rebuild UI after removal
             });
         })
-        .addButton((btn) => {
+        .addButton(btn => {
           btn
-            .setIcon("pencil")
+            .setIcon('pencil')
             .setTooltip(`Edit ${key.name}`)
             .onClick(() => {
               this.selectedIndex = i;
@@ -354,36 +354,36 @@ export class EditModalProviders extends Modal {
           if (i === this.selectedIndex) btn.setCta();
         }),
     );
-    new Setting(this.contentEl).setName("Add new endpoint").addButton((btn) => {
+    new Setting(this.contentEl).setName('Add new endpoint').addButton(btn => {
       btn
-        .setIcon("plus")
-        .setTooltip("Add a new endpoint")
+        .setIcon('plus')
+        .setTooltip('Add a new endpoint')
         .onClick(() => {
           this.plugin.settings.endpoints.push({
-            name: "",
-            apiKey: "",
-            endpoint: "",
-            defaultmodel: "",
-            listmodels: "",
-            getapiKey: "",
+            name: '',
+            apiKey: '',
+            endpoint: '',
+            defaultmodel: '',
+            listmodels: '',
+            getapiKey: '',
           });
           this.selectedIndex = this.plugin.settings.endpoints.length - 1;
           this.buildUI(); // Rebuild UI to show the new endpoint
         });
     });
 
-    new Setting(this.contentEl).setName("Edit").setHeading();
+    new Setting(this.contentEl).setName('Edit').setHeading();
     Object.entries(endpointNames).forEach(([key, label]) => {
       new Setting(this.contentEl)
         .setName(label)
         .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
-        .addText((text) => {
+        .addText(text => {
           text
             .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
             .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
-            .onChange((value) => {
+            .onChange(value => {
               selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
-              if (key === "name") this.setTitle(value.trim());
+              if (key === 'name') this.setTitle(value.trim());
             });
         });
     });
@@ -391,7 +391,7 @@ export class EditModalProviders extends Modal {
   }
   onClose(): void {
     const { settings } = this.plugin;
-    settings.endpoints = settings.endpoints.filter((endpoint) => endpoint.name);
+    settings.endpoints = settings.endpoints.filter(endpoint => endpoint.name);
     this.plugin.saveSettings();
     super.onClose();
   }

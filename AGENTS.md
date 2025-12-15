@@ -166,9 +166,9 @@ Follow Obsidian's **Developer Policies** and **Plugin Guidelines**. In particula
 **main.ts** (minimal, lifecycle only):
 
 ```ts
-import { Plugin } from "obsidian";
-import { MySettings, DEFAULT_SETTINGS } from "./settings";
-import { registerCommands } from "./commands";
+import { Plugin } from 'obsidian';
+import { MySettings, DEFAULT_SETTINGS } from './settings';
+import { registerCommands } from './commands';
 
 export default class MyPlugin extends Plugin {
   settings: MySettings;
@@ -190,20 +190,20 @@ export interface MySettings {
 
 export const DEFAULT_SETTINGS: MySettings = {
   enabled: true,
-  apiKey: "",
+  apiKey: '',
 };
 ```
 
 **commands/index.ts**:
 
 ```ts
-import { Plugin } from "obsidian";
-import { doSomething } from "./my-command";
+import { Plugin } from 'obsidian';
+import { doSomething } from './my-command';
 
 export function registerCommands(plugin: Plugin) {
   plugin.addCommand({
-    id: "do-something",
-    name: "Do something",
+    id: 'do-something',
+    name: 'Do something',
     callback: () => doSomething(plugin),
   });
 }
@@ -213,8 +213,8 @@ export function registerCommands(plugin: Plugin) {
 
 ```ts
 this.addCommand({
-  id: "your-command-id",
-  name: "Do the thing",
+  id: 'your-command-id',
+  name: 'Do the thing',
   callback: () => this.doTheThing(),
 });
 ```
@@ -235,11 +235,11 @@ async onload() {
 
 ```ts
 this.registerEvent(
-  this.app.workspace.on("file-open", (f) => {
+  this.app.workspace.on('file-open', f => {
     /* ... */
   }),
 );
-this.registerDomEvent(window, "resize", () => {
+this.registerDomEvent(window, 'resize', () => {
   /* ... */
 });
 this.registerInterval(

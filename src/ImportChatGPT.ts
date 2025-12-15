@@ -1,10 +1,10 @@
-import { App, Notice, TFolder } from "obsidian";
-import { PureChatLLMChat } from "./Chat";
-import PureChatLLM, { FolderSuggest } from "./main";
+import { App, Notice, TFolder } from 'obsidian';
+import { PureChatLLMChat } from './Chat';
+import PureChatLLM, { FolderSuggest } from './main';
 
 // Author of a message
 interface ChatAuthor {
-  role: "user" | "assistant" | "system" | "tool" | string;
+  role: 'user' | 'assistant' | 'system' | 'tool' | string;
   name: string | null;
   metadata: Record<string, unknown>;
 }
@@ -90,27 +90,27 @@ export class ImportChatGPT {
     try {
       const file = await this.getFileFromUser();
       const folderPath = await this.getFolderPath();
-      if (!file) throw new Error("No file selected");
+      if (!file) throw new Error('No file selected');
       await this.processChatFile(file, folderPath.path);
     } catch (error) {
-      new Notice(error.message || "Error importing ChatGPT JSON");
+      new Notice(error.message || 'Error importing ChatGPT JSON');
     }
   }
 
   // Prompts user to select a folder; returns a Promise
   private getFolderPath(): Promise<TFolder> {
-    return new Promise((resolve) => {
-      new FolderSuggest(this.app, resolve, "Where to load the files").open();
+    return new Promise(resolve => {
+      new FolderSuggest(this.app, resolve, 'Where to load the files').open();
     });
   }
 
   // Prompts user to select a file; returns a Promise<File>
   private getFileFromUser(): Promise<File | null> {
-    return new Promise((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = ".json,application/json";
-      input.style.display = "none";
+    return new Promise(resolve => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.style.display = 'none';
       document.body.appendChild(input);
       input.onchange = () => {
         resolve(input.files?.[0] ?? null);
@@ -127,16 +127,16 @@ export class ImportChatGPT {
       chats = JSON.parse(text);
       if (!Array.isArray(chats)) throw new Error();
     } catch {
-      throw new Error("Invalid ChatGPT JSON format");
+      throw new Error('Invalid ChatGPT JSON format');
     }
 
-    const folder = this.app.fileManager.getNewFileParent(folderPath || "/");
+    const folder = this.app.fileManager.getNewFileParent(folderPath || '/');
     for (const chat of chats) {
       if (
         chat &&
-        typeof chat === "object" &&
-        "mapping" in chat &&
-        typeof chat.mapping === "object"
+        typeof chat === 'object' &&
+        'mapping' in chat &&
+        typeof chat.mapping === 'object'
       ) {
         await this.saveChatConversation(chat as ChatMappingEntry, folder, folderPath);
       }
@@ -150,8 +150,8 @@ export class ImportChatGPT {
     // Find root message id
     const mapping = chat.mapping;
     const rootId =
-      mapping["client-created-root"]?.children?.[0] ||
-      mapping[Object.keys(mapping).find((id) => !mapping[id].parent) || ""]?.children?.[0];
+      mapping['client-created-root']?.children?.[0] ||
+      mapping[Object.keys(mapping).find(id => !mapping[id].parent) || '']?.children?.[0];
 
     this.collectConversation(mapping, rootId, result);
 
@@ -169,12 +169,12 @@ export class ImportChatGPT {
       if (
         message &&
         message.content &&
-        message.content.content_type === "text" &&
-        message.author.role !== "tool"
+        message.content.content_type === 'text' &&
+        message.author.role !== 'tool'
       ) {
         result.appendMessage({
-          role: message.author.role as "user" | "assistant" | "system",
-          content: message.content.parts?.[0] ?? "",
+          role: message.author.role as 'user' | 'assistant' | 'system',
+          content: message.content.parts?.[0] ?? '',
         });
       }
       // Next child

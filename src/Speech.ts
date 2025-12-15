@@ -1,6 +1,6 @@
-import { BrowserConsole } from "./BrowserConsole";
-import { PureChatLLMChat } from "./Chat";
-import PureChatLLM from "./main";
+import { BrowserConsole } from './BrowserConsole';
+import { PureChatLLMChat } from './Chat';
+import PureChatLLM from './main';
 
 /**
  * Handles text-to-speech (TTS) functionality for chat messages using the OpenAI TTS API.
@@ -27,15 +27,15 @@ export class PureChatLLMSpeech {
   chat: PureChatLLMChat;
   plugin: PureChatLLM;
   console: BrowserConsole;
-  assistantvoice = "alloy";
-  uservoice = "echo";
+  assistantvoice = 'alloy';
+  uservoice = 'echo';
   speechQueue: { audio: HTMLAudioElement }[] = [];
   isPlaying = false; // To prevent multiple concurrent plays
 
   constructor(plugin: PureChatLLM, chat: PureChatLLMChat) {
     this.plugin = plugin;
     this.chat = chat;
-    this.console = new BrowserConsole(this.plugin.settings.debug, "Speech");
+    this.console = new BrowserConsole(this.plugin.settings.debug, 'Speech');
   }
 
   /**
@@ -52,28 +52,28 @@ export class PureChatLLMSpeech {
    * @returns A Promise that resolves when the speech audio has been enqueued or logs an error if unsuccessful.
    */
   async enqueueSpeech(message: { role: string; content: string }) {
-    const voice = message.role === "assistant" ? this.assistantvoice : this.uservoice;
+    const voice = message.role === 'assistant' ? this.assistantvoice : this.uservoice;
     const apiKey = this.plugin.settings.endpoints[this.plugin.settings.endpoint]?.apiKey;
     if (!apiKey) {
-      this.console.error("OpenAI API key is missing.");
+      this.console.error('OpenAI API key is missing.');
       return;
     }
     try {
-      const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "tts-1",
+          model: 'tts-1',
           input: message.content,
           voice: voice,
         }),
       });
 
       if (!response.ok) {
-        this.console.error("OpenAI TTS API error:", await response.text());
+        this.console.error('OpenAI TTS API error:', await response.text());
         return;
       }
 
@@ -84,7 +84,7 @@ export class PureChatLLMSpeech {
       // Enqueue
       this.speechQueue.push({ audio });
     } catch (err) {
-      this.console.error("Error generating speech:", err);
+      this.console.error('Error generating speech:', err);
     }
   }
 
@@ -104,8 +104,8 @@ export class PureChatLLMSpeech {
     while (remaining.length > maxLength) {
       // Find the last period or space within maxLength
       const sliceCandidate = remaining.slice(0, maxLength + 1);
-      const lastPeriod = sliceCandidate.lastIndexOf(".");
-      const lastSpace = sliceCandidate.lastIndexOf(" ");
+      const lastPeriod = sliceCandidate.lastIndexOf('.');
+      const lastSpace = sliceCandidate.lastIndexOf(' ');
 
       let splitIndex = maxLength;
       if (lastPeriod !== -1 && lastPeriod >= maxLength - 50) {
@@ -144,10 +144,10 @@ export class PureChatLLMSpeech {
     while (this.speechQueue.length > 0) {
       const segment = this.speechQueue.shift();
       if (segment && segment.audio) {
-        await new Promise<void>((resolve) => {
+        await new Promise<void>(resolve => {
           segment.audio.onended = () => resolve();
-          segment.audio.play().catch((err) => {
-            this.console.error("Audio play error:", err);
+          segment.audio.play().catch(err => {
+            this.console.error('Audio play error:', err);
             resolve();
           });
         });
@@ -226,12 +226,12 @@ export class PureChatLLMSpeech {
   getVoices(): { name: string }[] {
     // OpenAI supported voices as of 2024
     return [
-      { name: "alloy" },
-      { name: "echo" },
-      { name: "fable" },
-      { name: "onyx" },
-      { name: "nova" },
-      { name: "shimmer" },
+      { name: 'alloy' },
+      { name: 'echo' },
+      { name: 'fable' },
+      { name: 'onyx' },
+      { name: 'nova' },
+      { name: 'shimmer' },
     ];
   }
 }
