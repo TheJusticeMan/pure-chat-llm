@@ -55,7 +55,7 @@ export class AskForAPI extends Modal {
           });
         text.inputEl.addEventListener('keydown', e => {
           if (e.key === 'Enter') {
-            this.saveAndClose();
+            void this.saveAndClose();
           }
         });
       });
@@ -68,7 +68,7 @@ export class AskForAPI extends Modal {
           .setValue(endpoint.defaultmodel)
           .onChange(value => {
             endpoint.defaultmodel = value || endpoint.defaultmodel;
-            this.plugin.saveSettings();
+            void this.plugin.saveSettings();
           });
       });
     new Setting(this.contentEl)
@@ -81,7 +81,7 @@ export class AskForAPI extends Modal {
           .setButtonText('Save')
           .setCta()
           .onClick(() => {
-            this.saveAndClose();
+            void this.saveAndClose();
           }),
       )
       .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
@@ -182,7 +182,7 @@ export class EditWand extends Modal {
       .onChange(value => {
         if (value.endsWith('>go')) {
           this.promptEl.setValue(value.slice(0, -3));
-          this.send();
+          void this.send();
         }
       });
 
@@ -227,6 +227,7 @@ export class EditWand extends Modal {
   private setupActionButtons() {
     new Setting(this.contentEl)
       // Send prompt to LLM and update selection with response
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       .addExtraButton(btn => btn.setIcon('send').onClick(this.send.bind(this)))
       // Confirm button
       .addButton(btn =>
@@ -322,7 +323,7 @@ export class EditModalProviders extends Modal {
     super(app);
     this.plugin = plugin;
     this.app = app;
-    this.setTitle('Edit LLM Providers');
+    this.setTitle('Edit LLM providers');
     this.buildUI();
   }
 
@@ -380,6 +381,7 @@ export class EditModalProviders extends Modal {
         .addText(text => {
           text
             .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
             .onChange(value => {
               selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
@@ -392,7 +394,7 @@ export class EditModalProviders extends Modal {
   onClose(): void {
     const { settings } = this.plugin;
     settings.endpoints = settings.endpoints.filter(endpoint => endpoint.name);
-    this.plugin.saveSettings();
+    void this.plugin.saveSettings();
     super.onClose();
   }
 }

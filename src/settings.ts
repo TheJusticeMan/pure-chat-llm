@@ -39,7 +39,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 
   ifdefault(key: keyof PureChatLLMSettings): string {
     const { settings } = this.plugin;
-    return settings[key] !== DEFAULT_SETTINGS[key] ? settings[key].toString() : '';
+    return settings[key] !== DEFAULT_SETTINGS[key] ? String(settings[key]) : '';
   }
 
   display(): void {
@@ -78,8 +78,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               this.plugin.settings.ModelsOnEndpoint[
                 this.plugin.settings.endpoints[this.plugin.settings.endpoint].name
               ] = [];
-              new PureChatLLMChat(this.plugin).getAllModels().then(models => {
-                this.plugin.saveSettings();
+              void new PureChatLLMChat(this.plugin).getAllModels().then(models => {
+                void this.plugin.saveSettings();
                 new Notice('Model list refreshed');
               });
             }),
@@ -166,7 +166,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           ),
       );
     new Setting(containerEl)
-      .setName('Import/Export templates')
+      .setName('Import/export templates')
       .setDesc('Import or export selection and chat prompt templates to/from a markdown file.')
       .addButton(btn =>
         btn.setButtonText('Write to PureChatLLM-Templates.md').onClick(() => {
@@ -177,26 +177,26 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           });
           const filePath = 'PureChatLLM-Templates.md';
           const file = this.app.vault.getFileByPath(filePath);
-          if (file) this.app.vault.modify(file, content);
-          else this.app.vault.create(filePath, content);
+          if (file) void this.app.vault.modify(file, content);
+          else void this.app.vault.create(filePath, content);
           new Notice('Templates exported to PureChatLLM-Templates.md');
         }),
       )
       .addButton(btn =>
         btn
-          .setButtonText('Import from PureChatLLM-Templates.md')
+          .setButtonText('Import from PureChatLLM-templates.md')
           .then(btn =>
             this.app.vault.getFileByPath('PureChatLLM-Templates.md') ? btn : btn.setDisabled(true),
           )
           .onClick(() => {
             const file = this.app.vault.getFileByPath('PureChatLLM-Templates.md');
             if (file) {
-              this.app.vault.cachedRead(file).then(data => {
+              void this.app.vault.cachedRead(file).then(data => {
                 this.plugin.settings = {
                   ...this.plugin.settings,
                   ...getObjectFromMarkdown(data, 1, 2),
                 };
-                this.plugin.saveSettings();
+                void this.plugin.saveSettings();
                 new Notice('Templates imported. Please review them in the prompt editor.');
               });
             } else {
@@ -207,7 +207,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Use OpenAI image generation')
       .setDesc(
-        "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key.",
+        'Enable this to use OpenAI\'s DALL-E for image generation. Requires an OpenAI API key.',
       )
       .addToggle(toggle =>
         toggle.setValue(settings.useImageGeneration).onChange(async value => {
@@ -239,7 +239,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         }),
       );
     new Setting(containerEl)
-      .setName('Custom LLM Providers')
+      .setName('Custom LLM providers')
       .setDesc(
         'Add custom LLM providers with API keys. These will be available in the model provider dropdown.',
       )
@@ -283,7 +283,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         }),
       );
     new Setting(containerEl)
-      .setName('Chat style')
+      .setName('Chat Style')
       .setDesc('Select how chats are written and interpreted in markdown.')
       .addText(text =>
         text
@@ -305,7 +305,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           settings.debug = value;
           await this.plugin.saveSettings();
           this.plugin.console = new BrowserConsole(settings.debug, 'PureChatLLM');
-          console.log('reload the plugin to apply the changes');
+          console.debug('reload the plugin to apply the changes');
         }),
       );
     new Setting(containerEl)
@@ -319,12 +319,12 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           .onClick(e => {
             const oldSettings = { ...this.plugin.settings };
             this.plugin.settings = { ...DEFAULT_SETTINGS };
-            for (const endpoint in this.plugin.settings.endpoints) {
+            for (const endpoint of Object.keys(this.plugin.settings.endpoints)) {
               if (DEFAULT_SETTINGS.endpoints[endpoint])
                 this.plugin.settings.endpoints[endpoint].apiKey =
                   oldSettings.endpoints[endpoint].apiKey;
             }
-            this.plugin.saveSettings();
+            void this.plugin.saveSettings();
             this.display();
             new Notice('Settings reset to defaults.  API keys are unchanged.');
           }),
