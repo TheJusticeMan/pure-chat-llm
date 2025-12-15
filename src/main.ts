@@ -85,6 +85,7 @@ export default class PureChatLLM extends Plugin {
     this.addRibbonIcon(
       'text',
       'Open conversation overview',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.activateView.bind(this),
     );
 
@@ -155,7 +156,7 @@ export default class PureChatLLM extends Plugin {
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
-                this.activateView();
+                void this.activateView();
               });
           });
           menu.addItem(item => {
@@ -179,7 +180,7 @@ export default class PureChatLLM extends Plugin {
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
-                this.activateView();
+                void this.activateView();
               });
           });
         }
@@ -199,6 +200,7 @@ export default class PureChatLLM extends Plugin {
       id: 'choose-model-and-provider',
       name: 'Choose model and provider',
       icon: 'cpu',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       editorCallback: (editor: Editor) =>
         new modelAndProviderChooser(this.app, this, editor),
     });
@@ -216,7 +218,7 @@ export default class PureChatLLM extends Plugin {
       editorCheckCallback: (checking, e: Editor) => {
         const selected = e.getSelection();
         if (checking) return !!selected;
-        this.EditSelection(selected, e);
+        void this.EditSelection(selected, e);
       },
     });
     this.addCommand({
@@ -236,7 +238,7 @@ export default class PureChatLLM extends Plugin {
         new InstructPromptsHandler(
           this.app,
           s =>
-            new PureChatLLMChat(this)
+            void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
               .ProcessChatWithTemplate(s)
               .then(response => editor.replaceSelection(response.content)),
@@ -262,7 +264,7 @@ export default class PureChatLLM extends Plugin {
       name: 'Speak chat',
       icon: 'audio-lines',
       editorCallback: (editor: Editor) => {
-        new PureChatLLMSpeech(
+        void new PureChatLLMSpeech(
           this,
           new PureChatLLMChat(this)
             .setMarkdown(editor.getValue())
@@ -291,7 +293,7 @@ export default class PureChatLLM extends Plugin {
           name: `Chat: ${key}`,
           icon: 'wand',
           editorCallback: (editor: Editor) => {
-            new PureChatLLMChat(this)
+            void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
               .ProcessChatWithTemplate(this.settings.chatTemplates[key])
               .then(response => editor.replaceSelection(response.content));
@@ -311,7 +313,7 @@ export default class PureChatLLM extends Plugin {
             editorCheckCallback: (checking, e: Editor) => {
               const selected = e.getSelection();
               if (checking) return !!selected;
-              new PureChatLLMChat(this)
+              void new PureChatLLMChat(this)
                 .setMarkdown(e.getValue())
                 .SelectionResponse(
                   template,
@@ -346,21 +348,27 @@ export default class PureChatLLM extends Plugin {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setting = (this.app as any).setting;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await setting.open();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     setting.openTabById('hotkeys');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     setting.activeTab.searchComponent.setValue('Pure Chat LLM');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     setting.activeTab.searchComponent.onChanged();
   }
 
   async openSettings(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setting = (this.app as any).setting;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await setting.open();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     setting.openTabById('pure-chat-llm');
   }
 
   onUserEnable() {
-    this.activateView();
+    void this.activateView();
     //this.openHotkeys();
     this.console.log('Plugin enabled');
   }
@@ -399,16 +407,16 @@ export default class PureChatLLM extends Plugin {
             .setTitle('Edit selection')
             .setIcon('wand')
             .onClick(async () => {
-              this.EditSelection(selected, editor);
+              void this.EditSelection(selected, editor);
             })
             .setSection('selection'),
         )
         .addItem(item =>
           item
-            .setTitle('wand')
+            .setTitle('Wand')
             .setIcon('wand')
             .onClick(async () => {
-              new EditWand(this.app, this, editor.getSelection(), s =>
+              await new EditWand(this.app, this, editor.getSelection(), s =>
                 editor.replaceSelection(s),
               ).open();
             })
@@ -423,7 +431,7 @@ export default class PureChatLLM extends Plugin {
       this.app,
       s =>
         s
-          ? new PureChatLLMChat(this)
+          ? void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
               .SelectionResponse(
                 s,
@@ -453,7 +461,7 @@ export default class PureChatLLM extends Plugin {
   GenerateTitle(editor: Editor, view: MarkdownView): void {
     const ActiveFile = view.file;
     if (ActiveFile)
-      new PureChatLLMChat(this)
+      void new PureChatLLMChat(this)
         .setMarkdown(editor.getValue())
         .ProcessChatWithTemplate(
           this.settings.chatTemplates['Conversation titler'],
@@ -463,7 +471,7 @@ export default class PureChatLLM extends Plugin {
             .replace(/^<think>[\s\S]+?<\/think>/gm, '') // Remove <think> tags for ollama
             .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
             .trim()}.${ActiveFile.extension}`;
-          this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
+          void this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
           new Notice(`File renamed to: ${sanitizedTitle}`);
         });
     else new Notice('No active file to rename.');
@@ -539,31 +547,41 @@ export default class PureChatLLM extends Plugin {
       editor.lastLine(),
       editor.getLine(editor.lastLine()).length,
     );
-    if (intoview)
+    if (intoview) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const cursor = editor.getCursor();
       editor.scrollIntoView({
-        from: editor.getCursor(),
-        to: editor.getCursor(),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        from: cursor,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        to: cursor,
       });
+    }
   }
 
   async loadSettings() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const loadedData = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
     this.settings = {
       ...loadedData,
       chatTemplates: {
         ...DEFAULT_SETTINGS.chatTemplates,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         ...loadedData.chatTemplates,
       },
       selectionTemplates: {
         ...DEFAULT_SETTINGS.selectionTemplates,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         ...loadedData.selectionTemplates,
       },
     };
 
     // Compatibility fixes for older versions
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (loadedData.chatParser === 1) {
       this.settings.messageRoleFormatter =
         '\\n> [!note] {role}\\n> # role: {role}\\n';
@@ -575,20 +593,22 @@ export default class PureChatLLM extends Plugin {
     if (this.settings.SystemPrompt === oldSystemPrompt)
       this.settings.SystemPrompt = DEFAULT_SETTINGS.SystemPrompt;
 
-    DEFAULT_SETTINGS.endpoints.forEach(
-      endpoint =>
-        this.settings.endpoints.find(e => e.name === endpoint.name) ||
-        this.settings.endpoints.push(endpoint),
-    );
+    DEFAULT_SETTINGS.endpoints.forEach(endpoint => {
+      if (!this.settings.endpoints.find(e => e.name === endpoint.name)) {
+        this.settings.endpoints.push(endpoint);
+      }
+    });
   }
 
   async saveSettings() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.settings.selectionTemplates = Object.fromEntries(
       Object.keys(this.settings.selectionTemplates)
         .sort()
         .map(key => [key, this.settings.selectionTemplates[key]])
         .filter(([key, value]) => key && value),
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.settings.chatTemplates = Object.fromEntries(
       Object.keys(this.settings.chatTemplates)
         .sort()
@@ -697,7 +717,7 @@ export class SelectionPromptEditor extends Modal {
     );
     const isAllinCMD = Object.values(this.inCMD).every(v => v);
     new Setting(this.contentEl)
-      .setName('All templates')
+      .setName('All Templates')
       .setDesc('Manage all prompt templates for the PureChatLLM plugin.')
       .setHeading()
       .addExtraButton(btn =>
@@ -719,7 +739,7 @@ export class SelectionPromptEditor extends Modal {
         btn
           .setIcon('trash')
           .setTooltip('Delete all templates')
-          .onClick(() => {
+          .onClick(async () => {
             Object.keys(this.promptTemplates).forEach(key => {
               delete this.promptTemplates[key];
               delete this.inCMD[key];
@@ -805,14 +825,14 @@ export class SelectionPromptEditor extends Modal {
         btn
           .setButtonText('Save')
           .setCta()
-          .onClick(async () => this.close()),
+          .onClick(() => this.close()),
       )
       .addButton(btn =>
         btn
           .setButtonText('Reset all')
           .setTooltip('Reset all templates to default values.')
           .setWarning()
-          .onClick(async () => {
+          .onClick(() => {
             Object.assign(this.promptTemplates, this.defaultTemplates);
             this.promptTitle =
               Object.keys(this.promptTemplates)[0] || 'New template';
@@ -982,7 +1002,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
       const query = context.query.slice(2).toLowerCase().trim();
 
       return roles.filter(
-        h => h.startsWith(query) || ('role: ' + h).startsWith(query),
+        h => h.startsWith(query) || `role: ${h}`.startsWith(query),
       );
     }
     return [];
@@ -1002,7 +1022,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     }
   }
 
-  selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
+  selectSuggestion(value: string): void {
     if (!this.context) return;
     const { start, end, editor } = this.context;
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
