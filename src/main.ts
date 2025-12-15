@@ -925,7 +925,7 @@ export class FolderSuggest extends FuzzySuggestModal<TFolder> {
     this.onSubmit = onSubmit;
     this.folders = app.vault
       .getAllLoadedFiles()
-      .filter(f => f instanceof TFolder) as TFolder[];
+      .filter(f => f instanceof TFolder);
     this.setPlaceholder(prompt || 'Search for a folder...');
   }
   getItems(): TFolder[] {

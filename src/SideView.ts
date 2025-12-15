@@ -447,8 +447,8 @@ export class CodePreview extends ItemView {
     this.contentEl.empty();
     this.contentEl.addClass('PURECodePreview');
 
-    const code = (state.code as string) || '';
-    const language: string = (state.language as string) || 'text';
+    const code = (state.code) || '';
+    const language: string = (state.language) || 'text';
 
     if (language.toLowerCase() === 'html') {
       const iframe = this.contentEl.createEl('iframe');
