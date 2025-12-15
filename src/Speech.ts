@@ -59,7 +59,7 @@ export class PureChatLLMSpeech {
       return;
     }
     try {
-      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      const response = await (globalThis as any).fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -215,7 +215,7 @@ export class PureChatLLMSpeech {
       const messageChunks = this.splitMessage(message.content, 4096);
       for (const chunk of messageChunks) {
         // Queue asynchronously in background
-        this.enqueueSpeech({ role: message.role, content: chunk });
+        void this.enqueueSpeech({ role: message.role, content: chunk });
       }
     }
 

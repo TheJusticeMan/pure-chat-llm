@@ -126,7 +126,7 @@ export class PureChatLLMSideView extends ItemView {
     this.contentEl.empty();
 
     new Setting(this.contentEl)
-      .setName('Pure Chat LLM')
+      .setName('Pure chat LLM')
       .setHeading()
       .then(b => {
         const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
@@ -170,7 +170,7 @@ export class PureChatLLMSideView extends ItemView {
     const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
-    const allshown: boolean = Object.keys(alloptions).every(k => chat.options.hasOwnProperty(k));
+    const allshown: boolean = Object.keys(alloptions).every(k => Object.prototype.hasOwnProperty.call(chat.options, k));
     this.ischat = chat.validChat;
     const container = this.contentEl;
     container.empty();
@@ -225,14 +225,14 @@ export class PureChatLLMSideView extends ItemView {
             div.createDiv({ text: '' }, el => {
               el.onClickEvent(() => this.goToPostion(editor, message.cline, true));
               el.addClass('PURE', 'messageMarkdown', message.role);
-              MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
+              void MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
             });
           if (preview)
             new ExtraButtonComponent(div)
               .setIcon('copy')
               .setTooltip('Copy message to clipboard')
               .onClick(() => {
-                navigator.clipboard.writeText(message.content);
+                void navigator.clipboard.writeText(message.content);
                 new Notice('Copied message to clipboard');
               });
           if (preview)
@@ -248,7 +248,7 @@ export class PureChatLLMSideView extends ItemView {
                   .replace(/^#+ /, '')
                   .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
                   .trim();
-                this.app.fileManager
+                void this.app.fileManager
                   .getAvailablePathForAttachment(`Message ${title}.md`, view.file?.path)
                   .then(path =>
                     this.app.vault
@@ -335,7 +335,7 @@ export class PureChatLLMSideView extends ItemView {
 
   openCodePreview(code: string, language: string) {
     this.console.log('Opening code preview', { code, language });
-    this.app.workspace.getLeaf('tab').setViewState({
+    void this.app.workspace.getLeaf('tab').setViewState({
       type: 'pure-chat-llm-code-preview',
       active: true,
       state: { code, language },
@@ -406,10 +406,10 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       return;
     }
     this.plugin.modellist = [];
-    new PureChatLLMChat(this.plugin).getAllModels().then(models => {
+    void new PureChatLLMChat(this.plugin).getAllModels().then(models => {
       this.plugin.modellist = models;
       this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
       this.modellist = models.map(m => ({ name: m, ismodel: true }));
       this.open();
     });
@@ -430,11 +430,11 @@ export class CodePreview extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Code Preview';
+    return 'Code preview';
   }
 
   setState(state: unknown, result: ViewStateResult): Promise<void> {
-    console.log('Setting state', state, result);
+    console.debug('Setting state', state, result);
     this.renderCodePreview(state as { code: string; language: string });
     return Promise.resolve();
   }
@@ -453,8 +453,7 @@ export class CodePreview extends ItemView {
     if (language.toLowerCase() === 'html') {
       const iframe = this.contentEl.createEl('iframe');
       iframe.setAttr('sandbox', 'allow-scripts allow-same-origin');
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
+      iframe.setCssProps({ width: '100%', height: '100%' });
       iframe.srcdoc = code;
     } else {
       this.contentEl.createEl('pre', {}, el => {

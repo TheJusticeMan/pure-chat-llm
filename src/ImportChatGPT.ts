@@ -4,7 +4,7 @@ import PureChatLLM, { FolderSuggest } from './main';
 
 // Author of a message
 interface ChatAuthor {
-  role: 'user' | 'assistant' | 'system' | 'tool' | string;
+  role: string;
   name: string | null;
   metadata: Record<string, unknown>;
 }
@@ -83,7 +83,7 @@ export class ImportChatGPT {
     public app: App,
     public plugin: PureChatLLM,
   ) {
-    this.promptAndImport();
+    void this.promptAndImport();
   }
 
   private async promptAndImport() {
@@ -92,7 +92,8 @@ export class ImportChatGPT {
       const folderPath = await this.getFolderPath();
       if (!file) throw new Error('No file selected');
       await this.processChatFile(file, folderPath.path);
-    } catch (error) {
+    } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
       new Notice(error.message || 'Error importing ChatGPT JSON');
     }
   }
@@ -110,7 +111,7 @@ export class ImportChatGPT {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json,application/json';
-      input.style.display = 'none';
+      input.style.setProperty('display', 'none');
       document.body.appendChild(input);
       input.onchange = () => {
         resolve(input.files?.[0] ?? null);
@@ -124,6 +125,7 @@ export class ImportChatGPT {
     const text = await file.text();
     let chats: { title: string; [key: string]: unknown }[];
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       chats = JSON.parse(text);
       if (!Array.isArray(chats)) throw new Error();
     } catch {

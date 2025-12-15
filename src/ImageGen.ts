@@ -46,9 +46,9 @@ export class PureChatLLMImageGen {
       n: n || 1,
       size,
     };
-    console.log('Generating image with body:', body);
+    console.debug('Generating image with body:', body);
 
-    return fetch(url, {
+    return (globalThis as any).fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.API_KEY}`,
@@ -57,8 +57,10 @@ export class PureChatLLMImageGen {
       body: JSON.stringify(body),
     }).then(async response => {
       if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const data = await response.json();
       // Map each image to an object containing its url and revised_prompt (if available)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const images: { url: string; revised_prompt?: string }[] = data.data;
 
       const savedPaths = [];
@@ -98,10 +100,14 @@ export class PureChatLLMImageGen {
     if (!toolCall) {
       throw new Error(`No tool call found for ${PureChatLLMImageGen.TOOL_NAME}`);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const args = JSON.parse(toolCall.function.arguments);
     const result = await this.sendImageGenerationRequest({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       prompt: args.prompt,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       ratio: args.ratio || 'square',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       n: args.n || 1,
     });
 

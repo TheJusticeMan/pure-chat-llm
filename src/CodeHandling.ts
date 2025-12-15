@@ -52,7 +52,7 @@ export class CodeHandling extends Modal {
             .setIcon('copy')
             .setTooltip('Copy to clipboard')
             .onClick(() => {
-              navigator.clipboard.writeText(c.code);
+              void navigator.clipboard.writeText(c.code);
               new Notice('Code copied to clipboard');
             }),
         )
@@ -60,11 +60,11 @@ export class CodeHandling extends Modal {
           btn
             .setIcon('pencil')
             .setTooltip('Edit with prompt')
-            .onClick(() =>
-              new EditWand(this.app, this.plugin, c.code, newCode =>
+            .onClick(async () => {
+              await new EditWand(this.app, this.plugin, c.code, newCode =>
                 textArea.setValue((c.code = newCode)),
-              ).open(),
-            ),
+              ).open();
+            }),
         );
     });
   }
