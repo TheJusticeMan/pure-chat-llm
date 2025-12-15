@@ -399,6 +399,7 @@ export class PureChatLLMChat {
     messages.forEach(message =>
       this.messages.push({
         role: message.role,
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         content: typeof message.content === 'string' ? (extras + message.content).trim() : String(message.content),
         cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
       }),
@@ -1016,6 +1017,7 @@ export class PureChatLLMChat {
 
     let response: Response;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       response = await (globalThis as unknown).fetch(this.endpoint.endpoint, {
         method: 'POST',
         headers: this.Headers,

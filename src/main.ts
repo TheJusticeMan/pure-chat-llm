@@ -348,7 +348,7 @@ export default class PureChatLLM extends Plugin {
 
   async openHotkeys(): Promise<void> {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const setting = (this.app as any).setting;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await setting.open();
@@ -361,7 +361,7 @@ export default class PureChatLLM extends Plugin {
   }
 
   async openSettings(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const setting = (this.app as any).setting;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await setting.open();
