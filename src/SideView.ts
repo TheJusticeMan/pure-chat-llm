@@ -126,7 +126,7 @@ export class PureChatLLMSideView extends ItemView {
     this.contentEl.empty();
 
     new Setting(this.contentEl)
-      .setName('Pure chat LLM')
+      .setName('Pure Chat LLM')
       .setHeading()
       .then(b => {
         const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;

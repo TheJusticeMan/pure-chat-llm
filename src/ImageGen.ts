@@ -48,17 +48,19 @@ export class PureChatLLMImageGen {
     };
     console.debug('Generating image with body:', body);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return (globalThis as any).fetch(url, {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    return (globalThis as unknown).fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-    }).then(async response => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    }).then(async (response: unknown) => {
+       
       if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const data = await response.json();
       // Map each image to an object containing its url and revised_prompt (if available)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access

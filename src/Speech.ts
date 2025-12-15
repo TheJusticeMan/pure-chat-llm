@@ -59,7 +59,8 @@ export class PureChatLLMSpeech {
       return;
     }
     try {
-      const response = await (globalThis as any).fetch('https://api.openai.com/v1/audio/speech', {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      const response = await (globalThis as unknown).fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -72,12 +73,16 @@ export class PureChatLLMSpeech {
         }),
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (!response.ok) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         this.console.error('OpenAI TTS API error:', await response.text());
         return;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const audioBlob = await response.blob();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
 

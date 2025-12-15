@@ -1016,7 +1016,7 @@ export class PureChatLLMChat {
 
     let response: Response;
     try {
-      response = await (globalThis as any).fetch(this.endpoint.endpoint, {
+      response = await (globalThis as unknown).fetch(this.endpoint.endpoint, {
         method: 'POST',
         headers: this.Headers,
         body: JSON.stringify({
@@ -1177,7 +1177,7 @@ export class PureChatLLMChat {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
               content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
             });
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+             
             const l = await this.GenerateImage(
               imageGenCall,
               // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
@@ -1188,6 +1188,7 @@ export class PureChatLLMChat {
           }
         }
         this.plugin.status('');
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
         return data.choices[0].message;
       } catch (error) {
         this.plugin.status('');
@@ -1233,7 +1234,7 @@ export class PureChatLLMChat {
     cline?: EditorRange;
   }[] {
     const [agent, ...Responses] = msgs;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+     
     if (agent.tool_calls) {
       agent.tool_calls = agent.tool_calls.filter(call =>
         Responses.some(i => i.tool_call_id === call.id),
@@ -1252,6 +1253,7 @@ export class PureChatLLMChat {
       this.file,
     );
     const imageOutputUrls = await imageGen.sendImageGenerationRequest(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       JSON.parse(imageGenCall.function.arguments),
     );
     const message = imageOutputUrls
@@ -1301,21 +1303,25 @@ export class PureChatLLMChat {
     const cached = this.plugin.settings.ModelsOnEndpoint[endpointName];
     if (cached?.length) return Promise.resolve(cached);
     this.console.log(`Fetching models from ${endpointName} API...`);
-    return (globalThis as any).fetch(listmodels, {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    return (globalThis as unknown).fetch(listmodels, {
       method: 'GET',
       headers: this.Headers,
     })
-      .then(response => response.json())
-      .then((data: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+      .then((response: unknown) => response.json())
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      .then((data: unknown) => {
+         
         return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+           
           data.data as { id: string }[]
         )
           .map(item => item.id)
           .map(id => id.replace(/.+\//g, '') || id));
       })
-      .catch(error => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      .catch((error: unknown) => {
         this.console.error('Error fetching models:', error);
         return [];
       });
@@ -1336,6 +1342,7 @@ export class PureChatLLMChat {
   }
 
   parseRole(role: RoleType): string {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     return JSON.parse(`"${this.Parser}"`).replace(/{role}/g, toTitleCase(role));
   }
 

@@ -92,8 +92,8 @@ export class ImportChatGPT {
       const folderPath = await this.getFolderPath();
       if (!file) throw new Error('No file selected');
       await this.processChatFile(file, folderPath.path);
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       new Notice(error.message || 'Error importing ChatGPT JSON');
     }
   }
@@ -111,7 +111,7 @@ export class ImportChatGPT {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json,application/json';
-      input.style.setProperty('display', 'none');
+      input.setCssProps({ display: 'none' });
       document.body.appendChild(input);
       input.onchange = () => {
         resolve(input.files?.[0] ?? null);

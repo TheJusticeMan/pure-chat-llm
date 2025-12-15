@@ -130,7 +130,7 @@ export default class PureChatLLM extends Plugin {
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
-                this.activateView();
+                void this.activateView();
               });
           });
         } else if (file instanceof TFile && file.extension === 'md') {
@@ -193,6 +193,7 @@ export default class PureChatLLM extends Plugin {
       id: 'complete-chat-response',
       name: 'Complete chat response',
       icon: 'send',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       editorCallback: this.CompleteChatResponse.bind(this),
     });
     // Add command for choosing model and provider
@@ -200,7 +201,7 @@ export default class PureChatLLM extends Plugin {
       id: 'choose-model-and-provider',
       name: 'Choose model and provider',
       icon: 'cpu',
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+       
       editorCallback: (editor: Editor) =>
         new modelAndProviderChooser(this.app, this, editor),
     });
@@ -209,6 +210,7 @@ export default class PureChatLLM extends Plugin {
       id: 'generate-title',
       name: 'Generate title',
       icon: 'text-cursor-input',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       editorCallback: this.GenerateTitle.bind(this),
     });
     this.addCommand({
@@ -346,7 +348,7 @@ export default class PureChatLLM extends Plugin {
 
   async openHotkeys(): Promise<void> {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
     const setting = (this.app as any).setting;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await setting.open();
@@ -359,7 +361,7 @@ export default class PureChatLLM extends Plugin {
   }
 
   async openSettings(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
     const setting = (this.app as any).setting;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await setting.open();
@@ -394,7 +396,7 @@ export default class PureChatLLM extends Plugin {
 
     // "Reveal" the leaf in case it is in a collapsed sidebar
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      void workspace.revealLeaf(leaf);
     }
   }
 
@@ -415,6 +417,7 @@ export default class PureChatLLM extends Plugin {
           item
             .setTitle('Wand')
             .setIcon('wand')
+             
             .onClick(async () => {
               await new EditWand(this.app, this, editor.getSelection(), s =>
                 editor.replaceSelection(s),
@@ -548,12 +551,12 @@ export default class PureChatLLM extends Plugin {
       editor.getLine(editor.lastLine()).length,
     );
     if (intoview) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+       
       const cursor = editor.getCursor();
       editor.scrollIntoView({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+         
         from: cursor,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+         
         to: cursor,
       });
     }

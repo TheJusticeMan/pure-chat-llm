@@ -382,7 +382,7 @@ export class EditModalProviders extends Modal {
         .addText(text => {
           text
             .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+             
             .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
             .onChange(value => {
               selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
