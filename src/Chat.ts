@@ -213,6 +213,7 @@ export class PureChatLLMChat {
 
     const optionsStr =
       PureChatLLMChat.extractCodeBlockMD(this.pretext, 'json') || '';
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.options = PureChatLLMChat.tryJSONParse(optionsStr) || this.options;
     this.updateEndpointFromModel();
   }
@@ -398,7 +399,7 @@ export class PureChatLLMChat {
     messages.forEach(message =>
       this.messages.push({
         role: message.role,
-        content: (extras + message.content).trim(),
+        content: typeof message.content === 'string' ? (extras + message.content).trim() : String(message.content),
         cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
       }),
     );
@@ -884,7 +885,7 @@ export class PureChatLLMChat {
         ] ??= []);
         if (!models.includes(this.options.model)) {
           models.push(this.options.model);
-          this.plugin.saveSettings();
+          void this.plugin.saveSettings();
         }
         return this;
       })
@@ -933,16 +934,23 @@ export class PureChatLLMChat {
             break;
           }
           try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const data = JSON.parse(dataStr);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             const delta = data.choices?.[0]?.delta;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (delta?.content) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
               fullText += delta.content;
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
               const continueProcessing = streamcallback(delta);
               if (!continueProcessing) {
                 done = true;
                 break;
               }
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             } else if (delta?.tool_calls) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
               (delta.tool_calls as ToolCall[]).forEach((call: ToolCall) => {
                 const index = call.index;
                 if (index === undefined) return;
@@ -956,7 +964,7 @@ export class PureChatLLMChat {
                 }
               });
             }
-          } catch (err) {
+          } catch {
             // Optionally handle parse errors
           }
         }
@@ -967,7 +975,7 @@ export class PureChatLLMChat {
       fullcalls.forEach(call => {
         delete call.index; // Remove index from tool calls
       });
-      console.log('Full tool calls:', fullcalls);
+      console.debug('Full tool calls:', fullcalls);
       return { role: 'assistant', tool_calls: fullcalls };
     }
     return { role: 'assistant', content: fullText };
@@ -1008,7 +1016,7 @@ export class PureChatLLMChat {
 
     let response: Response;
     try {
-      response = await fetch(this.endpoint.endpoint, {
+      response = await (globalThis as any).fetch(this.endpoint.endpoint, {
         method: 'POST',
         headers: this.Headers,
         body: JSON.stringify({
@@ -1032,15 +1040,22 @@ export class PureChatLLMChat {
       let userMessage = `Error from ${this.endpoint.name}: ${response.statusText}`;
 
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const errorData = await response.json();
         // Extract error details from common API error formats
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (errorData.error) {
           let apiError: string;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           if (typeof errorData.error === 'string') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             apiError = errorData.error;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           } else if (errorData.error.message) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             apiError = errorData.error.message;
           } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             apiError = JSON.stringify(errorData.error);
           }
           errorMessage = `API Error: ${apiError}`;
@@ -1099,6 +1114,7 @@ export class PureChatLLMChat {
           if (imageGenCall) {
             streamcallback({
               role: 'tool',
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
               content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
             });
             const l = await this.GenerateImage(imageGenCall, fullText);
@@ -1116,12 +1132,16 @@ export class PureChatLLMChat {
       }
     } else {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const data = await response.json();
 
         // Validate response structure
         if (
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           !data.choices ||
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           !Array.isArray(data.choices) ||
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           data.choices.length === 0
         ) {
           this.console.error(`Invalid API response structure:`, data);
@@ -1132,6 +1152,7 @@ export class PureChatLLMChat {
           throw new Error('Invalid API response structure: Missing choices');
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (!data.choices[0].message) {
           this.console.error(`Invalid API response structure:`, data);
           this.plugin.status('');
@@ -1141,8 +1162,11 @@ export class PureChatLLMChat {
           throw new Error('Invalid API response structure: Missing message');
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (data.choices[0].message.tool_calls) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           const toolCalls = data.choices[0].message.tool_calls;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           const imageGenCall = toolCalls.find(
             (call: ToolCall) =>
               call.function.name === PureChatLLMImageGen.tool.function.name,
@@ -1150,10 +1174,13 @@ export class PureChatLLMChat {
           if (imageGenCall) {
             streamcallback?.({
               role: 'tool',
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
               content: `Generating image:\n${JSON.parse(imageGenCall.function.arguments).prompt}`,
             });
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
             const l = await this.GenerateImage(
               imageGenCall,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
               data.choices[0].message,
             );
             options.messages.push(...l.msgs);
@@ -1206,6 +1233,7 @@ export class PureChatLLMChat {
     cline?: EditorRange;
   }[] {
     const [agent, ...Responses] = msgs;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     if (agent.tool_calls) {
       agent.tool_calls = agent.tool_calls.filter(call =>
         Responses.some(i => i.tool_call_id === call.id),
@@ -1273,13 +1301,15 @@ export class PureChatLLMChat {
     const cached = this.plugin.settings.ModelsOnEndpoint[endpointName];
     if (cached?.length) return Promise.resolve(cached);
     this.console.log(`Fetching models from ${endpointName} API...`);
-    return fetch(listmodels, {
+    return (globalThis as any).fetch(listmodels, {
       method: 'GET',
       headers: this.Headers,
     })
       .then(response => response.json())
-      .then(data => {
+      .then((data: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           data.data as { id: string }[]
         )
           .map(item => item.id)

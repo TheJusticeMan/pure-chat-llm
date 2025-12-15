@@ -6,6 +6,7 @@ import {
   Notice,
   Setting,
   TextAreaComponent,
+  createFragment,
 } from 'obsidian';
 import { PureChatLLMChat } from './Chat';
 import PureChatLLM from './main';

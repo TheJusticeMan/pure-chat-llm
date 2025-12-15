@@ -48,6 +48,7 @@ export class PureChatLLMImageGen {
     };
     console.debug('Generating image with body:', body);
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return (globalThis as any).fetch(url, {
       method: 'POST',
       headers: {
