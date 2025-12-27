@@ -19,22 +19,20 @@ import {
 import { BrowserConsole } from './BrowserConsole';
 import { PureChatLLMChat, RoleType } from './Chat';
 import { codelanguages } from './codelanguages';
+import {
+  CODE_PREVIEW_VIEW_TYPE,
+  CodePreview,
+  createCodeblockExtension,
+  openCodePreview,
+} from './CodepreView';
 import { AskForAPI, CodeAreaComponent, EditWand } from './models';
 import { replaceNonKeyboardChars } from './replaceNonKeyboard';
 import { EmptyApiKey } from './s.json';
 import { PureChatLLMSettingTab } from './settings';
-import {
-  CodePreview,
-  modelAndProviderChooser,
-  PureChatLLMSideView,
-} from './SideView';
+import { modelAndProviderChooser, PureChatLLMSideView } from './SideView';
 import { PureChatLLMSpeech } from './Speech';
 import { toTitleCase } from './toTitleCase';
-import {
-  DEFAULT_SETTINGS,
-  PURE_CHAT_LLM_VIEW_TYPE,
-  PureChatLLMSettings,
-} from './types';
+import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from './types';
 
 /**
  * The main plugin class for the Pure Chat LLM Obsidian plugin.
@@ -64,6 +62,7 @@ export default class PureChatLLM extends Plugin {
   console: BrowserConsole;
   modellist: string[] = [];
   pureChatStatusElement: HTMLElement;
+  codeBlock: { from: number; to: number } | null = null;
 
   async onload() {
     await this.loadSettings();
@@ -73,40 +72,43 @@ export default class PureChatLLM extends Plugin {
     this.console.log('settings loaded', this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
 
-    this.registerView(
-      PURE_CHAT_LLM_VIEW_TYPE,
-      leaf => new PureChatLLMSideView(leaf, this),
-    );
-    this.registerView(
-      'pure-chat-llm-code-preview',
-      leaf => new CodePreview(leaf, this),
-    );
+    this.registerView(PURE_CHAT_LLM_VIEW_TYPE, leaf => new PureChatLLMSideView(leaf, this));
+    this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));
 
-    this.addRibbonIcon(
-      'text',
-      'Open conversation overview',
-      this.activateView.bind(this),
-    );
+    this.addRibbonIcon('text', 'Open conversation overview', () => this.activateView());
 
     this.setupChatCommandHandlers();
 
     this.setupContextMenuActions();
 
     this.registerEditorSuggest(new PureChatEditorSuggest(this.app, this));
-
+    this.registerEditorExtension(createCodeblockExtension(this.app, this));
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
     this.status('');
   }
 
+  private onupdate: Array<() => void> = [];
+
+  callOnChange() {
+    this.console.log('Code block updated, notifying listeners.');
+    this.onupdate.forEach(callback => callback());
+  }
+
+  onCodeBlockUpdate(cb: () => void) {
+    this.console.log('Registered a new code block update listener.');
+    this.onupdate.push(cb);
+  }
+
+  offCodeBlockUpdate(cb: () => void) {
+    this.onupdate = this.onupdate.filter(c => c !== cb);
+  }
+
   private setupContextMenuActions() {
     this.registerEvent(
-      this.app.workspace.on(
-        'editor-menu',
-        (menu: Menu, editor: Editor, view: MarkdownView) => {
-          this.addItemsToMenu(menu, editor, view);
-        },
-      ),
+      this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
+        this.addItemsToMenu(menu, editor, view);
+      }),
     );
 
     this.registerEvent(
@@ -118,25 +120,18 @@ export default class PureChatLLM extends Plugin {
               .setIcon('message-square-plus')
               .setSection('action-primary')
               .onClick(async () => {
-                const fileName = this.generateUniqueFileName(
-                  file,
-                  'Untitled Conversation',
-                );
+                const fileName = this.generateUniqueFileName(file, 'Untitled Conversation');
                 const newFile = await this.app.vault.create(
                   `${file.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown('Type your message...')
-                    .Markdown,
+                  new PureChatLLMChat(this).setMarkdown('Type your message...').Markdown,
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
-                this.activateView();
+                void this.activateView();
               });
           });
         } else if (file instanceof TFile && file.extension === 'md') {
-          const link = this.app.fileManager.generateMarkdownLink(
-            file,
-            file.path,
-          );
+          const link = this.app.fileManager.generateMarkdownLink(file, file.path);
           menu.addItem(item => {
             item
               .setTitle('New chat from file')
@@ -144,10 +139,7 @@ export default class PureChatLLM extends Plugin {
               .setSection('action')
               .onClick(async () => {
                 const parent = file.parent || this.app.vault.getRoot();
-                const fileName = this.generateUniqueFileName(
-                  parent,
-                  `Untitled ${file.basename}`,
-                );
+                const fileName = this.generateUniqueFileName(parent, `Untitled ${file.basename}`);
 
                 const newFile = await this.app.vault.create(
                   `${parent.path}/${fileName}.md`,
@@ -155,7 +147,7 @@ export default class PureChatLLM extends Plugin {
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
-                this.activateView();
+                void this.activateView();
               });
           });
           menu.addItem(item => {
@@ -166,20 +158,16 @@ export default class PureChatLLM extends Plugin {
               .onClick(async () => {
                 const parent = file.parent || this.app.vault.getRoot();
 
-                const fileName = this.generateUniqueFileName(
-                  parent,
-                  `Untitled ${file.basename}`,
-                );
+                const fileName = this.generateUniqueFileName(parent, `Untitled ${file.basename}`);
 
                 const newFile = await this.app.vault.create(
                   `${parent.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown(
-                    `# role: System\n${link}\n# role: User\n`,
-                  ).Markdown,
+                  new PureChatLLMChat(this).setMarkdown(`# role: System\n${link}\n# role: User\n`)
+                    .Markdown,
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
-                this.activateView();
+                void this.activateView();
               });
           });
         }
@@ -192,22 +180,22 @@ export default class PureChatLLM extends Plugin {
       id: 'complete-chat-response',
       name: 'Complete chat response',
       icon: 'send',
-      editorCallback: this.CompleteChatResponse.bind(this),
+      editorCallback: (editor: Editor, view: MarkdownView) =>
+        this.CompleteChatResponse(editor, view),
     });
     // Add command for choosing model and provider
     this.addCommand({
       id: 'choose-model-and-provider',
       name: 'Choose model and provider',
       icon: 'cpu',
-      editorCallback: (editor: Editor) =>
-        new modelAndProviderChooser(this.app, this, editor),
+      editorCallback: (editor: Editor) => new modelAndProviderChooser(this.app, this, editor),
     });
     // Add command for settings
     this.addCommand({
       id: 'generate-title',
       name: 'Generate title',
       icon: 'text-cursor-input',
-      editorCallback: this.GenerateTitle.bind(this),
+      editorCallback: (editor: Editor, view: MarkdownView) => this.GenerateTitle(editor, view),
     });
     this.addCommand({
       id: 'edit-selection',
@@ -236,7 +224,7 @@ export default class PureChatLLM extends Plugin {
         new InstructPromptsHandler(
           this.app,
           s =>
-            new PureChatLLMChat(this)
+            void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
               .ProcessChatWithTemplate(s)
               .then(response => editor.replaceSelection(response.content)),
@@ -250,9 +238,7 @@ export default class PureChatLLM extends Plugin {
       name: 'Reverse roles',
       icon: 'arrow-left-right',
       editorCallback: (editor: Editor) => {
-        const content = new PureChatLLMChat(this)
-          .setMarkdown(editor.getValue())
-          .ReverseRoles();
+        const content = new PureChatLLMChat(this).setMarkdown(editor.getValue()).ReverseRoles();
         editor.setValue(content.Markdown);
         this.setCursorEnd(editor);
       },
@@ -262,16 +248,13 @@ export default class PureChatLLM extends Plugin {
       name: 'Speak chat',
       icon: 'audio-lines',
       editorCallback: (editor: Editor) => {
-        new PureChatLLMSpeech(
+        void new PureChatLLMSpeech(
           this,
-          new PureChatLLMChat(this)
-            .setMarkdown(editor.getValue())
-            .thencb(chat => {
-              chat.messages = chat.messages.filter(
-                message =>
-                  message.role === 'user' || message.role === 'assistant',
-              );
-            }),
+          new PureChatLLMChat(this).setMarkdown(editor.getValue()).thencb(chat => {
+            chat.messages = chat.messages.filter(
+              message => message.role === 'user' || message.role === 'assistant',
+            );
+          }),
         ).startStreaming();
       },
     });
@@ -291,7 +274,7 @@ export default class PureChatLLM extends Plugin {
           name: `Chat: ${key}`,
           icon: 'wand',
           editorCallback: (editor: Editor) => {
-            new PureChatLLMChat(this)
+            void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
               .ProcessChatWithTemplate(this.settings.chatTemplates[key])
               .then(response => editor.replaceSelection(response.content));
@@ -299,31 +282,25 @@ export default class PureChatLLM extends Plugin {
         });
       }
     });
-    Object.entries(this.settings.CMDselectionTemplates).forEach(
-      ([key, value]) => {
-        const template = this.settings.selectionTemplates[key];
-        const { addfiletocontext } = this.settings;
-        if (value && template) {
-          this.addCommand({
-            id: `selection-template-${key.toLowerCase().replace(/\s+/g, '-')}`,
-            name: `Selection: ${key}`,
-            icon: 'wand',
-            editorCheckCallback: (checking, e: Editor) => {
-              const selected = e.getSelection();
-              if (checking) return !!selected;
-              new PureChatLLMChat(this)
-                .setMarkdown(e.getValue())
-                .SelectionResponse(
-                  template,
-                  selected,
-                  addfiletocontext ? e.getValue() : undefined,
-                )
-                .then(response => e.replaceSelection(response.content));
-            },
-          });
-        }
-      },
-    );
+    Object.entries(this.settings.CMDselectionTemplates).forEach(([key, value]) => {
+      const template = this.settings.selectionTemplates[key];
+      const { addfiletocontext } = this.settings;
+      if (value && template) {
+        this.addCommand({
+          id: `selection-template-${key.toLowerCase().replace(/\s+/g, '-')}`,
+          name: `Selection: ${key}`,
+          icon: 'wand',
+          editorCheckCallback: (checking, e: Editor) => {
+            const selected = e.getSelection();
+            if (checking) return !!selected;
+            void new PureChatLLMChat(this)
+              .setMarkdown(e.getValue())
+              .SelectionResponse(template, selected, addfiletocontext ? e.getValue() : undefined)
+              .then(response => e.replaceSelection(response.content));
+          },
+        });
+      }
+    });
   }
 
   status(text: string) {
@@ -333,9 +310,7 @@ export default class PureChatLLM extends Plugin {
 
   generateUniqueFileName(folder: TFolder, baseName: string) {
     // Generate a unique file name in the specified folder
-    const files = folder.children
-      .filter(f => f instanceof TFile)
-      .map(f => f.name);
+    const files = folder.children.filter(f => f instanceof TFile).map(f => f.name);
     let name = baseName;
     let i = 1;
     while (files.includes(`${name}.md`)) name = `${baseName} ${i++}`;
@@ -344,8 +319,17 @@ export default class PureChatLLM extends Plugin {
 
   async openHotkeys(): Promise<void> {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const setting = (this.app as any).setting;
+    const setting = (
+      this.app as unknown as {
+        setting: {
+          open: () => Promise<void>;
+          openTabById: (id: string) => void;
+          activeTab: {
+            searchComponent: { setValue: (value: string) => void; onChanged: () => void };
+          };
+        };
+      }
+    ).setting;
     await setting.open();
     setting.openTabById('hotkeys');
     setting.activeTab.searchComponent.setValue('Pure Chat LLM');
@@ -353,14 +337,23 @@ export default class PureChatLLM extends Plugin {
   }
 
   async openSettings(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const setting = (this.app as any).setting;
+    const setting = (
+      this.app as unknown as {
+        setting: {
+          open: () => Promise<void>;
+          openTabById: (id: string) => void;
+          activeTab: {
+            searchComponent: { setValue: (value: string) => void; onChanged: () => void };
+          };
+        };
+      }
+    ).setting;
     await setting.open();
     setting.openTabById('pure-chat-llm');
   }
 
   onUserEnable() {
-    this.activateView();
+    void this.activateView();
     //this.openHotkeys();
     this.console.log('Plugin enabled');
   }
@@ -386,7 +379,7 @@ export default class PureChatLLM extends Plugin {
 
     // "Reveal" the leaf in case it is in a collapsed sidebar
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      void workspace.revealLeaf(leaf);
     }
   }
 
@@ -405,7 +398,7 @@ export default class PureChatLLM extends Plugin {
         )
         .addItem(item =>
           item
-            .setTitle('wand')
+            .setTitle('Wand')
             .setIcon('wand')
             .onClick(async () => {
               new EditWand(this.app, this, editor.getSelection(), s =>
@@ -414,6 +407,23 @@ export default class PureChatLLM extends Plugin {
             })
             .setSection('selection'),
         );
+    const { codeBlock } = this;
+    this.console.log('Context menu - codeBlock:', codeBlock);
+    if (codeBlock)
+      menu.addItem(item =>
+        item
+          .setTitle('Open code preview')
+          .setIcon('code')
+          .onClick(() => {
+            const content = editor.getValue().slice(codeBlock.from, codeBlock.to);
+            openCodePreview(
+              this.app,
+              content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
+              content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
+              editor,
+            );
+          }),
+      );
 
     return menu;
   }
@@ -423,7 +433,7 @@ export default class PureChatLLM extends Plugin {
       this.app,
       s =>
         s
-          ? new PureChatLLMChat(this)
+          ? void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
               .SelectionResponse(
                 s,
@@ -431,9 +441,7 @@ export default class PureChatLLM extends Plugin {
                 this.settings.addfiletocontext ? editor.getValue() : undefined,
               )
               .then(response => editor.replaceSelection(response.content))
-          : new EditWand(this.app, this, selected, text =>
-              editor.replaceSelection(text),
-            ).open(),
+          : new EditWand(this.app, this, selected, text => editor.replaceSelection(text)).open(),
       { ...this.settings.selectionTemplates, 'Custom prompt': '' },
     ).open();
   }
@@ -453,17 +461,15 @@ export default class PureChatLLM extends Plugin {
   GenerateTitle(editor: Editor, view: MarkdownView): void {
     const ActiveFile = view.file;
     if (ActiveFile)
-      new PureChatLLMChat(this)
+      void new PureChatLLMChat(this)
         .setMarkdown(editor.getValue())
-        .ProcessChatWithTemplate(
-          this.settings.chatTemplates['Conversation titler'],
-        )
+        .ProcessChatWithTemplate(this.settings.chatTemplates['Conversation titler'])
         .then(title => {
           const sanitizedTitle = `${ActiveFile.parent?.path}/${title.content
             .replace(/^<think>[\s\S]+?<\/think>/gm, '') // Remove <think> tags for ollama
             .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
             .trim()}.${ActiveFile.extension}`;
-          this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
+          void this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
           new Notice(`File renamed to: ${sanitizedTitle}`);
         });
     else new Notice('No active file to rename.');
@@ -491,10 +497,7 @@ export default class PureChatLLM extends Plugin {
     if (!activeFile) return;
     const editorcontent = editor.getValue();
     const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
-    if (
-      chat.messages[chat.messages.length - 1].content === '' &&
-      chat.validChat
-    ) {
+    if (chat.messages[chat.messages.length - 1].content === '' && chat.validChat) {
       if (chat.messages.pop()?.role == 'user' && this.settings.AutoReverseRoles)
         chat.ReverseRoles();
     }
@@ -504,9 +507,7 @@ export default class PureChatLLM extends Plugin {
 
     this.isresponding = true;
 
-    editor.replaceSelection(
-      `\n${chat.parseRole('assistant...' as unknown as RoleType)}\n`,
-    );
+    editor.replaceSelection(`\n${chat.parseRole('assistant...' as unknown as RoleType)}\n`);
     chat
       .CompleteChatResponse(activeFile, e => {
         this.setCursorEnd(editor);
@@ -535,10 +536,7 @@ export default class PureChatLLM extends Plugin {
   }
 
   setCursorEnd(editor: Editor, intoview = false) {
-    editor.setCursor(
-      editor.lastLine(),
-      editor.getLine(editor.lastLine()).length,
-    );
+    editor.setCursor(editor.lastLine(), editor.getLine(editor.lastLine()).length);
     if (intoview)
       editor.scrollIntoView({
         from: editor.getCursor(),
@@ -547,9 +545,12 @@ export default class PureChatLLM extends Plugin {
   }
 
   async loadSettings() {
-    const loadedData = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+    const loadedData: PureChatLLMSettings = {
+      ...DEFAULT_SETTINGS,
+      ...((await this.loadData()) as PureChatLLMSettings),
+    };
 
-    this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+    this.settings = { ...loadedData };
     this.settings = {
       ...loadedData,
       chatTemplates: {
@@ -564,9 +565,8 @@ export default class PureChatLLM extends Plugin {
 
     // Compatibility fixes for older versions
 
-    if (loadedData.chatParser === 1) {
-      this.settings.messageRoleFormatter =
-        '\\n> [!note] {role}\\n> # role: {role}\\n';
+    if ((loadedData as unknown as { chatParser?: number }).chatParser === 1) {
+      this.settings.messageRoleFormatter = '\\n> [!note] {role}\\n> # role: {role}\\n';
       // @ts-ignore
       delete this.settings.chatParser;
     }
@@ -583,18 +583,20 @@ export default class PureChatLLM extends Plugin {
   }
 
   async saveSettings() {
+    this.settings.selectionTemplates = this.settings.selectionTemplates || {};
+
     this.settings.selectionTemplates = Object.fromEntries(
       Object.keys(this.settings.selectionTemplates)
         .sort()
         .map(key => [key, this.settings.selectionTemplates[key]])
         .filter(([key, value]) => key && value),
-    );
+    ) as { [key: string]: string };
     this.settings.chatTemplates = Object.fromEntries(
       Object.keys(this.settings.chatTemplates)
         .sort()
         .map(key => [key, this.settings.chatTemplates[key]])
         .filter(([key, value]) => key && value),
-    );
+    ) as { [key: string]: string };
     await this.saveData(this.settings);
   }
 
@@ -640,11 +642,7 @@ export class StreamNotice {
 class InstructPromptsHandler extends FuzzySuggestModal<string> {
   onSubmit: (result: string) => void;
   templates: { [key: string]: string };
-  constructor(
-    app: App,
-    onSubmit: (result: string) => void,
-    templates: { [key: string]: string },
-  ) {
+  constructor(app: App, onSubmit: (result: string) => void, templates: { [key: string]: string }) {
     super(app);
     this.onSubmit = onSubmit;
     this.templates = templates;
@@ -692,26 +690,19 @@ export class SelectionPromptEditor extends Modal {
       this.promptTitle = Object.keys(this.promptTemplates)[0] || 'New template';
     if (this.promptTitle && !this.promptTemplates[this.promptTitle])
       this.promptTemplates[this.promptTitle] = '';
-    Object.keys(this.promptTemplates).forEach(
-      key => (this.inCMD[key] = Boolean(this.inCMD[key])),
-    );
+    Object.keys(this.promptTemplates).forEach(key => (this.inCMD[key] = Boolean(this.inCMD[key])));
     const isAllinCMD = Object.values(this.inCMD).every(v => v);
     new Setting(this.contentEl)
       .setName('All templates')
-      .setDesc('Manage all prompt templates for the PureChatLLM plugin.')
+      // eslint-disable-next-line obsidianmd/ui/sentence-case
+      .setDesc('Manage all prompt templates for the Pure Chat LLM plugin.')
       .setHeading()
       .addExtraButton(btn =>
         btn
           .setIcon(isAllinCMD ? 'minus' : 'plus')
-          .setTooltip(
-            isAllinCMD
-              ? 'Remove all from command palette'
-              : 'Add all to command palette',
-          )
+          .setTooltip(isAllinCMD ? 'Remove all from command palette' : 'Add all to command palette')
           .onClick(() => {
-            Object.keys(this.inCMD).forEach(
-              key => (this.inCMD[key] = !isAllinCMD),
-            );
+            Object.keys(this.inCMD).forEach(key => (this.inCMD[key] = !isAllinCMD));
             this.update();
           }),
       )
@@ -730,38 +721,39 @@ export class SelectionPromptEditor extends Modal {
       );
     Object.keys(this.promptTemplates)
       .sort()
-      .forEach(key =>
-        new Setting(this.contentEl)
-          .setName(key !== this.promptTitle ? key : 'Editing...')
-          .addExtraButton(btn =>
-            btn
-              .setIcon(this.inCMD[key] ? 'minus' : 'plus')
-              .setTooltip('Use this template in the command palette')
-              .onClick(() => {
-                this.inCMD[key] = !this.inCMD[key];
-                this.update();
-              }),
-          )
-          .addExtraButton(btn =>
-            btn
-              .setIcon('trash')
-              .setTooltip('Delete this template')
-              .onClick(() => {
-                delete this.promptTemplates[key];
-                this.promptTitle = Object.keys(this.promptTemplates)[0];
-                this.update();
-              }),
-          )
-          .addButton(btn => {
-            btn
-              .setIcon('pencil')
-              .setTooltip('Edit this template')
-              .onClick(() => {
-                this.promptTitle = key;
-                this.update();
-              });
-            if (key === this.promptTitle) btn.setCta();
-          }),
+      .forEach(
+        key =>
+          void new Setting(this.contentEl)
+            .setName(key !== this.promptTitle ? key : 'Editing...')
+            .addExtraButton(btn =>
+              btn
+                .setIcon(this.inCMD[key] ? 'minus' : 'plus')
+                .setTooltip('Use this template in the command palette')
+                .onClick(() => {
+                  this.inCMD[key] = !this.inCMD[key];
+                  this.update();
+                }),
+            )
+            .addExtraButton(btn =>
+              btn
+                .setIcon('trash')
+                .setTooltip('Delete this template')
+                .onClick(() => {
+                  delete this.promptTemplates[key];
+                  this.promptTitle = Object.keys(this.promptTemplates)[0];
+                  this.update();
+                }),
+            )
+            .addButton(btn => {
+              btn
+                .setIcon('pencil')
+                .setTooltip('Edit this template')
+                .onClick(() => {
+                  this.promptTitle = key;
+                  this.update();
+                });
+              if (key === this.promptTitle) btn.setCta();
+            }),
       );
     new Setting(this.contentEl).setName('Add a new template').addText(text => {
       text.setPlaceholder('New template title').setValue('');
@@ -788,8 +780,7 @@ export class SelectionPromptEditor extends Modal {
           .setValue(this.promptTitle)
           .onChange(value => {
             if (value && value !== this.promptTitle) {
-              this.promptTemplates[value] =
-                this.promptTemplates[this.promptTitle];
+              this.promptTemplates[value] = this.promptTemplates[this.promptTitle];
               delete this.promptTemplates[this.promptTitle];
               this.promptTitle = value;
               this.setTitle(this.promptTitle);
@@ -814,8 +805,7 @@ export class SelectionPromptEditor extends Modal {
           .setWarning()
           .onClick(async () => {
             Object.assign(this.promptTemplates, this.defaultTemplates);
-            this.promptTitle =
-              Object.keys(this.promptTemplates)[0] || 'New template';
+            this.promptTitle = Object.keys(this.promptTemplates)[0] || 'New template';
             this.update();
           }),
       );
@@ -824,12 +814,11 @@ export class SelectionPromptEditor extends Modal {
 
   private generateTemplateContent(value: string) {
     this.promptTitle = value;
-    if (!this.promptTemplates[this.promptTitle])
-      this.promptTemplates[this.promptTitle] = '';
+    if (!this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = '';
     const promptTemplatesSummary = Object.entries(this.promptTemplates)
       .map(([k, v]) => `## template: ${k} \n\n ${v}`)
       .join('\n');
-    new PureChatLLMChat(this.plugin)
+    void new PureChatLLMChat(this.plugin)
       .appendMessage(
         {
           role: 'system',
@@ -852,7 +841,7 @@ export class SelectionPromptEditor extends Modal {
   }
 
   onClose(): void {
-    this.plugin.saveSettings();
+    void this.plugin.saveSettings();
   }
 }
 
@@ -923,9 +912,7 @@ export class FolderSuggest extends FuzzySuggestModal<TFolder> {
   constructor(app: App, onSubmit: (result: TFolder) => void, prompt?: string) {
     super(app);
     this.onSubmit = onSubmit;
-    this.folders = app.vault
-      .getAllLoadedFiles()
-      .filter(f => f instanceof TFolder) as TFolder[];
+    this.folders = app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder);
     this.setPlaceholder(prompt || 'Search for a folder...');
   }
   getItems(): TFolder[] {
@@ -971,19 +958,14 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     if (context.query.startsWith('```')) {
       this.type = 'code';
       const query = context.query.slice(3).toLowerCase().trim();
-      if (query)
-        return codelanguages
-          .filter(lang => lang.startsWith(query))
-          .slice(0, 100);
+      if (query) return codelanguages.filter(lang => lang.startsWith(query)).slice(0, 100);
       else return ['', ...codelanguages.sort().slice(0, 100)];
     } else if (context.query.startsWith('# ')) {
       this.type = 'role';
       const roles = ['user', 'assistant', 'system', 'developer'];
       const query = context.query.slice(2).toLowerCase().trim();
 
-      return roles.filter(
-        h => h.startsWith(query) || ('role: ' + h).startsWith(query),
-      );
+      return roles.filter(h => h.startsWith(query) || ('role: ' + h).startsWith(query));
     }
     return [];
   }
@@ -991,6 +973,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
   renderSuggestion(value: string, el: HTMLElement): void {
     switch (this.type) {
       case 'send':
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
         el.textContent = 'Send to LLM';
         break;
       case 'code':
@@ -1020,7 +1003,6 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
         });
         break;
       case 'role':
-        this.plugin.settings.messageRoleFormatter;
         editor.replaceRange(
           `${new PureChatLLMChat(this.plugin).parseRole(value as RoleType)}\n`,
           start,
@@ -1047,14 +1029,8 @@ export function getObjectFromMarkdown(
       .map((s): [string, string | Record<string, object | string>] => {
         const [title, ...content] = s.split('\n');
         const joinedContent = content.join('\n');
-        if (
-          level < maxlevel &&
-          joinedContent.includes('\n' + '#'.repeat(level + 1) + ' ')
-        ) {
-          return [
-            title.trim(),
-            getObjectFromMarkdown(joinedContent, level + 1, maxlevel),
-          ];
+        if (level < maxlevel && joinedContent.includes('\n' + '#'.repeat(level + 1) + ' ')) {
+          return [title.trim(), getObjectFromMarkdown(joinedContent, level + 1, maxlevel)];
         }
         return [title.trim(), joinedContent.trim()];
       }),
@@ -1095,9 +1071,7 @@ class lowUsageTagRemover extends Modal {
 
     new Setting(contentEl)
       .setName('Clean up tags in vault')
-      .setDesc(
-        `Remove tags that are used less than this number of times in the vault.`,
-      )
+      .setDesc(`Remove tags that are used less than this number of times in the vault.`)
       .addText(text =>
         text
           .setPlaceholder('Number of uses')
@@ -1121,8 +1095,9 @@ class lowUsageTagRemover extends Modal {
     const files = this.app.vault.getMarkdownFiles();
 
     files.forEach(file => {
-      const tags = this.app.metadataCache.getFileCache(file)?.frontmatter
-        ?.tags as string[] | undefined;
+      const tags = this.app.metadataCache.getFileCache(file)?.frontmatter?.tags as
+        | string[]
+        | undefined;
 
       if (tags) {
         tags.forEach(tagObj => {
@@ -1149,12 +1124,12 @@ aliases:
     // Step 2: Remove tags used less than three times
     Object.entries(tagFrequencyFile).forEach(([Key, fileList]) => {
       if (fileList.length <= numUses) {
-        fileList.forEach(async file => {
+        fileList.forEach(file => {
           const cache = this.app.metadataCache.getFileCache(file);
           const start = cache?.frontmatterPosition?.start.offset || 0;
           const end = cache?.frontmatterPosition?.end.offset || 0;
 
-          return this.app.vault.process(
+          void this.app.vault.process(
             file,
             content =>
               content.substring(0, start) +
@@ -1169,9 +1144,7 @@ aliases:
       }
     });
 
-    new Notice(
-      'Tags used less than three times have been removed from all files.',
-    );
+    new Notice('Tags used less than three times have been removed from all files.');
     this.close();
   }
 

@@ -5,16 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.7.0] - 2025-12-27
 
 ### Added
 
 - Comprehensive CHANGELOG.md
+- New "Open code preview" context menu item for code blocks
+- Code block tracking extension to detect when cursor is inside a code block
 
 ### Changed
 
 - Refactored code for consistency and readability
 - Updated dependencies and added ESLint configuration
+- Moved `CodePreview` to a separate file `src/CodepreView.ts`
+- Refactored `Chat.ts` for better type safety and error handling
+- Updated `ChatRequestOptions` interface
+- Improved error handling in `ImportChatGPT.ts`
+- Updated dependencies in `package.json`
+- Applied `void` operator to unawaited promises for better linting compliance
 
 ## [1.6.0] - 2025-12-07
 

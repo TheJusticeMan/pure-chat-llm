@@ -4,7 +4,7 @@ import PureChatLLM, { FolderSuggest } from './main';
 
 // Author of a message
 interface ChatAuthor {
-  role: 'user' | 'assistant' | 'system' | 'tool' | string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
   name: string | null;
   metadata: Record<string, unknown>;
 }
@@ -83,7 +83,7 @@ export class ImportChatGPT {
     public app: App,
     public plugin: PureChatLLM,
   ) {
-    this.promptAndImport();
+    void this.promptAndImport();
   }
 
   private async promptAndImport() {
@@ -93,7 +93,7 @@ export class ImportChatGPT {
       if (!file) throw new Error('No file selected');
       await this.processChatFile(file, folderPath.path);
     } catch (error) {
-      new Notice(error.message || 'Error importing ChatGPT JSON');
+      new Notice((error as Error).message || 'Error importing ChatGPT JSON');
     }
   }
 
@@ -110,7 +110,8 @@ export class ImportChatGPT {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json,application/json';
-      input.style.display = 'none';
+      input.setCssProps({ display: 'none' });
+
       document.body.appendChild(input);
       input.onchange = () => {
         resolve(input.files?.[0] ?? null);
@@ -124,7 +125,7 @@ export class ImportChatGPT {
     const text = await file.text();
     let chats: { title: string; [key: string]: unknown }[];
     try {
-      chats = JSON.parse(text);
+      chats = JSON.parse(text) as { title: string; [key: string]: unknown }[];
       if (!Array.isArray(chats)) throw new Error();
     } catch {
       throw new Error('Invalid ChatGPT JSON format');
@@ -173,7 +174,7 @@ export class ImportChatGPT {
         message.author.role !== 'tool'
       ) {
         result.appendMessage({
-          role: message.author.role as 'user' | 'assistant' | 'system',
+          role: message.author.role,
           content: message.content.parts?.[0] ?? '',
         });
       }

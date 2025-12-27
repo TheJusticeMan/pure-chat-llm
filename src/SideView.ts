@@ -11,12 +11,12 @@ import {
   Notice,
   Platform,
   Setting,
-  ViewStateResult,
   WorkspaceLeaf,
 } from 'obsidian';
 import { BrowserConsole } from './BrowserConsole';
 import { PureChatLLMChat } from './Chat';
 import { CodeHandling, SectionHandling } from './CodeHandling';
+import { CODE_PREVIEW_VIEW_TYPE } from './CodepreView';
 import PureChatLLM from './main';
 import { AskForAPI } from './models';
 import { alloptions, EmptyApiKey } from './s.json';
@@ -126,6 +126,7 @@ export class PureChatLLMSideView extends ItemView {
     this.contentEl.empty();
 
     new Setting(this.contentEl)
+      // eslint-disable-next-line obsidianmd/ui/sentence-case
       .setName('Pure Chat LLM')
       .setHeading()
       .then(b => {
@@ -170,7 +171,9 @@ export class PureChatLLMSideView extends ItemView {
     const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
     chat.Markdown = editorValue;
-    const allshown: boolean = Object.keys(alloptions).every(k => chat.options.hasOwnProperty(k));
+    const allshown: boolean = Object.keys(alloptions).every(k =>
+      Object.prototype.hasOwnProperty.call(chat.options, k),
+    );
     this.ischat = chat.validChat;
     const container = this.contentEl;
     container.empty();
@@ -199,7 +202,7 @@ export class PureChatLLMSideView extends ItemView {
                     model: chat.options.model,
                     max_completion_tokens: chat.options.max_completion_tokens,
                     stream: chat.options.stream,
-                  })
+                  } as typeof chat.options)
                 : Object.assign(chat.options, { ...alloptions }, { ...chat.options }),
             ).Markdown,
           ),
@@ -225,14 +228,14 @@ export class PureChatLLMSideView extends ItemView {
             div.createDiv({ text: '' }, el => {
               el.onClickEvent(() => this.goToPostion(editor, message.cline, true));
               el.addClass('PURE', 'messageMarkdown', message.role);
-              MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
+              void MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
             });
           if (preview)
             new ExtraButtonComponent(div)
               .setIcon('copy')
               .setTooltip('Copy message to clipboard')
               .onClick(() => {
-                navigator.clipboard.writeText(message.content);
+                void navigator.clipboard.writeText(message.content);
                 new Notice('Copied message to clipboard');
               });
           if (preview)
@@ -248,7 +251,7 @@ export class PureChatLLMSideView extends ItemView {
                   .replace(/^#+ /, '')
                   .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
                   .trim();
-                this.app.fileManager
+                void this.app.fileManager
                   .getAvailablePathForAttachment(`Message ${title}.md`, view.file?.path)
                   .then(path =>
                     this.app.vault
@@ -299,6 +302,7 @@ export class PureChatLLMSideView extends ItemView {
                 this.openCodePreview(
                   message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
                   message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
+                  editor,
                 );
               });
           new ExtraButtonComponent(div)
@@ -333,12 +337,12 @@ export class PureChatLLMSideView extends ItemView {
     }
   }
 
-  openCodePreview(code: string, language: string) {
+  openCodePreview(code: string, language: string, editor: Editor) {
     this.console.log('Opening code preview', { code, language });
-    this.app.workspace.getLeaf('tab').setViewState({
-      type: 'pure-chat-llm-code-preview',
+    void this.app.workspace.getLeaf('tab').setViewState({
+      type: CODE_PREVIEW_VIEW_TYPE,
       active: true,
-      state: { code, language },
+      state: { code, language, editor },
     });
   }
 
@@ -406,65 +410,12 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       return;
     }
     this.plugin.modellist = [];
-    new PureChatLLMChat(this.plugin).getAllModels().then(models => {
+    void new PureChatLLMChat(this.plugin).getAllModels().then(models => {
       this.plugin.modellist = models;
       this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
       this.modellist = models.map(m => ({ name: m, ismodel: true }));
       this.open();
     });
-  }
-}
-
-export class CodePreview extends ItemView {
-  constructor(
-    leaf: WorkspaceLeaf,
-    public plugin: PureChatLLM,
-  ) {
-    super(leaf);
-    this.icon = 'code';
-  }
-
-  getViewType(): string {
-    return 'pure-chat-llm-code-preview';
-  }
-
-  getDisplayText(): string {
-    return 'Code Preview';
-  }
-
-  setState(state: unknown, result: ViewStateResult): Promise<void> {
-    console.log('Setting state', state, result);
-    this.renderCodePreview(state as { code: string; language: string });
-    return Promise.resolve();
-  }
-
-  async onOpen() {
-    //this.renderCodePreview();
-  }
-
-  private renderCodePreview(state: { code: string; language: string }) {
-    this.contentEl.empty();
-    this.contentEl.addClass('PURECodePreview');
-
-    const code = (state.code as string) || '';
-    const language: string = (state.language as string) || 'text';
-
-    if (language.toLowerCase() === 'html') {
-      const iframe = this.contentEl.createEl('iframe');
-      iframe.setAttr('sandbox', 'allow-scripts allow-same-origin');
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.srcdoc = code;
-    } else {
-      this.contentEl.createEl('pre', {}, el => {
-        const codeEl = el.createEl('code', { text: code });
-        codeEl.addClass(`language-${language}`);
-      });
-    }
-  }
-
-  async onClose() {
-    this.contentEl.empty();
   }
 }

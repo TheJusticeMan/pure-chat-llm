@@ -11,6 +11,7 @@ import { PureChatLLMChat } from './Chat';
 import PureChatLLM from './main';
 import { EmptyApiKey } from './s.json';
 import { PureChatLLMAPI } from './types';
+import 'obsidian';
 
 /**
  * Modal dialog prompting the user to enter an OpenAI API key for the PureChatLLM plugin.
@@ -55,7 +56,7 @@ export class AskForAPI extends Modal {
           });
         text.inputEl.addEventListener('keydown', e => {
           if (e.key === 'Enter') {
-            this.saveAndClose();
+            void this.saveAndClose();
           }
         });
       });
@@ -68,11 +69,12 @@ export class AskForAPI extends Modal {
           .setValue(endpoint.defaultmodel)
           .onChange(value => {
             endpoint.defaultmodel = value || endpoint.defaultmodel;
-            this.plugin.saveSettings();
+            void this.plugin.saveSettings();
           });
       });
     new Setting(this.contentEl)
       .setName(
+        // eslint-disable-next-line no-undef
         createFragment(el => el.createEl('a', { href: endpoint.getapiKey, text: endpoint.name })),
       )
       .setDesc(`Link to get API key from ${endpoint.name}`)
@@ -81,7 +83,7 @@ export class AskForAPI extends Modal {
           .setButtonText('Save')
           .setCta()
           .onClick(() => {
-            this.saveAndClose();
+            void this.saveAndClose();
           }),
       )
       .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
@@ -182,7 +184,7 @@ export class EditWand extends Modal {
       .onChange(value => {
         if (value.endsWith('>go')) {
           this.promptEl.setValue(value.slice(0, -3));
-          this.send();
+          void this.send();
         }
       });
 
@@ -227,7 +229,7 @@ export class EditWand extends Modal {
   private setupActionButtons() {
     new Setting(this.contentEl)
       // Send prompt to LLM and update selection with response
-      .addExtraButton(btn => btn.setIcon('send').onClick(this.send.bind(this)))
+      .addExtraButton(btn => btn.setIcon('send').onClick(() => this.send()))
       // Confirm button
       .addButton(btn =>
         btn
@@ -322,6 +324,8 @@ export class EditModalProviders extends Modal {
     super(app);
     this.plugin = plugin;
     this.app = app;
+
+    // eslint-disable-next-line obsidianmd/ui/sentence-case
     this.setTitle('Edit LLM Providers');
     this.buildUI();
   }
@@ -331,28 +335,29 @@ export class EditModalProviders extends Modal {
     const { endpoints, endpoint } = this.plugin.settings;
     const selectedEndpoint = endpoints[this.selectedIndex] || endpoints[endpoint];
 
-    endpoints.forEach((key, i) =>
-      new Setting(this.contentEl)
-        .setName(i !== this.selectedIndex ? key.name : 'Editing...')
-        .addExtraButton(btn => {
-          btn
-            .setIcon('trash')
-            .setTooltip(`Remove ${key.name}`)
-            .onClick(() => {
-              this.plugin.settings.endpoints.splice(i, 1);
-              this.buildUI(); // Rebuild UI after removal
-            });
-        })
-        .addButton(btn => {
-          btn
-            .setIcon('pencil')
-            .setTooltip(`Edit ${key.name}`)
-            .onClick(() => {
-              this.selectedIndex = i;
-              this.buildUI(); // Rebuild UI to show the selected endpoint details
-            });
-          if (i === this.selectedIndex) btn.setCta();
-        }),
+    endpoints.forEach(
+      (key, i) =>
+        void new Setting(this.contentEl)
+          .setName(i !== this.selectedIndex ? key.name : 'Editing...')
+          .addExtraButton(btn => {
+            btn
+              .setIcon('trash')
+              .setTooltip(`Remove ${key.name}`)
+              .onClick(() => {
+                this.plugin.settings.endpoints.splice(i, 1);
+                this.buildUI(); // Rebuild UI after removal
+              });
+          })
+          .addButton(btn => {
+            btn
+              .setIcon('pencil')
+              .setTooltip(`Edit ${key.name}`)
+              .onClick(() => {
+                this.selectedIndex = i;
+                this.buildUI(); // Rebuild UI to show the selected endpoint details
+              });
+            if (i === this.selectedIndex) btn.setCta();
+          }),
     );
     new Setting(this.contentEl).setName('Add new endpoint').addButton(btn => {
       btn
@@ -375,7 +380,7 @@ export class EditModalProviders extends Modal {
     new Setting(this.contentEl).setName('Edit').setHeading();
     Object.entries(endpointNames).forEach(([key, label]) => {
       new Setting(this.contentEl)
-        .setName(label)
+        .setName(label as string)
         .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
         .addText(text => {
           text
@@ -392,7 +397,7 @@ export class EditModalProviders extends Modal {
   onClose(): void {
     const { settings } = this.plugin;
     settings.endpoints = settings.endpoints.filter(endpoint => endpoint.name);
-    this.plugin.saveSettings();
+    void this.plugin.saveSettings();
     super.onClose();
   }
 }

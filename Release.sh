@@ -4,8 +4,8 @@ set -e
 echo "Retrieving the current version..."
 version=$(npm pkg get version | tr -d '"')
 
-echo "Updating all npm packages..."
-npm update
+# echo "Updating all npm packages..."
+# npm update
 
 echo "Executing the npm version script..."
 npm run version
@@ -14,11 +14,8 @@ echo "Staging all modified files..."
 git add .
 
 if ! git diff --cached --quiet; then
-  echo "Please enter a commit message:"
-  read commit_message
-
   echo "Committing your changes..."
-  git commit -m "Release $version" -m "$commit_message"
+  git commit -m "Release $version"
 else
   echo "No changes to commit."
 fi
