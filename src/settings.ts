@@ -234,7 +234,17 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl).setName('Advanced').setHeading();
-    // resolveFilesForChatAnalysis
+    new Setting(containerEl)
+      .setName('Auto-concat messages from same role')
+      .setDesc(
+        'Automatically combine consecutive messages from the same role into a single message.',
+      )
+      .addToggle(toggle =>
+        toggle.setValue(settings.autoConcatMessagesFromSameRole).onChange(async value => {
+          settings.autoConcatMessagesFromSameRole = value;
+          await this.plugin.saveSettings();
+        }),
+      );
     new Setting(containerEl)
       .setName('File resolution in chat analysis')
       .setDesc(

@@ -365,11 +365,14 @@ export class PureChatLLMChat {
           .join('\n') + '\n\n';
     this.imageOutputUrls = null;
     messages.forEach(message =>
-      this.messages.push({
-        role: message.role,
-        content: (extras + (message.content as string)).trim(),
-        cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
-      }),
+      this.plugin.settings.autoConcatMessagesFromSameRole &&
+      this.messages[this.messages.length - 1]?.role === message.role
+        ? (this.messages[this.messages.length - 1].content += message.content as string)
+        : this.messages.push({
+            role: message.role,
+            content: (extras + (message.content as string)).trim(),
+            cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
+          }),
     );
     return this;
   }
