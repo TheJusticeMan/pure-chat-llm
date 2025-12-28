@@ -59,6 +59,7 @@ export class PureChatLLMSpeech {
       return;
     }
     try {
+      // eslint-disable-next-line no-restricted-globals
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
@@ -215,7 +216,7 @@ export class PureChatLLMSpeech {
       const messageChunks = this.splitMessage(message.content, 4096);
       for (const chunk of messageChunks) {
         // Queue asynchronously in background
-        this.enqueueSpeech({ role: message.role, content: chunk });
+        void this.enqueueSpeech({ role: message.role, content: chunk });
       }
     }
 

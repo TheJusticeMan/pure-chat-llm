@@ -694,7 +694,7 @@ export class SelectionPromptEditor extends Modal {
     const isAllinCMD = Object.values(this.inCMD).every(v => v);
     new Setting(this.contentEl)
       .setName('All templates')
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
+
       .setDesc('Manage all prompt templates for the Pure Chat LLM plugin.')
       .setHeading()
       .addExtraButton(btn =>
@@ -973,7 +973,6 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
   renderSuggestion(value: string, el: HTMLElement): void {
     switch (this.type) {
       case 'send':
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
         el.textContent = 'Send to LLM';
         break;
       case 'code':

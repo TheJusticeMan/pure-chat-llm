@@ -325,8 +325,7 @@ export class EditModalProviders extends Modal {
     this.plugin = plugin;
     this.app = app;
 
-    // eslint-disable-next-line obsidianmd/ui/sentence-case
-    this.setTitle('Edit LLM Providers');
+    this.setTitle('Edit LLM providers');
     this.buildUI();
   }
 

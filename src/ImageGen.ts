@@ -46,8 +46,9 @@ export class PureChatLLMImageGen {
       n: n || 1,
       size,
     };
-    console.log('Generating image with body:', body);
+    /* console.log('Generating image with body:', body); */
 
+    // eslint-disable-next-line no-restricted-globals
     return fetch(url, {
       method: 'POST',
       headers: {
@@ -57,9 +58,12 @@ export class PureChatLLMImageGen {
       body: JSON.stringify(body),
     }).then(async response => {
       if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
-      const data = await response.json();
+      const data = (await response.json()) as {
+        created: number;
+        data: { url: string; revised_prompt?: string }[];
+      };
       // Map each image to an object containing its url and revised_prompt (if available)
-      const images: { url: string; revised_prompt?: string }[] = data.data;
+      const images = data.data;
 
       const savedPaths = [];
       for (let i = 0; i < images.length; i++) {
@@ -98,7 +102,11 @@ export class PureChatLLMImageGen {
     if (!toolCall) {
       throw new Error(`No tool call found for ${PureChatLLMImageGen.TOOL_NAME}`);
     }
-    const args = JSON.parse(toolCall.function.arguments);
+    const args = JSON.parse(toolCall.function.arguments) as {
+      prompt: string;
+      ratio?: 'square' | 'portrait' | 'landscape';
+      n?: number;
+    };
     const result = await this.sendImageGenerationRequest({
       prompt: args.prompt,
       ratio: args.ratio || 'square',

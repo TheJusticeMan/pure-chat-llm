@@ -126,7 +126,7 @@ export class PureChatLLMSideView extends ItemView {
     this.contentEl.empty();
 
     new Setting(this.contentEl)
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
+
       .setName('Pure Chat LLM')
       .setHeading()
       .then(b => {

@@ -20,5 +20,24 @@ export default defineConfig([
         NodeJS: 'readonly',
       },
     },
+    rules: {
+      'obsidianmd/ui/sentence-case': [
+        'error',
+        {
+          brands: [
+            'LLM',
+            'PureChatLLM',
+            'API',
+            'Pure Chat LLM',
+            'OpenAI',
+            'ChatGPT',
+            'DALL-E',
+            'api.openai.com',
+          ],
+          acronyms: ['OK'],
+          enforceCamelCaseLower: true,
+        },
+      ],
+    },
   },
 ]);

@@ -168,9 +168,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName('Import/export templates')
-      .setDesc('Import or export selection and chat prompt templates to/from a Markdown file.')
+      .setDesc('Import or export selection and chat prompt templates to/from a markdown file.')
       .addButton(btn =>
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
         btn.setButtonText('Write to PureChatLLM-Templates.md').onClick(() => {
           const { selectionTemplates, chatTemplates } = this.plugin.settings;
           const content = getMarkdownFromObject({
@@ -181,13 +180,11 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           const file = this.app.vault.getFileByPath(filePath);
           if (file) void this.app.vault.modify(file, content);
           else void this.app.vault.create(filePath, content);
-          // eslint-disable-next-line obsidianmd/ui/sentence-case
           new Notice('Templates exported to PureChatLLM-Templates.md');
         }),
       )
       .addButton(btn =>
         btn
-          // eslint-disable-next-line obsidianmd/ui/sentence-case
           .setButtonText('Import from PureChatLLM-Templates.md')
           .then(btn =>
             this.app.vault.getFileByPath('PureChatLLM-Templates.md') ? btn : btn.setDisabled(true),
@@ -204,16 +201,13 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 new Notice('Templates imported. Please review them in the prompt editor.');
               });
             } else {
-              // eslint-disable-next-line obsidianmd/ui/sentence-case
               new Notice('PureChatLLM-Templates.md not found.');
             }
           }),
       );
     new Setting(containerEl)
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
       .setName('Use OpenAI image generation')
       .setDesc(
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
         "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key.",
       )
       .addToggle(toggle =>
@@ -223,8 +217,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         }),
       );
     new Setting(containerEl)
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
       .setName('Import ChatGPT conversations')
+      // eslint-disable-next-line obsidianmd/ui/sentence-case
       .setDesc('Import conversations exported from chat.openai.com.')
       .addButton(btn => {
         btn
@@ -257,10 +251,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         }),
       );
     new Setting(containerEl)
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
       .setName('Custom LLM providers')
       .setDesc(
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
         'Add custom LLM providers with API keys. These will be available in the model provider dropdown.',
       )
       .addButton(btn =>
@@ -304,7 +296,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName('Chat style')
-      .setDesc('Select how chats are written and interpreted in Markdown')
+      .setDesc('Select how chats are written and interpreted in markdown')
       .addText(text =>
         text
           .setPlaceholder(DEFAULT_SETTINGS.messageRoleFormatter)
