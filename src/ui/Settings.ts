@@ -1,16 +1,16 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
-import { BrowserConsole } from './BrowserConsole';
-import { PureChatLLMChat } from './Chat';
-import { ImportChatGPT } from './ImportChatGPT';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { PureChatLLMChat } from '../core/Chat';
+import { ImportChatGPT } from '../core/ImportChatGPT';
 import PureChatLLM, {
   FileSuggest,
   getMarkdownFromObject,
   getObjectFromMarkdown,
   SelectionPromptEditor,
-} from './main';
-import { AskForAPI, EditModalProviders } from './models';
-import { version } from './s.json';
-import { DEFAULT_SETTINGS, PureChatLLMSettings } from './types';
+} from '../main';
+import { AskForAPI, EditModalProviders } from './Modals';
+import { version } from '../assets/s.json';
+import { DEFAULT_SETTINGS, PureChatLLMSettings } from '../types';
 
 /**
  * Represents the settings tab for the PureChatLLM plugin in Obsidian.

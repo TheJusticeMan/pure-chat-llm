@@ -1,6 +1,6 @@
-import { BrowserConsole } from './BrowserConsole';
+import { BrowserConsole } from '../utils/BrowserConsole';
 import { PureChatLLMChat } from './Chat';
-import PureChatLLM from './main';
+import PureChatLLM from '../main';
 
 /**
  * Handles text-to-speech (TTS) functionality for chat messages using the OpenAI TTS API.

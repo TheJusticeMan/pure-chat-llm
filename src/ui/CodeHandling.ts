@@ -1,7 +1,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { PureChatLLMChat } from './Chat';
-import PureChatLLM from './main';
-import { CodeAreaComponent, EditWand } from './models';
+import { PureChatLLMChat } from '../core/Chat';
+import PureChatLLM from '../main';
+import { CodeAreaComponent, EditWand } from './Modals';
 
 /**
  * Modal dialog for displaying and handling code blocks extracted from a given string.

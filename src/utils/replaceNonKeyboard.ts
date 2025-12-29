@@ -1,4 +1,4 @@
-import PureChatLLM from './main';
+import PureChatLLM from '../main';
 
 export const nonKeyboardCharMap: [RegExp, string][] = [
   [/\u2013/g, '-'],

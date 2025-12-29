@@ -33,6 +33,7 @@ export default defineConfig([
             'ChatGPT',
             'DALL-E',
             'api.openai.com',
+            'HTML',
           ],
           acronyms: ['OK'],
           enforceCamelCaseLower: true,

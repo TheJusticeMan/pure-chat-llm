@@ -7,10 +7,10 @@ import {
   Setting,
   TextAreaComponent,
 } from 'obsidian';
-import { PureChatLLMChat } from './Chat';
-import PureChatLLM from './main';
-import { EmptyApiKey } from './s.json';
-import { PureChatLLMAPI } from './types';
+import { PureChatLLMChat } from '../core/Chat';
+import PureChatLLM from '../main';
+import { EmptyApiKey } from '../assets/s.json';
+import { PureChatLLMAPI } from '../types';
 import 'obsidian';
 
 /**

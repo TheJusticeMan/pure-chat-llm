@@ -1,11 +1,11 @@
 import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
-import { BrowserConsole } from './BrowserConsole';
-import { codeContent } from './CodeHandling';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { codeContent } from '../ui/CodeHandling';
 import { PureChatLLMImageGen } from './ImageGen';
-import PureChatLLM, { StreamNotice } from './main';
-import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from './s.json';
-import { toTitleCase } from './toTitleCase';
-import { PureChatLLMAPI } from './types';
+import PureChatLLM, { StreamNotice } from '../main';
+import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from '../assets/s.json';
+import { toTitleCase } from '../utils/toTitleCase';
+import { PureChatLLMAPI } from '../types';
 
 interface ChatMessage {
   role: RoleType;

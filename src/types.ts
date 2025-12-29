@@ -1,4 +1,4 @@
-import { chatTemplates, EmptyApiKey, selectionTemplates } from './s.json';
+import { chatTemplates, EmptyApiKey, selectionTemplates } from './assets/s.json';
 
 export const StatSett = {
   ENDPOINTS: [

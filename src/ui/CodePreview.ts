@@ -1,7 +1,7 @@
 import { syntaxTree } from '@codemirror/language';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import { App, Editor, ItemView, ViewStateResult, WorkspaceLeaf } from 'obsidian';
-import PureChatLLM from './main';
+import PureChatLLM from '../main';
 
 export interface CodeSnippetState {
   code: string;

@@ -16,22 +16,22 @@ import {
   TFolder,
   WorkspaceLeaf,
 } from 'obsidian';
-import { BrowserConsole } from './BrowserConsole';
-import { PureChatLLMChat, RoleType } from './Chat';
-import { codelanguages } from './codelanguages';
+import { BrowserConsole } from './utils/BrowserConsole';
+import { PureChatLLMChat, RoleType } from './core/Chat';
+import { codelanguages } from './utils/codelanguages';
 import {
   CODE_PREVIEW_VIEW_TYPE,
   CodePreview,
   createCodeblockExtension,
   openCodePreview,
-} from './CodepreView';
-import { AskForAPI, CodeAreaComponent, EditWand } from './models';
-import { replaceNonKeyboardChars } from './replaceNonKeyboard';
-import { EmptyApiKey } from './s.json';
-import { PureChatLLMSettingTab } from './settings';
-import { modelAndProviderChooser, PureChatLLMSideView } from './SideView';
-import { PureChatLLMSpeech } from './Speech';
-import { toTitleCase } from './toTitleCase';
+} from './ui/CodePreview';
+import { AskForAPI, CodeAreaComponent, EditWand } from './ui/Modals';
+import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
+import { EmptyApiKey } from './assets/s.json';
+import { PureChatLLMSettingTab } from './ui/Settings';
+import { modelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
+import { PureChatLLMSpeech } from './core/Speech';
+import { toTitleCase } from './utils/toTitleCase';
 import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from './types';
 
 /**

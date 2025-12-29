@@ -1,5 +1,5 @@
 import { App, requestUrl, TFile } from 'obsidian';
-import * as imageGeneration from './imageGen.json';
+import * as imageGeneration from '../assets/imageGen.json';
 
 export class PureChatLLMImageGen {
   static readonly TOOL_NAME = 'image_generation'; // Name of the tool as it will be used in the chat completion request

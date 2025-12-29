@@ -13,15 +13,15 @@ import {
   Setting,
   WorkspaceLeaf,
 } from 'obsidian';
-import { BrowserConsole } from './BrowserConsole';
-import { PureChatLLMChat } from './Chat';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { PureChatLLMChat } from '../core/Chat';
 import { CodeHandling, SectionHandling } from './CodeHandling';
-import { CODE_PREVIEW_VIEW_TYPE } from './CodepreView';
-import PureChatLLM from './main';
-import { AskForAPI } from './models';
-import { alloptions, EmptyApiKey } from './s.json';
-import { toTitleCase } from './toTitleCase';
-import { PURE_CHAT_LLM_VIEW_TYPE } from './types';
+import { CODE_PREVIEW_VIEW_TYPE } from './CodePreview';
+import PureChatLLM from '../main';
+import { AskForAPI } from './Modals';
+import { alloptions, EmptyApiKey } from '../assets/s.json';
+import { toTitleCase } from '../utils/toTitleCase';
+import { PURE_CHAT_LLM_VIEW_TYPE } from '../types';
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -126,7 +126,6 @@ export class PureChatLLMSideView extends ItemView {
     this.contentEl.empty();
 
     new Setting(this.contentEl)
-
       .setName('Pure Chat LLM')
       .setHeading()
       .then(b => {
@@ -305,6 +304,20 @@ export class PureChatLLMSideView extends ItemView {
                   editor,
                 );
               });
+
+          if (
+            Number(/```html\n([\s\S]*?)```/i.test(message.content)) +
+              Number(/```css\n([\s\S]*?)```/i.test(message.content)) +
+              Number(/```(?:js|javascript)\n([\s\S]*?)```/i.test(message.content)) >
+            1
+          )
+            new ExtraButtonComponent(div)
+              .setTooltip('Copy unified HTML code block')
+              .setIcon('file-code-2')
+              .onClick(() => {
+                copyUnifiedHTMLCodeblock(message.content);
+                new Notice('Unified HTML code block copied to clipboard');
+              });
           new ExtraButtonComponent(div)
             .setIcon('refresh-cw')
             .setTooltip('Regenerate response')
@@ -418,4 +431,31 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       this.open();
     });
   }
+}
+
+/**
+ * Extracts HTML, CSS, and JavaScript code blocks from a given text range, combines them into a single HTML file, and copies to clipboard.
+ * @param text The text to extract code blocks from (e.g., editor selection)
+ */
+export function copyUnifiedHTMLCodeblock(text: string) {
+  // Regex to match code blocks: ```html ... ```, ```css ... ```, ```js ... ``` or ```javascript ... ```
+  const htmlMatch = /```html\n([\s\S]*?)```/i.exec(text);
+  const cssMatch = /```css\n([\s\S]*?)```/i.exec(text);
+  const jsMatch = /```(?:js|javascript)\n([\s\S]*?)```/i.exec(text);
+
+  const html = htmlMatch ? htmlMatch[1].trim() : '';
+  const css = cssMatch ? cssMatch[1].trim() : '';
+  const js = jsMatch ? jsMatch[1].trim() : '';
+
+  // Compose unified HTML
+  let unified = '```html\n<!DOCTYPE html>\n<html>\n<head>\n';
+  if (css) unified += `<style>\n${css}\n</style>\n`;
+  unified += '</head>\n<body>\n';
+  unified += html ? html + '\n' : '';
+  if (js) unified += `<script>\n${js}\n</script>\n`;
+  unified += '</body>\n</html>\n```';
+
+  // Copy to clipboard
+
+  void navigator.clipboard.writeText(unified);
 }
