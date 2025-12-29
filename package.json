@@ -7,7 +7,7 @@
     "dev": "node esbuild.config.mjs",
     "format": "prettier --write \"src/**/*.ts\"",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "version": "node version-bump.mjs && git add manifest.json versions.json",
+    "version": "node version-bump.mjs && git add manifest.json versions.json src/assets/s.json",
     "release": "bash Release.sh",
     "lint": "eslint \"src/**/*.ts\""
   },

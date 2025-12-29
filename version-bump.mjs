@@ -13,21 +13,21 @@ let versions = JSON.parse(readFileSync('versions.json', 'utf8'));
 versions[targetVersion] = minAppVersion;
 writeFileSync('versions.json', JSON.stringify(versions, null, '\t'));
 
-let appSett = JSON.parse(readFileSync('src/s.json', 'utf8'));
+let appSett = JSON.parse(readFileSync('src/assets/s.json', 'utf8'));
 appSett.version = targetVersion;
 appSett.readme = readFileSync('README.md').toString();
-appSett.splash = readFileSync('src/splash.md').toString();
-Object.entries(getObjectFromMarkdown(readFileSync('src/templates.md').toString(), 1, 2)).forEach(
+appSett.splash = readFileSync('src/assets/splash.md').toString();
+Object.entries(getObjectFromMarkdown(readFileSync('src/assets/templates.md').toString(), 1, 2)).forEach(
   ([k, v]) => (appSett[k] = v),
 );
 console.log(
   JSON.stringify(
-    getObjectFromMarkdown(readFileSync('src/templates.md').toString(), 1, 2),
+    getObjectFromMarkdown(readFileSync('src/assets/templates.md').toString(), 1, 2),
     null,
     '\t',
   ),
 );
-writeFileSync('src/s.json', JSON.stringify(appSett, null, '\t'));
+writeFileSync('src/assets/s.json', JSON.stringify(appSett, null, '\t'));
 
 function getObjectFromMarkdown(rawMarkdown, level = 1, maxlevel = 6) {
   return Object.fromEntries(
