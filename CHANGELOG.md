@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.8.0] - 2025-12-29
 
 ### Changed
 
+- Modularized project structure: reorganized `src/` into `assets/`, `core/`, `ui/`, and `utils/`
+- Renamed UI components for clarity (e.g., `models.ts` -> `Modals.ts`)
+- Updated imports and configuration to reflect the new structure
 - Enhanced ESLint configuration for better code quality
 - Removed unused `src/test.ts` file
 - Improved code readability in `ImageGen.ts` and `settings.ts`
