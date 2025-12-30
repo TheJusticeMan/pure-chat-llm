@@ -6,7 +6,8 @@ const pluginSettingsParameters = defineToolParameters({
   properties: {
     action: {
       type: 'string',
-      description: 'The action to perform: "read" to see current settings, or "update" to change a setting.',
+      description:
+        'The action to perform: "read" to see current settings, or "update" to change a setting.',
       enum: ['read', 'update'],
     },
     key: {
@@ -15,7 +16,8 @@ const pluginSettingsParameters = defineToolParameters({
     },
     value: {
       type: 'string',
-      description: 'The new value for the setting (required for "update"). Will be parsed as JSON if possible.',
+      description:
+        'The new value for the setting (required for "update"). Will be parsed as JSON if possible.',
     },
   },
   required: ['action'],
@@ -25,7 +27,8 @@ export type PluginSettingsArgs = InferArgs<typeof pluginSettingsParameters>;
 
 export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   readonly name = 'manage_plugin_settings';
-  readonly description = 'Reads or updates the Pure Chat LLM plugin settings. Updates trigger a user confirmation modal.';
+  readonly description =
+    'Reads or updates the Pure Chat LLM plugin settings. Updates trigger a user confirmation modal.';
   readonly parameters = pluginSettingsParameters;
 
   isAvailable(): boolean {
@@ -68,29 +71,23 @@ export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
       this.status(`Requesting approval to update setting "${key}"...`);
 
       return new Promise(resolve => {
-        new SettingsConfirmationModal(
-          plugin.app,
-          key,
-          oldValue,
-          parsedValue,
-          (approved) => {
-            if (approved) {
-              void (async () => {
-                try {
-                  settings[key] = parsedValue;
-                  await plugin.saveSettings();
-                  new Notice(`Successfully updated setting "${key}".`);
-                  resolve(`Successfully updated setting "${key}" to: ${JSON.stringify(parsedValue)}`);
-                } catch (error) {
-                  const message = error instanceof Error ? error.message : String(error);
-                  resolve(`Error updating setting: ${message}`);
-                }
-              })();
-            } else {
-              resolve(`Update of setting "${key}" was rejected by user.`);
-            }
+        new SettingsConfirmationModal(plugin.app, key, oldValue, parsedValue, approved => {
+          if (approved) {
+            void (async () => {
+              try {
+                settings[key] = parsedValue;
+                await plugin.saveSettings();
+                new Notice(`Successfully updated setting "${key}".`);
+                resolve(`Successfully updated setting "${key}" to: ${JSON.stringify(parsedValue)}`);
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                resolve(`Error updating setting: ${message}`);
+              }
+            })();
+          } else {
+            resolve(`Update of setting "${key}" was rejected by user.`);
           }
-        ).open();
+        }).open();
       });
     }
 
@@ -110,7 +107,7 @@ class SettingsConfirmationModal extends Modal {
     key: string,
     oldValue: unknown,
     newValue: unknown,
-    onResolve: (approved: boolean) => void
+    onResolve: (approved: boolean) => void,
   ) {
     super(app);
     this.key = key;
@@ -126,13 +123,10 @@ class SettingsConfirmationModal extends Modal {
     contentEl.createEl('h2', { text: 'Review setting change' });
     contentEl.createEl('p', { text: `The agent wants to update the following plugin setting:` });
 
-    new Setting(contentEl)
-      .setName('Setting key')
-      .setDesc(this.key)
-      .setHeading();
+    new Setting(contentEl).setName('Setting key').setDesc(this.key).setHeading();
 
     const diffContainer = contentEl.createDiv('settings-diff-container');
-    
+
     const oldCol = diffContainer.createDiv('settings-diff-col');
     oldCol.createEl('h4', { text: 'Current value' });
     oldCol.createEl('pre').createEl('code', { text: JSON.stringify(this.oldValue, null, 2) });
@@ -150,16 +144,14 @@ class SettingsConfirmationModal extends Modal {
             this.resolved = true;
             this.onResolve(true);
             this.close();
-          })
+          }),
       )
       .addButton(btn =>
-        btn
-          .setButtonText('Reject')
-          .onClick(() => {
-            this.resolved = true;
-            this.onResolve(false);
-            this.close();
-          })
+        btn.setButtonText('Reject').onClick(() => {
+          this.resolved = true;
+          this.onResolve(false);
+          this.close();
+        }),
       );
   }
 

@@ -19,7 +19,8 @@ const replaceInNoteParameters = defineToolParameters({
     },
     regex: {
       type: 'boolean',
-      description: 'Whether to treat the search pattern as a regular expression. Defaults to false.',
+      description:
+        'Whether to treat the search pattern as a regular expression. Defaults to false.',
       default: false,
     },
     case_sensitive: {
@@ -35,7 +36,8 @@ export type ReplaceInNoteArgs = InferArgs<typeof replaceInNoteParameters>;
 
 export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
   readonly name = 'replace_in_note';
-  readonly description = 'Replaces text within a note using string or regex matching. Triggers user review.';
+  readonly description =
+    'Replaces text within a note using string or regex matching. Triggers user review.';
   readonly parameters = replaceInNoteParameters;
 
   isAvailable(): boolean {
@@ -84,7 +86,7 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
         newContent,
         undefined, // properties
         true, // overwrite/modify
-        `Replace "${search}" with "${replace}"`
+        `Replace "${search}" with "${replace}"`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

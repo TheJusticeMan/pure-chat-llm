@@ -27,7 +27,8 @@ const templatesParameters = defineToolParameters({
   properties: {
     action: {
       type: 'string',
-      description: 'The action to perform: "list" to see available templates, or "apply" to apply a template.',
+      description:
+        'The action to perform: "list" to see available templates, or "apply" to apply a template.',
       enum: ['list', 'apply'],
     },
     template_path: {
@@ -36,7 +37,8 @@ const templatesParameters = defineToolParameters({
     },
     target_path: {
       type: 'string',
-      description: 'The path to the note where the template should be applied (required for "apply"). If file doesn\'t exist, it will be created.',
+      description:
+        'The path to the note where the template should be applied (required for "apply"). If file doesn\'t exist, it will be created.',
     },
   },
   required: ['action'],
@@ -46,7 +48,8 @@ export type TemplatesArgs = InferArgs<typeof templatesParameters>;
 
 export class TemplatesTool extends Tool<TemplatesArgs> {
   readonly name = 'manage_templates';
-  readonly description = 'Lists available Obsidian templates and applies them to notes. Supports both core Templates and Templater plugin folders if configured.';
+  readonly description =
+    'Lists available Obsidian templates and applies them to notes. Supports both core Templates and Templater plugin folders if configured.';
   readonly parameters = templatesParameters;
 
   isAvailable(): boolean {
@@ -87,7 +90,9 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
 
     if (!templateFolder) {
       // Fallback: search for folders named "Templates"
-      const allFolders = app.vault.getAllLoadedFiles().filter((f): f is TFolder => f instanceof TFolder);
+      const allFolders = app.vault
+        .getAllLoadedFiles()
+        .filter((f): f is TFolder => f instanceof TFolder);
       const likelyFolder = allFolders.find(f => f.name.toLowerCase() === 'templates');
       if (likelyFolder) templateFolder = likelyFolder.path;
     }
@@ -142,12 +147,12 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
     // Check if target exists
     const targetFile = app.vault.getAbstractFileByPath(normTargetPath);
     if (targetFile && targetFile instanceof TFile) {
-        // If it exists, we might want to prepend or append, but usually "apply template" means fill it.
-        // For safety, let's just return the content to the LLM so it can decide how to patch it,
-        // or offer to overwrite.
-        return `Template content for "${normTemplatePath}":\n\n${processedContent}\n\n(Target file "${normTargetPath}" already exists. You can use 'patch_note' or 'create_obsidian_note' with overwrite:true to apply this content.)`;
+      // If it exists, we might want to prepend or append, but usually "apply template" means fill it.
+      // For safety, let's just return the content to the LLM so it can decide how to patch it,
+      // or offer to overwrite.
+      return `Template content for "${normTemplatePath}":\n\n${processedContent}\n\n(Target file "${normTargetPath}" already exists. You can use 'patch_note' or 'create_obsidian_note' with overwrite:true to apply this content.)`;
     } else {
-        return `Template content for "${normTemplatePath}":\n\n${processedContent}\n\n(Target file "${normTargetPath}" does not exist. You can use 'create_obsidian_note' to create it with this content.)`;
+      return `Template content for "${normTemplatePath}":\n\n${processedContent}\n\n(Target file "${normTargetPath}" does not exist. You can use 'create_obsidian_note' to create it with this content.)`;
     }
   }
 }

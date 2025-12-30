@@ -16,7 +16,8 @@ export type BacklinksArgs = InferArgs<typeof backlinksParameters>;
 
 export class BacklinksTool extends Tool<BacklinksArgs> {
   readonly name = 'get_backlinks';
-  readonly description = 'Finds all notes that link to a specific note (backlinks), helping map relationships in the vault.';
+  readonly description =
+    'Finds all notes that link to a specific note (backlinks), helping map relationships in the vault.';
   readonly parameters = backlinksParameters;
 
   isAvailable(): boolean {

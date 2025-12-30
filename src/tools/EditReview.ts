@@ -89,9 +89,9 @@ class EditReviewModal extends Modal {
       originalArea.setValue(this.originalContent);
       originalArea.setDisabled(true);
       originalArea.inputEl.addClass('PUREcodePreview');
-        } else {
-            contentEl.createEl('p', { text: 'New file' });
-        }
+    } else {
+      contentEl.createEl('p', { text: 'New file' });
+    }
 
     // New Content
     new Setting(contentEl).setName('Proposed content').setHeading();

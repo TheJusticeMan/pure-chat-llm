@@ -15,7 +15,8 @@ const manageWorkspaceParameters = defineToolParameters({
     },
     split: {
       type: 'string',
-      description: 'How to split the leaf if opening a file: "horizontal", "vertical", or "none" (default).',
+      description:
+        'How to split the leaf if opening a file: "horizontal", "vertical", or "none" (default).',
       enum: ['horizontal', 'vertical', 'none'],
       default: 'none',
     },
@@ -42,7 +43,8 @@ export type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
 
 export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
   readonly name = 'manage_workspace';
-  readonly description = 'Controls the Obsidian workspace layout. Use this to open notes in new tabs, split panes, or change view modes.';
+  readonly description =
+    'Controls the Obsidian workspace layout. Use this to open notes in new tabs, split panes, or change view modes.';
   readonly parameters = manageWorkspaceParameters;
 
   isAvailable(): boolean {

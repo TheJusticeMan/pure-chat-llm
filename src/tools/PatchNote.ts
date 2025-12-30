@@ -11,7 +11,8 @@ const patchNoteParameters = defineToolParameters({
     },
     heading: {
       type: 'string',
-      description: "The heading to insert under (e.g., 'To-Do'). If not found, appends to the end of the file.",
+      description:
+        "The heading to insert under (e.g., 'To-Do'). If not found, appends to the end of the file.",
     },
     new_content: {
       type: 'string',
@@ -25,7 +26,8 @@ export type PatchNoteArgs = InferArgs<typeof patchNoteParameters>;
 
 export class PatchNoteTool extends Tool<PatchNoteArgs> {
   readonly name = 'patch_note';
-  readonly description = 'Appends text to a specific section or heading in a note. Triggers user review.';
+  readonly description =
+    'Appends text to a specific section or heading in a note. Triggers user review.';
   readonly parameters = patchNoteParameters;
 
   isAvailable(): boolean {
@@ -51,35 +53,38 @@ export class PatchNoteTool extends Tool<PatchNoteArgs> {
 
       if (heading && cache?.headings) {
         const targetHeading = cache.headings.find(
-          h => h.heading.toLowerCase() === heading.toLowerCase()
+          h => h.heading.toLowerCase() === heading.toLowerCase(),
         );
 
         if (targetHeading) {
           // Find the end of this section
           // The section ends at the next heading with level <= targetHeading.level
           const nextHeading = cache.headings.find(
-            h => h.position.start.offset > targetHeading.position.start.offset && h.level <= targetHeading.level
+            h =>
+              h.position.start.offset > targetHeading.position.start.offset &&
+              h.level <= targetHeading.level,
           );
 
           const insertAt = nextHeading ? nextHeading.position.start.offset : content.length;
-          
+
           // Ensure there's a newline before the new content if needed
           const prefix = content.slice(0, insertAt).endsWith('\n') ? '' : '\n';
-          const suffix = content.slice(insertAt).startsWith('\n') || insertAt === content.length ? '' : '\n';
-          
-          patchedContent = 
-            content.slice(0, insertAt) + 
-            prefix + 
-            new_content + 
-            suffix + 
-            content.slice(insertAt);
+          const suffix =
+            content.slice(insertAt).startsWith('\n') || insertAt === content.length ? '' : '\n';
+
+          patchedContent =
+            content.slice(0, insertAt) + prefix + new_content + suffix + content.slice(insertAt);
         } else {
           // Heading not found, append to end
-          patchedContent = content.endsWith('\n') ? content + new_content : content + '\n' + new_content;
+          patchedContent = content.endsWith('\n')
+            ? content + new_content
+            : content + '\n' + new_content;
         }
       } else {
         // No heading specified or no headings in file, append to end
-        patchedContent = content.endsWith('\n') ? content + new_content : content + '\n' + new_content;
+        patchedContent = content.endsWith('\n')
+          ? content + new_content
+          : content + '\n' + new_content;
       }
 
       // Trigger Review Modal
@@ -89,9 +94,8 @@ export class PatchNoteTool extends Tool<PatchNoteArgs> {
         patchedContent,
         undefined, // properties
         true, // overwrite/modify
-        heading ? `Append to section "${heading}"` : 'Append to end of note'
+        heading ? `Append to section "${heading}"` : 'Append to end of note',
       );
-
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return `Error patching note: ${message}`;

@@ -24,8 +24,7 @@ const createNoteParameters = defineToolParameters({
     },
     overwrite: {
       type: 'boolean',
-      description:
-        'If true, will overwrite an existing file at the same path. Defaults to false.',
+      description: 'If true, will overwrite an existing file at the same path. Defaults to false.',
       default: false,
     },
   },
@@ -57,7 +56,7 @@ export class CreateNoteTool extends Tool<CreateNoteArgs> {
       content,
       properties as Record<string, unknown> | undefined,
       overwrite ?? false,
-      'Create/Update Note via Tool'
+      'Create/Update Note via Tool',
     );
   }
 }

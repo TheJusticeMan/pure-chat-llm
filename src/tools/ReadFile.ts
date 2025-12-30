@@ -25,7 +25,8 @@ export type ReadFileArgs = InferArgs<typeof readFileParameters>;
 
 export class ReadFileTool extends Tool<ReadFileArgs> {
   readonly name = 'read_file';
-  readonly description = 'Reads the content of a file in the Obsidian vault. Supports line-based pagination.';
+  readonly description =
+    'Reads the content of a file in the Obsidian vault. Supports line-based pagination.';
   readonly parameters = readFileParameters;
 
   isAvailable(): boolean {
