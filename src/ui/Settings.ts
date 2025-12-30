@@ -229,6 +229,15 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 
     new Setting(containerEl).setName('Advanced').setHeading();
     new Setting(containerEl)
+      .setName('Agent mode')
+      .setDesc('Enable this to allow the LLM to use tools (e.g., creating notes, searching the vault).')
+      .addToggle(toggle =>
+        toggle.setValue(settings.agentMode).onChange(async value => {
+          settings.agentMode = value;
+          await this.plugin.saveSettings();
+        }),
+      );
+    new Setting(containerEl)
       .setName('Auto-concat messages from same role')
       .setDesc(
         'Automatically combine consecutive messages from the same role into a single message.',

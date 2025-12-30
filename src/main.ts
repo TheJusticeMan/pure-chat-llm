@@ -16,9 +16,10 @@ import {
   TFolder,
   WorkspaceLeaf,
 } from 'obsidian';
-import { BrowserConsole } from './utils/BrowserConsole';
+import { EmptyApiKey } from './assets/s.json';
 import { PureChatLLMChat, RoleType } from './core/Chat';
-import { codelanguages } from './utils/codelanguages';
+import { PureChatLLMSpeech } from './core/Speech';
+import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from './types';
 import {
   CODE_PREVIEW_VIEW_TYPE,
   CodePreview,
@@ -26,13 +27,12 @@ import {
   openCodePreview,
 } from './ui/CodePreview';
 import { AskForAPI, CodeAreaComponent, EditWand } from './ui/Modals';
-import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
-import { EmptyApiKey } from './assets/s.json';
 import { PureChatLLMSettingTab } from './ui/Settings';
 import { modelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
-import { PureChatLLMSpeech } from './core/Speech';
+import { BrowserConsole } from './utils/BrowserConsole';
+import { codelanguages } from './utils/codelanguages';
+import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
 import { toTitleCase } from './utils/toTitleCase';
-import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from './types';
 
 /**
  * The main plugin class for the Pure Chat LLM Obsidian plugin.

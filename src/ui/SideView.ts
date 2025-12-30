@@ -217,7 +217,7 @@ export class PureChatLLMSideView extends ItemView {
       container.createDiv({ text: '' }, contain => {
         contain.addClass('PURE', 'messageContainer', message.role);
         contain.createEl('h1', { text: toTitleCase(message.role) }, el => {
-          el.onClickEvent(() => this.goToPostion(editor, message.cline));
+          el.onClickEvent(() => this.goToPostion(editor, chat.clines[index]));
           el.addClass('PURE', 'messageHeader', message.role);
         });
         // Preview of message content with copy button
@@ -225,7 +225,7 @@ export class PureChatLLMSideView extends ItemView {
           div.addClass('PURE', 'preview', message.role);
           if (preview)
             div.createDiv({ text: '' }, el => {
-              el.onClickEvent(() => this.goToPostion(editor, message.cline, true));
+              el.onClickEvent(() => this.goToPostion(editor, chat.clines[index], true));
               el.addClass('PURE', 'messageMarkdown', message.role);
               void MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
             });

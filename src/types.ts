@@ -110,6 +110,7 @@ export interface PureChatLLMSettings {
   useImageGeneration: boolean;
   resolveFilesForChatAnalysis: boolean;
   autoConcatMessagesFromSameRole: boolean;
+  agentMode: boolean;
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -130,6 +131,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   useImageGeneration: true, // Default to true for OpenAI image generation
   resolveFilesForChatAnalysis: false,
   autoConcatMessagesFromSameRole: true,
+  agentMode: true,
 };
 
 export interface PureChatLLMAPI {

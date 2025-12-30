@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [TODO]
+
+- Make it agentic!
+
+- [x] Add tools to interact with Obsidian
+   - Add tools to interact with the vault
+   - Add tools to interact with notes
+   - Add tools to create and manage notes
+   - Add tools to search notes
+   - Add tools to link notes
+   - Add tools to interact with files
+   - Add tools to read files
+   - Add tools to write files
+   - Add tools to manage files
+
+- [x] Add tools to interact with the workspace
+   - [x] Add tools to manage panes
+   - [x] Add tools to manage views
+   - [x] Add tools to interact with settings
+   - [x] Add tools to read settings
+   - [x] Add tools to update settings
+
+## [Unreleased]
+
+## [1.9.0] - 2025-12-29
+
+### Added
+
+- **Agentic Capabilities**: Added a suite of tools for the LLM to interact with the vault:
+  - `create_obsidian_note`: Create new notes with frontmatter.
+  - `delete_obsidian_note`: Delete notes or files with user confirmation.
+  - `read_file`: Read file contents efficiently with pagination.
+  - `patch_note`: Append content to specific sections/headings atomically.
+  - `replace_in_note`: Perform search and replace or regex updates in notes.
+  - `search_vault`: Search for text or regex patterns across all notes.
+  - `glob_vault_files`: Find files using glob patterns with metadata filtering.
+  - `list_vault_folders`: Explore the vault's directory structure.
+  - `get_backlinks`: Find all notes linking to a specific file.
+  - `smart_connections_rag`: Perform semantic search using Smart Connections for RAG.
+  - `manage_workspace`: Control workspace layout (open/close files, split panes).
+  - `get_active_context`: Retrieve context about the active file and selection.
+  - `show_obsidian_notice`: Display transient notifications.
+  - `manage_plugin_settings`: Read and update plugin-specific settings.
+  - `manage_templates`: List and apply Obsidian templates.
+- **Safety Workflow**: Implemented `EditReview`, `DeleteConfirmation`, and `SettingsConfirmation` systems where modifications, deletions, and setting changes trigger a user approval modal before application.
+- **High-Performance Architecture**:
+  - Utilized `app.vault.cachedRead` for fast, memory-efficient reading.
+  - Utilized `app.vault.process` for atomic, race-condition-free file updates.
+  - Leveraged `app.metadataCache` for smart link resolution and structural editing.
+
 ## [1.8.0] - 2025-12-29
 
 ### Changed

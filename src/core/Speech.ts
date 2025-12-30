@@ -1,6 +1,6 @@
-import { BrowserConsole } from '../utils/BrowserConsole';
-import { PureChatLLMChat } from './Chat';
 import PureChatLLM from '../main';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { ChatMessage, PureChatLLMChat } from './Chat';
 
 /**
  * Handles text-to-speech (TTS) functionality for chat messages using the OpenAI TTS API.
@@ -51,7 +51,7 @@ export class PureChatLLMSpeech {
    * @param message - An object containing the role ("assistant" or "user") and the content to be spoken.
    * @returns A Promise that resolves when the speech audio has been enqueued or logs an error if unsuccessful.
    */
-  async enqueueSpeech(message: { role: string; content: string }) {
+  async enqueueSpeech(message: ChatMessage) {
     const voice = message.role === 'assistant' ? this.assistantvoice : this.uservoice;
     const apiKey = this.plugin.settings.endpoints[this.plugin.settings.endpoint]?.apiKey;
     if (!apiKey) {

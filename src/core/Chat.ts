@@ -1,16 +1,31 @@
 import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
-import { BrowserConsole } from '../utils/BrowserConsole';
-import { codeContent } from '../ui/CodeHandling';
-import { PureChatLLMImageGen } from './ImageGen';
-import PureChatLLM, { StreamNotice } from '../main';
+import { ToolRegistry } from 'src/tools';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from '../assets/s.json';
-import { toTitleCase } from '../utils/toTitleCase';
+import PureChatLLM, { StreamNotice } from '../main';
+import { CreateNoteTool } from '../tools/CreateNote';
+import { ReadFileTool } from '../tools/ReadFile';
+import { PatchNoteTool } from '../tools/PatchNote';
+import { SearchVaultTool } from '../tools/SearchVault';
+import { BacklinksTool } from '../tools/Backlinks';
+import { GlobFilesTool } from '../tools/GlobFiles';
+import { ListFoldersTool } from '../tools/ListFolders';
+import { DeleteNoteTool } from '../tools/DeleteNote';
+import { TemplatesTool } from '../tools/Templates';
+import { ReplaceInNoteTool } from '../tools/ReplaceInNote';
+import { SmartConnectionsRetrievalTool } from '../tools/SmartConnectionsRetrieval';
+import { ManageWorkspaceTool } from '../tools/ManageWorkspace';
+import { ActiveContextTool } from '../tools/ActiveContext';
+import { ShowNoticeTool } from '../tools/ShowNotice';
+import { PluginSettingsTool } from '../tools/PluginSettings';
+import { ImageGenerationTool } from '../tools/ImageGen';
 import { PureChatLLMAPI } from '../types';
+import { codeContent } from '../ui/CodeHandling';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { toTitleCase } from '../utils/toTitleCase';
 
-interface ChatMessage {
+export interface ChatMessage {
   role: RoleType;
   content: string;
-  cline: EditorRange;
 }
 
 export type RoleType = 'system' | 'user' | 'assistant' | 'developer' | 'tool';
@@ -25,7 +40,7 @@ interface ToolCall {
   };
 }
 
-interface StreamDelta {
+export interface StreamDelta {
   content?: string;
   tool_calls?: ToolCall[];
   role?: string;
@@ -46,7 +61,7 @@ type MediaMessage =
     };
 
 export interface ChatResponse {
-  role: string;
+  role: RoleType;
   content?: string | null;
   tool_calls?: ToolCall[];
 }
@@ -54,7 +69,7 @@ export interface ChatResponse {
 interface ChatRequestOptions {
   model: string;
   messages: {
-    role: string;
+    role: RoleType;
     content?: string | MediaMessage[] | null;
     tool_calls?: ToolCall[];
     tool_call_id?: string;
@@ -63,7 +78,7 @@ interface ChatRequestOptions {
   stream?: boolean;
   max_completion_tokens?: number;
   max_tokens?: number;
-  tools?: object[];
+  tools?: (object | string)[];
   [key: string]: unknown;
 }
 
@@ -91,6 +106,7 @@ interface ChatRequestOptions {
 export class PureChatLLMChat {
   options: ChatRequestOptions;
   messages: ChatMessage[] = [];
+  clines: EditorRange[] = [];
   plugin: PureChatLLM;
   console: BrowserConsole;
   pretext = '';
@@ -98,19 +114,44 @@ export class PureChatLLMChat {
   Parser = '# role: {role}';
   validChat = true;
   file: TFile;
-  imageOutputUrls: { normalizedPath: string; revised_prompt?: string }[] | null = null;
+  toolregistry: ToolRegistry = new ToolRegistry(this);
 
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
     this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMChat');
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+
+    if (this.plugin.settings.agentMode) this.registerAvailableTools();
+
     this.options = {
       model: this.endpoint.defaultmodel,
       max_completion_tokens: this.plugin.settings.defaultmaxTokens,
       stream: true,
+      tools: this.toolregistry.getNameList(),
       messages: [],
     };
     this.Parser = this.plugin.settings.messageRoleFormatter;
+  }
+
+  private registerAvailableTools() {
+    this.toolregistry.registerTool(ImageGenerationTool);
+    this.toolregistry.registerTool(CreateNoteTool);
+    this.toolregistry.registerTool(GlobFilesTool);
+    this.toolregistry.registerTool(ReadFileTool);
+    this.toolregistry.registerTool(SearchVaultTool);
+    this.toolregistry.registerTool(PatchNoteTool);
+    this.toolregistry.registerTool(BacklinksTool);
+    this.toolregistry.registerTool(ListFoldersTool);
+    this.toolregistry.registerTool(DeleteNoteTool);
+    this.toolregistry.registerTool(TemplatesTool);
+    this.toolregistry.registerTool(ReplaceInNoteTool);
+    this.toolregistry.registerTool(SmartConnectionsRetrievalTool);
+    this.toolregistry.registerTool(ManageWorkspaceTool);
+    this.toolregistry.registerTool(ActiveContextTool);
+    this.toolregistry.registerTool(ShowNoticeTool);
+    this.toolregistry.registerTool(PluginSettingsTool);
+    if (!this.plugin.settings.useImageGeneration)
+      this.toolregistry.disable(ImageGenerationTool._name);
   }
 
   /**
@@ -123,10 +164,13 @@ export class PureChatLLMChat {
    * of the chat options and the chat text.
    */
   get Markdown(): string {
+    const options: Record<string, unknown> = { ...this.options };
+    delete options.messages;
+    if (!this.plugin.settings.agentMode) delete options.tools;
     const prechat = PureChatLLMChat.changeCodeBlockMD(
       this.pretext,
       'json',
-      JSON.stringify(this.options, null, 2),
+      JSON.stringify(options, null, 2),
     );
     return `${prechat.trim()}\n${this.ChatText}`;
   }
@@ -151,31 +195,27 @@ export class PureChatLLMChat {
    * - The `options` property is updated if valid JSON is found in the prechat section.
    */
   set Markdown(markdown: string) {
+    markdown = '\n' + markdown.trim() + '\n'; // ensure newlines at start and end
     const matches = Array.from(markdown.matchAll(this.regexForRoles));
 
     this.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
     this.messages = matches.map((match, index) => {
-      if (!match.index)
+      if (!match.index) {
+        this.clines.push({ from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } });
         return {
           role: 'user',
           content: '',
-          cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
         };
+      }
       const contentStart = match.index + match[0].length;
       const contentEnd = index + 1 < matches.length ? matches[index + 1].index : markdown.length;
+      this.clines.push({
+        from: { line: markdown.substring(0, contentStart).split('\n').length, ch: 0 },
+        to: { line: markdown.substring(0, contentEnd).split('\n').length - 1, ch: 0 },
+      });
       return {
         role: match[1].toLowerCase() as RoleType,
         content: markdown.substring(contentStart, contentEnd).trim(),
-        cline: {
-          from: {
-            line: markdown.substring(0, contentStart).split('\n').length - 1,
-            ch: 0,
-          },
-          to: {
-            line: markdown.substring(0, contentEnd).split('\n').length - 1,
-            ch: 0,
-          },
-        },
       };
     });
 
@@ -210,14 +250,21 @@ export class PureChatLLMChat {
 
   cleanUpChat() {
     // remove any empty messages except system
-    this.messages = this.messages.filter(msg => msg.role === 'system' || msg.content.trim() !== '');
+    const indicesToKeep: number[] = [];
+    this.messages = this.messages.filter((msg, index) => {
+      const keep = msg.role === 'system' || msg.content.trim() !== '';
+      if (keep) indicesToKeep.push(index);
+      return keep;
+    });
+    this.clines = indicesToKeep.map(i => this.clines[i]);
+
     // ensure first message is system
     if (this.messages[0]?.role !== 'system') {
       this.messages.unshift({
         role: 'system',
         content: this.plugin.settings.SystemPrompt,
-        cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
       });
+      this.clines.unshift({ from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } });
     } else {
       this.messages[0].content ||= this.plugin.settings.SystemPrompt;
     }
@@ -356,23 +403,16 @@ export class PureChatLLMChat {
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
    */
-  appendMessage(...messages: { role: RoleType; content: string | MediaMessage }[]) {
-    let extras = '';
-    if (this.imageOutputUrls)
-      extras =
-        this.imageOutputUrls
-          .map(img => `![${img.revised_prompt || 'image'}](${img.normalizedPath})`)
-          .join('\n') + '\n\n';
-    this.imageOutputUrls = null;
+  appendMessage(...messages: { role: RoleType; content: string; cline?: EditorRange }[]) {
     messages.forEach(message =>
       this.plugin.settings.autoConcatMessagesFromSameRole &&
       this.messages[this.messages.length - 1]?.role === message.role
-        ? (this.messages[this.messages.length - 1].content += message.content as string)
-        : this.messages.push({
+        ? (this.messages[this.messages.length - 1].content += message.content)
+        : (this.messages.push({
             role: message.role,
-            content: (extras + (message.content as string)).trim(),
-            cline: { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } },
+            content: message.content.trim(),
           }),
+          this.clines.push(message.cline || { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } })),
     );
     return this;
   }
@@ -515,7 +555,7 @@ export class PureChatLLMChat {
     markdown: string,
     activeFile: TFile,
     app: App,
-    role: string,
+    role: RoleType,
   ): Promise<MediaMessage[] | string> {
     const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
 
@@ -660,16 +700,23 @@ export class PureChatLLMChat {
       });
     }
 
+    let tools: object[] | undefined = undefined;
+    if (this.plugin.settings.agentMode) {
+      if (Array.isArray(this.options.tools)) {
+        tools = this.options.tools
+          .map(t => (typeof t === 'string' ? this.toolregistry.getTool(t)?.getDefinition() : t))
+          .filter((t): t is object => t !== undefined);
+      } else {
+        const allTools = this.toolregistry.getAllDefinitions();
+        if (allTools.length > 0) tools = allTools;
+      }
+    }
+
     // return the whole object sent to the API
     return {
       ...this.options,
       messages: resolvedMessages,
-      tools: [
-        ...(this.options.tools ?? []),
-        ...(this.plugin.settings.useImageGeneration && this.plugin.settings.endpoint === 0
-          ? [PureChatLLMImageGen.tool]
-          : []),
-      ],
+      tools: tools,
     };
   }
 
@@ -699,15 +746,14 @@ export class PureChatLLMChat {
 
     if (this.plugin.settings.resolveFilesForChatAnalysis)
       this.messages = await Promise.all(
-        this.messages.map(async ({ role, content, cline }) => ({
+        this.messages.map(async ({ role, content }) => ({
           role,
           content: await PureChatLLMChat.resolveFiles(content, this.file, this.plugin.app),
-          cline,
         })),
       );
 
     new Notice('Generating chat response from template...');
-    const messages = [
+    const messages: { role: RoleType; content: string }[] = [
       { role: 'system', content: Chatsysprompt },
       {
         role: 'user',
@@ -715,8 +761,11 @@ export class PureChatLLMChat {
       },
       { role: 'user', content: templatePrompt },
     ];
+
+    const options = { ...this.options, messages };
+    delete options.tools;
     return this.sendChatRequest(
-      { ...this.options, messages: messages },
+      options,
       new StreamNotice(this.plugin.app, 'Processing chat with template.').change,
     ).then(r => ({
       role: 'assistant',
@@ -744,15 +793,15 @@ export class PureChatLLMChat {
       return Promise.resolve({ role: 'assistant', content: selectedText });
     }
     //const systemprompt = `You are a ${templatePrompt.name}.`;
-    const messages = [
-      ...(fileText
+    const messages: { role: RoleType; content: string }[] = [
+      ...((fileText
         ? [
             {
               role: 'system',
               content: `Here's the whole file that's being edited:\n<Markdown>\n${fileText}\n</Markdown>`,
             },
           ]
-        : []),
+        : []) as { role: RoleType; content: string }[]),
       { role: 'system', content: Selectionsysprompt },
       {
         role: 'user',
@@ -760,8 +809,12 @@ export class PureChatLLMChat {
       },
       { role: 'user', content: templatePrompt },
     ];
+
+    const options = { ...this.options, messages };
+    delete options.tools;
+
     return this.sendChatRequest(
-      { ...this.options, messages: messages },
+      options,
       new StreamNotice(this.plugin.app, 'Editing selection.').change,
     ).then(r => ({
       role: 'assistant',
@@ -794,7 +847,7 @@ export class PureChatLLMChat {
       .then(options => this.sendChatRequest(options, streamcallback))
       .then(content => {
         this.appendMessage({
-          role: content.role as RoleType,
+          role: content.role,
           content: content.content || '',
         }).appendMessage({
           role: 'user',
@@ -823,7 +876,7 @@ export class PureChatLLMChat {
   static async handleStreamingResponse(
     response: Response,
     streamcallback: (textFragment: StreamDelta) => boolean,
-  ): Promise<{ role: string; content?: string; tool_calls?: ToolCall[] }> {
+  ): Promise<{ role: RoleType; content?: string; tool_calls?: ToolCall[] }> {
     if (!response.body) {
       throw new Error('Response body is null. Streaming is not supported in this environment.');
     }
@@ -996,17 +1049,7 @@ export class PureChatLLMChat {
         const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
         this.plugin.status('');
         if (fullText.tool_calls) {
-          const toolCalls = fullText.tool_calls;
-          const imageGenCall = toolCalls.find(
-            (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
-          );
-          if (imageGenCall) {
-            streamcallback({
-              role: 'tool',
-              content: `Generating image:\n${(JSON.parse(imageGenCall.function.arguments) as { prompt: string }).prompt}`,
-            });
-            const l = await this.GenerateImage(imageGenCall, fullText);
-            options.messages.push(...l.msgs);
+          if (await this.handleToolCalls(fullText.tool_calls, options, streamcallback)) {
             return this.sendChatRequest(options, streamcallback);
           }
         }
@@ -1021,7 +1064,7 @@ export class PureChatLLMChat {
     } else {
       try {
         const data = (await response.json()) as {
-          choices: { message: { role: string; content?: string; tool_calls?: ToolCall[] } }[];
+          choices: { message: { role: RoleType; content?: string; tool_calls?: ToolCall[] } }[];
         };
 
         // Validate response structure
@@ -1042,17 +1085,14 @@ export class PureChatLLMChat {
         }
 
         if (data.choices[0].message.tool_calls) {
-          const toolCalls = data.choices[0].message.tool_calls;
-          const imageGenCall = toolCalls.find(
-            (call: ToolCall) => call.function.name === PureChatLLMImageGen.tool.function.name,
-          );
-          if (imageGenCall) {
-            streamcallback?.({
-              role: 'tool',
-              content: `Generating image:\n${(JSON.parse(imageGenCall.function.arguments) as { prompt: string }).prompt}`,
-            });
-            const l = await this.GenerateImage(imageGenCall, data.choices[0].message);
-            options.messages.push(...l.msgs);
+          if (
+            await this.handleToolCalls(
+              data.choices[0].message.tool_calls,
+              options,
+              streamcallback,
+              data.choices[0].message,
+            )
+          ) {
             return this.sendChatRequest(options, streamcallback);
           }
         }
@@ -1086,18 +1126,16 @@ export class PureChatLLMChat {
 
   filterOutUncalledToolCalls(
     msgs: {
-      role: string;
+      role: RoleType;
       content?: string;
       tool_call_id?: string;
       tool_calls?: ToolCall[];
-      cline?: EditorRange;
     }[],
   ): {
-    role: string;
+    role: RoleType;
     content?: string;
     tool_call_id?: string;
     tool_calls?: ToolCall[];
-    cline?: EditorRange;
   }[] {
     const [agent, ...Responses] = msgs;
     if (agent.tool_calls) {
@@ -1108,39 +1146,41 @@ export class PureChatLLMChat {
     return [agent, ...Responses];
   }
 
-  private async GenerateImage(
-    imageGenCall: ToolCall,
-    data: { role: string; content?: string; tool_calls?: ToolCall[] },
-  ) {
-    const imageGen = new PureChatLLMImageGen(this.plugin.app, this.endpoint.apiKey, this.file);
-    const imageOutputUrls = await imageGen.sendImageGenerationRequest(
-      JSON.parse(imageGenCall.function.arguments) as { prompt: string },
-    );
-    const message = imageOutputUrls
-      .map(img => {
-        return [
-          `![Generated Image](${img.normalizedPath})`,
-          `Revised Image prompt: ${img.revised_prompt}`,
-        ];
-      })
-      .flat()
-      .join('\n');
-    this.imageOutputUrls = imageOutputUrls;
-    return {
-      imageOutputUrls,
-      msgs: this.filterOutUncalledToolCalls([
-        data,
-        {
+  async handleToolCalls(
+    toolCalls: ToolCall[],
+    options: ChatRequestOptions,
+    streamcallback?: (textFragment: StreamDelta) => boolean,
+    assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
+  ): Promise<boolean> {
+    for (const call of toolCalls) {
+      const toolName = call.function.name;
+      if (this.toolregistry.getTool(toolName)) {
+        /* streamcallback?.({
           role: 'tool',
-          content: message || '',
-          tool_call_id: imageGenCall.id,
-          cline: {
-            from: { line: 0, ch: 0 },
-            to: { line: 0, ch: 0 },
-          },
-        },
-      ]),
-    };
+          content: `Executing ${toolName}...`,
+        }); */
+
+        this.toolregistry.setCallBack(streamcallback);
+
+        const args = JSON.parse(call.function.arguments) as Record<string, unknown>;
+        const output = await this.toolregistry.executeTool(toolName, args);
+
+        if (assistantMessage && typeof assistantMessage.role === 'string')
+          this.appendMessage({
+            role: assistantMessage.role,
+            content: assistantMessage.content ?? '',
+          });
+
+        this.appendMessage({ role: 'tool', content: output ?? '' });
+
+        options.messages.push(
+          assistantMessage || { role: 'assistant', content: null, tool_calls: [call] },
+          { role: 'tool', content: output, tool_call_id: call.id },
+        );
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -1204,7 +1244,7 @@ export class PureChatLLMChat {
     return new RegExp(
       this.Parser.replace(/([\^$*+?.()|[\]])/g, '\\$1').replace(
         /{role}/g,
-        '(system|user|assistant|developer)',
+        '(system|user|assistant|developer|tool)',
       ),
       'gim',
     );
