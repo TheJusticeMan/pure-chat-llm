@@ -111,6 +111,7 @@ export interface PureChatLLMSettings {
   resolveFilesForChatAnalysis: boolean;
   autoConcatMessagesFromSameRole: boolean;
   agentMode: boolean;
+  useYAMLFrontMatter: boolean;
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -132,6 +133,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   resolveFilesForChatAnalysis: false,
   autoConcatMessagesFromSameRole: true,
   agentMode: true,
+  useYAMLFrontMatter: false,
 };
 
 export interface PureChatLLMAPI {

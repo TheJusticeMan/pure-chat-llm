@@ -229,6 +229,15 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 
     new Setting(containerEl).setName('Advanced').setHeading();
     new Setting(containerEl)
+      .setName('Use YAML front matter')
+      .setDesc('Store chat metadata in YAML front matter instead of HTML comments.')
+      .addToggle(toggle =>
+        toggle.setValue(settings.useYAMLFrontMatter).onChange(async value => {
+          settings.useYAMLFrontMatter = value;
+          await this.plugin.saveSettings();
+        }),
+      );
+    new Setting(containerEl)
       .setName('Agent mode')
       .setDesc(
         'Enable this to allow the LLM to use tools (e.g., creating notes, searching the vault).',

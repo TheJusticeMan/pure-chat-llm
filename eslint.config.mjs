@@ -34,6 +34,7 @@ export default defineConfig([
             'DALL-E',
             'api.openai.com',
             'HTML',
+            'YAML',
           ],
           acronyms: ['OK'],
           enforceCamelCaseLower: true,

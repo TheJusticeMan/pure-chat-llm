@@ -1,4 +1,14 @@
-import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
+import { alloptions } from '../assets/s.json';
+import {
+  App,
+  EditorRange,
+  Notice,
+  parseLinktext,
+  parseYaml,
+  resolveSubpath,
+  stringifyYaml,
+  TFile,
+} from 'obsidian';
 import { ToolRegistry } from 'src/tools';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from '../assets/s.json';
 import PureChatLLM, { StreamNotice } from '../main';
@@ -167,11 +177,14 @@ export class PureChatLLMChat {
     const options: Record<string, unknown> = { ...this.options };
     delete options.messages;
     if (!this.plugin.settings.agentMode) delete options.tools;
-    const prechat = PureChatLLMChat.changeCodeBlockMD(
-      this.pretext,
-      'json',
-      JSON.stringify(options, null, 2),
-    );
+
+    const prechat = this.plugin.settings.useYAMLFrontMatter
+      ? `---\n${stringifyYaml(options)}\n---\n${this.pretext
+          .replace(/```json[\s\S]*?```/im, '')
+          .replace(/---\n[\s\S]+?\n---/im, '')
+          .trim()}`
+      : PureChatLLMChat.changeCodeBlockMD(this.pretext, 'json', JSON.stringify(options, null, 2));
+
     return `${prechat.trim()}\n${this.ChatText}`;
   }
 
@@ -232,9 +245,34 @@ export class PureChatLLMChat {
       return;
     }
 
-    const optionsStr = PureChatLLMChat.extractCodeBlockMD(this.pretext, 'json') || '';
-    this.options = { ...this.options, ...PureChatLLMChat.tryJSONParse(optionsStr) };
+    this.parsePretextOptions();
     this.updateEndpointFromModel();
+  }
+
+  private parsePretextOptions() {
+    const optionsStr = PureChatLLMChat.extractCodeBlockMD(this.pretext, 'json');
+    if (optionsStr) {
+      this.options = { ...this.options, ...PureChatLLMChat.tryJSONParse(optionsStr) };
+    } else {
+      const yamlMatch = this.pretext.match(/^---\n([\s\S]+?)\n---/);
+      if (yamlMatch) {
+        try {
+          const yaml: unknown = parseYaml(yamlMatch[1]);
+          if (yaml && typeof yaml === 'object') {
+            const allowedKeys = Object.keys(alloptions);
+            const filteredOptions: Record<string, unknown> = {};
+            for (const key of allowedKeys) {
+              if (Object.prototype.hasOwnProperty.call(yaml, key)) {
+                filteredOptions[key] = (yaml as Record<string, unknown>)[key];
+              }
+            }
+            this.options = { ...this.options, ...filteredOptions };
+          }
+        } catch (e) {
+          console.error('Error parsing frontmatter YAML:', e);
+        }
+      }
+    }
   }
 
   updateEndpointFromModel() {
@@ -706,7 +744,7 @@ export class PureChatLLMChat {
         tools = this.options.tools
           .map(t => (typeof t === 'string' ? this.toolregistry.getTool(t)?.getDefinition() : t))
           .filter((t): t is object => t !== undefined);
-      } else {
+      } else if (this.options.tools === true) {
         const allTools = this.toolregistry.getAllDefinitions();
         if (allTools.length > 0) tools = allTools;
       }

@@ -941,7 +941,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
   ): EditorSuggestTriggerInfo | null {
     //const line = editor.getLine(cursor.line);
     const line = editor.getRange({ ...cursor, ch: 0 }, cursor); // Get the line text
-    if (/^(```[a-z]|# |send)/i.test(line))
+    if (/^(model: |\s\s"model": |```[a-z]|# |send)/i.test(line))
       return {
         start: { line: cursor.line, ch: 0 },
         end: { line: cursor.line, ch: line.length },
@@ -966,6 +966,19 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
       const query = context.query.slice(2).toLowerCase().trim();
 
       return roles.filter(h => h.startsWith(query) || ('role: ' + h).startsWith(query));
+    } else if (context.query.startsWith('model: ') || context.query.startsWith('  "model": ')) {
+      this.type = 'model';
+      const query = context.query
+        .replace('model: ', '')
+        .replace(/\s\s"model": "?/g, '')
+        .replace(/",?/g, '')
+        .toLowerCase()
+        .trim();
+      const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint].name;
+      if (endpoint) {
+        const models = this.plugin.settings.ModelsOnEndpoint[endpoint] || [];
+        return models.filter(m => m.toLowerCase().startsWith(query)).slice(0, 100);
+      }
     }
     return [];
   }
@@ -981,6 +994,9 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
       case 'role':
         el.textContent = `role: ${toTitleCase(value)}`;
         break;
+      case 'model':
+        el.textContent = value;
+        break;
     }
   }
 
@@ -988,6 +1004,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     if (!this.context) return;
     const { start, end, editor } = this.context;
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    let text: string;
     switch (this.type) {
       case 'send':
         editor.replaceRange('', start, end);
@@ -1011,6 +1028,21 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
           line: start.line + 1,
           ch: 0,
         });
+        break;
+      case 'model':
+        text = editor.getLine(start.line).includes('"model":')
+          ? `  "model": "${value}",`
+          : `model: ${value}`;
+
+        editor.replaceRange(text, start, {
+          line: start.line,
+          ch: editor.getLine(start.line).length,
+        });
+        editor.setCursor({
+          line: start.line,
+          ch: text.length,
+        });
+        break;
     }
   }
 }
