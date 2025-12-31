@@ -5,29 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [TODO]
-
-- Make it agentic!
-
-- [x] Add tools to interact with Obsidian
-   - Add tools to interact with the vault
-   - Add tools to interact with notes
-   - Add tools to create and manage notes
-   - Add tools to search notes
-   - Add tools to link notes
-   - Add tools to interact with files
-   - Add tools to read files
-   - Add tools to write files
-   - Add tools to manage files
-
-- [x] Add tools to interact with the workspace
-   - [x] Add tools to manage panes
-   - [x] Add tools to manage views
-   - [x] Add tools to interact with settings
-   - [x] Add tools to read settings
-   - [x] Add tools to update settings
-
 ## [Unreleased]
+
+## [1.9.1] - 2025-12-30
+
+### Added
+
+- **YAML Front Matter Support**: Added a new setting to store chat metadata (model, temperature, etc.) in YAML front matter instead of JSON code blocks.
+- **Model Suggestions**: The editor now provides autocomplete suggestions for model names within both YAML front matter and JSON configuration blocks.
+
+### Changed
+
+- **Improved Tool Handling**: Refined logic for enabling all available tools when `tools: true` is set in the chat configuration.
+- **Enhanced Editor Suggestions**: Updated the suggest provider to recognize more trigger patterns for model selection.
 
 ## [1.9.0] - 2025-12-29
 
