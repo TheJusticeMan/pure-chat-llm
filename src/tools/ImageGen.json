@@ -1,0 +1,37 @@
+{
+  "OpenAI": {
+    "dall-e-2": {
+      "portrait": [],
+      "landscape": [],
+      "square": ["1024x1024", "512x512", "256x256"]
+    },
+    "dall-e-3": {
+      "portrait": ["1024x1792"],
+      "landscape": ["1792x1024"],
+      "square": ["1024x1024"]
+    },
+    "gpt-image-1": {
+      "portrait": ["1024x1536"],
+      "landscape": ["1536x1024"],
+      "square": ["1024x1024"]
+    },
+    "gpt-image-1-mini": {
+      "portrait": ["1024x1536"],
+      "landscape": ["1536x1024"],
+      "square": ["1024x1024"]
+    },
+    "gpt-image-1.5": {
+      "portrait": ["1024x1536"],
+      "landscape": ["1536x1024"],
+      "square": ["1024x1024"]
+    }
+  },
+  "xAI": { "grok-2-image": { "portrait": [], "landscape": [], "square": [] } },
+  "Gemini": {
+    "imagen-3.0-generate-002": {
+      "portrait": ["1024x1536"],
+      "landscape": ["1536x1024"],
+      "square": ["1024x1024"]
+    }
+  }
+}

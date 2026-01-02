@@ -565,6 +565,10 @@ export default class PureChatLLM extends Plugin {
 
     // Compatibility fixes for older versions
 
+    this.settings.endpoints.forEach(endpoint => {
+      endpoint.endpoint = endpoint.endpoint.replace('/chat/completions', ''); // Old endpoints had /chat/completions appended
+    });
+
     if ((loadedData as unknown as { chatParser?: number }).chatParser === 1) {
       this.settings.messageRoleFormatter = '\\n> [!note] {role}\\n> # role: {role}\\n';
       // @ts-ignore

@@ -291,7 +291,7 @@ const endpointNames: PureChatLLMAPI = {
   apiKey: 'API key',
   endpoint: 'Endpoint URL',
   defaultmodel: 'Default model',
-  listmodels: 'Available models URL (Optional)',
+
   getapiKey: 'API key retrieval URL (Optional)',
 };
 
@@ -302,16 +302,14 @@ const endpointDescriptions: PureChatLLMAPI = {
     "The URL for the LLM provider's chat completions endpoint, including /v1/chat/completions.",
   defaultmodel:
     'The default model to use for requests. This is required for the plugin to function.',
-  listmodels: 'Optional URL to retrieve available models from the provider.',
   getapiKey: 'Optional URL the API key page for the provider.',
 };
 
 const endpointInputPlaceholders: PureChatLLMAPI = {
   name: 'Enter the name of the LLM provider...',
   apiKey: 'Enter your API key...',
-  endpoint: 'https://api.example.com/v1/chat/completions',
+  endpoint: 'https://api.example.com/v1',
   defaultmodel: 'gpt-3.5-turbo',
-  listmodels: 'https://api.example.com/v1/models (Optional)',
   getapiKey: 'https://example.com/get-api-key (Optional)',
 };
 
@@ -368,7 +366,7 @@ export class EditModalProviders extends Modal {
             apiKey: '',
             endpoint: '',
             defaultmodel: '',
-            listmodels: '',
+
             getapiKey: '',
           });
           this.selectedIndex = this.plugin.settings.endpoints.length - 1;

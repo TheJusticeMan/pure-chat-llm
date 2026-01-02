@@ -40,6 +40,7 @@ export default defineConfig([
           enforceCamelCaseLower: true,
         },
       ],
+      'prefer-const': 'error',
     },
   },
 ]);

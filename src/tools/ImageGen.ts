@@ -1,5 +1,21 @@
-import { defineToolParameters, InferArgs, Tool } from '../tools';
 import { requestUrl, TFile } from 'obsidian';
+import { defineToolParameters, InferArgs, Tool } from '../tools';
+import imgModels from './ImageGen.json';
+const imgModelsJson = imgModels as {
+  [key: string]: {
+    [key: string]: {
+      landscape: string[];
+      portrait: string[];
+      square: string[];
+    };
+  };
+};
+
+const defaultModels: Record<string, string> = {
+  OpenAI: 'gpt-image-1.5',
+  xAI: 'grok-2-image',
+  Gemini: 'imagen-3.0-generate-002',
+};
 
 const imageGenerationParameters = defineToolParameters({
   type: 'object' as const,
@@ -33,12 +49,9 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
     'Create high-quality, customized images from detailed Markdown prompts. Supports multiple outputs and aspect ratio customization for precise visual storytelling.';
   readonly parameters = imageGenerationParameters;
 
-  model = 'dall-e-3'; // Default model
-
   isAvailable(): boolean {
-    return (
-      this.chat.plugin.settings.endpoints[this.chat.plugin.settings.endpoint]?.name === 'OpenAI'
-    );
+    const { name } = this.chat.plugin.settings.endpoints[this.chat.plugin.settings.endpoint];
+    return name === 'OpenAI' || name === 'xAI'; /* || name === 'Gemini'; */
   }
 
   async execute(args: ImageGenerationArgs): Promise<string> {
@@ -81,33 +94,30 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
     ratio?: 'square' | 'portrait' | 'landscape';
     n?: number;
   }): Promise<{ normalizedPath: string; revised_prompt?: string; file: TFile }[]> {
-    const url = 'https://api.openai.com/v1/images/generations';
+    const endpoint = this.chat.endpoint;
+    const url = `${endpoint.endpoint}/images/generations`;
     const apiKey = this.chat.endpoint.apiKey;
     const app = this.chat.plugin.app;
     const contextFile = this.chat.file;
+    const model = defaultModels[endpoint.name] || Object.keys(imgModelsJson[endpoint.name])[0];
 
-    const size =
-      ratio === 'landscape' // Landscape images
-        ? this.model === 'gpt-image-1'
-          ? '1536x1024'
-          : this.model === 'dall-e-3'
-            ? '1792x1024'
-            : '1024x1024'
-        : ratio === 'portrait' // Portrait images
-          ? this.model === 'gpt-image-1'
-            ? '1024x1536'
-            : this.model === 'dall-e-3'
-              ? '1024x1792'
-              : '1024x1024'
-          : '1024x1024'; // Square images Default size
+    if (!model)
+      throw new Error(`No image generation model configured for endpoint ${endpoint.name}`);
 
-    const body = {
-      model: this.model,
+    const size = imgModelsJson[endpoint.name]?.[model]?.[ratio]?.[0] || 'auto';
+
+    const body: { model: string; prompt: string; n: number; size?: string } = {
+      model,
       prompt,
       n: n || 1,
       size,
     };
 
+    if (endpoint.name === 'xAI' || endpoint.name === 'Gemini') {
+      delete body.size;
+    }
+
+    //console.log('Image generation request body:', body);
     // eslint-disable-next-line no-restricted-globals
     return fetch(url, {
       method: 'POST',
@@ -117,7 +127,10 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
       },
       body: JSON.stringify(body),
     }).then(async response => {
-      if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
+      if (!response.ok)
+        throw new Error(
+          `Image generation request failed: ${response.status} ${response.statusText}`,
+        );
       const data = (await response.json()) as {
         created: number;
         data: { url: string; revised_prompt?: string }[];

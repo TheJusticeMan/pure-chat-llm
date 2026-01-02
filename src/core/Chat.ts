@@ -1015,7 +1015,7 @@ export class PureChatLLMChat {
     let response: Response;
     try {
       // eslint-disable-next-line no-restricted-globals
-      response = await fetch(this.endpoint.endpoint, {
+      response = await fetch(`${this.endpoint.endpoint}/chat/completions`, {
         method: 'POST',
         headers: this.Headers,
         body: JSON.stringify({
@@ -1199,7 +1199,16 @@ export class PureChatLLMChat {
         }); */
 
         this.toolregistry.setCallBack(streamcallback);
+        // if arguments are not valid JSON, check if it's a duplicated call and only take the first half
 
+        if (!this.tryJSONParse(call.function.arguments)) {
+          const halfLength = Math.floor(call.function.arguments.length / 2);
+          const firstHalf = call.function.arguments.slice(0, halfLength);
+          const secondHalf = call.function.arguments.slice(halfLength);
+          if (firstHalf === secondHalf) {
+            call.function.arguments = firstHalf;
+          }
+        }
         const args = JSON.parse(call.function.arguments) as Record<string, unknown>;
         const output = await this.toolregistry.executeTool(toolName, args);
 
@@ -1220,6 +1229,14 @@ export class PureChatLLMChat {
     }
     return false;
   }
+  tryJSONParse(str: string): unknown {
+    try {
+      return JSON.parse(str);
+    } catch (e) {
+      console.debug('JSON parse error:', e);
+      return null;
+    }
+  }
 
   /**
    * Retrieves a list of all available models from the configured API endpoint.
@@ -1236,13 +1253,13 @@ export class PureChatLLMChat {
    * @throws {Error} If the API request fails or the response is invalid.
    */
   getAllModels(): Promise<string[]> {
-    const { name: endpointName, listmodels } =
+    const { name: endpointName, endpoint } =
       this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     const cached = this.plugin.settings.ModelsOnEndpoint[endpointName];
     if (cached?.length) return Promise.resolve(cached);
     this.console.log(`Fetching models from ${endpointName} API...`);
     // eslint-disable-next-line no-restricted-globals
-    return fetch(listmodels, {
+    return fetch(`${endpoint}/models`, {
       method: 'GET',
       headers: this.Headers,
     })

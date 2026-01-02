@@ -6,64 +6,56 @@ export const StatSett = {
       name: 'OpenAI',
       apiKey: EmptyApiKey,
       defaultmodel: 'gpt-4.1-nano',
-      endpoint: 'https://api.openai.com/v1/chat/completions',
-      listmodels: 'https://api.openai.com/v1/models',
+      endpoint: 'https://api.openai.com/v1',
       getapiKey: 'https://platform.openai.com/api-keys',
     },
     {
       name: 'Gemini',
       apiKey: EmptyApiKey,
       defaultmodel: 'models/gemini-2.0-flash-lite',
-      endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-      listmodels: 'https://generativelanguage.googleapis.com/v1beta/openai/models',
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
       getapiKey: 'https://aistudio.google.com/apikey',
     },
     {
       name: 'xAI',
       apiKey: EmptyApiKey,
       defaultmodel: 'grok-3-mini',
-      endpoint: 'https://api.x.ai/v1/chat/completions',
-      listmodels: 'https://api.x.ai/v1/models',
+      endpoint: 'https://api.x.ai/v1',
       getapiKey: 'https://console.x.ai',
     },
     {
       name: 'Anthropic',
       apiKey: EmptyApiKey,
       defaultmodel: 'claude-3-7-sonnet-20250219',
-      endpoint: 'https://api.anthropic.com/v1/messages',
-      listmodels: 'https://api.anthropic.com/v1/models',
+      endpoint: 'https://api.anthropic.com/v1',
       getapiKey: 'https://console.anthropic.com/settings/keys',
     },
     {
       name: 'Cohere',
       apiKey: EmptyApiKey,
       defaultmodel: 'command',
-      endpoint: 'https://api.cohere.ai/v1/generate',
-      listmodels: 'https://api.cohere.ai/v1/models',
+      endpoint: 'https://api.cohere.ai/v1',
       getapiKey: 'https://dashboard.cohere.com/api-keys',
     },
     {
       name: 'Mistral AI',
       apiKey: EmptyApiKey,
       defaultmodel: 'mixtral-8x7b',
-      endpoint: 'https://api.mistral.ai/v1/chat/completions',
-      listmodels: 'https://api.mistral.ai/v1/models',
+      endpoint: 'https://api.mistral.ai/v1',
       getapiKey: 'https://console.mistral.ai/api-keys',
     },
     {
       name: 'DeepSeek',
       apiKey: EmptyApiKey,
       defaultmodel: 'deepseek-llm',
-      endpoint: 'https://api.deepseek.com/v1/chat/completions',
-      listmodels: 'https://api.deepseek.com/v1/models',
+      endpoint: 'https://api.deepseek.com/v1',
       getapiKey: 'https://platform.deepseek.com/api_keys',
     },
     {
       name: 'Ollama',
       apiKey: 'ollama',
-      endpoint: 'http://localhost:11434/v1/chat/completions',
+      endpoint: 'http://localhost:11434/v1',
       defaultmodel: 'qwen3:0.6b',
-      listmodels: 'http://localhost:11434/v1/models',
       getapiKey: '',
     },
   ],
@@ -141,7 +133,6 @@ export interface PureChatLLMAPI {
   apiKey: string;
   endpoint: string;
   defaultmodel: string;
-  listmodels: string;
   getapiKey: string;
 }
 
