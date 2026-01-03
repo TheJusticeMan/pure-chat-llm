@@ -70,6 +70,7 @@ export type SmartConnectionsArgs = InferArgs<typeof smartConnectionsParameters>;
 
 export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
   readonly name = 'smart_connections_rag';
+  readonly classification = 'AI';
   readonly description =
     'Performs a semantic search across the vault using the Smart Connections index to find relevant note snippets or files.';
   readonly parameters = smartConnectionsParameters;

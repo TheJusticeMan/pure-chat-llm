@@ -28,11 +28,14 @@ export interface ToolDefinition {
   function: ToolFunction;
 }
 
+export type ToolClassification = 'Vault' | 'UI' | 'System' | 'AI';
+
 // Abstract base class for all tools
 export abstract class Tool<TArgs = Record<string, unknown>> {
   abstract readonly name: string;
   abstract readonly description: string;
   abstract readonly parameters: ToolParameters;
+  abstract readonly classification: ToolClassification;
 
   constructor(
     protected chat: PureChatLLMChat,
@@ -129,23 +132,43 @@ export class ToolRegistry {
     return this;
   }
 
+  isClassificationEnabled(classification: ToolClassification): boolean {
+    const settings = this.chat.plugin.settings;
+    return settings.enabledToolClassifications?.[classification] ?? true;
+  }
+
   getTools(names: string[]): Tool<Record<string, unknown>>[] {
     return names
       .map(name => this.allTools.get(name))
       .filter(
-        (tool): tool is Tool<Record<string, unknown>> => tool !== undefined && tool.isAvailable(),
+        (tool): tool is Tool<Record<string, unknown>> =>
+          tool !== undefined &&
+          tool.isAvailable() &&
+          this.isClassificationEnabled(tool.classification),
       );
   }
 
   getNameList(): string[] {
-    return Array.from(this.enabledTools).filter(name => this.allTools.get(name)?.isAvailable());
+    return Array.from(this.enabledTools).filter(name => {
+      const tool = this.allTools.get(name);
+      return tool && tool.isAvailable() && this.isClassificationEnabled(tool.classification);
+    });
+  }
+
+  getToolNamesByClassification(classification: ToolClassification): string[] {
+    return Array.from(this.allTools.values())
+      .filter(tool => tool.classification === classification)
+      .map(tool => tool.name);
   }
 
   get tools(): Tool<Record<string, unknown>>[] {
     return Array.from(this.enabledTools)
       .map(name => this.allTools.get(name))
       .filter(
-        (tool): tool is Tool<Record<string, unknown>> => tool !== undefined && tool.isAvailable(),
+        (tool): tool is Tool<Record<string, unknown>> =>
+          tool !== undefined &&
+          tool.isAvailable() &&
+          this.isClassificationEnabled(tool.classification),
       );
   }
 
@@ -166,6 +189,10 @@ export class ToolRegistry {
   getTool(name: string): Tool<Record<string, unknown>> | undefined {
     const tool = this.allTools.get(name);
     return tool && tool.isAvailable() ? tool : undefined;
+  }
+
+  classificationForTool(name: string): ToolClassification | undefined {
+    return this.allTools.get(name)?.classification;
   }
 
   getAllDefinitions(): ToolDefinition[] {

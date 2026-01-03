@@ -104,6 +104,7 @@ export interface PureChatLLMSettings {
   autoConcatMessagesFromSameRole: boolean;
   agentMode: boolean;
   useYAMLFrontMatter: boolean;
+  enabledToolClassifications: { [key: string]: boolean };
 }
 
 export const DEFAULT_SETTINGS: PureChatLLMSettings = {
@@ -126,6 +127,12 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   autoConcatMessagesFromSameRole: true,
   agentMode: true,
   useYAMLFrontMatter: false,
+  enabledToolClassifications: {
+    Vault: true,
+    UI: true,
+    System: true,
+    AI: true,
+  },
 };
 
 export interface PureChatLLMAPI {

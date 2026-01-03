@@ -17,6 +17,7 @@ export type ActiveContextArgs = InferArgs<typeof activeContextParameters>;
 
 export class ActiveContextTool extends Tool<ActiveContextArgs> {
   readonly name = 'get_active_context';
+  readonly classification = 'UI';
   readonly description =
     'Retrieves information about the currently active note, including path, selection, and cursor position.';
   readonly parameters = activeContextParameters;

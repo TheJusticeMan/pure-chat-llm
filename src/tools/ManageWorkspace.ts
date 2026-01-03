@@ -43,6 +43,7 @@ export type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
 
 export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
   readonly name = 'manage_workspace';
+  readonly classification = 'UI';
   readonly description =
     'Controls the Obsidian workspace layout. Use this to open notes in new tabs, split panes, or change view modes.';
   readonly parameters = manageWorkspaceParameters;

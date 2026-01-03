@@ -31,6 +31,7 @@ export type SearchVaultArgs = InferArgs<typeof searchVaultParameters>;
 
 export class SearchVaultTool extends Tool<SearchVaultArgs> {
   readonly name = 'search_vault';
+  readonly classification = 'Vault';
   readonly description = 'Performs a content search across all markdown notes in the vault.';
   readonly parameters = searchVaultParameters;
 

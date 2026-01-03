@@ -44,6 +44,7 @@ export type ImageGenerationArgs = InferArgs<typeof imageGenerationParameters>;
 
 export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   readonly name = 'generate_image';
+  readonly classification = 'AI';
   static _name = this.name;
   readonly description =
     'Create high-quality, customized images from detailed Markdown prompts. Supports multiple outputs and aspect ratio customization for precise visual storytelling.';

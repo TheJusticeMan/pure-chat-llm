@@ -26,6 +26,7 @@ export type PatchNoteArgs = InferArgs<typeof patchNoteParameters>;
 
 export class PatchNoteTool extends Tool<PatchNoteArgs> {
   readonly name = 'patch_note';
+  readonly classification = 'Vault';
   readonly description =
     'Appends text to a specific section or heading in a note. Triggers user review.';
   readonly parameters = patchNoteParameters;

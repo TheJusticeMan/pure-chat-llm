@@ -48,6 +48,7 @@ import { PURE_CHAT_LLM_VIEW_TYPE } from '../types';
 export class PureChatLLMSideView extends ItemView {
   console: BrowserConsole;
   ischat = false;
+  isExpanded = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -180,6 +181,56 @@ export class PureChatLLMSideView extends ItemView {
       this.defaultContent();
       return;
     }
+    if (this.isExpanded) {
+      new Setting(container).setName('Tools used in this chat');
+      new Setting(container).setName('Tools used in this chat').then(s => {
+        (['Vault', 'UI', 'System', 'AI'] as const).forEach(classification => {
+          s.addButton(btn => {
+            const en = chat.isEnabled(classification);
+            if (en) btn.setCta();
+            return btn
+              .setButtonText(classification)
+              .setTooltip(`${en ? 'Disable' : 'Enable'} ${classification} tools`)
+              .onClick(() => {
+                if (en) {
+                  chat.options.tools = chat.options.tools?.filter(
+                    t => chat.toolregistry.classificationForTool(t) !== classification,
+                  );
+                } else {
+                  chat.options.tools = Array.from(
+                    new Set([
+                      ...(chat.options.tools || []),
+                      ...chat.toolregistry.getToolNamesByClassification(classification),
+                    ]),
+                  );
+                }
+                editor.setValue(chat.Markdown);
+              });
+          });
+        });
+      });
+      /* (['Vault', 'UI', 'System', 'AI'] as const).forEach(classification => {
+        chat.toolregistry.getToolNamesByClassification(classification).forEach(toolname => {
+          new Setting(container).setName(toolname).then(s => {
+            const en = chat.options.tools?.includes(toolname);
+            s.addExtraButton(btn =>
+              btn
+                .setIcon(!en ? 'check' : 'cross')
+                .setTooltip('Enabled')
+                .onClick(() => {
+                  if (en) chat.options.tools = chat.options.tools?.filter(t => t !== toolname);
+                  else
+                    chat.options.tools = Array.from(
+                      new Set([...(chat.options.tools || []), toolname]),
+                    );
+
+                  editor.setValue(chat.Markdown);
+                }),
+            );
+          });
+        });
+      }); */
+    }
 
     container.createDiv({ text: '' }, contain => {
       contain.addClass('PURE', 'floattop');
@@ -187,6 +238,14 @@ export class PureChatLLMSideView extends ItemView {
       new ButtonComponent(contain)
         .setButtonText(`${chat.endpoint.name} (${chat.options.model})`)
         .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor));
+
+      new ButtonComponent(contain)
+        .setIcon(this.isExpanded ? 'chevron-up' : 'chevron-down')
+        .setTooltip(this.isExpanded ? 'Collapse view' : 'Expand view')
+        .onClick(() => {
+          this.isExpanded = !this.isExpanded;
+          this.update(editor, view);
+        });
 
       new ButtonComponent(contain)
         .setIcon(allshown ? 'chevrons-down-up' : 'chevrons-up-down')
@@ -210,6 +269,23 @@ export class PureChatLLMSideView extends ItemView {
 
     container.addClass('PURESideView');
     // Process markdown messages
+    this.renderChatMessages(chat, container, editor, view);
+
+    // scroll to bottom of container
+    // if the editor is focused
+    if (editor.hasFocus()) {
+      container.scrollTo(0, container.scrollHeight);
+    } else if (this.isExpanded) {
+      container.scrollTo(0, 0);
+    }
+  }
+
+  private renderChatMessages(
+    chat: PureChatLLMChat,
+    container: HTMLElement,
+    editor: Editor,
+    view: MarkdownView,
+  ) {
     chat.messages.forEach((message, index) => {
       const preview = message.content.substring(0, 400);
 
@@ -328,11 +404,6 @@ export class PureChatLLMSideView extends ItemView {
         });
       });
     });
-    // scroll to bottom of container
-    // if the editor is focused
-    if (editor.hasFocus()) {
-      container.scrollTo(0, container.scrollHeight);
-    }
   }
 
   private goToPostion(editor: Editor, position: EditorRange, select = false) {

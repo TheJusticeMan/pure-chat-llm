@@ -21,6 +21,7 @@ export type ShowNoticeArgs = InferArgs<typeof showNoticeParameters>;
 
 export class ShowNoticeTool extends Tool<ShowNoticeArgs> {
   readonly name = 'show_obsidian_notice';
+  readonly classification = 'UI';
   readonly description = 'Displays a transient toast notification (notice) in the Obsidian UI.';
   readonly parameters = showNoticeParameters;
 

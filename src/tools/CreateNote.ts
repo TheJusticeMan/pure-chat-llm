@@ -35,6 +35,7 @@ export type CreateNoteArgs = InferArgs<typeof createNoteParameters>;
 
 export class CreateNoteTool extends Tool<CreateNoteArgs> {
   readonly name = 'create_obsidian_note';
+  readonly classification = 'Vault';
   readonly description =
     'Creates a new markdown note in the Obsidian vault with optional frontmatter properties. This triggers a user review before saving.';
   readonly parameters = createNoteParameters;

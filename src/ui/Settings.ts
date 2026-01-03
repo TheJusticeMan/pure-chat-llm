@@ -1,5 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
-import { BrowserConsole } from '../utils/BrowserConsole';
+import { version } from '../assets/s.json';
 import { PureChatLLMChat } from '../core/Chat';
 import { ImportChatGPT } from '../core/ImportChatGPT';
 import PureChatLLM, {
@@ -8,9 +8,9 @@ import PureChatLLM, {
   getObjectFromMarkdown,
   SelectionPromptEditor,
 } from '../main';
-import { AskForAPI, EditModalProviders } from './Modals';
-import { version } from '../assets/s.json';
 import { DEFAULT_SETTINGS, PureChatLLMSettings } from '../types';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { AskForAPI, EditModalProviders } from './Modals';
 
 /**
  * Represents the settings tab for the PureChatLLM plugin in Obsidian.
@@ -248,6 +248,26 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }),
       );
+
+    new Setting(containerEl)
+      .setName('Enabled tool classifications')
+      .setDesc('Control which categories of tools are available to the agent.')
+      .setHeading();
+
+    (['Vault', 'UI', 'System', 'AI'] as const).forEach(classification => {
+      new Setting(containerEl)
+        .setName(`${classification} tools`)
+        .setDesc(`Enable ${classification} related tools.`)
+        .addToggle(toggle =>
+          toggle
+            .setValue(settings.enabledToolClassifications[classification] ?? true)
+            .onChange(async value => {
+              settings.enabledToolClassifications[classification] = value;
+              await this.plugin.saveSettings();
+            }),
+        );
+    });
+
     new Setting(containerEl)
       .setName('Auto-concat messages from same role')
       .setDesc(

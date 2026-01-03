@@ -32,6 +32,7 @@ export type GlobFilesArgs = InferArgs<typeof globFilesParameters>;
 
 export class GlobFilesTool extends Tool<GlobFilesArgs> {
   readonly name = 'glob_vault_files';
+  readonly classification = 'Vault';
   readonly description =
     'Searches the vault for file paths matching a specific glob pattern. Useful for discovering files or mapping vault structure.';
   readonly parameters = globFilesParameters;

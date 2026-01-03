@@ -9,7 +9,7 @@ import {
   stringifyYaml,
   TFile,
 } from 'obsidian';
-import { ToolRegistry } from 'src/tools';
+import { ToolClassification, ToolDefinition, ToolRegistry } from 'src/tools';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from '../assets/s.json';
 import PureChatLLM, { StreamNotice } from '../main';
 import { CreateNoteTool } from '../tools/CreateNote';
@@ -88,8 +88,18 @@ interface ChatRequestOptions {
   stream?: boolean;
   max_completion_tokens?: number;
   max_tokens?: number;
-  tools?: (object | string)[];
+  tools?: ToolDefinition[];
   [key: string]: unknown;
+}
+
+interface ChatOptions {
+  model: string;
+  messages: { role: RoleType; content: string }[];
+  stream?: boolean;
+  max_completion_tokens?: number;
+  max_tokens?: number;
+  tools?: string[];
+  /* [key: string]: unknown; */
 }
 
 /**
@@ -114,7 +124,7 @@ interface ChatRequestOptions {
  * @public
  */
 export class PureChatLLMChat {
-  options: ChatRequestOptions;
+  options: ChatOptions;
   messages: ChatMessage[] = [];
   clines: EditorRange[] = [];
   plugin: PureChatLLM;
@@ -284,6 +294,16 @@ export class PureChatLLMChat {
       this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
     }
     return this;
+  }
+
+  isEnabled(classification: string): boolean {
+    if (!this.options.tools) return false;
+    if (Array.isArray(this.options.tools)) {
+      return this.options.tools.some(
+        (t: string) => this.toolregistry.classificationForTool(t) === classification,
+      );
+    }
+    return this.toolregistry.isClassificationEnabled(classification as ToolClassification);
   }
 
   cleanUpChat() {
@@ -714,7 +734,7 @@ export class PureChatLLMChat {
    */
   async getChatGPTinstructions(activeFile: TFile, app: App): Promise<ChatRequestOptions> {
     this.file = activeFile;
-    const resolvedMessages = await Promise.all(
+    const messages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
         role: role,
         content: await PureChatLLMChat.resolveFilesWithImagesAndAudio(
@@ -728,33 +748,25 @@ export class PureChatLLMChat {
 
     // For Gemini endpoint: ensure at least one user message exists
     if (
-      resolvedMessages.length === 1 &&
-      resolvedMessages[0].role === 'system' &&
+      messages.length === 1 &&
+      messages[0].role === 'system' &&
       this.endpoint.endpoint.includes('generativelanguage.googleapis.com')
     ) {
-      resolvedMessages.push({
+      messages.push({
         role: 'user',
         content: 'Introduce yourself.',
       });
     }
 
-    let tools: object[] | undefined = undefined;
-    if (this.plugin.settings.agentMode) {
-      if (Array.isArray(this.options.tools)) {
-        tools = this.options.tools
-          .map(t => (typeof t === 'string' ? this.toolregistry.getTool(t)?.getDefinition() : t))
-          .filter((t): t is object => t !== undefined);
-      } else if (this.options.tools === true) {
-        const allTools = this.toolregistry.getAllDefinitions();
-        if (allTools.length > 0) tools = allTools;
-      }
-    }
+    const tools: ToolDefinition[] | undefined = this.options.tools
+      ?.map(t => this.toolregistry.getTool(t)?.getDefinition())
+      .filter(t => t !== undefined);
 
     // return the whole object sent to the API
     return {
       ...this.options,
-      messages: resolvedMessages,
-      tools: tools,
+      messages,
+      tools,
     };
   }
 
@@ -803,7 +815,7 @@ export class PureChatLLMChat {
     const options = { ...this.options, messages };
     delete options.tools;
     return this.sendChatRequest(
-      options,
+      options as ChatRequestOptions,
       new StreamNotice(this.plugin.app, 'Processing chat with template.').change,
     ).then(r => ({
       role: 'assistant',
@@ -852,7 +864,7 @@ export class PureChatLLMChat {
     delete options.tools;
 
     return this.sendChatRequest(
-      options,
+      options as ChatRequestOptions,
       new StreamNotice(this.plugin.app, 'Editing selection.').change,
     ).then(r => ({
       role: 'assistant',
@@ -1332,9 +1344,9 @@ export class PureChatLLMChat {
    * @returns The parsed object if successful, or `null` if parsing fails.
    */
 
-  static tryJSONParse(str: string): Partial<ChatRequestOptions> | null {
+  static tryJSONParse(str: string): Partial<ChatOptions> | null {
     try {
-      return JSON.parse(str) as Partial<ChatRequestOptions>;
+      return JSON.parse(str) as Partial<ChatOptions>;
     } catch (e) {
       console.debug('JSON parse error:', e);
       return null;

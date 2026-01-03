@@ -48,6 +48,7 @@ export type TemplatesArgs = InferArgs<typeof templatesParameters>;
 
 export class TemplatesTool extends Tool<TemplatesArgs> {
   readonly name = 'manage_templates';
+  readonly classification = 'System';
   readonly description =
     'Lists available Obsidian templates and applies them to notes. Supports both core Templates and Templater plugin folders if configured.';
   readonly parameters = templatesParameters;

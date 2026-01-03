@@ -36,6 +36,7 @@ export type ReplaceInNoteArgs = InferArgs<typeof replaceInNoteParameters>;
 
 export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
   readonly name = 'replace_in_note';
+  readonly classification = 'Vault';
   readonly description =
     'Replaces text within a note using string or regex matching. Triggers user review.';
   readonly parameters = replaceInNoteParameters;

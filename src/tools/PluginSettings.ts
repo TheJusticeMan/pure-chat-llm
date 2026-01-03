@@ -27,6 +27,7 @@ export type PluginSettingsArgs = InferArgs<typeof pluginSettingsParameters>;
 
 export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   readonly name = 'manage_plugin_settings';
+  readonly classification = 'System';
   readonly description =
     'Reads or updates the Pure Chat LLM plugin settings. Updates trigger a user confirmation modal.';
   readonly parameters = pluginSettingsParameters;

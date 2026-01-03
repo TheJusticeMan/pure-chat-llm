@@ -16,6 +16,7 @@ export type DeleteNoteArgs = InferArgs<typeof deleteNoteParameters>;
 
 export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
   readonly name = 'delete_obsidian_note';
+  readonly classification = 'Vault';
   readonly description =
     'Deletes a note or file from the vault. This triggers a user confirmation modal.';
   readonly parameters = deleteNoteParameters;
