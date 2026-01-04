@@ -250,7 +250,7 @@ export class EditWand extends Modal {
     // Create LLM chat request
     const response = await new PureChatLLMChat(this.plugin)
       .setMarkdown(promptText)
-      .SelectionResponse(promptText, this.selectionEl.getValue());
+      .selectionResponse(promptText, this.selectionEl.getValue());
 
     // Manage history for undo/redo
     if (this.iHist !== this.hist.length - 1) {

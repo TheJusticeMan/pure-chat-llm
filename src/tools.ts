@@ -1,34 +1,11 @@
-import type { PureChatLLMChat, StreamDelta } from './core/Chat';
-
-// Type definitions for OpenAI tool schema
-export interface ToolParameter {
-  type: string;
-  description: string;
-  enum?: string[];
-  items?: ToolParameter;
-  properties?: Record<string, ToolParameter>;
-  additionalProperties?: boolean | ToolParameter | Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-export interface ToolParameters {
-  type: 'object';
-  properties: Record<string, ToolParameter>;
-  required: string[];
-}
-
-export interface ToolFunction {
-  name: string;
-  description: string;
-  parameters: ToolParameters;
-}
-
-export interface ToolDefinition {
-  type: 'function';
-  function: ToolFunction;
-}
-
-export type ToolClassification = 'Vault' | 'UI' | 'System' | 'AI';
+import type { PureChatLLMChat } from './core/Chat';
+import type {
+  StreamDelta,
+  ToolClassification,
+  ToolDefinition,
+  ToolParameter,
+  ToolParameters,
+} from './types';
 
 // Abstract base class for all tools
 export abstract class Tool<TArgs = Record<string, unknown>> {

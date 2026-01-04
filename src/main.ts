@@ -28,7 +28,7 @@ import {
 } from './ui/CodePreview';
 import { AskForAPI, CodeAreaComponent, EditWand } from './ui/Modals';
 import { PureChatLLMSettingTab } from './ui/Settings';
-import { modelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
+import { ModelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
 import { BrowserConsole } from './utils/BrowserConsole';
 import { codelanguages } from './utils/codelanguages';
 import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
@@ -123,7 +123,7 @@ export default class PureChatLLM extends Plugin {
                 const fileName = this.generateUniqueFileName(file, 'Untitled Conversation');
                 const newFile = await this.app.vault.create(
                   `${file.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown('Type your message...').Markdown,
+                  new PureChatLLMChat(this).setMarkdown('Type your message...').markdown,
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
@@ -143,7 +143,7 @@ export default class PureChatLLM extends Plugin {
 
                 const newFile = await this.app.vault.create(
                   `${parent.path}/${fileName}.md`,
-                  new PureChatLLMChat(this).setMarkdown(link).Markdown,
+                  new PureChatLLMChat(this).setMarkdown(link).markdown,
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
@@ -163,7 +163,7 @@ export default class PureChatLLM extends Plugin {
                 const newFile = await this.app.vault.create(
                   `${parent.path}/${fileName}.md`,
                   new PureChatLLMChat(this).setMarkdown(`# role: System\n${link}\n# role: User\n`)
-                    .Markdown,
+                    .markdown,
                 );
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.openFile(newFile);
@@ -181,14 +181,14 @@ export default class PureChatLLM extends Plugin {
       name: 'Complete chat response',
       icon: 'send',
       editorCallback: (editor: Editor, view: MarkdownView) =>
-        this.CompleteChatResponse(editor, view),
+        this.completeChatResponse(editor, view),
     });
     // Add command for choosing model and provider
     this.addCommand({
       id: 'choose-model-and-provider',
       name: 'Choose model and provider',
       icon: 'cpu',
-      editorCallback: (editor: Editor) => new modelAndProviderChooser(this.app, this, editor),
+      editorCallback: (editor: Editor) => new ModelAndProviderChooser(this.app, this, editor),
     });
     // Add command for settings
     this.addCommand({
@@ -204,7 +204,7 @@ export default class PureChatLLM extends Plugin {
       editorCheckCallback: (checking, e: Editor) => {
         const selected = e.getSelection();
         if (checking) return !!selected;
-        this.EditSelection(selected, e);
+        this.editSelection(selected, e);
       },
     });
     this.addCommand({
@@ -226,7 +226,7 @@ export default class PureChatLLM extends Plugin {
           s =>
             void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
-              .ProcessChatWithTemplate(s)
+              .processChatWithTemplate(s)
               .then(response => editor.replaceSelection(response.content)),
           this.settings.chatTemplates,
         ).open();
@@ -238,8 +238,8 @@ export default class PureChatLLM extends Plugin {
       name: 'Reverse roles',
       icon: 'arrow-left-right',
       editorCallback: (editor: Editor) => {
-        const content = new PureChatLLMChat(this).setMarkdown(editor.getValue()).ReverseRoles();
-        editor.setValue(content.Markdown);
+        const content = new PureChatLLMChat(this).setMarkdown(editor.getValue()).reverseRoles();
+        editor.setValue(content.markdown);
         this.setCursorEnd(editor);
       },
     });
@@ -276,7 +276,7 @@ export default class PureChatLLM extends Plugin {
           editorCallback: (editor: Editor) => {
             void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
-              .ProcessChatWithTemplate(this.settings.chatTemplates[key])
+              .processChatWithTemplate(this.settings.chatTemplates[key])
               .then(response => editor.replaceSelection(response.content));
           },
         });
@@ -295,7 +295,7 @@ export default class PureChatLLM extends Plugin {
             if (checking) return !!selected;
             void new PureChatLLMChat(this)
               .setMarkdown(e.getValue())
-              .SelectionResponse(template, selected, addfiletocontext ? e.getValue() : undefined)
+              .selectionResponse(template, selected, addfiletocontext ? e.getValue() : undefined)
               .then(response => e.replaceSelection(response.content));
           },
         });
@@ -392,7 +392,7 @@ export default class PureChatLLM extends Plugin {
             .setTitle('Edit selection')
             .setIcon('wand')
             .onClick(async () => {
-              this.EditSelection(selected, editor);
+              this.editSelection(selected, editor);
             })
             .setSection('selection'),
         )
@@ -428,14 +428,14 @@ export default class PureChatLLM extends Plugin {
     return menu;
   }
 
-  private EditSelection(selected: string, editor: Editor) {
+  private editSelection(selected: string, editor: Editor) {
     new InstructPromptsHandler(
       this.app,
       s =>
         s
           ? void new PureChatLLMChat(this)
               .setMarkdown(editor.getValue())
-              .SelectionResponse(
+              .selectionResponse(
                 s,
                 selected,
                 this.settings.addfiletocontext ? editor.getValue() : undefined,
@@ -459,17 +459,17 @@ export default class PureChatLLM extends Plugin {
    * @param view - The Markdown view associated with the editor.
    */
   generateTitle(editor: Editor, view: MarkdownView): void {
-    const ActiveFile = view.file;
-    if (ActiveFile)
+    const activeFile = view.file;
+    if (activeFile)
       void new PureChatLLMChat(this)
         .setMarkdown(editor.getValue())
-        .ProcessChatWithTemplate(this.settings.chatTemplates['Conversation titler'])
+        .processChatWithTemplate(this.settings.chatTemplates['Conversation titler'])
         .then(title => {
-          const sanitizedTitle = `${ActiveFile.parent?.path}/${title.content
+          const sanitizedTitle = `${activeFile.parent?.path}/${title.content
             .replace(/^<think>[\s\S]+?<\/think>/gm, '') // Remove <think> tags for ollama
             .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
-            .trim()}.${ActiveFile.extension}`;
-          void this.app.fileManager.renameFile(ActiveFile, sanitizedTitle);
+            .trim()}.${activeFile.extension}`;
+          void this.app.fileManager.renameFile(activeFile, sanitizedTitle);
           new Notice(`File renamed to: ${sanitizedTitle}`);
         });
     else new Notice('No active file to rename.');
@@ -487,7 +487,7 @@ export default class PureChatLLM extends Plugin {
    * @param editor - The active Obsidian editor instance where the chat is being composed.
    * @param view - The current MarkdownView associated with the editor.
    */
-  CompleteChatResponse(editor: Editor, view: MarkdownView) {
+  completeChatResponse(editor: Editor, view: MarkdownView) {
     const endpoint = this.settings.endpoints[this.settings.endpoint];
     if (endpoint.apiKey == EmptyApiKey) {
       new AskForAPI(this.app, this).open();
@@ -499,9 +499,9 @@ export default class PureChatLLM extends Plugin {
     const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
     if (chat.messages[chat.messages.length - 1].content === '' && chat.validChat) {
       if (chat.messages.pop()?.role == 'user' && this.settings.AutoReverseRoles)
-        chat.ReverseRoles();
+        chat.reverseRoles();
     }
-    editor.setValue(chat.Markdown);
+    editor.setValue(chat.markdown);
     this.setCursorEnd(editor, true);
     if (!chat.validChat) return;
 
@@ -509,7 +509,7 @@ export default class PureChatLLM extends Plugin {
 
     editor.replaceSelection(`\n${chat.parseRole('assistant...' as unknown as RoleType)}\n`);
     chat
-      .CompleteChatResponse(activeFile, e => {
+      .completeChatResponse(activeFile, e => {
         this.setCursorEnd(editor);
         editor.replaceSelection(e.content);
         return true;
@@ -524,7 +524,7 @@ export default class PureChatLLM extends Plugin {
         ) {
           this.generateTitle(editor, view);
         }
-        editor.setValue(chat.Markdown);
+        editor.setValue(chat.markdown);
         // put the cursor at the end of the editor
         this.setCursorEnd(editor, true);
       })
@@ -842,7 +842,7 @@ export class SelectionPromptEditor extends Modal {
           content: `You are creating a new template called: \`"${this.promptTitle}"\`.  Please predict the content for this prompt template.`,
         },
       )
-      .CompleteChatResponse(([] as TFile[])[0])
+      .completeChatResponse(([] as TFile[])[0])
       .then(chat => {
         if (!this.promptTemplates[this.promptTitle]) {
           this.promptTemplates[this.promptTitle] =
@@ -1022,7 +1022,7 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
       case 'send':
         editor.replaceRange('', start, end);
         if (!view) return;
-        this.plugin.CompleteChatResponse(editor, view);
+        this.plugin.completeChatResponse(editor, view);
         break;
       case 'code':
         editor.replaceRange(`\`\`\`${value}\n`, start, end);
@@ -1166,7 +1166,7 @@ aliases:
 ---
 */
     // Step 2: Remove tags used less than three times
-    Object.entries(tagFrequencyFile).forEach(([Key, fileList]) => {
+    Object.entries(tagFrequencyFile).forEach(([key, fileList]) => {
       if (fileList.length <= numUses) {
         fileList.forEach(file => {
           const cache = this.app.metadataCache.getFileCache(file);
@@ -1179,7 +1179,7 @@ aliases:
               content.substring(0, start) +
               content
                 .substring(start, end)
-                .replace(new RegExp(`^\\s*- ${Key}\\s*$`, 'm'), '')
+                .replace(new RegExp(`^\\s*- ${key}\\s*$`, 'm'), '')
                 .replace(/\n\n/g, '\n') +
               content.substring(end),
           );

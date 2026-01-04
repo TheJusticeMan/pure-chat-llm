@@ -135,7 +135,7 @@ export class PureChatLLMSideView extends ItemView {
           b.addExtraButton(btn =>
             btn
               .setIcon('cpu')
-              .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor))
+              .onClick(() => new ModelAndProviderChooser(this.app, this.plugin, editor))
               .setTooltip('Choose model and provider'),
           );
       })
@@ -170,7 +170,7 @@ export class PureChatLLMSideView extends ItemView {
     //resolveSubpath
     const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
-    chat.Markdown = editorValue;
+    chat.markdown = editorValue;
     const allshown: boolean = Object.keys(alloptions).every(k =>
       Object.prototype.hasOwnProperty.call(chat.options, k),
     );
@@ -204,7 +204,7 @@ export class PureChatLLMSideView extends ItemView {
                     ]),
                   );
                 }
-                editor.setValue(chat.Markdown);
+                editor.setValue(chat.markdown);
               });
           });
         });
@@ -237,7 +237,7 @@ export class PureChatLLMSideView extends ItemView {
 
       new ButtonComponent(contain)
         .setButtonText(`${chat.endpoint.name} (${chat.options.model})`)
-        .onClick(() => new modelAndProviderChooser(this.app, this.plugin, editor));
+        .onClick(() => new ModelAndProviderChooser(this.app, this.plugin, editor));
 
       new ButtonComponent(contain)
         .setIcon(this.isExpanded ? 'chevron-up' : 'chevron-down')
@@ -262,7 +262,7 @@ export class PureChatLLMSideView extends ItemView {
                     stream: chat.options.stream,
                   } as typeof chat.options)
                 : Object.assign(chat.options, { ...alloptions }, { ...chat.options }),
-            ).Markdown,
+            ).markdown,
           ),
         );
     });
@@ -338,7 +338,7 @@ export class PureChatLLMSideView extends ItemView {
             .setIcon('message-square-x')
             .setTooltip('Delete message')
             .onClick(() => {
-              editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).Markdown);
+              editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).markdown);
             });
           if (/> \[!assistant\]/gim.test(message.content))
             new ExtraButtonComponent(div)
@@ -352,7 +352,7 @@ export class PureChatLLMSideView extends ItemView {
                         /[\W\w]+?> \[!assistant\]\n*/i,
                         '',
                       )),
-                  ).Markdown,
+                  ).markdown,
                 );
               });
           if (/# \w+/gm.test(message.content))
@@ -398,8 +398,8 @@ export class PureChatLLMSideView extends ItemView {
             .setIcon('refresh-cw')
             .setTooltip('Regenerate response')
             .onClick(() => {
-              editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).Markdown);
-              this.plugin.CompleteChatResponse(editor, view);
+              editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).markdown);
+              this.plugin.completeChatResponse(editor, view);
             });
         });
       });
@@ -437,7 +437,7 @@ export class PureChatLLMSideView extends ItemView {
 
 type ModelAndProvider = { name: string; ismodel: boolean };
 
-export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
+export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
   items: ModelAndProvider[];
   modellist: ModelAndProvider[] = [];
   currentmodel = '';
@@ -474,13 +474,13 @@ export class modelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       this.editor.setValue(
         new PureChatLLMChat(this.plugin)
           .setMarkdown(this.editor.getValue())
-          .setModel(this.plugin.settings.endpoints[endpointnum].defaultmodel).Markdown,
+          .setModel(this.plugin.settings.endpoints[endpointnum].defaultmodel).markdown,
       );
       this.updatemodelist(endpointnum);
     } else
       this.editor.setValue(
         new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).setModel(item.name)
-          .Markdown,
+          .markdown,
       );
   }
 

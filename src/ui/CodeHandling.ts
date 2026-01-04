@@ -24,7 +24,7 @@ import { CodeAreaComponent, EditWand } from './Modals';
  */
 export class CodeHandling extends Modal {
   plugin: PureChatLLM;
-  code: codeContent[];
+  code: CodeContent[];
 
   constructor(app: App, plugin: PureChatLLM, code: string) {
     super(app);
@@ -72,7 +72,7 @@ export class CodeHandling extends Modal {
     });
   }
 
-  getCode(code: string): codeContent[] {
+  getCode(code: string): CodeContent[] {
     return PureChatLLMChat.extractAllCodeBlocks(code);
   }
 }
@@ -86,13 +86,13 @@ export class CodeHandling extends Modal {
  */
 export class SectionHandling extends CodeHandling {
   plugin: PureChatLLM;
-  code: codeContent[];
-  getCode(code: string): codeContent[] {
+  code: CodeContent[];
+  getCode(code: string): CodeContent[] {
     // Extract all Headers and content from the input string
     // capture the headers and the text following them
     const regex = /^(#{1,6})\s*(.*?)\n([\s\S]*?)(?=\n#{1,6}|\n$)/gm;
     const matches = code.matchAll(regex);
-    const sections: codeContent[] = [];
+    const sections: CodeContent[] = [];
     for (const match of matches) {
       const header = match[2].trim();
       const content = match[3].trim();
@@ -102,7 +102,7 @@ export class SectionHandling extends CodeHandling {
   }
 }
 
-export interface codeContent {
+export interface CodeContent {
   language: string;
   code: string;
 }

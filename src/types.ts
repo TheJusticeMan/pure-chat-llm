@@ -159,3 +159,102 @@ export interface ChatParser {
 }
 
 export const PURE_CHAT_LLM_VIEW_TYPE = 'pure-chat-llm-left-pane';
+
+// Tool Types
+export interface ToolParameter {
+  type: string;
+  description: string;
+  enum?: string[];
+  items?: ToolParameter;
+  properties?: Record<string, ToolParameter>;
+  additionalProperties?: boolean | ToolParameter | Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface ToolParameters {
+  type: 'object';
+  properties: Record<string, ToolParameter>;
+  required: string[];
+}
+
+export interface ToolFunction {
+  name: string;
+  description: string;
+  parameters: ToolParameters;
+}
+
+export interface ToolDefinition {
+  type: 'function';
+  function: ToolFunction;
+}
+
+export type ToolClassification = 'Vault' | 'UI' | 'System' | 'AI';
+
+// Chat Types
+export interface ChatMessage {
+  role: RoleType;
+  content: string;
+}
+
+export type RoleType = 'system' | 'user' | 'assistant' | 'developer' | 'tool';
+
+export interface ToolCall {
+  index?: number;
+  id?: string;
+  type?: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export interface StreamDelta {
+  content?: string;
+  tool_calls?: ToolCall[];
+  role?: string;
+}
+
+export type MediaMessage =
+  | {
+      type: 'image_url';
+      image_url: { url: string };
+    }
+  | {
+      type: 'input_audio';
+      input_audio: { data: string; format: 'wav' | 'mp3' };
+    }
+  | {
+      type: 'text';
+      text: string;
+    };
+
+export interface ChatResponse {
+  role: RoleType;
+  content?: string | null;
+  tool_calls?: ToolCall[];
+}
+
+export interface ChatRequestOptions {
+  model: string;
+  messages: {
+    role: RoleType;
+    content?: string | MediaMessage[] | null;
+    tool_calls?: ToolCall[];
+    tool_call_id?: string;
+    [key: string]: unknown;
+  }[];
+  stream?: boolean;
+  max_completion_tokens?: number;
+  max_tokens?: number;
+  tools?: ToolDefinition[];
+  [key: string]: unknown;
+}
+
+export interface ChatOptions {
+  model: string;
+  messages: { role: RoleType; content: string }[];
+  stream?: boolean;
+  max_completion_tokens?: number;
+  max_tokens?: number;
+  tools?: string[];
+}
