@@ -28,6 +28,7 @@ import { ActiveContextTool } from '../tools/ActiveContext';
 import { ShowNoticeTool } from '../tools/ShowNotice';
 import { PluginSettingsTool } from '../tools/PluginSettings';
 import { ImageGenerationTool } from '../tools/ImageGen';
+import { SunoTool } from '../tools/Suno';
 import { PureChatLLMAPI } from '../types';
 import { codeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
@@ -154,22 +155,24 @@ export class PureChatLLMChat {
   }
 
   private registerAvailableTools() {
-    this.toolregistry.registerTool(ImageGenerationTool);
-    this.toolregistry.registerTool(CreateNoteTool);
-    this.toolregistry.registerTool(GlobFilesTool);
-    this.toolregistry.registerTool(ReadFileTool);
-    this.toolregistry.registerTool(SearchVaultTool);
-    this.toolregistry.registerTool(PatchNoteTool);
-    this.toolregistry.registerTool(BacklinksTool);
-    this.toolregistry.registerTool(ListFoldersTool);
-    this.toolregistry.registerTool(DeleteNoteTool);
-    this.toolregistry.registerTool(TemplatesTool);
-    this.toolregistry.registerTool(ReplaceInNoteTool);
-    this.toolregistry.registerTool(SmartConnectionsRetrievalTool);
-    this.toolregistry.registerTool(ManageWorkspaceTool);
-    this.toolregistry.registerTool(ActiveContextTool);
-    this.toolregistry.registerTool(ShowNoticeTool);
-    this.toolregistry.registerTool(PluginSettingsTool);
+    this.toolregistry
+      .registerTool(ImageGenerationTool)
+      .registerTool(CreateNoteTool)
+      .registerTool(GlobFilesTool)
+      .registerTool(ReadFileTool)
+      .registerTool(SearchVaultTool)
+      .registerTool(PatchNoteTool)
+      .registerTool(BacklinksTool)
+      .registerTool(ListFoldersTool)
+      .registerTool(DeleteNoteTool)
+      .registerTool(TemplatesTool)
+      .registerTool(ReplaceInNoteTool)
+      .registerTool(SmartConnectionsRetrievalTool)
+      .registerTool(ManageWorkspaceTool)
+      .registerTool(ActiveContextTool)
+      .registerTool(ShowNoticeTool)
+      .registerTool(PluginSettingsTool)
+      .registerTool(SunoTool);
     if (!this.plugin.settings.useImageGeneration)
       this.toolregistry.disable(ImageGenerationTool._name);
   }
@@ -989,7 +992,7 @@ export class PureChatLLMChat {
         delete call.index; // Remove index from tool calls
       });
 
-      return { role: 'assistant', tool_calls: fullcalls };
+      return { role: 'assistant', content: fullText, tool_calls: fullcalls };
     }
     return { role: 'assistant', content: fullText };
   }
@@ -1099,7 +1102,7 @@ export class PureChatLLMChat {
         const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
         this.plugin.status('');
         if (fullText.tool_calls) {
-          if (await this.handleToolCalls(fullText.tool_calls, options, streamcallback)) {
+          if (await this.handleToolCalls(fullText.tool_calls, options, streamcallback, fullText)) {
             return this.sendChatRequest(options, streamcallback);
           }
         }

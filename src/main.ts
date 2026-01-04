@@ -195,7 +195,7 @@ export default class PureChatLLM extends Plugin {
       id: 'generate-title',
       name: 'Generate title',
       icon: 'text-cursor-input',
-      editorCallback: (editor: Editor, view: MarkdownView) => this.GenerateTitle(editor, view),
+      editorCallback: (editor: Editor, view: MarkdownView) => this.generateTitle(editor, view),
     });
     this.addCommand({
       id: 'edit-selection',
@@ -212,7 +212,7 @@ export default class PureChatLLM extends Plugin {
       name: 'Clean up tags in vault',
       icon: 'tags',
       callback: async () => {
-        new lowUsageTagRemover(this.app).open();
+        new LowUsageTagRemover(this.app).open();
       },
     });
 
@@ -458,7 +458,7 @@ export default class PureChatLLM extends Plugin {
    * @param editor - The editor instance containing the file's content.
    * @param view - The Markdown view associated with the editor.
    */
-  GenerateTitle(editor: Editor, view: MarkdownView): void {
+  generateTitle(editor: Editor, view: MarkdownView): void {
     const ActiveFile = view.file;
     if (ActiveFile)
       void new PureChatLLMChat(this)
@@ -522,7 +522,7 @@ export default class PureChatLLM extends Plugin {
           activeFile?.name.includes('Untitled') &&
           view
         ) {
-          this.GenerateTitle(editor, view);
+          this.generateTitle(editor, view);
         }
         editor.setValue(chat.Markdown);
         // put the cursor at the end of the editor
@@ -565,8 +565,17 @@ export default class PureChatLLM extends Plugin {
 
     // Compatibility fixes for older versions
 
-    this.settings.endpoints.forEach(endpoint => {
-      endpoint.endpoint = endpoint.endpoint.replace('/chat/completions', ''); // Old endpoints had /chat/completions appended
+    this.settings.endpoints.forEach(
+      endpoint =>
+        (endpoint.endpoint = endpoint.endpoint.replace(
+          '/chat/completions',
+          '',
+        )) /* Old endpoints had /chat/completions appended*/,
+    );
+
+    DEFAULT_SETTINGS.endpoints.forEach(endpoint => {
+      if (!this.settings.endpoints.find(e => e.name === endpoint.name))
+        this.settings.endpoints.push(endpoint);
     });
 
     if ((loadedData as unknown as { chatParser?: number }).chatParser === 1) {
@@ -1094,7 +1103,7 @@ export function getMarkdownFromObject(
     .join('\n');
 }
 
-class lowUsageTagRemover extends Modal {
+class LowUsageTagRemover extends Modal {
   numUses = 3;
   constructor(app: App) {
     super(app);

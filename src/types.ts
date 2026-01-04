@@ -58,6 +58,13 @@ export const StatSett = {
       defaultmodel: 'qwen3:0.6b',
       getapiKey: '',
     },
+    {
+      name: 'Suno',
+      apiKey: EmptyApiKey,
+      defaultmodel: 'V4_5ALL',
+      endpoint: 'https://api.sunoapi.org',
+      getapiKey: 'https://sunoapi.org/api-key',
+    },
   ],
   chatParser: [
     {
