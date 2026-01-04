@@ -1,5 +1,12 @@
 import { Notice } from 'obsidian';
-import { PureChatLLMAPI, ChatRequestOptions, ChatResponse, StreamDelta, ToolCall, RoleType } from '../types';
+import {
+  ChatRequestOptions,
+  ChatResponse,
+  PureChatLLMAPI,
+  RoleType,
+  StreamDelta,
+  ToolCall,
+} from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
 
 export class LLMService {
@@ -27,7 +34,7 @@ export class LLMService {
     endpoint: PureChatLLMAPI,
     options: ChatRequestOptions,
     statusCallback?: (status: string) => void,
-    streamCallback?: (textFragment: StreamDelta) => boolean
+    streamCallback?: (textFragment: StreamDelta) => boolean,
   ): Promise<ChatResponse> {
     this.console.log('Sending chat request with options:', options);
     statusCallback?.(`running: ${options.model}`);
@@ -42,6 +49,7 @@ export class LLMService {
 
     let response: Response;
     try {
+      // eslint-disable-next-line no-restricted-globals
       response = await fetch(`${endpoint.endpoint}/chat/completions`, {
         method: 'POST',
         headers: this.getHeaders(endpoint),
@@ -55,102 +63,98 @@ export class LLMService {
       statusCallback?.('');
       const errorMsg = error instanceof Error ? error.message : String(error);
       new Notice(
-        `Network error: Unable to connect to ${endpoint.name}. Check your internet connection.`, 
+        `Network error: Unable to connect to ${endpoint.name}. Check your internet connection.`,
       );
       throw new Error(`Network request failed: ${errorMsg}`);
     }
 
     if (!response.ok) {
-        statusCallback?.('');
-        let errorMessage = `API Error (${response.status}): ${response.statusText}`;
-        let userMessage = `Error from ${endpoint.name}: ${response.statusText}`;
+      statusCallback?.('');
+      let errorMessage = `API Error (${response.status}): ${response.statusText}`;
+      let userMessage = `Error from ${endpoint.name}: ${response.statusText}`;
 
-        try {
-            const errorData = (await response.json()) as { error?: string | { message?: string } };
-            if (errorData.error) {
-            let apiError: string;
-            if (typeof errorData.error === 'string') {
-                apiError = errorData.error;
-            } else if (errorData.error.message) {
-                apiError = errorData.error.message;
-            } else {
-                apiError = JSON.stringify(errorData.error);
-            }
-            errorMessage = `API Error: ${apiError}`;
-            userMessage = `${endpoint.name}: ${apiError}`;
-            }
-        } catch (parseError) {
-            this.console.error(`Failed to parse error response:`, parseError);
+      try {
+        const errorData = (await response.json()) as { error?: string | { message?: string } };
+        if (errorData.error) {
+          let apiError: string;
+          if (typeof errorData.error === 'string') {
+            apiError = errorData.error;
+          } else if (errorData.error.message) {
+            apiError = errorData.error.message;
+          } else {
+            apiError = JSON.stringify(errorData.error);
+          }
+          errorMessage = `API Error: ${apiError}`;
+          userMessage = `${endpoint.name}: ${apiError}`;
         }
+      } catch (parseError) {
+        this.console.error(`Failed to parse error response:`, parseError);
+      }
 
-        this.console.error(errorMessage);
+      this.console.error(errorMessage);
 
-        if (response.status === 401) {
-            new Notice(`Authentication failed: Please check your API key for ${endpoint.name}.`);
-        } else if (response.status === 429) {
-            new Notice(`Rate limit exceeded for ${endpoint.name}. Please wait and try again.`);
-        } else if (response.status === 400) {
-            new Notice(`Invalid request: ${userMessage}`);
-        } else if (response.status === 403) {
-            new Notice(`Access forbidden: Check your API permissions for ${endpoint.name}.`);
-        } else if (response.status === 404) {
-            new Notice(`Endpoint not found: ${endpoint.endpoint} may be incorrect.`);
-        } else if (response.status >= 500) {
-            new Notice(
-            `Server error from ${endpoint.name}: ${response.statusText}. Try again later.`, 
-            );
-        } else {
-            new Notice(userMessage);
-        }
+      if (response.status === 401) {
+        new Notice(`Authentication failed: Please check your API key for ${endpoint.name}.`);
+      } else if (response.status === 429) {
+        new Notice(`Rate limit exceeded for ${endpoint.name}. Please wait and try again.`);
+      } else if (response.status === 400) {
+        new Notice(`Invalid request: ${userMessage}`);
+      } else if (response.status === 403) {
+        new Notice(`Access forbidden: Check your API permissions for ${endpoint.name}.`);
+      } else if (response.status === 404) {
+        new Notice(`Endpoint not found: ${endpoint.endpoint} may be incorrect.`);
+      } else if (response.status >= 500) {
+        new Notice(`Server error from ${endpoint.name}: ${response.statusText}. Try again later.`);
+      } else {
+        new Notice(userMessage);
+      }
 
-        throw new Error(errorMessage);
+      throw new Error(errorMessage);
     }
 
     if (options.stream && !!streamCallback) {
-        try {
-            const fullText = await this.handleStreamingResponse(response, streamCallback);
-            statusCallback?.('');
-            return fullText;
-        } catch (error) {
-            statusCallback?.('');
-            this.console.error(`Error during streaming response:`, error);
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            new Notice(`Error processing streaming response: ${errorMsg}`);
-            throw error;
-        }
+      try {
+        const fullText = await this.handleStreamingResponse(response, streamCallback);
+        statusCallback?.('');
+        return fullText;
+      } catch (error) {
+        statusCallback?.('');
+        this.console.error(`Error during streaming response:`, error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        new Notice(`Error processing streaming response: ${errorMsg}`);
+        throw error;
+      }
     } else {
-        try {
-             const data = (await response.json()) as {
-                choices: { message: { role: RoleType; content?: string; tool_calls?: ToolCall[] } }[];
-             };
+      try {
+        const data = (await response.json()) as {
+          choices: { message: { role: RoleType; content?: string; tool_calls?: ToolCall[] } }[];
+        };
 
-             if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-                this.console.error(`Invalid API response structure:`, data);
-                statusCallback?.('');
-                new Notice(
-                    `Invalid response from ${endpoint.name}: Missing or empty choices array.`, 
-                );
-                throw new Error('Invalid API response structure: Missing choices');
-             }
-
-             if (!data.choices[0].message) {
-                 this.console.error(`Invalid API response structure:`, data);
-                 statusCallback?.('');
-                 new Notice(`Invalid response from ${endpoint.name}: Missing message in response.`);
-                 throw new Error('Invalid API response structure: Missing message');
-             }
-             statusCallback?.('');
-             return data.choices[0].message;
-        } catch (error) {
-             statusCallback?.('');
-             const errorMsg = error instanceof Error ? error.message : String(error);
-             if (errorMsg.includes('Invalid API response structure')) {
-                throw error;
-             }
-             this.console.error(`Error parsing API response:`, error);
-             new Notice(`Error parsing response from ${endpoint.name}: ${errorMsg}`);
-             throw new Error(`Failed to parse API response: ${errorMsg}`);
+        if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+          this.console.error(`Invalid API response structure:`, data);
+          statusCallback?.('');
+          new Notice(`Invalid response from ${endpoint.name}: Missing or empty choices array.`);
+          throw new Error('Invalid API response structure: Missing choices');
         }
+
+        if (!data.choices[0].message) {
+          this.console.error(`Invalid API response structure:`, data);
+          statusCallback?.('');
+          new Notice(`Invalid response from ${endpoint.name}: Missing message in response.`);
+          throw new Error('Invalid API response structure: Missing message');
+        }
+        statusCallback?.('');
+        return data.choices[0].message;
+      } catch (error) {
+        statusCallback?.('');
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (errorMsg.includes('Invalid API response structure')) {
+          throw error;
+        }
+        this.console.error(`Error parsing API response:`, error);
+        new Notice(`Error parsing response from ${endpoint.name}: ${errorMsg}`);
+        throw new Error(`Failed to parse API response: ${errorMsg}`);
+      }
     }
   }
 

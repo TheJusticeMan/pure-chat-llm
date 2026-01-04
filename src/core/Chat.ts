@@ -1,4 +1,3 @@
-import { alloptions } from '../assets/s.json';
 import {
   App,
   EditorRange,
@@ -9,30 +8,31 @@ import {
   stringifyYaml,
   TFile,
 } from 'obsidian';
-import { ToolClassification, ToolDefinition, ToolRegistry } from 'src/tools';
-import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from '../assets/s.json';
+import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from '../assets/s.json';
 import PureChatLLM, { StreamNotice } from '../main';
-import { CreateNoteTool } from '../tools/CreateNote';
-import { ReadFileTool } from '../tools/ReadFile';
-import { PatchNoteTool } from '../tools/PatchNote';
-import { SearchVaultTool } from '../tools/SearchVault';
-import { BacklinksTool } from '../tools/Backlinks';
-import { GlobFilesTool } from '../tools/GlobFiles';
-import { ListFoldersTool } from '../tools/ListFolders';
-import { DeleteNoteTool } from '../tools/DeleteNote';
-import { TemplatesTool } from '../tools/Templates';
-import { ReplaceInNoteTool } from '../tools/ReplaceInNote';
-import { SmartConnectionsRetrievalTool } from '../tools/SmartConnectionsRetrieval';
-import { ManageWorkspaceTool } from '../tools/ManageWorkspace';
+import { ToolRegistry } from '../tools';
 import { ActiveContextTool } from '../tools/ActiveContext';
-import { ShowNoticeTool } from '../tools/ShowNotice';
-import { PluginSettingsTool } from '../tools/PluginSettings';
+import { BacklinksTool } from '../tools/Backlinks';
+import { CreateNoteTool } from '../tools/CreateNote';
+import { DeleteNoteTool } from '../tools/DeleteNote';
+import { GlobFilesTool } from '../tools/GlobFiles';
 import { ImageGenerationTool } from '../tools/ImageGen';
+import { ListFoldersTool } from '../tools/ListFolders';
+import { ManageWorkspaceTool } from '../tools/ManageWorkspace';
+import { PatchNoteTool } from '../tools/PatchNote';
+import { PluginSettingsTool } from '../tools/PluginSettings';
+import { ReadFileTool } from '../tools/ReadFile';
+import { ReplaceInNoteTool } from '../tools/ReplaceInNote';
+import { SearchVaultTool } from '../tools/SearchVault';
+import { ShowNoticeTool } from '../tools/ShowNotice';
+import { SmartConnectionsRetrievalTool } from '../tools/SmartConnectionsRetrieval';
 import { SunoTool } from '../tools/Suno';
-import { PureChatLLMAPI } from '../types';
+import { TemplatesTool } from '../tools/Templates';
+import { PureChatLLMAPI, ToolClassification, ToolDefinition } from '../types';
 import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
+import { LLMService } from './LLMService';
 
 export interface ChatMessage {
   role: RoleType;
@@ -136,10 +136,12 @@ export class PureChatLLMChat {
   validChat = true;
   file: TFile;
   toolregistry: ToolRegistry = new ToolRegistry(this);
+  llmService: LLMService;
 
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
     this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMChat');
+    this.llmService = new LLMService(plugin.settings.debug);
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
 
     if (this.plugin.settings.agentMode) this.registerAvailableTools();
@@ -922,82 +924,6 @@ export class PureChatLLMChat {
   }
 
   /**
-   * Handles streaming responses from a fetch Response object.
-   * Calls the provided callback with each parsed data fragment.
-   * Returns the concatenated content as a string.
-   */
-  static async handleStreamingResponse(
-    response: Response,
-    streamcallback: (textFragment: StreamDelta) => boolean,
-  ): Promise<{ role: RoleType; content?: string; tool_calls?: ToolCall[] }> {
-    if (!response.body) {
-      throw new Error('Response body is null. Streaming is not supported in this environment.');
-    }
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let done = false;
-    let buffer = '';
-    let fullText = '';
-    const fullcalls: ToolCall[] = [];
-
-    while (!done) {
-      const { value, done: streamDone } = await reader.read();
-      if (streamDone) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('data: ')) {
-          const dataStr = trimmedLine.replace(/^data:\s*/, '');
-          if (dataStr === '[DONE]') {
-            done = true;
-            break;
-          }
-          try {
-            const data = JSON.parse(dataStr) as { choices: { delta: StreamDelta }[] };
-            const delta = data.choices?.[0]?.delta;
-            if (delta?.content) {
-              fullText += delta.content;
-              const continueProcessing = streamcallback(delta);
-              if (!continueProcessing) {
-                done = true;
-                break;
-              }
-            } else if (delta?.tool_calls) {
-              delta.tool_calls.forEach((call: ToolCall) => {
-                const index = call.index;
-                if (index === undefined) return;
-                if (!fullcalls[index]) fullcalls[index] = call;
-                if (call.function.arguments) {
-                  if (!fullcalls[index].function.arguments) {
-                    fullcalls[index].function.arguments = '';
-                  }
-                  fullcalls[index].function.arguments += `${call.function.arguments}`;
-                }
-              });
-            }
-          } catch (err) {
-            console.error('Error parsing streaming data:', err);
-            // Optionally handle parse errors
-          }
-        }
-      }
-    }
-
-    if (fullcalls.length > 0) {
-      fullcalls.forEach(call => {
-        delete call.index; // Remove index from tool calls
-      });
-
-      return { role: 'assistant', content: fullText, tool_calls: fullcalls };
-    }
-    return { role: 'assistant', content: fullText };
-  }
-
-  /**
    * Sends a chat request to the specified endpoint with the provided options.
    *
    * @param options - The options for the chat request, including any parameters
@@ -1015,154 +941,19 @@ export class PureChatLLMChat {
     options: ChatRequestOptions,
     streamcallback?: (textFragment: StreamDelta) => boolean,
   ): Promise<ChatResponse> {
-    this.console.log('Sending chat request with options:', options);
-    this.plugin.status(`running: ${options.model}`);
+    const response = await this.llmService.fetchResponse(
+      this.endpoint,
+      options,
+      status => this.plugin.status(status),
+      streamcallback,
+    );
 
-    // Transform options for API compatibility
-    const requestOptions = { ...options };
-
-    // Mistral AI uses max_tokens instead of max_completion_tokens
-    if (this.endpoint.name === 'Mistral AI' && requestOptions.max_completion_tokens) {
-      requestOptions.max_tokens = requestOptions.max_completion_tokens;
-      delete requestOptions.max_completion_tokens;
-    }
-
-    let response: Response;
-    try {
-      // eslint-disable-next-line no-restricted-globals
-      response = await fetch(`${this.endpoint.endpoint}/chat/completions`, {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({
-          ...requestOptions,
-          stream: requestOptions.stream && !!streamcallback,
-        }),
-      });
-    } catch (error) {
-      this.console.error(`Network request failed:`, error);
-      this.plugin.status('');
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      new Notice(
-        `Network error: Unable to connect to ${this.endpoint.name}. Check your internet connection.`,
-      );
-      throw new Error(`Network request failed: ${errorMsg}`);
-    }
-
-    if (!response.ok) {
-      this.plugin.status('');
-      let errorMessage = `API Error (${response.status}): ${response.statusText}`;
-      let userMessage = `Error from ${this.endpoint.name}: ${response.statusText}`;
-
-      try {
-        const errorData = (await response.json()) as { error?: string | { message?: string } };
-        // Extract error details from common API error formats
-        if (errorData.error) {
-          let apiError: string;
-          if (typeof errorData.error === 'string') {
-            apiError = errorData.error;
-          } else if (errorData.error.message) {
-            apiError = errorData.error.message;
-          } else {
-            apiError = JSON.stringify(errorData.error);
-          }
-          errorMessage = `API Error: ${apiError}`;
-          userMessage = `${this.endpoint.name}: ${apiError}`;
-        }
-      } catch (parseError) {
-        // If we can't parse the error response, use the status text
-        this.console.error(`Failed to parse error response:`, parseError);
-      }
-
-      this.console.error(errorMessage);
-
-      // Provide specific user-friendly messages for common errors
-      if (response.status === 401) {
-        new Notice(`Authentication failed: Please check your API key for ${this.endpoint.name}.`);
-      } else if (response.status === 429) {
-        new Notice(`Rate limit exceeded for ${this.endpoint.name}. Please wait and try again.`);
-      } else if (response.status === 400) {
-        new Notice(`Invalid request: ${userMessage}`);
-      } else if (response.status === 403) {
-        new Notice(`Access forbidden: Check your API permissions for ${this.endpoint.name}.`);
-      } else if (response.status === 404) {
-        new Notice(`Endpoint not found: ${this.endpoint.endpoint} may be incorrect.`);
-      } else if (response.status >= 500) {
-        new Notice(
-          `Server error from ${this.endpoint.name}: ${response.statusText}. Try again later.`,
-        );
-      } else {
-        new Notice(userMessage);
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    if (options.stream && !!streamcallback) {
-      try {
-        const fullText = await PureChatLLMChat.handleStreamingResponse(response, streamcallback);
-        this.plugin.status('');
-        if (fullText.tool_calls) {
-          if (await this.handleToolCalls(fullText.tool_calls, options, streamcallback, fullText)) {
-            return this.sendChatRequest(options, streamcallback);
-          }
-        }
-        return fullText;
-      } catch (error) {
-        this.plugin.status('');
-        this.console.error(`Error during streaming response:`, error);
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        new Notice(`Error processing streaming response: ${errorMsg}`);
-        throw error;
-      }
-    } else {
-      try {
-        const data = (await response.json()) as {
-          choices: { message: { role: RoleType; content?: string; tool_calls?: ToolCall[] } }[];
-        };
-
-        // Validate response structure
-        if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-          this.console.error(`Invalid API response structure:`, data);
-          this.plugin.status('');
-          new Notice(
-            `Invalid response from ${this.endpoint.name}: Missing or empty choices array.`,
-          );
-          throw new Error('Invalid API response structure: Missing choices');
-        }
-
-        if (!data.choices[0].message) {
-          this.console.error(`Invalid API response structure:`, data);
-          this.plugin.status('');
-          new Notice(`Invalid response from ${this.endpoint.name}: Missing message in response.`);
-          throw new Error('Invalid API response structure: Missing message');
-        }
-
-        if (data.choices[0].message.tool_calls) {
-          if (
-            await this.handleToolCalls(
-              data.choices[0].message.tool_calls,
-              options,
-              streamcallback,
-              data.choices[0].message,
-            )
-          ) {
-            return this.sendChatRequest(options, streamcallback);
-          }
-        }
-        this.plugin.status('');
-        return data.choices[0].message;
-      } catch (error) {
-        this.plugin.status('');
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        if (errorMsg.includes('Invalid API response structure')) {
-          // Already handled above with specific error
-          throw error;
-        }
-        this.console.error(`Error parsing API response:`, error);
-        new Notice(`Error parsing response from ${this.endpoint.name}: ${errorMsg}`);
-        throw new Error(`Failed to parse API response: ${errorMsg}`);
+    if (response.tool_calls) {
+      if (await this.handleToolCalls(response.tool_calls, options, streamcallback, response)) {
+        return this.sendChatRequest(options, streamcallback);
       }
     }
+    return response;
   }
 
   reverseRoles() {
@@ -1276,7 +1067,7 @@ export class PureChatLLMChat {
     // eslint-disable-next-line no-restricted-globals
     return fetch(`${endpoint}/models`, {
       method: 'GET',
-      headers: this.headers,
+      headers: this.llmService.getHeaders(this.endpoint),
     })
       .then(response => response.json())
       .then(data => {
@@ -1322,20 +1113,6 @@ export class PureChatLLMChat {
   thencb(cb: (chat: this) => unknown): this {
     cb(this);
     return this;
-  }
-
-  get headers(): Record<string, string> {
-    if (this.endpoint.endpoint.includes('api.anthropic.com')) {
-      return {
-        'x-api-key': this.endpoint.apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      };
-    }
-    return {
-      Authorization: `Bearer ${this.endpoint.apiKey}`,
-      'content-type': 'application/json',
-    };
   }
 
   /**
