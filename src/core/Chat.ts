@@ -8,7 +8,6 @@ import {
   stringifyYaml,
   TFile,
 } from 'obsidian';
-import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from '../assets/s.json';
 import PureChatLLM, { StreamNotice } from '../main';
 import { ToolRegistry } from '../tools';
 import { ActiveContextTool } from '../tools/ActiveContext';
@@ -28,80 +27,24 @@ import { ShowNoticeTool } from '../tools/ShowNotice';
 import { SmartConnectionsRetrievalTool } from '../tools/SmartConnectionsRetrieval';
 import { SunoTool } from '../tools/Suno';
 import { TemplatesTool } from '../tools/Templates';
-import { PureChatLLMAPI, ToolClassification, ToolDefinition } from '../types';
+import {
+  ChatMessage,
+  ChatOptions,
+  ChatRequestOptions,
+  ChatResponse,
+  MediaMessage,
+  PureChatLLMAPI,
+  RoleType,
+  StreamDelta,
+  ToolCall,
+  ToolClassification,
+  ToolDefinition,
+} from '../types';
 import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
 import { LLMService } from './LLMService';
-
-export interface ChatMessage {
-  role: RoleType;
-  content: string;
-}
-
-export type RoleType = 'system' | 'user' | 'assistant' | 'developer' | 'tool';
-
-interface ToolCall {
-  index?: number;
-  id?: string;
-  type?: string;
-  function: {
-    name: string;
-    arguments: string;
-  };
-}
-
-export interface StreamDelta {
-  content?: string;
-  tool_calls?: ToolCall[];
-  role?: string;
-}
-
-type MediaMessage =
-  | {
-      type: 'image_url';
-      image_url: { url: string };
-    }
-  | {
-      type: 'input_audio';
-      input_audio: { data: string; format: 'wav' | 'mp3' };
-    }
-  | {
-      type: 'text';
-      text: string;
-    };
-
-export interface ChatResponse {
-  role: RoleType;
-  content?: string | null;
-  tool_calls?: ToolCall[];
-}
-
-interface ChatRequestOptions {
-  model: string;
-  messages: {
-    role: RoleType;
-    content?: string | MediaMessage[] | null;
-    tool_calls?: ToolCall[];
-    tool_call_id?: string;
-    [key: string]: unknown;
-  }[];
-  stream?: boolean;
-  max_completion_tokens?: number;
-  max_tokens?: number;
-  tools?: ToolDefinition[];
-  [key: string]: unknown;
-}
-
-interface ChatOptions {
-  model: string;
-  messages: { role: RoleType; content: string }[];
-  stream?: boolean;
-  max_completion_tokens?: number;
-  max_tokens?: number;
-  tools?: string[];
-  /* [key: string]: unknown; */
-}
+import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -267,7 +210,7 @@ export class PureChatLLMChat {
   private parsePretextOptions() {
     const optionsStr = PureChatLLMChat.extractCodeBlockMD(this.pretext, 'json');
     if (optionsStr) {
-      this.options = { ...this.options, ...PureChatLLMChat.tryJSONParse(optionsStr) };
+      this.options = { ...this.options, ...PureChatLLMChat.parseChatOptions(optionsStr) };
     } else {
       const yamlMatch = this.pretext.match(/^---\n([\s\S]+?)\n---/);
       if (yamlMatch) {
@@ -1007,7 +950,7 @@ export class PureChatLLMChat {
         this.toolregistry.setCallBack(streamcallback);
         // if arguments are not valid JSON, check if it's a duplicated call and only take the first half
 
-        if (!this.tryJSONParse(call.function.arguments)) {
+        if (!PureChatLLMChat.tryJSONParse(call.function.arguments)) {
           const halfLength = Math.floor(call.function.arguments.length / 2);
           const firstHalf = call.function.arguments.slice(0, halfLength);
           const secondHalf = call.function.arguments.slice(halfLength);
@@ -1035,7 +978,8 @@ export class PureChatLLMChat {
     }
     return false;
   }
-  tryJSONParse(str: string): unknown {
+
+  static tryJSONParse(str: string): unknown {
     try {
       return JSON.parse(str);
     } catch (e) {
@@ -1123,7 +1067,7 @@ export class PureChatLLMChat {
    * @returns The parsed object if successful, or `null` if parsing fails.
    */
 
-  static tryJSONParse(str: string): Partial<ChatOptions> | null {
+  static parseChatOptions(str: string): Partial<ChatOptions> | null {
     try {
       return JSON.parse(str) as Partial<ChatOptions>;
     } catch (e) {

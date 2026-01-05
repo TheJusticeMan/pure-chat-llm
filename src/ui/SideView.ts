@@ -19,9 +19,9 @@ import { CodeHandling, SectionHandling } from './CodeHandling';
 import { CODE_PREVIEW_VIEW_TYPE } from './CodePreview';
 import PureChatLLM from '../main';
 import { AskForAPI } from './Modals';
-import { alloptions, EmptyApiKey } from '../assets/s.json';
 import { toTitleCase } from '../utils/toTitleCase';
 import { PURE_CHAT_LLM_VIEW_TYPE } from '../types';
+import { alloptions, EmptyApiKey } from 'src/assets/constants';
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.

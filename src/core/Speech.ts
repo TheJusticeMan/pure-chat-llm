@@ -1,6 +1,7 @@
+import { ChatMessage } from 'src/types';
 import PureChatLLM from '../main';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { ChatMessage, PureChatLLMChat } from './Chat';
+import { PureChatLLMChat } from './Chat';
 
 /**
  * Handles text-to-speech (TTS) functionality for chat messages using the OpenAI TTS API.

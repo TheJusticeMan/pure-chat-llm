@@ -9,9 +9,9 @@ import {
 } from 'obsidian';
 import { PureChatLLMChat } from '../core/Chat';
 import PureChatLLM from '../main';
-import { EmptyApiKey } from '../assets/s.json';
 import { PureChatLLMAPI } from '../types';
 import 'obsidian';
+import { EmptyApiKey } from 'src/assets/constants';
 
 /**
  * Modal dialog prompting the user to enter an OpenAI API key for the PureChatLLM plugin.

@@ -16,10 +16,11 @@ import {
   TFolder,
   WorkspaceLeaf,
 } from 'obsidian';
-import { EmptyApiKey } from './assets/s.json';
-import { PureChatLLMChat, RoleType } from './core/Chat';
+
+import { PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
-import { DEFAULT_SETTINGS, PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings } from './types';
+import { PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings, RoleType } from './types';
+import { DEFAULT_SETTINGS } from './assets/constants';
 import {
   CODE_PREVIEW_VIEW_TYPE,
   CodePreview,
@@ -33,6 +34,7 @@ import { BrowserConsole } from './utils/BrowserConsole';
 import { codelanguages } from './utils/codelanguages';
 import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
 import { toTitleCase } from './utils/toTitleCase';
+import { EmptyApiKey } from './assets/constants';
 
 /**
  * The main plugin class for the Pure Chat LLM Obsidian plugin.
@@ -507,7 +509,7 @@ export default class PureChatLLM extends Plugin {
 
     this.isresponding = true;
 
-    editor.replaceSelection(`\n${chat.parseRole('assistant...' as unknown as RoleType)}\n`);
+    editor.replaceSelection(`\n${chat.parseRole('assistant...' as RoleType)}\n`);
     chat
       .completeChatResponse(activeFile, e => {
         this.setCursorEnd(editor);

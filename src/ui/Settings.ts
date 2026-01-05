@@ -1,5 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
-import { version } from '../assets/s.json';
+import { PureChatLLMversion } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
 import { ImportChatGPT } from '../core/ImportChatGPT';
 import PureChatLLM, {
@@ -8,7 +8,8 @@ import PureChatLLM, {
   getObjectFromMarkdown,
   SelectionPromptEditor,
 } from '../main';
-import { DEFAULT_SETTINGS, PureChatLLMSettings } from '../types';
+import { PureChatLLMSettings } from '../types';
+import { DEFAULT_SETTINGS } from 'src/assets/constants';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { AskForAPI, EditModalProviders } from './Modals';
 
@@ -362,7 +363,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
     new Setting(containerEl)
       .setName('Version')
-      .setDesc(`v${version}`)
+      .setDesc(`v${PureChatLLMversion}`)
       .addButton(btn =>
         btn
           .setButtonText('Reset settings')
