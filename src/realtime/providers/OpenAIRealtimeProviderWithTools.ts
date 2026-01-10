@@ -96,13 +96,14 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
       new Notice('Connected to OpenAI realtime API');
     });
 
-    dataChannel.addEventListener('message', async event => {
-      try {
-        const eventData = String(event.data);
-        const serverEvent = JSON.parse(eventData) as {
-          type: string;
-          [key: string]: unknown;
-        };
+    dataChannel.addEventListener('message', event => {
+      void (async () => {
+        try {
+          const eventData = String(event.data);
+          const serverEvent = JSON.parse(eventData) as {
+            type: string;
+            [key: string]: unknown;
+          };
 
         // Handle tool calls
         if (serverEvent.type === 'response.function_call_arguments.done' && this.chat) {
@@ -116,6 +117,7 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
       } catch (error) {
         console.error('Failed to parse server event:', error);
       }
+      })();
     });
 
     dataChannel.addEventListener('error', error => {

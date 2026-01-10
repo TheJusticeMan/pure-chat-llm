@@ -95,8 +95,8 @@ export class VoiceCallSideView extends ItemView {
       .setDesc('Select the voice call provider')
       .addDropdown(dropdown =>
         dropdown
-          .addOption('openai', 'OpenAI Realtime')
-          .addOption('gemini', 'Google Gemini Live')
+          .addOption('openai', 'OpenAI realtime')
+          .addOption('gemini', 'Gemini live')
           .setValue(this.selectedProvider)
           .onChange(value => {
             this.selectedProvider = value as VoiceProvider;
@@ -217,7 +217,7 @@ export class VoiceCallSideView extends ItemView {
     if (this.plugin.settings.agentMode) {
       instructionsEl.createEl('p', {
         cls: 'tool-info',
-        text: '🛠️ Agent mode enabled: The AI can access tools for file management, search, and other operations.',
+        text: 'Tools enabled for file operations and search',
       });
     }
 
@@ -281,10 +281,10 @@ export class VoiceCallSideView extends ItemView {
         if (this.plugin.settings.agentMode) {
           this.chat = new PureChatLLMChat(this.plugin);
           provider = new OpenAIRealtimeProviderWithTools(this.chat);
-          new Notice('Initializing OpenAI voice call with tool access...');
+          new Notice('Initializing voice call with tool access');
         } else {
           provider = new OpenAIRealtimeProvider();
-          new Notice('Initializing OpenAI voice call...');
+          new Notice('Initializing voice call');
         }
       } else {
         // Google Gemini Live API
@@ -298,10 +298,10 @@ export class VoiceCallSideView extends ItemView {
         if (this.plugin.settings.agentMode) {
           this.chat = new PureChatLLMChat(this.plugin);
           provider = new GeminiLiveProviderWithTools(this.chat);
-          new Notice('Initializing Gemini voice call with tool access...');
+          new Notice('Initializing voice call with tool access');
         } else {
           provider = new GeminiLiveProvider();
-          new Notice('Initializing Gemini voice call...');
+          new Notice('Initializing voice call');
         }
       }
 

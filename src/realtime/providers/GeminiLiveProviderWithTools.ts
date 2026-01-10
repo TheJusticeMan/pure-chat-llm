@@ -95,19 +95,26 @@ export class GeminiLiveProviderWithTools extends GeminiLiveProvider {
 		super.handleWebSocketMessage(event);
 
 		try {
-			const data = JSON.parse(event.data);
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+			const data = JSON.parse(event.data as string);
 
 			// Handle tool calls
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 			if (data.serverContent && data.serverContent.toolCall) {
-				this.handleToolCall(data.serverContent.toolCall);
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+				void this.handleToolCall(data.serverContent.toolCall);
 			}
 
 			// Handle function calls within tool call requests
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 			if (data.serverContent && data.serverContent.modelTurn) {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 				const parts = data.serverContent.modelTurn.parts;
 				for (const part of parts) {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 					if (part.functionCall) {
-						this.handleFunctionCall(part.functionCall);
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+						void this.handleFunctionCall(part.functionCall);
 					}
 				}
 			}
