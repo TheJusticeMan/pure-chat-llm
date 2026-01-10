@@ -19,7 +19,7 @@ import {
 
 import { PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
-import { PURE_CHAT_LLM_VIEW_TYPE, PureChatLLMSettings, RoleType } from './types';
+import { PURE_CHAT_LLM_VIEW_TYPE, VOICE_CALL_VIEW_TYPE, PureChatLLMSettings, RoleType } from './types';
 import { DEFAULT_SETTINGS } from './assets/constants';
 import {
   CODE_PREVIEW_VIEW_TYPE,
@@ -30,6 +30,7 @@ import {
 import { AskForAPI, CodeAreaComponent, EditWand } from './ui/Modals';
 import { PureChatLLMSettingTab } from './ui/Settings';
 import { ModelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
+import { VoiceCallSideView } from './ui/VoiceCallSideView';
 import { BrowserConsole } from './utils/BrowserConsole';
 import { codelanguages } from './utils/codelanguages';
 import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
@@ -76,10 +77,13 @@ export default class PureChatLLM extends Plugin {
 
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, leaf => new PureChatLLMSideView(leaf, this));
     this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));
+    this.registerView(VOICE_CALL_VIEW_TYPE, leaf => new VoiceCallSideView(leaf, this));
 
     this.addRibbonIcon('text', 'Open conversation overview', () => this.activateView());
+    this.addRibbonIcon('phone', 'Open voice call', () => this.activateVoiceCallView());
 
     this.setupChatCommandHandlers();
+    this.setupVoiceCallCommandHandlers();
 
     this.setupContextMenuActions();
 
@@ -305,6 +309,35 @@ export default class PureChatLLM extends Plugin {
     });
   }
 
+  private setupVoiceCallCommandHandlers() {
+    this.addCommand({
+      id: 'open-voice-call',
+      name: 'Open voice call panel',
+      icon: 'phone',
+      callback: () => this.activateVoiceCallView(),
+    });
+
+    this.addCommand({
+      id: 'start-voice-call',
+      name: 'Start voice call',
+      icon: 'phone-call',
+      callback: () => {
+        void this.activateVoiceCallView();
+        new Notice('Voice call panel opened. Click "start call" to begin.');
+      },
+    });
+
+    this.addCommand({
+      id: 'join-voice-call',
+      name: 'Join voice call',
+      icon: 'phone-incoming',
+      callback: () => {
+        void this.activateVoiceCallView();
+        new Notice('Voice call panel opened. Click "join call" to connect.');
+      },
+    });
+  }
+
   status(text: string) {
     // Display a message in the status bar
     this.pureChatStatusElement.setText(`[Pure Chat LLM] ${text}`);
@@ -375,6 +408,31 @@ export default class PureChatLLM extends Plugin {
       leaf = workspace.getRightLeaf(false);
       await leaf?.setViewState({
         type: PURE_CHAT_LLM_VIEW_TYPE,
+        active: true,
+      });
+    }
+
+    // "Reveal" the leaf in case it is in a collapsed sidebar
+    if (leaf) {
+      void workspace.revealLeaf(leaf);
+    }
+  }
+
+  async activateVoiceCallView() {
+    const { workspace } = this.app;
+
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(VOICE_CALL_VIEW_TYPE);
+
+    if (leaves.length > 0) {
+      // A leaf with our view already exists, use that
+      leaf = leaves[0];
+    } else {
+      // Our view could not be found in the workspace, create a new leaf
+      // in the right sidebar for it
+      leaf = workspace.getRightLeaf(false);
+      await leaf?.setViewState({
+        type: VOICE_CALL_VIEW_TYPE,
         active: true,
       });
     }

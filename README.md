@@ -99,6 +99,51 @@ _Note:_ The API key must be set before initiating chats. If you use the **Comple
 
 ---
 
+## Voice Call Feature
+
+The plugin now supports real-time voice calls using WebRTC technology. This allows users to communicate via voice directly from Obsidian.
+
+### How to Use Voice Calls
+
+1. **Open Voice Call Panel:**
+   - Click the phone icon in the ribbon bar, or
+   - Use the command palette (Ctrl/Cmd + P) and select "Open voice call panel"
+
+2. **Start a New Call:**
+   - Click the "Start call" button in the voice call panel
+   - Grant microphone permissions when prompted
+   - Wait for the connection to establish
+
+3. **Join an Existing Call:**
+   - Click the "Join call" button in the voice call panel
+   - The system will connect you to an active call session
+
+4. **During a Call:**
+   - **Mute/Unmute:** Click the "Mute" button to toggle your microphone
+   - **End Call:** Click the "End call" button to disconnect
+
+### Requirements
+
+- **Microphone permissions:** Your browser/Obsidian must have access to your microphone
+- **WebRTC support:** Modern browsers and Obsidian desktop app support WebRTC
+- **Signaling server:** The `/realtime/calls` endpoint must be configured in your API provider settings
+
+### Troubleshooting
+
+- **Microphone not working:** Check your system permissions and browser settings
+- **Connection fails:** Verify your API endpoint supports the `/realtime/calls` WebSocket endpoint
+- **No audio:** Check that your audio output device is working and not muted
+
+### Technical Details
+
+The voice call feature uses:
+- **WebRTC** for peer-to-peer audio streaming
+- **WebSocket** signaling via `/realtime/calls` endpoint
+- **STUN servers** for NAT traversal (Google's public STUN servers by default)
+- **Echo cancellation, noise suppression, and auto-gain control** for better audio quality
+
+---
+
 ## Useful Links
 
 - [OpenAI API documentation](https://platform.openai.com/docs)
