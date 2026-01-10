@@ -217,7 +217,7 @@ export class VoiceCallSideView extends ItemView {
     if (this.plugin.settings.agentMode) {
       instructionsEl.createEl('p', {
         cls: 'tool-info',
-        text: 'Tools enabled for file operations and search',
+        text: 'Agent mode enabled: AI can access tools',
       });
     }
 
