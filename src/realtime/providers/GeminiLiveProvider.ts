@@ -85,7 +85,7 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
 	/**
 	 * Sends the setup message to configure the Gemini session
 	 */
-	private sendSetupMessage(config: VoiceCallConfig): void {
+	protected sendSetupMessage(config: VoiceCallConfig): void {
 		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
 		const setupMessage = {
@@ -148,7 +148,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
 	private sendAudioChunk(pcm16: Int16Array): void {
 		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-		const base64Audio = this.arrayBufferToBase64(pcm16.buffer);
+		// Create a new ArrayBuffer from the typed array to avoid SharedArrayBuffer issues
+		const arrayBuffer = new ArrayBuffer(pcm16.byteLength);
+		new Uint8Array(arrayBuffer).set(new Uint8Array(pcm16.buffer, pcm16.byteOffset, pcm16.byteLength));
+		const base64Audio = this.arrayBufferToBase64(arrayBuffer);
 		const message = {
 			realtime_input: {
 				media_chunks: [
@@ -166,7 +169,7 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
 	/**
 	 * Handles incoming WebSocket messages from Gemini
 	 */
-	private handleWebSocketMessage(event: MessageEvent): void {
+	protected handleWebSocketMessage(event: MessageEvent): void {
 		try {
 			const data = JSON.parse(event.data);
 

@@ -2,18 +2,24 @@ import { ItemView, WorkspaceLeaf, Setting, Notice } from 'obsidian';
 import { VoiceCall } from '../realtime/VoiceCall';
 import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
 import { OpenAIRealtimeProviderWithTools } from '../realtime/providers/OpenAIRealtimeProviderWithTools';
+import { GeminiLiveProvider } from '../realtime/providers/GeminiLiveProvider';
+import { GeminiLiveProviderWithTools } from '../realtime/providers/GeminiLiveProviderWithTools';
 import { PureChatLLMChat } from '../core/Chat';
 import { CallState, VOICE_CALL_VIEW_TYPE } from '../types';
 import PureChatLLM from '../main';
+
+type VoiceProvider = 'openai' | 'gemini';
 
 /**
  * Side panel view for managing voice calls in Obsidian.
  * Provides UI controls for starting/ending calls, muting, and displaying call status.
  * Integrates with PureChatLLMChat to enable tool access during voice conversations.
+ * Supports multiple providers: OpenAI Realtime API and Google Gemini Live API.
  */
 export class VoiceCallSideView extends ItemView {
   private voiceCall: VoiceCall | null = null;
   private chat: PureChatLLMChat | null = null;
+  private selectedProvider: VoiceProvider = 'openai';
   private callState: CallState = {
     status: 'idle',
     isMuted: false,
@@ -81,6 +87,20 @@ export class VoiceCallSideView extends ItemView {
           .setIcon('settings')
           .setTooltip('Open settings')
           .onClick(() => this.plugin.openSettings()),
+      );
+
+    // Provider selection dropdown
+    new Setting(container)
+      .setName('Provider')
+      .setDesc('Select the voice call provider')
+      .addDropdown(dropdown =>
+        dropdown
+          .addOption('openai', 'OpenAI Realtime')
+          .addOption('gemini', 'Google Gemini Live')
+          .setValue(this.selectedProvider)
+          .onChange(value => {
+            this.selectedProvider = value as VoiceProvider;
+          }),
       );
   }
 
@@ -201,9 +221,12 @@ export class VoiceCallSideView extends ItemView {
       });
     }
 
+    // Provider-specific notes
+    const providerName =
+      this.selectedProvider === 'openai' ? 'OpenAI Realtime API' : 'Google Gemini Live API';
     instructionsEl.createEl('p', {
       cls: 'voice-call-note',
-      text: 'Note: microphone permissions are required for voice calls.',
+      text: `Using ${providerName}. Microphone permissions are required for voice calls.`,
     });
   }
 
@@ -241,18 +264,45 @@ export class VoiceCallSideView extends ItemView {
       const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
       const apiKey = endpoint.apiKey;
 
-      // Use the OpenAI Realtime API endpoint directly
-      const sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
-
-      // Initialize chat for tool access if agent mode is enabled
+      // Initialize provider based on selection
       let provider;
-      if (this.plugin.settings.agentMode) {
-        this.chat = new PureChatLLMChat(this.plugin);
-        provider = new OpenAIRealtimeProviderWithTools(this.chat);
-        new Notice('Initializing voice call with tool access...');
+      let sessionEndpoint: string;
+      let model: string;
+      let instructions: string;
+
+      if (this.selectedProvider === 'openai') {
+        // OpenAI Realtime API
+        sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
+        model = 'gpt-realtime';
+        instructions = this.plugin.settings.agentMode
+          ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
+          : 'You are a helpful assistant.';
+
+        if (this.plugin.settings.agentMode) {
+          this.chat = new PureChatLLMChat(this.plugin);
+          provider = new OpenAIRealtimeProviderWithTools(this.chat);
+          new Notice('Initializing OpenAI voice call with tool access...');
+        } else {
+          provider = new OpenAIRealtimeProvider();
+          new Notice('Initializing OpenAI voice call...');
+        }
       } else {
-        provider = new OpenAIRealtimeProvider();
-        new Notice('Initializing voice call...');
+        // Google Gemini Live API
+        // Use WebSocket endpoint constructed with API key
+        sessionEndpoint = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+        model = 'gemini-2.0-flash-exp';
+        instructions = this.plugin.settings.agentMode
+          ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
+          : 'You are a helpful assistant.';
+
+        if (this.plugin.settings.agentMode) {
+          this.chat = new PureChatLLMChat(this.plugin);
+          provider = new GeminiLiveProviderWithTools(this.chat);
+          new Notice('Initializing Gemini voice call with tool access...');
+        } else {
+          provider = new GeminiLiveProvider();
+          new Notice('Initializing Gemini voice call...');
+        }
       }
 
       // Create voice call with provider
@@ -261,10 +311,9 @@ export class VoiceCallSideView extends ItemView {
         {
           apiKey,
           endpoint: sessionEndpoint,
-          model: 'gpt-4o-realtime-preview-2024-12-17',
-          instructions: this.plugin.settings.agentMode
-            ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
-            : 'You are a helpful assistant.',
+          model,
+          instructions,
+          voice: this.selectedProvider === 'gemini' ? 'Puck' : undefined,
         },
         state => this.onCallStateChange(state),
         undefined,

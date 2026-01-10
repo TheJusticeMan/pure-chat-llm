@@ -1,7 +1,8 @@
 import { Notice } from 'obsidian';
-import { PureChatLLMChat } from '../../Chat';
+import { PureChatLLMChat } from '../../core/Chat';
 import { GeminiLiveProvider } from './GeminiLiveProvider';
 import { VoiceCallConfig } from './IVoiceCallProvider';
+import { ToolDefinition } from '../../types';
 
 /**
  * Google Gemini Live API provider with tool/function calling support
@@ -29,7 +30,7 @@ export class GeminiLiveProviderWithTools extends GeminiLiveProvider {
 
 		// Transform tool definitions to Gemini's format
 		// Gemini uses a similar format to OpenAI's Chat Completions API
-		const tools = toolDefinitions.map(tool => ({
+		const tools = toolDefinitions.map((tool: ToolDefinition) => ({
 			function_declarations: [
 				{
 					name: tool.function.name,
