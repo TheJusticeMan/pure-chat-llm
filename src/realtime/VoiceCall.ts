@@ -1,4 +1,4 @@
-import { Notice, requestUrl } from 'obsidian';
+import { Notice } from 'obsidian';
 import { CallState } from '../types';
 
 /**
@@ -28,16 +28,20 @@ export class VoiceCall {
    */
   async startCall(): Promise<void> {
     try {
+      console.debug('[VoiceCall] Starting call initialization...');
       this.updateState({ status: 'connecting' });
 
       // Create peer connection
+      console.debug('[VoiceCall] Creating RTCPeerConnection...');
       this.peerConnection = new RTCPeerConnection();
 
       // Set up data channel for sending and receiving events
+      console.debug('[VoiceCall] Setting up data channel "oai-events"...');
       this.dataChannel = this.peerConnection.createDataChannel('oai-events');
       this.setupDataChannel();
 
       // Request microphone access
+      console.debug('[VoiceCall] Requesting microphone access...');
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -46,10 +50,12 @@ export class VoiceCall {
         },
         video: false,
       });
+      console.debug('[VoiceCall] Microphone access granted');
 
       this.state.isLocalAudioEnabled = true;
 
       // Add local audio track for microphone input
+      console.debug('[VoiceCall] Adding local audio tracks to peer connection...');
       this.localStream.getTracks().forEach(track => {
         if (this.peerConnection && this.localStream) {
           this.peerConnection.addTrack(track, this.localStream);
@@ -58,6 +64,7 @@ export class VoiceCall {
 
       // Handle remote audio tracks
       this.peerConnection.ontrack = event => {
+        console.debug('[VoiceCall] Received remote track');
         // Remote audio will be handled by the UI layer
         if (event.streams && event.streams[0]) {
           this.updateState({ status: 'connected' });
@@ -67,6 +74,7 @@ export class VoiceCall {
       // Handle connection state changes
       this.peerConnection.onconnectionstatechange = () => {
         const state = this.peerConnection?.connectionState;
+        console.debug(`[VoiceCall] Connection state changed: ${state}`);
         if (state === 'disconnected' || state === 'failed') {
           this.updateState({ status: 'disconnected' });
         } else if (state === 'connected') {
@@ -75,35 +83,77 @@ export class VoiceCall {
       };
 
       // Create offer and set local description
+      console.debug('[VoiceCall] Creating SDP offer...');
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
+      console.debug('[VoiceCall] Local description set');
 
-      // Send SDP to server endpoint (unified interface pattern)
-      const sdpResponse = await requestUrl({
-        url: this.sessionEndpoint,
-        method: 'POST',
-        body: offer.sdp || '',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/sdp',
-        },
-      });
-
-      if (sdpResponse.status !== 200) {
-        throw new Error(`Failed to create session: ${sdpResponse.status}`);
-      }
-
-      // Set remote description from OpenAI's answer
-      const answerSdp = sdpResponse.text;
-      const answer: RTCSessionDescriptionInit = {
-        type: 'answer',
-        sdp: answerSdp,
+      // Prepare session configuration as per OpenAI docs
+      const sessionConfig = {
+        type: 'realtime',
+        model: 'gpt-4o-realtime-preview-2024-12-17',
+        modalities: ['audio', 'text'],
+        instructions: 'You are a helpful assistant.',
       };
-      await this.peerConnection.setRemoteDescription(answer);
 
-      new Notice('Voice call started');
+      console.debug('[VoiceCall] Session config:', sessionConfig);
+      console.debug('[VoiceCall] Endpoint:', this.sessionEndpoint);
+      console.debug('[VoiceCall] SDP offer length:', offer.sdp?.length || 0);
+
+      // Create FormData with SDP and session config (unified interface pattern)
+      // Note: Obsidian's requestUrl may not support FormData directly
+      // We need to use the underlying fetch API or build the multipart/form-data manually
+      const formData = new FormData();
+      formData.append('sdp', offer.sdp || '');
+      formData.append('session', JSON.stringify(sessionConfig));
+
+      console.debug('[VoiceCall] Sending request to OpenAI...');
+
+      try {
+        // Note: Using native fetch instead of requestUrl because:
+        // 1. OpenAI's unified interface requires multipart/form-data
+        // 2. requestUrl may not properly handle FormData body
+        // eslint-disable-next-line no-restricted-globals
+        const response = await fetch(this.sessionEndpoint, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: formData,
+        });
+
+        console.debug(`[VoiceCall] Response status: ${response.status}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[VoiceCall] Failed to create session:', errorText);
+          throw new Error(`Failed to create session: ${response.status} - ${errorText}`);
+        }
+
+        // Set remote description from OpenAI's answer
+        const answerSdp = await response.text();
+        console.debug('[VoiceCall] Received answer SDP, length:', answerSdp.length);
+        console.debug('[VoiceCall] Setting remote description...');
+        const answer: RTCSessionDescriptionInit = {
+          type: 'answer',
+          sdp: answerSdp,
+        };
+        await this.peerConnection.setRemoteDescription(answer);
+        console.debug('[VoiceCall] Remote description set successfully');
+
+        new Notice('Voice call started');
+      } catch (fetchError) {
+        console.error('[VoiceCall] Fetch error:', fetchError);
+        throw fetchError;
+      }
     } catch (error) {
-      console.error('Failed to start call:', error);
+      console.error('[VoiceCall] Failed to start call:', error);
+      if (error instanceof Error) {
+        console.error('[VoiceCall] Error details:', {
+          message: error.message,
+          stack: error.stack,
+        });
+      }
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to start voice call';
       this.updateState({ status: 'error', error: errorMessage });
@@ -123,27 +173,30 @@ export class VoiceCall {
     if (!this.dataChannel) return;
 
     this.dataChannel.addEventListener('open', () => {
+      console.debug('[VoiceCall] Data channel opened');
       new Notice('Connected to OpenAI realtime API');
     });
 
     this.dataChannel.addEventListener('message', event => {
       try {
         const eventData = String(event.data);
+        console.debug('[VoiceCall] Received server event:', eventData.substring(0, 200));
         const serverEvent = JSON.parse(eventData) as unknown;
         if (this.onServerEvent) {
           this.onServerEvent(serverEvent);
         }
       } catch (error) {
-        console.error('Failed to parse server event:', error);
+        console.error('[VoiceCall] Failed to parse server event:', error);
       }
     });
 
     this.dataChannel.addEventListener('error', error => {
-      console.error('Data channel error:', error);
+      console.error('[VoiceCall] Data channel error:', error);
       this.updateState({ status: 'error', error: 'Data channel error' });
     });
 
     this.dataChannel.addEventListener('close', () => {
+      console.debug('[VoiceCall] Data channel closed');
       this.updateState({ status: 'disconnected' });
     });
   }
