@@ -34,9 +34,8 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
     // Prepare session configuration
     const sessionConfig: Record<string, unknown> = {
       type: 'realtime',
-      model: config.model || 'gpt-4o-realtime-preview-2024-12-17',
+      model: config.model || 'gpt-realtime',
       instructions: config.instructions || 'You are a helpful assistant.',
-      modalities: ['audio', 'text'],
       ...(config.voice && { audio: { output: { voice: config.voice } } }),
     };
 
