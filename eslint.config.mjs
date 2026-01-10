@@ -36,6 +36,7 @@ export default defineConfig([
             'api.openai.com',
             'HTML',
             'YAML',
+            'AI',
           ],
           acronyms: ['OK'],
           enforceCamelCaseLower: true,

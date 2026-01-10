@@ -1,0 +1,11 @@
+/**
+ * Voice Call Provider System
+ *
+ * Export all provider-related types and implementations
+ */
+
+export type { IVoiceCallProvider, VoiceCallConfig } from './IVoiceCallProvider';
+export { OpenAIRealtimeProvider } from './OpenAIRealtimeProvider';
+export { OpenAIRealtimeProviderWithTools } from './OpenAIRealtimeProviderWithTools';
+export { GeminiLiveProvider } from './GeminiLiveProvider';
+export { GeminiLiveProviderWithTools } from './GeminiLiveProviderWithTools';

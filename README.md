@@ -99,6 +99,83 @@ _Note:_ The API key must be set before initiating chats. If you use the **Comple
 
 ---
 
+## Voice Call Feature
+
+The plugin now supports real-time voice calls using WebRTC with the OpenAI Realtime API. This allows users to have voice conversations with AI models directly from Obsidian, with optional tool access for enhanced capabilities.
+
+### How to Use Voice Calls
+
+1. **Open Voice Call Panel:**
+   - Click the phone icon in the ribbon bar, or
+   - Use the command palette (Ctrl/Cmd + P) and select "Open voice call panel"
+
+2. **Start a Call:**
+   - Click the "Start call" button in the voice call panel
+   - Grant microphone permissions when prompted
+   - The connection will be established directly with OpenAI's Realtime API
+
+3. **During a Call:**
+   - **Mute/Unmute:** Click the "Mute" button to toggle your microphone
+   - **End Call:** Click the "End call" button to disconnect
+
+### Tool Integration (Agent Mode)
+
+When **Agent Mode** is enabled in plugin settings, voice calls gain access to all available tools:
+
+- **File Operations**: Create, read, update, and delete notes
+- **Search**: Search across your vault with various filters
+- **Templates**: Insert templates into notes
+- **Smart Connections**: Retrieve related content
+- **Workspace Management**: Open and organize files
+- **Image Generation**: Create images during conversations
+- And more...
+
+The AI can autonomously use these tools during voice conversations to help you manage your vault, find information, and complete tasks—all through natural voice interaction.
+
+**Example interactions with tools:**
+- "Create a new note about my meeting today"
+- "Search my vault for notes mentioning project deadlines"
+- "Read my daily template and tell me what's on my schedule"
+- "Find all notes related to this topic using smart connections"
+
+### Requirements
+
+- **API Key:** A valid OpenAI API key configured in plugin settings
+- **Realtime API Access:** Your OpenAI account must have access to the Realtime API
+- **Microphone permissions:** Your browser/Obsidian must have access to your microphone
+- **WebRTC support:** Modern browsers and Obsidian desktop app support WebRTC
+
+### Technical Details
+
+The voice call feature uses:
+- **OpenAI Realtime API** via WebRTC for direct audio streaming
+- **Provider Pattern** for extensibility (supports multiple providers)
+- **PureChatLLMChat Integration** for tool access when agent mode is enabled
+- **Session Description Protocol (SDP)** exchange for connection setup
+- **Data channel** (`oai-events`) for sending/receiving API events and tool calls
+- **Echo cancellation, noise suppression, and auto-gain control** for better audio quality
+
+The implementation follows OpenAI's unified interface pattern:
+1. Creates an RTCPeerConnection with local audio track
+2. Generates SDP offer
+3. POSTs SDP to `https://api.openai.com/v1/realtime/calls` with API key and session config
+4. Includes tool definitions in session config when agent mode is enabled
+5. Receives answer SDP and establishes connection
+6. Audio and events flow through the established WebRTC connection
+7. Tool calls are executed via the PureChatLLMChat tool registry
+8. Tool results are sent back to the AI for continued conversation
+
+### Troubleshooting
+
+- **Microphone not working:** Check your system permissions and browser settings
+- **Connection fails:** Verify your API key is valid and has access to the Realtime API
+- **No audio:** Check that your audio output device is working and not muted
+- **"Failed to create session":** Ensure your OpenAI account has access to the Realtime API
+- **Tools not working:** Enable Agent Mode in plugin settings
+- **Tool execution fails:** Check the browser console for error details
+
+---
+
 ## Useful Links
 
 - [OpenAI API documentation](https://platform.openai.com/docs)

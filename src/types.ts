@@ -38,6 +38,7 @@ export interface ChatParser {
 }
 
 export const PURE_CHAT_LLM_VIEW_TYPE = 'pure-chat-llm-left-pane';
+export const VOICE_CALL_VIEW_TYPE = 'voice-call-side-view';
 
 // Tool Types
 export interface ToolParameter {
@@ -136,4 +137,15 @@ export interface ChatOptions {
   max_completion_tokens?: number;
   max_tokens?: number;
   tools?: string[];
+}
+
+// Voice Call Types
+export type CallStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
+
+export interface CallState {
+  status: CallStatus;
+  isMuted: boolean;
+  isLocalAudioEnabled: boolean;
+  remoteParticipants: string[];
+  error?: string;
 }
