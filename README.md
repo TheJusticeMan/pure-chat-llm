@@ -101,7 +101,7 @@ _Note:_ The API key must be set before initiating chats. If you use the **Comple
 
 ## Voice Call Feature
 
-The plugin now supports real-time voice calls using WebRTC technology. This allows users to communicate via voice directly from Obsidian.
+The plugin now supports real-time voice calls using WebRTC with the OpenAI Realtime API. This allows users to have voice conversations with AI models directly from Obsidian.
 
 ### How to Use Voice Calls
 
@@ -109,38 +109,42 @@ The plugin now supports real-time voice calls using WebRTC technology. This allo
    - Click the phone icon in the ribbon bar, or
    - Use the command palette (Ctrl/Cmd + P) and select "Open voice call panel"
 
-2. **Start a New Call:**
+2. **Start a Call:**
    - Click the "Start call" button in the voice call panel
    - Grant microphone permissions when prompted
-   - Wait for the connection to establish
+   - The connection will be established directly with OpenAI's Realtime API
 
-3. **Join an Existing Call:**
-   - Click the "Join call" button in the voice call panel
-   - The system will connect you to an active call session
-
-4. **During a Call:**
+3. **During a Call:**
    - **Mute/Unmute:** Click the "Mute" button to toggle your microphone
    - **End Call:** Click the "End call" button to disconnect
 
 ### Requirements
 
+- **API Key:** A valid OpenAI API key configured in plugin settings
 - **Microphone permissions:** Your browser/Obsidian must have access to your microphone
 - **WebRTC support:** Modern browsers and Obsidian desktop app support WebRTC
-- **Signaling server:** The `/realtime/calls` endpoint must be configured in your API provider settings
-
-### Troubleshooting
-
-- **Microphone not working:** Check your system permissions and browser settings
-- **Connection fails:** Verify your API endpoint supports the `/realtime/calls` WebSocket endpoint
-- **No audio:** Check that your audio output device is working and not muted
 
 ### Technical Details
 
 The voice call feature uses:
-- **WebRTC** for peer-to-peer audio streaming
-- **WebSocket** signaling via `/realtime/calls` endpoint
-- **STUN servers** for NAT traversal (Google's public STUN servers by default)
+- **OpenAI Realtime API** via WebRTC for direct audio streaming
+- **Session Description Protocol (SDP)** exchange for connection setup
+- **Data channel** (`oai-events`) for sending/receiving API events
 - **Echo cancellation, noise suppression, and auto-gain control** for better audio quality
+
+The implementation follows OpenAI's unified interface pattern:
+1. Creates an RTCPeerConnection with local audio track
+2. Generates SDP offer
+3. POSTs SDP to `https://api.openai.com/v1/realtime/calls` with API key
+4. Receives answer SDP and establishes connection
+5. Audio and events flow through the established WebRTC connection
+
+### Troubleshooting
+
+- **Microphone not working:** Check your system permissions and browser settings
+- **Connection fails:** Verify your API key is valid and has access to the Realtime API
+- **No audio:** Check that your audio output device is working and not muted
+- **"Failed to create session":** Ensure your OpenAI account has access to the Realtime API
 
 ---
 

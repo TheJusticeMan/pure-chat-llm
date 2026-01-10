@@ -149,10 +149,3 @@ export interface CallState {
   remoteParticipants: string[];
   error?: string;
 }
-
-export interface SignalingMessage {
-  type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave';
-  data?: RTCSessionDescriptionInit | RTCIceCandidateInit | string;
-  from?: string;
-  to?: string;
-}

@@ -200,16 +200,27 @@ export class VoiceCallSideView extends ItemView {
    */
   private async startCall(): Promise<void> {
     try {
-      // Get signaling URL from settings (using endpoint as base)
+      // Get API endpoint from settings
       const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-      const baseUrl = endpoint.endpoint.replace(/^https?:\/\//, 'wss://');
-      const signalingUrl = `${baseUrl}/realtime/calls`;
+      const apiKey = endpoint.apiKey;
+      
+      // Use the OpenAI Realtime API endpoint directly
+      const sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
 
-      this.voiceCall = new VoiceCall(signalingUrl, state => this.onCallStateChange(state));
+      this.voiceCall = new VoiceCall(
+        sessionEndpoint,
+        apiKey,
+        state => this.onCallStateChange(state),
+        event => {
+          // Handle server events from OpenAI Realtime API
+          console.debug('Server event:', event);
+        },
+      );
 
       await this.voiceCall.startCall();
     } catch (error) {
-      console.error('Failed to start call:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to start call:', errorMsg);
       new Notice('Failed to start voice call');
     }
   }
@@ -236,7 +247,12 @@ export class VoiceCallSideView extends ItemView {
    */
   private async endCall(): Promise<void> {
     if (this.voiceCall) {
-      await this.voiceCall.endCall();
+      try {
+        await this.voiceCall.endCall();
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Failed to end call:', errorMsg);
+      }
       this.voiceCall = null;
     }
   }
@@ -249,9 +265,14 @@ export class VoiceCallSideView extends ItemView {
 
     // Update remote audio stream
     if (this.voiceCall && this.remoteAudioElement) {
-      const remoteStream = this.voiceCall.getRemoteStream();
-      if (remoteStream) {
-        this.remoteAudioElement.srcObject = remoteStream;
+      const pc = this.voiceCall.getPeerConnection();
+      if (pc) {
+        // Listen for remote tracks and attach to audio element
+        pc.ontrack = (event: RTCTrackEvent) => {
+          if (event.streams && event.streams[0] && this.remoteAudioElement) {
+            this.remoteAudioElement.srcObject = event.streams[0];
+          }
+        };
       }
     }
 
@@ -302,7 +323,12 @@ export class VoiceCallSideView extends ItemView {
   async onClose(): Promise<void> {
     // Clean up voice call if active
     if (this.voiceCall) {
-      await this.voiceCall.endCall();
+      try {
+        await this.voiceCall.endCall();
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Failed to cleanup voice call:', errorMsg);
+      }
       this.voiceCall = null;
     }
 
