@@ -43,7 +43,15 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
     if (this.chat && this.chat.plugin.settings.agentMode) {
       const toolDefinitions = this.chat.toolregistry.getAllDefinitions();
       if (toolDefinitions.length > 0) {
-        sessionConfig.tools = toolDefinitions;
+        // Convert tool definitions to OpenAI Realtime API format
+        // The Realtime API expects tools with direct name/description/parameters
+        // rather than the Chat Completions API format with type:'function' wrapper
+        sessionConfig.tools = toolDefinitions.map(tool => ({
+          type: tool.type,
+          name: tool.function.name,
+          description: tool.function.description,
+          parameters: tool.function.parameters,
+        }));
         new Notice(`Voice call started with ${toolDefinitions.length} tools enabled`);
       }
     }
