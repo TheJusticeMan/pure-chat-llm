@@ -91,8 +91,7 @@ export class VoiceCall {
       // Prepare session configuration as per OpenAI docs
       const sessionConfig = {
         type: 'realtime',
-        model: 'gpt-4o-realtime-preview-2024-12-17',
-        modalities: ['audio', 'text'],
+        model: 'gpt-realtime',
         instructions: 'You are a helpful assistant.',
       };
 
@@ -154,8 +153,7 @@ export class VoiceCall {
           stack: error.stack,
         });
       }
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to start voice call';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start voice call';
       this.updateState({ status: 'error', error: errorMessage });
 
       if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
