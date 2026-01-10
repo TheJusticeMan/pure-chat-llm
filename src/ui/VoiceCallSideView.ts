@@ -275,6 +275,11 @@ export class VoiceCallSideView extends ItemView {
         }
       }
       
+      if (!providerEndpoint || !providerEndpoint.apiKey) {
+        const providerName = this.selectedProvider === 'openai' ? 'OpenAI' : 'Gemini';
+        throw new Error(`No API key configured for ${providerName}. Please add an endpoint named "${providerName}" in settings with a valid API key.`);
+      }
+      
       apiKey = providerEndpoint.apiKey;
 
       // Initialize provider based on selection
