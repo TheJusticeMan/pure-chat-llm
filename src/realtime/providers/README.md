@@ -7,13 +7,29 @@ This directory contains the provider abstraction layer for voice call functional
 The system uses a provider pattern to decouple voice call logic from specific provider implementations:
 
 - **`IVoiceCallProvider.ts`**: Interface defining the contract for voice call providers
-- **`OpenAIRealtimeProvider.ts`**: Base implementation for OpenAI's Realtime API
+- **`OpenAIRealtimeProvider.ts`**: Base implementation for OpenAI's Realtime API (WebRTC)
 - **`OpenAIRealtimeProviderWithTools.ts`**: Extended OpenAI provider with PureChatLLMChat tool integration
+- **`GeminiLiveProvider.ts`**: Base implementation for Google Gemini Live API (WebSocket)
+- **`GeminiLiveProviderWithTools.ts`**: Extended Gemini provider with tool integration
 - **`index.ts`**: Barrel export for convenient imports
+
+## Supported Providers
+
+### OpenAI Realtime API
+- Uses WebRTC with SDP exchange via unified interface
+- Direct peer-to-peer audio connection
+- Data channel (`oai-events`) for bidirectional events
+- Supports tool calling when using `OpenAIRealtimeProviderWithTools`
+
+### Google Gemini Live API
+- Uses WebSocket connection for real-time audio streaming
+- PCM audio encoding/decoding
+- Supports tool calling when using `GeminiLiveProviderWithTools`
+- Voice Activity Detection built-in
 
 ## Tool Integration
 
-The `OpenAIRealtimeProviderWithTools` extends the base provider to enable AI tool access during voice conversations:
+Both tool-enabled providers (`OpenAIRealtimeProviderWithTools` and `GeminiLiveProviderWithTools`) extend their base implementations to enable AI tool access during voice conversations:
 
 - Integrates with `PureChatLLMChat` to access the tool registry
 - Automatically includes tool definitions in the session configuration
@@ -21,7 +37,7 @@ The `OpenAIRealtimeProviderWithTools` extends the base provider to enable AI too
 - Executes tools via the existing tool registry
 - Returns tool results to the AI for continued conversation
 
-### Example: Voice Call with Tools
+### Example: OpenAI Voice Call with Tools
 
 ```typescript
 // Create chat instance for tool access
@@ -33,9 +49,34 @@ const provider = new OpenAIRealtimeProviderWithTools(chat);
 const voiceCall = new VoiceCall(
   provider,
   {
-    apiKey: 'your-api-key',
+    apiKey: 'your-openai-api-key',
     endpoint: 'https://api.openai.com/v1/realtime/calls',
-    model: 'gpt-4o-realtime-preview-2024-12-17',
+    model: 'gpt-realtime',
+    instructions: 'You are a helpful AI assistant with tool access.',
+  },
+  onStateChange,
+  onServerEvent,
+  onRemoteTrack,
+);
+
+await voiceCall.startCall();
+```
+
+### Example: Gemini Voice Call with Tools
+
+```typescript
+// Create chat instance for tool access
+const chat = new PureChatLLMChat(plugin);
+
+// Create provider with tool integration
+const provider = new GeminiLiveProviderWithTools(chat);
+
+const voiceCall = new VoiceCall(
+  provider,
+  {
+    apiKey: 'your-gemini-api-key',
+    model: 'gemini-2.0-flash-exp',
+    voice: 'Puck',
     instructions: 'You are a helpful AI assistant with tool access.',
   },
   onStateChange,
@@ -69,31 +110,22 @@ To add support for a new voice call provider:
 3. Export from `index.ts`
 4. Update the UI to allow provider selection
 
-## Example: OpenAI Realtime Provider
+## Provider Comparison
 
-```typescript
-const provider = new OpenAIRealtimeProvider();
-const voiceCall = new VoiceCall(
-  provider,
-  {
-    apiKey: 'your-api-key',
-    endpoint: 'https://api.openai.com/v1/realtime/calls',
-    model: 'gpt-realtime',
-    instructions: 'You are a helpful assistant.',
-  },
-  onStateChange,
-  onServerEvent,
-  onRemoteTrack,
-);
-
-await voiceCall.startCall();
-```
+| Feature | OpenAI Realtime | Gemini Live |
+|---------|-----------------|-------------|
+| Protocol | WebRTC (SDP) | WebSocket |
+| Audio Format | Automatic | PCM16 (16kHz) |
+| Data Channel | RTCDataChannel | WebSocket messages |
+| Tool Support | ✅ Yes | ✅ Yes |
+| Voice Selection | ✅ Yes | ✅ Yes |
+| Model Options | gpt-realtime | gemini-2.0-flash-exp |
 
 ## Provider Configuration
 
 The `VoiceCallConfig` interface defines common configuration options:
 - `apiKey`: Authentication key for the provider
-- `endpoint`: API endpoint URL
+- `endpoint`: API endpoint URL (optional, uses defaults)
 - `model`: Model/service identifier (provider-specific)
 - `instructions`: System instructions or prompts
 - `voice`: Voice selection (if supported)
@@ -103,7 +135,6 @@ The `VoiceCallConfig` interface defines common configuration options:
 
 Examples of providers that could be added:
 - Azure Cognitive Services (with tool integration)
-- Google Cloud Speech (with function calling)
 - AWS Transcribe (with Lambda integration)
 - Custom WebRTC services
 - On-premise speech services with custom tool frameworks

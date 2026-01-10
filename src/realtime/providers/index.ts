@@ -7,3 +7,5 @@
 export type { IVoiceCallProvider, VoiceCallConfig } from './IVoiceCallProvider';
 export { OpenAIRealtimeProvider } from './OpenAIRealtimeProvider';
 export { OpenAIRealtimeProviderWithTools } from './OpenAIRealtimeProviderWithTools';
+export { GeminiLiveProvider } from './GeminiLiveProvider';
+export { GeminiLiveProviderWithTools } from './GeminiLiveProviderWithTools';
