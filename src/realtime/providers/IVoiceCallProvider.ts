@@ -32,10 +32,7 @@ export interface IVoiceCallProvider {
    * @param dataChannel The RTCDataChannel to configure
    * @param onServerEvent Callback for server events
    */
-  setupDataChannel(
-    dataChannel: RTCDataChannel,
-    onServerEvent?: (event: unknown) => void,
-  ): void;
+  setupDataChannel(dataChannel: RTCDataChannel, onServerEvent?: (event: unknown) => void): void;
 
   /**
    * Sends a client event to the provider

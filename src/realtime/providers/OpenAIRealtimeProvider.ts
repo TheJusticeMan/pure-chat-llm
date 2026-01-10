@@ -68,10 +68,7 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   /**
    * Sets up the OpenAI-specific data channel ('oai-events')
    */
-  setupDataChannel(
-    dataChannel: RTCDataChannel,
-    onServerEvent?: (event: unknown) => void,
-  ): void {
+  setupDataChannel(dataChannel: RTCDataChannel, onServerEvent?: (event: unknown) => void): void {
     dataChannel.addEventListener('open', () => {
       new Notice('Connected to OpenAI realtime API');
     });

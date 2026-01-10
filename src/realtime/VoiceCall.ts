@@ -63,12 +63,12 @@ export class VoiceCall {
       this.peerConnection.ontrack = event => {
         if (event.streams && event.streams[0]) {
           const stream = event.streams[0];
-          
+
           // Notify UI layer of remote track
           if (this.onRemoteTrack) {
             this.onRemoteTrack(stream);
           }
-          
+
           this.updateState({ status: 'connected' });
         }
       };
@@ -84,11 +84,7 @@ export class VoiceCall {
       };
 
       // Use provider to establish session
-      await this.provider.startSession(
-        this.peerConnection,
-        this.localStream,
-        this.config,
-      );
+      await this.provider.startSession(this.peerConnection, this.localStream, this.config);
     } catch (error) {
       console.error('Failed to start call:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to start voice call';

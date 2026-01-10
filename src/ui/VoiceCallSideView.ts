@@ -1,9 +1,4 @@
-import {
-  ItemView,
-  WorkspaceLeaf,
-  Setting,
-  Notice,
-} from 'obsidian';
+import { ItemView, WorkspaceLeaf, Setting, Notice } from 'obsidian';
 import { VoiceCall } from '../realtime/VoiceCall';
 import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
 import { OpenAIRealtimeProviderWithTools } from '../realtime/providers/OpenAIRealtimeProviderWithTools';
@@ -104,7 +99,10 @@ export class VoiceCallSideView extends ItemView {
     });
 
     if (this.callState.error) {
-      statusContainer.createEl('div', { cls: 'status-error', text: `Error: ${this.callState.error}` });
+      statusContainer.createEl('div', {
+        cls: 'status-error',
+        text: `Error: ${this.callState.error}`,
+      });
     }
 
     // Participants
@@ -134,26 +132,23 @@ export class VoiceCallSideView extends ItemView {
             }),
         )
         .addButton(btn =>
-          btn
-            .setButtonText('Join call')
-            .onClick(() => {
-              void this.joinCall();
-            }),
+          btn.setButtonText('Join call').onClick(() => {
+            void this.joinCall();
+          }),
         );
     }
 
     // Error state - show retry button
     if (this.callState.status === 'error') {
-      new Setting(controlsContainer)
-        .addButton(btn =>
-          btn
-            .setButtonText('Try again')
-            .setCta()
-            .setIcon('refresh-cw')
-            .onClick(() => {
-              this.resetCallState();
-            }),
-        );
+      new Setting(controlsContainer).addButton(btn =>
+        btn
+          .setButtonText('Try again')
+          .setCta()
+          .setIcon('refresh-cw')
+          .onClick(() => {
+            this.resetCallState();
+          }),
+      );
     }
 
     // Active call controls
@@ -197,7 +192,7 @@ export class VoiceCallSideView extends ItemView {
     instructionsEl.createEl('p', {
       text: '4. Click "end call" to disconnect',
     });
-    
+
     // Show tool information if agent mode is enabled
     if (this.plugin.settings.agentMode) {
       instructionsEl.createEl('p', {
@@ -217,16 +212,16 @@ export class VoiceCallSideView extends ItemView {
    */
   private createRemoteAudioElement(container: HTMLElement): void {
     if (!this.remoteAudioElement) {
-      this.remoteAudioElement = container.createEl('audio', { 
-        attr: { 
+      this.remoteAudioElement = container.createEl('audio', {
+        attr: {
           autoplay: 'true',
           playsinline: 'true',
-        } 
+        },
       });
       this.remoteAudioElement.setCssProps({ display: 'none' });
-      
+
       // Add error listener for debugging playback issues
-      this.remoteAudioElement.addEventListener('error', (e) => {
+      this.remoteAudioElement.addEventListener('error', e => {
         console.error('Audio playback error:', e);
       });
     }
@@ -241,14 +236,14 @@ export class VoiceCallSideView extends ItemView {
       if (!this.remoteAudioElement) {
         this.createRemoteAudioElement(this.contentEl);
       }
-      
+
       // Get API endpoint from settings
       const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
       const apiKey = endpoint.apiKey;
-      
+
       // Use the OpenAI Realtime API endpoint directly
       const sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
-      
+
       // Initialize chat for tool access if agent mode is enabled
       let provider;
       if (this.plugin.settings.agentMode) {
@@ -259,7 +254,7 @@ export class VoiceCallSideView extends ItemView {
         provider = new OpenAIRealtimeProvider();
         new Notice('Initializing voice call...');
       }
-      
+
       // Create voice call with provider
       this.voiceCall = new VoiceCall(
         provider,
@@ -267,7 +262,7 @@ export class VoiceCallSideView extends ItemView {
           apiKey,
           endpoint: sessionEndpoint,
           model: 'gpt-4o-realtime-preview-2024-12-17',
-          instructions: this.plugin.settings.agentMode 
+          instructions: this.plugin.settings.agentMode
             ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
             : 'You are a helpful assistant.',
         },
@@ -290,14 +285,17 @@ export class VoiceCallSideView extends ItemView {
   private handleRemoteStream(stream: MediaStream): void {
     if (this.remoteAudioElement) {
       this.remoteAudioElement.srcObject = stream;
-      
+
       // Try to play explicitly in case autoplay doesn't work
-      this.remoteAudioElement.play().then(() => {
-        new Notice('Audio playback started');
-      }).catch(err => {
-        console.error('Failed to start audio playback:', err);
-        new Notice('Failed to start audio playback. Click to enable audio.');
-      });
+      this.remoteAudioElement
+        .play()
+        .then(() => {
+          new Notice('Audio playback started');
+        })
+        .catch(err => {
+          console.error('Failed to start audio playback:', err);
+          new Notice('Failed to start audio playback. Click to enable audio.');
+        });
     }
   }
 

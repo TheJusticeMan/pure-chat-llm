@@ -19,7 +19,12 @@ import {
 
 import { PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
-import { PURE_CHAT_LLM_VIEW_TYPE, VOICE_CALL_VIEW_TYPE, PureChatLLMSettings, RoleType } from './types';
+import {
+  PURE_CHAT_LLM_VIEW_TYPE,
+  VOICE_CALL_VIEW_TYPE,
+  PureChatLLMSettings,
+  RoleType,
+} from './types';
 import { DEFAULT_SETTINGS } from './assets/constants';
 import {
   CODE_PREVIEW_VIEW_TYPE,

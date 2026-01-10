@@ -42,7 +42,7 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
 
     // Add tool definitions if chat is available
     if (this.chat && this.chat.plugin.settings.agentMode) {
-      const toolDefinitions = this.chat.toolregistry.getToolDefinitions();
+      const toolDefinitions = this.chat.toolregistry.getAllDefinitions();
       if (toolDefinitions.length > 0) {
         sessionConfig.tools = toolDefinitions;
         new Notice(`Voice call started with ${toolDefinitions.length} tools enabled`);
@@ -77,24 +77,19 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
     };
     await peerConnection.setRemoteDescription(answer);
 
-    new Notice(
-      this.chat ? 'Voice call started with tool access' : 'Voice call started'
-    );
+    new Notice(this.chat ? 'Voice call started with tool access' : 'Voice call started');
   }
 
   /**
    * Sets up the OpenAI-specific data channel ('oai-events')
    * Handles tool calls from the AI
    */
-  setupDataChannel(
-    dataChannel: RTCDataChannel,
-    onServerEvent?: (event: unknown) => void,
-  ): void {
+  setupDataChannel(dataChannel: RTCDataChannel, onServerEvent?: (event: unknown) => void): void {
     dataChannel.addEventListener('open', () => {
       new Notice('Connected to OpenAI realtime API');
     });
 
-    dataChannel.addEventListener('message', async (event) => {
+    dataChannel.addEventListener('message', async event => {
       try {
         const eventData = String(event.data);
         const serverEvent = JSON.parse(eventData) as {
@@ -116,7 +111,7 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
       }
     });
 
-    dataChannel.addEventListener('error', (error) => {
+    dataChannel.addEventListener('error', error => {
       console.error('Data channel error:', error);
     });
 
@@ -166,7 +161,9 @@ export class OpenAIRealtimeProviderWithTools implements IVoiceCallProvider {
       new Notice(`Tool ${functionName} executed successfully`);
     } catch (error) {
       console.error('Tool execution error:', error);
-      new Notice(`Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      new Notice(
+        `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
