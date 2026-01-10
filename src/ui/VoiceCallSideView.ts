@@ -255,9 +255,27 @@ export class VoiceCallSideView extends ItemView {
         this.createRemoteAudioElement(this.contentEl);
       }
 
-      // Get API endpoint from settings
-      const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-      const apiKey = endpoint.apiKey;
+      // Get API key for selected provider
+      let apiKey: string;
+      let providerEndpoint;
+      
+      if (this.selectedProvider === 'openai') {
+        // Find OpenAI endpoint in settings
+        providerEndpoint = this.plugin.settings.endpoints.find(ep => ep.name === 'OpenAI');
+        if (!providerEndpoint) {
+          // Fall back to current endpoint
+          providerEndpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+        }
+      } else {
+        // Find Gemini endpoint in settings
+        providerEndpoint = this.plugin.settings.endpoints.find(ep => ep.name === 'Gemini');
+        if (!providerEndpoint) {
+          // Fall back to current endpoint
+          providerEndpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+        }
+      }
+      
+      apiKey = providerEndpoint.apiKey;
 
       // Initialize provider based on selection
       let provider;
