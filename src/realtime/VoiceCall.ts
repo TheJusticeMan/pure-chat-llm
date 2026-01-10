@@ -1,9 +1,10 @@
 import { Notice } from 'obsidian';
 import { CallState } from '../types';
+import { IVoiceCallProvider, VoiceCallConfig } from './providers/IVoiceCallProvider';
 
 /**
- * Manages WebRTC connections to OpenAI Realtime API.
- * Implements the unified interface pattern with direct SDP exchange.
+ * Manages WebRTC voice call connections using a provider pattern.
+ * Supports multiple voice call providers through the IVoiceCallProvider interface.
  */
 export class VoiceCall {
   private peerConnection: RTCPeerConnection | null = null;
@@ -17,15 +18,16 @@ export class VoiceCall {
   };
 
   constructor(
-    private sessionEndpoint: string,
-    private apiKey: string,
+    private provider: IVoiceCallProvider,
+    private config: VoiceCallConfig,
     private onStateChange: (state: CallState) => void,
     private onServerEvent?: (event: unknown) => void,
     private onRemoteTrack?: (stream: MediaStream) => void,
+    private dataChannelName: string = 'oai-events',
   ) {}
 
   /**
-   * Initializes and starts a voice call using OpenAI Realtime API
+   * Initializes and starts a voice call using the configured provider
    */
   async startCall(): Promise<void> {
     try {
@@ -35,8 +37,8 @@ export class VoiceCall {
       this.peerConnection = new RTCPeerConnection();
 
       // Set up data channel for sending and receiving events
-      this.dataChannel = this.peerConnection.createDataChannel('oai-events');
-      this.setupDataChannel();
+      this.dataChannel = this.peerConnection.createDataChannel(this.dataChannelName);
+      this.provider.setupDataChannel(this.dataChannel, this.onServerEvent);
 
       // Request microphone access
       this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -81,48 +83,12 @@ export class VoiceCall {
         }
       };
 
-      // Create offer and set local description
-      const offer = await this.peerConnection.createOffer();
-      await this.peerConnection.setLocalDescription(offer);
-
-      // Prepare session configuration as per OpenAI docs
-      const sessionConfig = {
-        type: 'realtime',
-        model: 'gpt-realtime',
-        instructions: 'You are a helpful assistant.',
-      };
-
-      // Create FormData with SDP and session config (unified interface pattern)
-      const formData = new FormData();
-      formData.append('sdp', offer.sdp || '');
-      formData.append('session', JSON.stringify(sessionConfig));
-
-      // Note: Using native fetch instead of requestUrl because:
-      // 1. OpenAI's unified interface requires multipart/form-data
-      // 2. requestUrl may not properly handle FormData body
-      // eslint-disable-next-line no-restricted-globals
-      const response = await fetch(this.sessionEndpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create session: ${response.status} - ${errorText}`);
-      }
-
-      // Set remote description from OpenAI's answer
-      const answerSdp = await response.text();
-      const answer: RTCSessionDescriptionInit = {
-        type: 'answer',
-        sdp: answerSdp,
-      };
-      await this.peerConnection.setRemoteDescription(answer);
-
-      new Notice('Voice call started');
+      // Use provider to establish session
+      await this.provider.startSession(
+        this.peerConnection,
+        this.localStream,
+        this.config,
+      );
     } catch (error) {
       console.error('Failed to start call:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to start voice call';
@@ -137,43 +103,11 @@ export class VoiceCall {
   }
 
   /**
-   * Sets up the data channel for sending and receiving Realtime API events
-   */
-  private setupDataChannel(): void {
-    if (!this.dataChannel) return;
-
-    this.dataChannel.addEventListener('open', () => {
-      new Notice('Connected to OpenAI realtime API');
-    });
-
-    this.dataChannel.addEventListener('message', event => {
-      try {
-        const eventData = String(event.data);
-        const serverEvent = JSON.parse(eventData) as unknown;
-        if (this.onServerEvent) {
-          this.onServerEvent(serverEvent);
-        }
-      } catch (error) {
-        console.error('Failed to parse server event:', error);
-      }
-    });
-
-    this.dataChannel.addEventListener('error', error => {
-      console.error('Data channel error:', error);
-      this.updateState({ status: 'error', error: 'Data channel error' });
-    });
-
-    this.dataChannel.addEventListener('close', () => {
-      this.updateState({ status: 'disconnected' });
-    });
-  }
-
-  /**
-   * Sends a client event to the Realtime API via data channel
+   * Sends a client event to the provider via data channel
    */
   sendEvent(event: unknown): void {
-    if (this.dataChannel && this.dataChannel.readyState === 'open') {
-      this.dataChannel.send(JSON.stringify(event));
+    if (this.dataChannel) {
+      this.provider.sendEvent(this.dataChannel, event);
     }
   }
 
@@ -197,6 +131,9 @@ export class VoiceCall {
    */
   async endCall(): Promise<void> {
     try {
+      // Provider-specific cleanup
+      await this.provider.cleanup();
+
       // Close data channel
       if (this.dataChannel) {
         this.dataChannel.close();

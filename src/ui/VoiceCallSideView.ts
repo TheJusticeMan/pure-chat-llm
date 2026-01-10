@@ -5,6 +5,7 @@ import {
   Notice,
 } from 'obsidian';
 import { VoiceCall } from '../realtime/VoiceCall';
+import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
 import { CallState, VOICE_CALL_VIEW_TYPE } from '../types';
 import PureChatLLM from '../main';
 
@@ -236,9 +237,18 @@ export class VoiceCallSideView extends ItemView {
       // Use the OpenAI Realtime API endpoint directly
       const sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
       
+      // Create OpenAI provider
+      const provider = new OpenAIRealtimeProvider();
+      
+      // Create voice call with provider
       this.voiceCall = new VoiceCall(
-        sessionEndpoint,
-        apiKey,
+        provider,
+        {
+          apiKey,
+          endpoint: sessionEndpoint,
+          model: 'gpt-realtime',
+          instructions: 'You are a helpful assistant.',
+        },
         state => this.onCallStateChange(state),
         undefined,
         stream => this.handleRemoteStream(stream),
