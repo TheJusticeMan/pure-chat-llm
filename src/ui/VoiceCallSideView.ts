@@ -137,6 +137,20 @@ export class VoiceCallSideView extends ItemView {
         );
     }
 
+    // Error state - show retry button
+    if (this.callState.status === 'error') {
+      new Setting(controlsContainer)
+        .addButton(btn =>
+          btn
+            .setButtonText('Try again')
+            .setCta()
+            .setIcon('refresh-cw')
+            .onClick(() => {
+              this.resetCallState();
+            }),
+        );
+    }
+
     // Active call controls
     if (this.callState.status === 'connected' || this.callState.status === 'connecting') {
       new Setting(controlsContainer).addButton(btn =>
@@ -292,6 +306,30 @@ export class VoiceCallSideView extends ItemView {
    */
   private onCallStateChange(state: CallState): void {
     this.callState = state;
+
+    // Re-render the view
+    this.renderView();
+  }
+
+  /**
+   * Resets the call state to idle, clearing any errors
+   */
+  private resetCallState(): void {
+    // Clean up any existing voice call
+    if (this.voiceCall) {
+      this.voiceCall.endCall().catch(err => {
+        console.error('Error during cleanup:', err);
+      });
+      this.voiceCall = null;
+    }
+
+    // Reset state to idle
+    this.callState = {
+      status: 'idle',
+      isMuted: false,
+      isLocalAudioEnabled: false,
+      remoteParticipants: [],
+    };
 
     // Re-render the view
     this.renderView();
