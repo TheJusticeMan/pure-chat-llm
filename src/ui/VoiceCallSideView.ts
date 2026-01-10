@@ -301,9 +301,9 @@ export class VoiceCallSideView extends ItemView {
         }
       } else {
         // Google Gemini Live API
-        // Use WebSocket endpoint constructed with API key
-        sessionEndpoint = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
-        model = 'gemini-2.0-flash-exp';
+        // Don't pass endpoint here - let the provider construct it with model param
+        sessionEndpoint = '';
+        model = 'models/gemini-2.0-flash-exp';
         instructions = this.plugin.settings.agentMode
           ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
           : 'You are a helpful assistant.';

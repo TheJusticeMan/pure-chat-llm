@@ -50,26 +50,48 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
 				return;
 			}
 
+			let setupComplete = false;
+
 			this.ws.onopen = () => {
 				// Send setup message
 				this.sendSetupMessage(config);
-				resolve();
 			};
 
 			this.ws.onerror = (error: Event) => {
-				reject(new Error(`WebSocket connection error: ${error.type || 'unknown'}`));
+				if (!setupComplete) {
+					reject(new Error(`WebSocket connection error: ${error.type || 'unknown'}`));
+				}
 			};
 
 			this.ws.onmessage = event => {
+				// Check for setup complete before resolving
+				try {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					const data = JSON.parse(event.data as string);
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+					if (data.setupComplete && !setupComplete) {
+						setupComplete = true;
+						resolve();
+					}
+				} catch (e) {
+					// Continue processing in handleWebSocketMessage
+				}
 				this.handleWebSocketMessage(event);
 			};
 
 			this.ws.onclose = () => {
+				if (!setupComplete) {
+					reject(new Error('WebSocket closed before setup complete'));
+				}
 				void this.cleanup();
 			};
 
 			// Timeout after 10 seconds
-			void setTimeout(() => reject(new Error('Connection timeout')), 10000);
+			setTimeout(() => {
+				if (!setupComplete) {
+					reject(new Error('Connection timeout'));
+				}
+			}, 10000);
 		});
 
 		// Start audio streaming
@@ -84,8 +106,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
 	 * Gets the default Gemini Live API endpoint
 	 */
 	private getDefaultEndpoint(apiKey: string, model?: string): string {
-		const modelName = model || 'gemini-2.0-flash-exp';
-		return `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}&alt=sse&model=${modelName}`;
+		const modelName = model || 'models/gemini-2.0-flash-exp';
+		return `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 	}
 
 	/**
