@@ -6,15 +6,19 @@ import {
 } from 'obsidian';
 import { VoiceCall } from '../realtime/VoiceCall';
 import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
+import { OpenAIRealtimeProviderWithTools } from '../realtime/providers/OpenAIRealtimeProviderWithTools';
+import { PureChatLLMChat } from '../core/Chat';
 import { CallState, VOICE_CALL_VIEW_TYPE } from '../types';
 import PureChatLLM from '../main';
 
 /**
  * Side panel view for managing voice calls in Obsidian.
  * Provides UI controls for starting/ending calls, muting, and displaying call status.
+ * Integrates with PureChatLLMChat to enable tool access during voice conversations.
  */
 export class VoiceCallSideView extends ItemView {
   private voiceCall: VoiceCall | null = null;
+  private chat: PureChatLLMChat | null = null;
   private callState: CallState = {
     status: 'idle',
     isMuted: false,
@@ -193,6 +197,14 @@ export class VoiceCallSideView extends ItemView {
     instructionsEl.createEl('p', {
       text: '4. Click "end call" to disconnect',
     });
+    
+    // Show tool information if agent mode is enabled
+    if (this.plugin.settings.agentMode) {
+      instructionsEl.createEl('p', {
+        cls: 'tool-info',
+        text: '🛠️ Agent mode enabled: The AI can access tools for file management, search, and other operations.',
+      });
+    }
 
     instructionsEl.createEl('p', {
       cls: 'voice-call-note',
@@ -237,8 +249,16 @@ export class VoiceCallSideView extends ItemView {
       // Use the OpenAI Realtime API endpoint directly
       const sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
       
-      // Create OpenAI provider
-      const provider = new OpenAIRealtimeProvider();
+      // Initialize chat for tool access if agent mode is enabled
+      let provider;
+      if (this.plugin.settings.agentMode) {
+        this.chat = new PureChatLLMChat(this.plugin);
+        provider = new OpenAIRealtimeProviderWithTools(this.chat);
+        new Notice('Initializing voice call with tool access...');
+      } else {
+        provider = new OpenAIRealtimeProvider();
+        new Notice('Initializing voice call...');
+      }
       
       // Create voice call with provider
       this.voiceCall = new VoiceCall(
@@ -246,8 +266,10 @@ export class VoiceCallSideView extends ItemView {
         {
           apiKey,
           endpoint: sessionEndpoint,
-          model: 'gpt-realtime',
-          instructions: 'You are a helpful assistant.',
+          model: 'gpt-4o-realtime-preview-2024-12-17',
+          instructions: this.plugin.settings.agentMode 
+            ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
+            : 'You are a helpful assistant.',
         },
         state => this.onCallStateChange(state),
         undefined,
