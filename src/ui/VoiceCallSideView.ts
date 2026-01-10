@@ -88,20 +88,6 @@ export class VoiceCallSideView extends ItemView {
           .setTooltip('Open settings')
           .onClick(() => this.plugin.openSettings()),
       );
-
-    // Provider selection dropdown
-    new Setting(container)
-      .setName('Provider')
-      .setDesc('Select the voice call provider')
-      .addDropdown(dropdown =>
-        dropdown
-          .addOption('openai', 'OpenAI realtime')
-          .addOption('gemini', 'Gemini live')
-          .setValue(this.selectedProvider)
-          .onChange(value => {
-            this.selectedProvider = value as VoiceProvider;
-          }),
-      );
   }
 
   /**
@@ -143,6 +129,15 @@ export class VoiceCallSideView extends ItemView {
     // Start/Join Call button
     if (this.callState.status === 'idle' || this.callState.status === 'disconnected') {
       new Setting(controlsContainer)
+        .addDropdown(dropdown =>
+          dropdown
+            .addOption('openai', 'OpenAI realtime')
+            .addOption('gemini', 'Gemini live')
+            .setValue(this.selectedProvider)
+            .onChange(value => {
+              this.selectedProvider = value as VoiceProvider;
+            }),
+        )
         .addButton(btn =>
           btn
             .setButtonText('Start call')
@@ -173,22 +168,22 @@ export class VoiceCallSideView extends ItemView {
 
     // Active call controls
     if (this.callState.status === 'connected' || this.callState.status === 'connecting') {
-      new Setting(controlsContainer).addButton(btn =>
-        btn
-          .setButtonText(this.callState.isMuted ? 'Unmute' : 'Mute')
-          .setIcon(this.callState.isMuted ? 'mic-off' : 'mic')
-          .onClick(() => this.toggleMute()),
-      );
-
-      new Setting(controlsContainer).addButton(btn =>
-        btn
-          .setButtonText('End call')
-          .setWarning()
-          .setIcon('phone-off')
-          .onClick(() => {
-            void this.endCall();
-          }),
-      );
+      new Setting(controlsContainer)
+        .addButton(btn =>
+          btn
+            .setButtonText(this.callState.isMuted ? 'Unmute' : 'Mute')
+            .setIcon(this.callState.isMuted ? 'mic-off' : 'mic')
+            .onClick(() => this.toggleMute()),
+        )
+        .addButton(btn =>
+          btn
+            .setButtonText('End call')
+            .setWarning()
+            .setIcon('phone-off')
+            .onClick(() => {
+              void this.endCall();
+            }),
+        );
     }
   }
 
@@ -217,7 +212,7 @@ export class VoiceCallSideView extends ItemView {
     if (this.plugin.settings.agentMode) {
       instructionsEl.createEl('p', {
         cls: 'tool-info',
-        text: 'Agent mode enabled: AI can access tools',
+        text: 'Agent mode enabled: AI can access tools for file management, search, and other operations.',
       });
     }
 
