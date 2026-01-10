@@ -60,7 +60,7 @@ export class VoiceCallSideView extends ItemView {
     // Controls section
     this.renderControls(contentEl);
 
-    // Remote audio element (hidden)
+    // Remote audio element (hidden) - create early so it's ready for playback
     this.createRemoteAudioElement(contentEl);
 
     // Instructions
@@ -190,8 +190,33 @@ export class VoiceCallSideView extends ItemView {
    */
   private createRemoteAudioElement(container: HTMLElement): void {
     if (!this.remoteAudioElement) {
-      this.remoteAudioElement = container.createEl('audio', { attr: { autoplay: 'true' } });
+      console.debug('[VoiceCallSideView] Creating remote audio element');
+      this.remoteAudioElement = container.createEl('audio', { 
+        attr: { 
+          autoplay: 'true',
+          playsinline: 'true',
+        } 
+      });
       this.remoteAudioElement.setCssProps({ display: 'none' });
+      
+      // Add event listeners to debug audio playback
+      this.remoteAudioElement.addEventListener('loadedmetadata', () => {
+        console.debug('[VoiceCallSideView] Audio metadata loaded');
+      });
+      
+      this.remoteAudioElement.addEventListener('play', () => {
+        console.debug('[VoiceCallSideView] Audio started playing');
+      });
+      
+      this.remoteAudioElement.addEventListener('pause', () => {
+        console.debug('[VoiceCallSideView] Audio paused');
+      });
+      
+      this.remoteAudioElement.addEventListener('error', (e) => {
+        console.error('[VoiceCallSideView] Audio playback error:', e);
+      });
+      
+      console.debug('[VoiceCallSideView] Audio element created and ready');
     }
   }
 
@@ -200,6 +225,11 @@ export class VoiceCallSideView extends ItemView {
    */
   private async startCall(): Promise<void> {
     try {
+      // Ensure audio element is created before starting call
+      if (!this.remoteAudioElement) {
+        this.createRemoteAudioElement(this.contentEl);
+      }
+      
       // Get API endpoint from settings
       const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
       const apiKey = endpoint.apiKey;
@@ -207,21 +237,51 @@ export class VoiceCallSideView extends ItemView {
       // Use the OpenAI Realtime API endpoint directly
       const sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
 
+      console.debug('[VoiceCallSideView] Creating VoiceCall instance');
+      
       this.voiceCall = new VoiceCall(
         sessionEndpoint,
         apiKey,
         state => this.onCallStateChange(state),
         event => {
           // Handle server events from OpenAI Realtime API
-          console.debug('Server event:', event);
+          console.debug('[VoiceCallSideView] Server event:', event);
         },
+        stream => this.handleRemoteStream(stream),
       );
 
+      console.debug('[VoiceCallSideView] Starting call...');
       await this.voiceCall.startCall();
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Failed to start call:', errorMsg);
+      console.error('[VoiceCallSideView] Failed to start call:', errorMsg);
       new Notice('Failed to start voice call');
+    }
+  }
+
+  /**
+   * Handles incoming remote audio stream
+   */
+  private handleRemoteStream(stream: MediaStream): void {
+    console.debug('[VoiceCallSideView] Handling remote stream');
+    console.debug('[VoiceCallSideView] Stream ID:', stream.id);
+    console.debug('[VoiceCallSideView] Stream active:', stream.active);
+    console.debug('[VoiceCallSideView] Stream tracks:', stream.getTracks().length);
+    
+    if (this.remoteAudioElement) {
+      console.debug('[VoiceCallSideView] Setting srcObject on audio element');
+      this.remoteAudioElement.srcObject = stream;
+      
+      // Try to play explicitly in case autoplay doesn't work
+      this.remoteAudioElement.play().then(() => {
+        console.debug('[VoiceCallSideView] Audio playback started successfully');
+        new Notice('Audio playback started');
+      }).catch(err => {
+        console.error('[VoiceCallSideView] Failed to start audio playback:', err);
+        new Notice('Failed to start audio playback. Click to enable audio.');
+      });
+    } else {
+      console.error('[VoiceCallSideView] No audio element available for playback');
     }
   }
 
@@ -261,20 +321,8 @@ export class VoiceCallSideView extends ItemView {
    * Handles call state changes
    */
   private onCallStateChange(state: CallState): void {
+    console.debug('[VoiceCallSideView] Call state changed:', state.status);
     this.callState = state;
-
-    // Update remote audio stream
-    if (this.voiceCall && this.remoteAudioElement) {
-      const pc = this.voiceCall.getPeerConnection();
-      if (pc) {
-        // Listen for remote tracks and attach to audio element
-        pc.ontrack = (event: RTCTrackEvent) => {
-          if (event.streams && event.streams[0] && this.remoteAudioElement) {
-            this.remoteAudioElement.srcObject = event.streams[0];
-          }
-        };
-      }
-    }
 
     // Re-render the view
     this.renderView();

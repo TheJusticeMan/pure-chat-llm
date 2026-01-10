@@ -21,6 +21,7 @@ export class VoiceCall {
     private apiKey: string,
     private onStateChange: (state: CallState) => void,
     private onServerEvent?: (event: unknown) => void,
+    private onRemoteTrack?: (stream: MediaStream) => void,
   ) {}
 
   /**
@@ -65,8 +66,25 @@ export class VoiceCall {
       // Handle remote audio tracks
       this.peerConnection.ontrack = event => {
         console.debug('[VoiceCall] Received remote track');
-        // Remote audio will be handled by the UI layer
+        console.debug('[VoiceCall] Track kind:', event.track.kind);
+        console.debug('[VoiceCall] Track enabled:', event.track.enabled);
+        console.debug('[VoiceCall] Track muted:', event.track.muted);
+        console.debug('[VoiceCall] Number of streams:', event.streams.length);
+        
         if (event.streams && event.streams[0]) {
+          const stream = event.streams[0];
+          console.debug('[VoiceCall] Stream ID:', stream.id);
+          console.debug('[VoiceCall] Stream active:', stream.active);
+          console.debug('[VoiceCall] Stream tracks:', stream.getTracks().length);
+          
+          // Notify UI layer of remote track
+          if (this.onRemoteTrack) {
+            console.debug('[VoiceCall] Calling onRemoteTrack callback with stream');
+            this.onRemoteTrack(stream);
+          } else {
+            console.warn('[VoiceCall] No onRemoteTrack callback provided');
+          }
+          
           this.updateState({ status: 'connected' });
         }
       };
