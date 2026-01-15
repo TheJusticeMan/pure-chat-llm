@@ -176,4 +176,10 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   agentMode: true,
   useYAMLFrontMatter: false,
   enabledToolClassifications: { Vault: true, UI: true, System: true, AI: true },
+  blueFileResolution: {
+    enabled: false,
+    maxDepth: 5,
+    enableCaching: true,
+    writeIntermediateResults: false,
+  },
 };

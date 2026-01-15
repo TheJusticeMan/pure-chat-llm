@@ -44,7 +44,9 @@ import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
 import { LLMService } from './LLMService';
+import { BlueFileResolver } from './BlueFileResolver';
 import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
+
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -430,28 +432,52 @@ export class PureChatLLMChat {
    * @param markdown - The markdown string containing file links to resolve.
    * @param activeFile - The currently active file, used as a reference for resolving relative links.
    * @param app - The Obsidian application instance, providing access to the vault and metadata cache.
+   * @param plugin - Optional plugin instance for blue file resolution support
    * @returns A promise that resolves to the markdown string with file links replaced by their content.
    *
    * @remarks
    * - File links are expected to be in the format `[[filename]]` or `![[filename]]`.
    * - If a file cannot be found, the original link will remain in the output.
    * - This function uses asynchronous operations to read file contents, so it returns a promise.
+   * - If plugin is provided and blue file resolution is enabled, pending chats will be dynamically executed.
    */
-  static async resolveFiles(markdown: string, activeFile: TFile, app: App): Promise<string> {
+  static async resolveFiles(
+    markdown: string,
+    activeFile: TFile,
+    app: App,
+    plugin?: PureChatLLM,
+  ): Promise<string> {
     const regex = /^!?\[\[(.*?)\]\]$/gim;
-    //const regex2 = /^.+\!?\[\[([^\]]+)\]\].+$/gim;
     const matches = Array.from(markdown.matchAll(regex));
-    //const matches2 = Array.from(markdown.matchAll(regex2));
     const replacements: Promise<string>[] = [];
-    //const appendedfiles: Promise<string>[] = [];
 
-    for (const match of matches) {
-      const filename = match[1];
-      const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
-      if (file instanceof TFile) {
-        replacements.push(app.vault.cachedRead(file));
-      } else {
-        replacements.push(Promise.resolve(match[0]));
+    // Check if blue file resolution is enabled
+    const useBlueFileResolution = plugin?.settings.blueFileResolution.enabled;
+
+    if (useBlueFileResolution && plugin) {
+      // Use blue file resolver for dynamic chat execution
+      const resolver = new BlueFileResolver(plugin);
+      const context = resolver.createContext(activeFile);
+
+      for (const match of matches) {
+        const filename = match[1];
+        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        if (file instanceof TFile) {
+          replacements.push(resolver.resolveFile(file, context, app));
+        } else {
+          replacements.push(Promise.resolve(match[0]));
+        }
+      }
+    } else {
+      // Original behavior: just read static file content
+      for (const match of matches) {
+        const filename = match[1];
+        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        if (file instanceof TFile) {
+          replacements.push(app.vault.cachedRead(file));
+        } else {
+          replacements.push(Promise.resolve(match[0]));
+        }
       }
     }
 
@@ -476,25 +502,49 @@ export class PureChatLLMChat {
    * - Resolves the file reference using Obsidian's metadata cache.
    * - If the file does not exist, returns the original link in double brackets.
    * - If a subpath is specified and found, returns the corresponding substring from the file.
-   * - Otherwise, returns the entire file content.
+   * - Otherwise, returns the entire file content (or dynamically generated if blue file resolution is enabled).
    *
    * @param str - The link string to resolve (e.g., "MyNote#Section").
    * @param activeFile - The currently active file, used as context for relative links.
    * @param app - The Obsidian app instance, providing access to the vault and metadata cache.
+   * @param plugin - Optional plugin instance for blue file resolution support
+   * @param context - Optional blue file resolution context (for recursive calls)
    * @returns A promise that resolves to the content of the linked file or subpath, or the original link if not found.
    */
-  static retrieveLinkContent(str: string, activeFile: TFile, app: App): Promise<string> {
+  static async retrieveLinkContent(
+    str: string,
+    activeFile: TFile,
+    app: App,
+    plugin?: PureChatLLM,
+    context?: import('./BlueFileResolver').ResolutionContext,
+  ): Promise<string> {
     const { subpath, path } = parseLinktext(str);
     const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
     if (!file) return Promise.resolve(`[[${str}]]`);
+
+    // If subpath is specified, return the specific section (no blue file resolution for subpaths)
     if (subpath) {
       const cache = app.metadataCache.getFileCache(file);
       const ref = cache && resolveSubpath(cache, subpath);
-      if (ref)
-        return app.vault
-          .cachedRead(file)
-          .then(text => text.substring(ref.start.offset, ref.end?.offset).trim());
+      if (ref) {
+        const text = await app.vault.cachedRead(file);
+        return text.substring(ref.start.offset, ref.end?.offset).trim();
+      }
     }
+
+    // Check if blue file resolution should be used
+    if (plugin?.settings.blueFileResolution.enabled && context) {
+      // Use blue file resolver
+      const resolver = new BlueFileResolver(plugin);
+      return resolver.resolveFile(file, context, app);
+    } else if (plugin?.settings.blueFileResolution.enabled && !context) {
+      // Create new context if not provided
+      const resolver = new BlueFileResolver(plugin);
+      const newContext = resolver.createContext(activeFile);
+      return resolver.resolveFile(file, newContext, app);
+    }
+
+    // Default: just read the file
     return app.vault.cachedRead(file);
   }
 
@@ -562,6 +612,8 @@ export class PureChatLLMChat {
     activeFile: TFile,
     app: App,
     role: RoleType,
+    plugin?: PureChatLLM,
+    context?: import('./BlueFileResolver').ResolutionContext,
   ): Promise<MediaMessage[] | string> {
     const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
 
@@ -607,7 +659,7 @@ export class PureChatLLMChat {
         }
         return {
           type: 'text',
-          text: await this.retrieveLinkContent(link, activeFile, app),
+          text: await this.retrieveLinkContent(link, activeFile, app, plugin, context),
         };
       }),
     );
@@ -682,6 +734,14 @@ export class PureChatLLMChat {
    */
   async getChatGPTinstructions(activeFile: TFile, app: App): Promise<ChatRequestOptions> {
     this.file = activeFile;
+
+    // Create blue file resolution context if enabled
+    let context: import('./BlueFileResolver').ResolutionContext | undefined;
+    if (this.plugin.settings.blueFileResolution.enabled) {
+      const resolver = new BlueFileResolver(this.plugin);
+      context = resolver.createContext(activeFile);
+    }
+
     const messages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
         role: role,
@@ -690,6 +750,8 @@ export class PureChatLLMChat {
           activeFile,
           app,
           role,
+          this.plugin,
+          context,
         ),
       })),
     );
@@ -746,7 +808,12 @@ export class PureChatLLMChat {
       this.messages = await Promise.all(
         this.messages.map(async ({ role, content }) => ({
           role,
-          content: await PureChatLLMChat.resolveFiles(content, this.file, this.plugin.app),
+          content: await PureChatLLMChat.resolveFiles(
+            content,
+            this.file,
+            this.plugin.app,
+            this.plugin,
+          ),
         })),
       );
 

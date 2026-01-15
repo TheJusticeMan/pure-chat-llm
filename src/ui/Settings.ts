@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, SettingGroup } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting, SettingGroup } from 'obsidian';
 import { DEFAULT_SETTINGS, PureChatLLMversion } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
 import { ImportChatGPT } from '../core/ImportChatGPT';
@@ -404,6 +404,73 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               }),
             ),
       );
+
+    // Blue File Resolution Settings
+    new SettingGroup(containerEl).setHeading('Blue File Resolution (Dynamic Chat Execution)');
+    
+    // Add description setting
+    new Setting(containerEl).setDesc(
+      'Blue File Resolution enables recursive, dynamic execution of pending chat notes when they are linked. ' +
+        'When a [[note]] link is resolved and the linked file is a pending chat (ends with a user message), ' +
+        'instead of inlining its static content, the plugin executes the chat and uses the generated response.',
+    );
+
+    new Setting(containerEl)
+      .setName('Enable Blue File Resolution')
+      .setDesc(
+        'Turn on dynamic chat execution for [[note]] links. When enabled, linked notes that are pending chats will be executed recursively.',
+      )
+      .addToggle(toggle =>
+        toggle.setValue(settings.blueFileResolution.enabled).onChange(async value => {
+          settings.blueFileResolution.enabled = value;
+          await this.plugin.saveSettings();
+        }),
+      );
+
+    new Setting(containerEl)
+      .setName('Maximum Resolution Depth')
+      .setDesc(
+        'Maximum depth for recursive chat execution (1-20). Prevents runaway recursion. Default is 5.',
+      )
+      .addText(text =>
+        text
+          .setPlaceholder('5')
+          .setValue(settings.blueFileResolution.maxDepth.toString())
+          .onChange(async value => {
+            const num = parseInt(value);
+            if (!isNaN(num) && num >= 1 && num <= 20) {
+              settings.blueFileResolution.maxDepth = num;
+              await this.plugin.saveSettings();
+            }
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Enable Caching')
+      .setDesc(
+        'Cache intermediate chat results during resolution to avoid redundant API calls for the same file within a single invocation.',
+      )
+      .addToggle(toggle =>
+        toggle.setValue(settings.blueFileResolution.enableCaching).onChange(async value => {
+          settings.blueFileResolution.enableCaching = value;
+          await this.plugin.saveSettings();
+        }),
+      );
+
+    new Setting(containerEl)
+      .setName('Write Intermediate Results')
+      .setDesc(
+        'Save intermediate chat responses to disk. By default, only the root invocation writes results; nested executions are ephemeral.',
+      )
+      .addToggle(toggle =>
+        toggle
+          .setValue(settings.blueFileResolution.writeIntermediateResults)
+          .onChange(async value => {
+            settings.blueFileResolution.writeIntermediateResults = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
     new SettingGroup(containerEl)
       .setHeading('Utilities & maintenance')
       .addSetting(

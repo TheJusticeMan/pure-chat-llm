@@ -19,6 +19,12 @@ export interface PureChatLLMSettings {
   agentMode: boolean;
   useYAMLFrontMatter: boolean;
   enabledToolClassifications: { Vault: boolean; UI: boolean; System: boolean; AI: boolean };
+  blueFileResolution: {
+    enabled: boolean;
+    maxDepth: number;
+    enableCaching: boolean;
+    writeIntermediateResults: boolean;
+  };
 }
 
 export interface PureChatLLMAPI {
