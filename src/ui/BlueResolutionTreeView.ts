@@ -24,6 +24,7 @@ export class BlueResolutionTreeView extends ItemView {
   private treeData: Map<string, ResolutionNodeData> = new Map();
   private showLegend: boolean = true;
   private isAnalyzing: boolean = false;
+  private boundResolutionEventHandler: (event: ResolutionEvent) => void;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -33,6 +34,7 @@ export class BlueResolutionTreeView extends ItemView {
     this.console = new BrowserConsole(plugin.settings.debug, 'BlueResolutionTreeView');
     this.icon = 'git-branch';
     this.navigation = false;
+    this.boundResolutionEventHandler = this.handleResolutionEvent.bind(this);
   }
 
   getViewType(): string {
@@ -45,7 +47,7 @@ export class BlueResolutionTreeView extends ItemView {
 
   async onOpen(): Promise<void> {
     // Listen to resolution events
-    this.plugin.blueFileResolver.onResolutionEvent(this.handleResolutionEvent.bind(this));
+    this.plugin.blueFileResolver.onResolutionEvent(this.boundResolutionEventHandler);
 
     // Listen to workspace events for active file changes
     // Only update when a MarkdownView becomes active (not when this view becomes active)
@@ -72,7 +74,7 @@ export class BlueResolutionTreeView extends ItemView {
 
   async onClose(): Promise<void> {
     // Unregister resolution event listener
-    this.plugin.blueFileResolver.offResolutionEvent(this.handleResolutionEvent.bind(this));
+    this.plugin.blueFileResolver.offResolutionEvent(this.boundResolutionEventHandler);
   }
 
   private handleResolutionEvent(event: ResolutionEvent): void {
@@ -113,9 +115,14 @@ export class BlueResolutionTreeView extends ItemView {
     const file = view?.file;
 
     if (file && file.extension === 'md') {
-      this.currentRootFile = file;
-      this.clearTreeData();
-      this.renderView();
+      // Only update if the file has changed
+      if (this.currentRootFile?.path !== file.path) {
+        this.currentRootFile = file;
+        this.clearTreeData();
+        this.renderView();
+        // Auto-analyze the file when it opens
+        void this.analyzeCurrentFile();
+      }
     } else {
       this.currentRootFile = null;
       this.renderView();
