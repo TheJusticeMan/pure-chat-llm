@@ -107,10 +107,13 @@ export class BlueFileResolver {
       return await context.cache.get(file.path)!;
     }
 
-    // Create the resolution Promise and store it in cache immediately
+    // Create the resolution Promise and start execution immediately.
+    // This allows the work to begin while we store it in the cache for deduplication.
     const resolutionPromise = this.resolveFileInternal(file, context, app);
     
-    // Store Promise in cache for concurrent resolution deduplication
+    // Store Promise in cache for concurrent resolution deduplication.
+    // Even if caching is disabled, we still need to execute the resolution,
+    // we just won't store it for reuse.
     if (blueFileResolution.enableCaching) {
       context.cache.set(file.path, resolutionPromise);
     }
