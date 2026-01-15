@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.3] - 2026-01-14
+
+### Added
+
+- **Voice Call Feature**: Introduced a dedicated Voice Call side panel with real-time audio interaction capabilities.
+- **Multi-Provider Realtime Support**: Integrated both OpenAI Realtime API and Google Gemini Live API.
+- **WebRTC Integration**: Leveraged WebRTC for high-performance, low-latency audio streaming.
+- **Tool Integration in Voice**: Enabled the AI to use vault tools (like searching and reading notes) during live voice conversations.
+- **Provider Selection UI**: Added a UI to switch between different voice call providers (OpenAI, Gemini).
+- **Audio Feedback**: Implemented visual audio levels and connection status indicators in the side panel.
+
+### Changed
+
+- **Realtime Architecture Refactor**: Overhauled the voice architecture to use a more robust provider pattern for better extensibility and maintenance.
+- **Improved Type Safety**: Enhanced type safety in `GeminiLiveProvider` and other realtime modules by defining explicit interfaces and reducing `any` usage.
+- **Refined Command Palette**: Removed redundant commands to streamline the user experience.
+
+### Fixed
+
+- **Audio Stability**: Fixed issues with audio playback underruns in Gemini Live by optimizing the scheduling logic.
+- **Connection Reliability**: Resolved a bug where the Gemini provider would hang at the "connecting..." state.
+- **API Authentication**: Fixed 401 Unauthorized errors by implementing proper API key validation for realtime endpoints.
+- **Tool Definition Format**: Corrected the tool definition format to comply with OpenAI's Realtime API requirements.
+
+## [1.9.2] - 2026-01-04
+
+### Added
+
+- **Suno API Integration**: Integrated Suno AI for generating music directly from the chat interface via tool calls.
+- **Tool Classification System**: Introduced a new settings-based classification system for tools, allowing users to enable/disable categories of tools.
+- **Enhanced Image Generation**: Updated the image generation tool with support for more model configurations and improved API endpoints.
+
+### Changed
+
+- **Modular Architecture Refactor**: Migrated chat-related types and constants to a centralized `src/assets/constants.ts` file.
+- **Service Integration**: Integrated `LLMService` into the core `PureChatLLMChat` class for more consistent API interactions.
+- **Global Naming Refactor**: Performed a project-wide refactor of symbols and variables for better consistency and readability.
+
+### Fixed
+
+- **Metadata Parsing**: Improved the robustness of chat metadata parsing and setting migration logic.
+
 ## [1.9.1] - 2025-12-30
 
 ### Added
