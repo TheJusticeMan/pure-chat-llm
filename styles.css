@@ -145,3 +145,101 @@ Customization:
 sup {
   font-weight: normal;
 }
+
+/* Voice Call View Styles */
+.voice-call-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding: 1em;
+}
+
+.voice-call-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 1em;
+  background-color: var(--background-secondary);
+  border-radius: var(--radius-m);
+  border: var(--border-width) solid var(--background-modifier-border);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+.status-icon {
+  font-size: 1.5em;
+}
+
+.status-idle {
+  filter: grayscale(100%);
+}
+
+.status-connecting {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-connected {
+  filter: brightness(1.2);
+}
+
+.status-error {
+  color: var(--text-error);
+}
+
+.status-error {
+  padding: 0.5em;
+  background-color: var(--background-modifier-error);
+  border-radius: var(--radius-s);
+  color: var(--text-error);
+  font-size: 0.9em;
+}
+
+.voice-call-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.voice-call-instructions {
+  margin-top: 1em;
+  padding: 1em;
+  background-color: var(--background-secondary);
+  border-radius: var(--radius-m);
+  border: var(--border-width) solid var(--background-modifier-border);
+}
+
+.voice-call-instructions p {
+  margin: 0.5em 0;
+  line-height: 1.5;
+}
+
+.voice-call-note {
+  margin-top: 1em;
+  padding: 0.5em;
+  background-color: var(--background-modifier-form-field);
+  border-radius: var(--radius-s);
+  font-size: 0.9em;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.participants {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
