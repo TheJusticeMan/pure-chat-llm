@@ -20,9 +20,11 @@ import {
 
 import { PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
+import { BlueFileResolver } from './core/BlueFileResolver';
 import {
   PURE_CHAT_LLM_VIEW_TYPE,
   VOICE_CALL_VIEW_TYPE,
+  BLUE_RESOLUTION_TREE_VIEW_TYPE,
   PureChatLLMSettings,
   RoleType,
   PURE_CHAT_LLM_ICON_NAME,
@@ -39,6 +41,7 @@ import { AskForAPI, CodeAreaComponent, EditWand } from './ui/Modals';
 import { PureChatLLMSettingTab } from './ui/Settings';
 import { ModelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
 import { VoiceCallSideView } from './ui/VoiceCallSideView';
+import { BlueResolutionTreeView } from './ui/BlueResolutionTreeView';
 import { BrowserConsole } from './utils/BrowserConsole';
 import { codelanguages } from './utils/codelanguages';
 import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
@@ -74,6 +77,7 @@ export default class PureChatLLM extends Plugin {
   modellist: string[] = [];
   pureChatStatusElement: HTMLElement;
   codeBlock: { from: number; to: number } | null = null;
+  blueFileResolver: BlueFileResolver;
 
   async onload() {
     await this.loadSettings();
@@ -85,14 +89,19 @@ export default class PureChatLLM extends Plugin {
     this.console.log('settings loaded', this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
 
+    // Initialize BlueFileResolver
+    this.blueFileResolver = new BlueFileResolver(this);
+
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, leaf => new PureChatLLMSideView(leaf, this));
     this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));
     this.registerView(VOICE_CALL_VIEW_TYPE, leaf => new VoiceCallSideView(leaf, this));
+    this.registerView(BLUE_RESOLUTION_TREE_VIEW_TYPE, leaf => new BlueResolutionTreeView(leaf, this));
 
     this.addRibbonIcon(PURE_CHAT_LLM_ICON_NAME, 'Open conversation overview', () =>
       this.activateView(),
     );
     this.addRibbonIcon('phone', 'Open voice call', () => this.activateVoiceCallView());
+    this.addRibbonIcon('git-branch', 'Open Blue Resolution Tree', () => this.activateBlueResolutionView());
 
     this.setupChatCommandHandlers();
     this.setupVoiceCallCommandHandlers();
@@ -338,6 +347,14 @@ export default class PureChatLLM extends Plugin {
         new Notice('Voice call panel opened. Click "start call" to begin.');
       },
     });
+
+    // Blue Resolution Tree commands
+    this.addCommand({
+      id: 'open-blue-resolution-tree',
+      name: 'Open Blue Resolution Tree view',
+      icon: 'git-branch',
+      callback: () => this.activateBlueResolutionView(),
+    });
   }
 
   status(text: string) {
@@ -435,6 +452,31 @@ export default class PureChatLLM extends Plugin {
       leaf = workspace.getRightLeaf(false);
       await leaf?.setViewState({
         type: VOICE_CALL_VIEW_TYPE,
+        active: true,
+      });
+    }
+
+    // "Reveal" the leaf in case it is in a collapsed sidebar
+    if (leaf) {
+      void workspace.revealLeaf(leaf);
+    }
+  }
+
+  async activateBlueResolutionView() {
+    const { workspace } = this.app;
+
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(BLUE_RESOLUTION_TREE_VIEW_TYPE);
+
+    if (leaves.length > 0) {
+      // A leaf with our view already exists, use that
+      leaf = leaves[0];
+    } else {
+      // Our view could not be found in the workspace, create a new leaf
+      // in the right sidebar for it
+      leaf = workspace.getRightLeaf(false);
+      await leaf?.setViewState({
+        type: BLUE_RESOLUTION_TREE_VIEW_TYPE,
         active: true,
       });
     }

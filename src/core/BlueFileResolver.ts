@@ -2,7 +2,7 @@ import { App, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
 import PureChatLLM from '../main';
 import { PureChatLLMChat } from './Chat';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { MediaMessage, RoleType } from '../types';
+import { MediaMessage, RoleType, ResolutionEvent } from '../types';
 
 /**
  * Represents a node in the file resolution tree.
@@ -75,9 +75,37 @@ export interface ResolutionContext {
  */
 export class BlueFileResolver {
   private console: BrowserConsole;
+  private eventListeners: Array<(event: ResolutionEvent) => void> = [];
 
   constructor(private plugin: PureChatLLM) {
     this.console = new BrowserConsole(plugin.settings.debug, 'BlueFileResolver');
+  }
+
+  /**
+   * Register a callback to receive resolution events
+   */
+  onResolutionEvent(callback: (event: ResolutionEvent) => void): void {
+    this.eventListeners.push(callback);
+  }
+
+  /**
+   * Unregister a resolution event callback
+   */
+  offResolutionEvent(callback: (event: ResolutionEvent) => void): void {
+    this.eventListeners = this.eventListeners.filter(cb => cb !== callback);
+  }
+
+  /**
+   * Emit a resolution event to all registered listeners
+   */
+  private emitEvent(event: ResolutionEvent): void {
+    this.eventListeners.forEach(listener => {
+      try {
+        listener(event);
+      } catch (error) {
+        this.console.error('Error in resolution event listener:', error);
+      }
+    });
   }
 
   /**
@@ -129,6 +157,17 @@ export class BlueFileResolver {
       return app.vault.cachedRead(file);
     }
 
+    // Emit start event
+    this.emitEvent({
+      type: 'start',
+      filePath: file.path,
+      parentPath: context.currentNode.parent?.file.path || null,
+      depth: context.currentNode.depth,
+      status: 'resolving',
+      isPendingChat: false, // Will be updated later
+      timestamp: Date.now(),
+    });
+
     // Check cache FIRST for existing Promise - this handles deduplication for siblings/parallel references
     if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
       // Check if this file is in our ancestor chain using tree structure - if so, it's a cycle
@@ -136,9 +175,28 @@ export class BlueFileResolver {
         const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
         this.console.error(error);
         new Notice(error);
+        this.emitEvent({
+          type: 'cycle-detected',
+          filePath: file.path,
+          parentPath: context.currentNode.parent?.file.path || null,
+          depth: context.currentNode.depth,
+          status: 'cycle-detected',
+          isPendingChat: false,
+          error: 'Circular dependency',
+          timestamp: Date.now(),
+        });
         return `[[${file.path}]] (Error: Circular dependency)`;
       }
       this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
+      this.emitEvent({
+        type: 'cache-hit',
+        filePath: file.path,
+        parentPath: context.currentNode.parent?.file.path || null,
+        depth: context.currentNode.depth,
+        status: 'cached',
+        isPendingChat: false,
+        timestamp: Date.now(),
+      });
       return await context.cache.get(file.path)!;
     }
 
@@ -147,6 +205,16 @@ export class BlueFileResolver {
       const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
       this.console.error(error);
       new Notice(error);
+      this.emitEvent({
+        type: 'cycle-detected',
+        filePath: file.path,
+        parentPath: context.currentNode.parent?.file.path || null,
+        depth: context.currentNode.depth,
+        status: 'cycle-detected',
+        isPendingChat: false,
+        error: 'Circular dependency',
+        timestamp: Date.now(),
+      });
       return `[[${file.path}]] (Error: Circular dependency)`;
     }
 
@@ -154,6 +222,15 @@ export class BlueFileResolver {
     if (context.currentNode.depth >= blueFileResolution.maxDepth) {
       const warning = `[Blue File Resolution] Max depth (${blueFileResolution.maxDepth}) reached at: ${file.path}`;
       this.console.log(warning);
+      this.emitEvent({
+        type: 'depth-limit',
+        filePath: file.path,
+        parentPath: context.currentNode.parent?.file.path || null,
+        depth: context.currentNode.depth,
+        status: 'complete',
+        isPendingChat: false,
+        timestamp: Date.now(),
+      });
       return app.vault.cachedRead(file);
     }
 
@@ -212,10 +289,24 @@ export class BlueFileResolver {
       chat.setMarkdown(content);
 
       // Check if this is a pending chat
-      if (!this.isPendingChat(content, chat)) {
+      const isPending = this.isPendingChat(content, chat);
+      
+      if (!isPending) {
         this.console.log(`[Blue File Resolution] Not a pending chat: ${file.path}`);
         // Not a pending chat, resolve links within it recursively
         const resolved = await this.resolveLinksInContent(content, file, context, app);
+        
+        // Emit complete event
+        this.emitEvent({
+          type: 'complete',
+          filePath: file.path,
+          parentPath: context.currentNode.parent?.file.path || null,
+          depth: context.currentNode.depth,
+          status: 'complete',
+          isPendingChat: false,
+          timestamp: Date.now(),
+        });
+        
         return resolved;
       }
 
@@ -243,9 +334,33 @@ export class BlueFileResolver {
         this.console.log(`[Blue File Resolution] Wrote intermediate result to: ${file.path}`);
       }
 
+      // Emit complete event
+      this.emitEvent({
+        type: 'complete',
+        filePath: file.path,
+        parentPath: context.currentNode.parent?.file.path || null,
+        depth: context.currentNode.depth,
+        status: 'complete',
+        isPendingChat: true,
+        timestamp: Date.now(),
+      });
+
       return resolvedContent;
     } catch (error) {
       this.console.error(`[Blue File Resolution] Error resolving file ${file.path}:`, error);
+      
+      // Emit error event
+      this.emitEvent({
+        type: 'error',
+        filePath: file.path,
+        parentPath: context.currentNode.parent?.file.path || null,
+        depth: context.currentNode.depth,
+        status: 'error',
+        isPendingChat: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: Date.now(),
+      });
+      
       return `[[${file.path}]] (Error: ${error instanceof Error ? error.message : 'Unknown error'})`;
     }
   }
