@@ -342,29 +342,23 @@ export class BlueResolutionTreeView extends ItemView {
       statusIndicator.addClass('status-spinner');
     }
 
-    // File name (clickable)
+    // File name (clickable, truncated with ellipsis)
     const nameEl = contentEl.createSpan({
       cls: 'resolution-node-name',
       text: node.fileName,
     });
     nameEl.addEventListener('click', () => this.openFile(node.filePath));
-    nameEl.title = node.filePath;
+    nameEl.title = node.filePath; // Full path on hover
 
-    // Depth badge
-    contentEl.createSpan({
-      cls: 'resolution-node-depth',
-      text: `d:${node.depth}`,
-    });
-
-    // Pending chat badge
-    if (node.isPendingChat) {
+    // Only show pending badge if status is NOT complete/error/cached (conditional badges)
+    if (node.isPendingChat && node.status === 'idle') {
       contentEl.createSpan({
         cls: 'resolution-node-badge pending-chat',
         text: 'Pending',
       });
     }
 
-    // Error badge
+    // Error badge - only show if there's an actual error
     if (node.error) {
       const errorBadge = contentEl.createSpan({
         cls: 'resolution-node-badge error-badge',

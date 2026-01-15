@@ -337,8 +337,8 @@ sup {
 
 .resolution-node {
   padding: 0.5em 0;
-  border-left: 2px solid transparent;
-  transition: background-color 0.2s ease;
+  border-left: 3px solid transparent;
+  transition: background-color 0.2s ease, border-left-color 0.2s ease;
 }
 
 .resolution-node:hover {
@@ -375,6 +375,7 @@ sup {
   align-items: center;
   gap: 0.5em;
   cursor: default;
+  min-width: 0; /* Allow flex children to shrink */
 }
 
 .resolution-node-expand {
@@ -383,6 +384,7 @@ sup {
   width: 1em;
   text-align: center;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .resolution-node-expand:hover {
@@ -445,6 +447,12 @@ sup {
   color: var(--text-normal);
   font-weight: 500;
   flex: 1;
+  min-width: 0; /* Allow text to shrink */
+  
+  /* Truncate long text with ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .resolution-node-name:hover {
@@ -452,21 +460,14 @@ sup {
   text-decoration: underline;
 }
 
-.resolution-node-depth {
-  font-size: 0.8em;
-  color: var(--text-muted);
-  background-color: var(--background-modifier-form-field);
-  padding: 0.1em 0.4em;
-  border-radius: var(--radius-s);
-  font-family: var(--font-monospace);
-}
-
 .resolution-node-badge {
-  font-size: 0.75em;
-  padding: 0.2em 0.5em;
+  font-size: 0.7em;
+  padding: 0.15em 0.4em;
   border-radius: var(--radius-s);
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
 .resolution-node-badge.pending-chat {
