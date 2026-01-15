@@ -1,4 +1,13 @@
-import { ItemView, WorkspaceLeaf, Setting, TFile, MarkdownView, Notice, setIcon } from 'obsidian';
+import {
+  ItemView,
+  WorkspaceLeaf,
+  Setting,
+  TFile,
+  MarkdownView,
+  Notice,
+  setIcon,
+  ExtraButtonComponent,
+} from 'obsidian';
 import PureChatLLM from '../main';
 import {
   BLUE_RESOLUTION_TREE_VIEW_TYPE,
@@ -37,7 +46,7 @@ export class BlueResolutionTreeView extends ItemView {
   ) {
     super(leaf);
     this.console = new BrowserConsole(plugin.settings.debug, 'BlueResolutionTreeView');
-    this.icon = 'git-branch';
+    this.icon = 'list-tree';
     this.navigation = false;
     this.boundResolutionEventHandler = this.handleResolutionEvent.bind(this) as (
       event: ResolutionEvent,
@@ -327,42 +336,27 @@ export class BlueResolutionTreeView extends ItemView {
 
     // Expand/collapse button for nodes with children
     if (node.children.length > 0) {
-      const expandBtn = contentEl.createSpan({
-        cls: 'resolution-node-expand',
-        text: node.isExpanded ? '▼' : '▶',
-      });
-      expandBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        node.isExpanded = !node.isExpanded;
-        this.renderTree();
-      });
-    } else {
-      contentEl.createSpan({ cls: 'resolution-node-expand', text: '  ' });
+      new ExtraButtonComponent(contentEl)
+        .setIcon(node.isExpanded ? 'chevron-down' : 'chevron-right')
+        .onClick(() => {
+          node.isExpanded = !node.isExpanded;
+          this.renderTree();
+        });
     }
 
     // Contextual icon with glow - folder for root/expandable, image for images, file for others
-    const iconEl = contentEl.createSpan({ cls: 'resolution-node-icon' });
-    let iconName = 'file-text';
-    
-    if (indentLevel === 0 || node.children.length > 0) {
-      iconName = 'folder';
-    } else if (/\.(png|jpe?g|gif|svg|webp)$/i.test(node.fileName)) {
-      iconName = 'image';
-    } else if (node.fileName.endsWith('.md')) {
-      iconName = 'file-text';
-    }
-    
-    setIcon(iconEl, iconName);
-
-    // Status indicator (visual border/spinner element)
-    const statusIndicator = contentEl.createSpan({
-      cls: `resolution-node-status status-indicator-${node.status}`,
-    });
-
-    // Add spinner for resolving state
-    if (node.status === 'resolving') {
-      statusIndicator.addClass('status-spinner');
-    }
+    new ExtraButtonComponent(contentEl)
+      .setDisabled(true)
+      .setIcon(
+        indentLevel === 0
+          ? 'folder'
+          : /\.(png|jpe?g)$/i.test(node.fileName)
+            ? 'image'
+            : node.fileName.endsWith('.md')
+              ? 'file-text'
+              : 'file',
+      )
+      .extraSettingsEl.addClass(`status-indicator-${node.status}`);
 
     // File name (clickable, truncated with ellipsis)
     const nameEl = contentEl.createSpan({
