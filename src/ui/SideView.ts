@@ -20,7 +20,7 @@ import { CODE_PREVIEW_VIEW_TYPE } from './CodePreview';
 import PureChatLLM from '../main';
 import { AskForAPI } from './Modals';
 import { toTitleCase } from '../utils/toTitleCase';
-import { PURE_CHAT_LLM_VIEW_TYPE } from '../types';
+import { PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '../types';
 import { alloptions, EmptyApiKey } from 'src/assets/constants';
 
 /**
@@ -46,9 +46,11 @@ import { alloptions, EmptyApiKey } from 'src/assets/constants';
  * @see Editor
  */
 export class PureChatLLMSideView extends ItemView {
-  console: BrowserConsole;
   ischat = false;
   isExpanded = false;
+  icon: string = PURE_CHAT_LLM_ICON_NAME;
+  console: BrowserConsole = new BrowserConsole(this.plugin.settings.debug, 'PureChatLLMSideView');
+  navigation: boolean = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -56,9 +58,6 @@ export class PureChatLLMSideView extends ItemView {
     public viewText = 'Conversation overview',
   ) {
     super(leaf);
-    this.icon = 'messages-square';
-    this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMSideView');
-    this.navigation = false;
   }
 
   getViewType() {

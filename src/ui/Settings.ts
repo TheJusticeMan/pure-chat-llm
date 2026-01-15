@@ -8,7 +8,7 @@ import PureChatLLM, {
   getObjectFromMarkdown,
   SelectionPromptEditor,
 } from '../main';
-import { PureChatLLMSettings } from '../types';
+import { PURE_CHAT_LLM_ICON_NAME, PureChatLLMSettings } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { AskForAPI, EditModalProviders } from './Modals';
 
@@ -31,11 +31,15 @@ import { AskForAPI, EditModalProviders } from './Modals';
  */
 export class PureChatLLMSettingTab extends PluginSettingTab {
   plugin: PureChatLLM;
-  icon: string = 'bot-message-square';
+  icon: string = PURE_CHAT_LLM_ICON_NAME;
 
   constructor(app: App, plugin: PureChatLLM) {
     super(app, plugin);
     this.plugin = plugin;
+  }
+  async sett<S extends keyof PureChatLLMSettings>(key: S, value: PureChatLLMSettings[S]) {
+    this.plugin.settings[key] = value;
+    await this.plugin.saveSettings();
   }
 
   ifdefault<S extends keyof PureChatLLMSettings>(key: S): string {
@@ -64,9 +68,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 )
                 .setValue(settings.endpoint.toString())
                 .onChange(async value => {
-                  settings.endpoint = parseInt(value, 10);
+                  await this.sett('endpoint', parseInt(value, 10));
                   this.plugin.modellist = [];
-                  await this.plugin.saveSettings();
                 }),
             )
             .addButton(btn =>
@@ -102,10 +105,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               text
                 .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
                 .setValue(this.ifdefault('SystemPrompt'))
-                .onChange(async value => {
-                  settings.SystemPrompt = value || DEFAULT_SETTINGS.SystemPrompt;
-                  await this.plugin.saveSettings();
-                })
+                .onChange(
+                  async value =>
+                    await this.sett('SystemPrompt', value || DEFAULT_SETTINGS.SystemPrompt),
+                )
                 .inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
                   if (e.key === '/' || e.key === '[') {
                     e.preventDefault();
@@ -128,18 +131,21 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       .addSetting(
         setting =>
           void setting
-
             .setName('Default token count')
             .setDesc('Default max tokens for models that support it.')
             .addText(text =>
               text
                 .setPlaceholder(DEFAULT_SETTINGS.defaultmaxTokens.toString())
                 .setValue(this.ifdefault('defaultmaxTokens'))
-                .onChange(async value => {
-                  const num = value ? Number(value) : DEFAULT_SETTINGS.defaultmaxTokens;
-                  settings.defaultmaxTokens = num || 4096;
-                  await this.plugin.saveSettings();
-                }),
+                .onChange(
+                  async value =>
+                    await this.sett(
+                      'defaultmaxTokens',
+                      Number(value || DEFAULT_SETTINGS.defaultmaxTokens) ||
+                        DEFAULT_SETTINGS.defaultmaxTokens ||
+                        4096,
+                    ),
+                ),
             ),
       )
       .addSetting(
@@ -167,10 +173,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               'Enable this to allow the LLM to use tools (e.g., creating notes, searching the vault).',
             )
             .addToggle(toggle =>
-              toggle.setValue(settings.agentMode).onChange(async value => {
-                settings.agentMode = value;
-                await this.plugin.saveSettings();
-              }),
+              toggle
+                .setValue(settings.agentMode)
+                .onChange(async value => await this.sett('agentMode', value)),
             ),
       )
       .addSetting(
@@ -202,10 +207,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key.",
             )
             .addToggle(toggle =>
-              toggle.setValue(settings.useImageGeneration).onChange(async value => {
-                settings.useImageGeneration = value;
-                await this.plugin.saveSettings();
-              }),
+              toggle
+                .setValue(settings.useImageGeneration)
+                .onChange(async value => await this.sett('useImageGeneration', value)),
             ),
       );
     new SettingGroup(containerEl)
@@ -313,11 +317,13 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               text
                 .setPlaceholder(DEFAULT_SETTINGS.AutogenerateTitle.toString())
                 .setValue(this.ifdefault('AutogenerateTitle'))
-                .onChange(async value => {
-                  const num = value ? Number(value) : DEFAULT_SETTINGS.AutogenerateTitle;
-                  settings.AutogenerateTitle = num || 0;
-                  await this.plugin.saveSettings();
-                }),
+                .onChange(
+                  async value =>
+                    await this.sett(
+                      'AutogenerateTitle',
+                      Number(value || DEFAULT_SETTINGS.AutogenerateTitle) || 0,
+                    ),
+                ),
             ),
       ) //YAML front matter
       .addSetting(
@@ -326,10 +332,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
             .setName('Use YAML front matter')
             .setDesc('Store chat metadata in YAML front matter instead of HTML comments.')
             .addToggle(toggle =>
-              toggle.setValue(settings.useYAMLFrontMatter).onChange(async value => {
-                settings.useYAMLFrontMatter = value;
-                await this.plugin.saveSettings();
-              }),
+              toggle
+                .setValue(settings.useYAMLFrontMatter)
+                .onChange(async value => await this.sett('useYAMLFrontMatter', value)),
             ),
       )
       .addSetting(
@@ -341,13 +346,15 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               text
                 .setPlaceholder(DEFAULT_SETTINGS.messageRoleFormatter)
                 .setValue(this.ifdefault('messageRoleFormatter'))
-                .onChange(async value => {
-                  settings.messageRoleFormatter = value || DEFAULT_SETTINGS.messageRoleFormatter;
-                  // make sure {role} is present
-                  if (!settings.messageRoleFormatter.includes('{role}'))
-                    settings.messageRoleFormatter += ' {role}';
-                  await this.plugin.saveSettings();
-                }),
+                .onChange(
+                  async value =>
+                    await this.sett(
+                      'messageRoleFormatter',
+                      (value.includes('{role}') && value + ' {role}') ||
+                        value ||
+                        DEFAULT_SETTINGS.messageRoleFormatter,
+                    ),
+                ),
             ),
       )
       .addSetting(
@@ -358,10 +365,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               'Automatically combine consecutive messages from the same role into a single message.',
             )
             .addToggle(toggle =>
-              toggle.setValue(settings.autoConcatMessagesFromSameRole).onChange(async value => {
-                settings.autoConcatMessagesFromSameRole = value;
-                await this.plugin.saveSettings();
-              }),
+              toggle
+                .setValue(settings.autoConcatMessagesFromSameRole)
+                .onChange(async value => await this.sett('autoConcatMessagesFromSameRole', value)),
             ),
       )
       .addSetting(
@@ -372,10 +378,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               'Automatically switch roles when the last message is empty, for replying to self.',
             )
             .addToggle(toggle =>
-              toggle.setValue(settings.AutoReverseRoles).onChange(async value => {
-                settings.AutoReverseRoles = value;
-                await this.plugin.saveSettings();
-              }),
+              toggle
+                .setValue(settings.AutoReverseRoles)
+                .onChange(async value => await this.sett('AutoReverseRoles', value)),
             ),
       )
       .addSetting(
@@ -384,10 +389,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
             .setName('Add file to context for editing')
             .setDesc('Include the current file content in the context for selection editing.')
             .addToggle(toggle =>
-              toggle.setValue(settings.addfiletocontext).onChange(async value => {
-                settings.addfiletocontext = value;
-                await this.plugin.saveSettings();
-              }),
+              toggle
+                .setValue(settings.addfiletocontext)
+                .onChange(async value => await this.sett('addfiletocontext', value)),
             ),
       )
       .addSetting(
@@ -398,12 +402,88 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               'Enable this to automatically resolve and include file contents when using chat analysis commands. This helps provide context from linked files in the conversation.',
             )
             .addToggle(toggle =>
-              toggle.setValue(settings.resolveFilesForChatAnalysis).onChange(async value => {
-                settings.resolveFilesForChatAnalysis = value;
+              toggle
+                .setValue(settings.resolveFilesForChatAnalysis)
+                .onChange(async value => await this.sett('resolveFilesForChatAnalysis', value)),
+            ),
+      );
+
+    // Blue File Resolution Settings
+    new SettingGroup(containerEl)
+      .setHeading('Blue File Resolution (Dynamic Chat Execution)')
+      .addSetting(
+        setting =>
+          void setting.setDesc(
+            'Blue File Resolution enables recursive, dynamic execution of pending chat notes when they are linked. ' +
+              'When a [[note]] link is resolved and the linked file is a pending chat (ends with a user message), ' +
+              'instead of inlining its static content, the plugin executes the chat and uses the generated response.',
+          ),
+      )
+      .addSetting(
+        setting =>
+          void setting
+            .setName('Enable blue file resolution')
+            .setDesc(
+              'Turn on dynamic chat execution for [[note]] links. When enabled, linked notes that are pending chats will be executed recursively.',
+            )
+            .addToggle(toggle =>
+              toggle.setValue(settings.blueFileResolution.enabled).onChange(async value => {
+                settings.blueFileResolution.enabled = value;
                 await this.plugin.saveSettings();
               }),
             ),
+      )
+      .addSetting(
+        setting =>
+          void setting
+            .setName('Maximum resolution depth')
+            .setDesc(
+              'Maximum depth for recursive chat execution (1-20). Prevents runaway recursion. Default is 5.',
+            )
+            .addText(text =>
+              text
+                .setPlaceholder('5')
+                .setValue(settings.blueFileResolution.maxDepth.toString())
+                .onChange(async value => {
+                  const num = parseInt(value);
+                  if (!isNaN(num) && num >= 1 && num <= 20) {
+                    settings.blueFileResolution.maxDepth = num;
+                    await this.plugin.saveSettings();
+                  }
+                }),
+            ),
+      )
+      .addSetting(
+        setting =>
+          void setting
+            .setName('Enable caching')
+            .setDesc(
+              'Cache intermediate chat results during resolution to avoid redundant API calls for the same file within a single invocation.',
+            )
+            .addToggle(toggle =>
+              toggle.setValue(settings.blueFileResolution.enableCaching).onChange(async value => {
+                settings.blueFileResolution.enableCaching = value;
+                await this.plugin.saveSettings();
+              }),
+            ),
+      )
+      .addSetting(
+        setting =>
+          void setting
+            .setName('Write intermediate results')
+            .setDesc(
+              'Save intermediate chat responses to disk. By default, only the root invocation writes results; nested executions are ephemeral.',
+            )
+            .addToggle(toggle =>
+              toggle
+                .setValue(settings.blueFileResolution.writeIntermediateResults)
+                .onChange(async value => {
+                  settings.blueFileResolution.writeIntermediateResults = value;
+                  await this.plugin.saveSettings();
+                }),
+            ),
       );
+
     new SettingGroup(containerEl)
       .setHeading('Utilities & maintenance')
       .addSetting(
@@ -428,8 +508,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
             )
             .addToggle(toggle =>
               toggle.setValue(settings.debug).onChange(async value => {
-                settings.debug = value;
-                await this.plugin.saveSettings();
+                await this.sett('debug', value);
+
                 this.plugin.console = new BrowserConsole(settings.debug, 'PureChatLLM');
                 //console.log('reload the plugin to apply the changes');
               }),

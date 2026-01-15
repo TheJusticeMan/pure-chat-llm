@@ -1,4 +1,5 @@
 import {
+  addIcon,
   App,
   Editor,
   EditorPosition,
@@ -24,6 +25,8 @@ import {
   VOICE_CALL_VIEW_TYPE,
   PureChatLLMSettings,
   RoleType,
+  PURE_CHAT_LLM_ICON_NAME,
+  PURE_CHAT_LLM_ICON_SVG,
 } from './types';
 import { DEFAULT_SETTINGS } from './assets/constants';
 import {
@@ -74,6 +77,8 @@ export default class PureChatLLM extends Plugin {
 
   async onload() {
     await this.loadSettings();
+    addIcon(PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_ICON_SVG);
+
     this.pureChatStatusElement = this.addStatusBarItem();
     this.status('Loading...');
     this.console = new BrowserConsole(this.settings.debug, 'PureChatLLM');
@@ -84,7 +89,9 @@ export default class PureChatLLM extends Plugin {
     this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));
     this.registerView(VOICE_CALL_VIEW_TYPE, leaf => new VoiceCallSideView(leaf, this));
 
-    this.addRibbonIcon('messages-square', 'Open conversation overview', () => this.activateView());
+    this.addRibbonIcon(PURE_CHAT_LLM_ICON_NAME, 'Open conversation overview', () =>
+      this.activateView(),
+    );
     this.addRibbonIcon('phone', 'Open voice call', () => this.activateVoiceCallView());
 
     this.setupChatCommandHandlers();
