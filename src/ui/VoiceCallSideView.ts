@@ -1,12 +1,11 @@
 import { ItemView, WorkspaceLeaf, Setting, Notice } from 'obsidian';
 import { VoiceCall } from '../realtime/VoiceCall';
 import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
-import { OpenAIRealtimeProviderWithTools } from '../realtime/providers/OpenAIRealtimeProviderWithTools';
 import { GeminiLiveProvider } from '../realtime/providers/GeminiLiveProvider';
-import { GeminiLiveProviderWithTools } from '../realtime/providers/GeminiLiveProviderWithTools';
 import { PureChatLLMChat } from '../core/Chat';
 import { CallState, VOICE_CALL_VIEW_TYPE } from '../types';
 import PureChatLLM from '../main';
+import { EmptyApiKey } from 'src/assets/constants';
 
 type VoiceProvider = 'openai' | 'gemini';
 
@@ -256,9 +255,8 @@ export class VoiceCallSideView extends ItemView {
       }
 
       // Get API key for selected provider
-      let apiKey: string;
       let providerEndpoint;
-      
+
       if (this.selectedProvider === 'openai') {
         // Find OpenAI endpoint in settings
         providerEndpoint = this.plugin.settings.endpoints.find(ep => ep.name === 'OpenAI');
@@ -274,13 +272,19 @@ export class VoiceCallSideView extends ItemView {
           providerEndpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
         }
       }
-      
-      if (!providerEndpoint || !providerEndpoint.apiKey) {
+
+      if (
+        !providerEndpoint ||
+        !providerEndpoint.apiKey ||
+        providerEndpoint.apiKey === EmptyApiKey
+      ) {
         const providerName = this.selectedProvider === 'openai' ? 'OpenAI' : 'Gemini';
-        throw new Error(`No API key configured for ${providerName}. Please add an endpoint named "${providerName}" in settings with a valid API key.`);
+        throw new Error(
+          `No API key configured for ${providerName}. Please add an endpoint named "${providerName}" in settings with a valid API key.`,
+        );
       }
-      
-      apiKey = providerEndpoint.apiKey;
+
+      const apiKey = providerEndpoint.apiKey;
 
       // Initialize provider based on selection
       let provider;
@@ -298,7 +302,7 @@ export class VoiceCallSideView extends ItemView {
 
         if (this.plugin.settings.agentMode) {
           this.chat = new PureChatLLMChat(this.plugin);
-          provider = new OpenAIRealtimeProviderWithTools(this.chat);
+          provider = new OpenAIRealtimeProvider(this.chat);
           new Notice('Initializing voice call with tool access');
         } else {
           provider = new OpenAIRealtimeProvider();
@@ -315,7 +319,7 @@ export class VoiceCallSideView extends ItemView {
 
         if (this.plugin.settings.agentMode) {
           this.chat = new PureChatLLMChat(this.plugin);
-          provider = new GeminiLiveProviderWithTools(this.chat);
+          provider = new GeminiLiveProvider(this.chat);
           new Notice('Initializing voice call with tool access');
         } else {
           provider = new GeminiLiveProvider();

@@ -85,6 +85,12 @@ export class VoiceCall {
 
       // Use provider to establish session
       await this.provider.startSession(this.peerConnection, this.localStream, this.config);
+
+      // If we are still in connecting state, transition to connected
+      // This is necessary for providers like Gemini that don't use standard WebRTC track events
+      if (this.state.status === 'connecting') {
+        this.updateState({ status: 'connected' });
+      }
     } catch (error) {
       console.error('Failed to start call:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to start voice call';

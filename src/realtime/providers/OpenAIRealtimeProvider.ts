@@ -1,4 +1,5 @@
 import { Notice } from 'obsidian';
+import { PureChatLLMChat } from '../../core/Chat';
 import { IVoiceCallProvider, VoiceCallConfig } from './IVoiceCallProvider';
 
 /**
@@ -7,9 +8,14 @@ import { IVoiceCallProvider, VoiceCallConfig } from './IVoiceCallProvider';
  */
 export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   private sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
+  private chat: PureChatLLMChat | null = null;
+
+  constructor(chat?: PureChatLLMChat) {
+    this.chat = chat || null;
+  }
 
   getName(): string {
-    return 'OpenAI Realtime API';
+    return this.chat ? 'OpenAI Realtime API (with tools)' : 'OpenAI Realtime API';
   }
 
   /**
@@ -25,12 +31,26 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
     await peerConnection.setLocalDescription(offer);
 
     // Prepare session configuration as per OpenAI docs
-    const sessionConfig = {
+    const sessionConfig: Record<string, unknown> = {
       type: 'realtime',
       model: config.model || 'gpt-realtime',
       instructions: config.instructions || 'You are a helpful assistant.',
       ...(config.voice && { audio: { output: { voice: config.voice } } }),
     };
+
+    // Add tool definitions if chat is available
+    if (this.chat && this.chat.plugin.settings.agentMode) {
+      const toolDefinitions = this.chat.toolregistry.getAllDefinitions();
+      if (toolDefinitions.length > 0) {
+        // Convert tool definitions to OpenAI Realtime API format
+        sessionConfig.tools = toolDefinitions.map(tool => ({
+          type: tool.type,
+          name: tool.function.name,
+          description: tool.function.description,
+          parameters: tool.function.parameters,
+        }));
+      }
+    }
 
     // Create FormData with SDP and session config (unified interface pattern)
     const formData = new FormData();
@@ -62,7 +82,7 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
     };
     await peerConnection.setRemoteDescription(answer);
 
-    new Notice('Voice call started');
+    new Notice(this.chat ? 'Voice call started with tool access' : 'Voice call started');
   }
 
   /**
@@ -74,15 +94,26 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
     });
 
     dataChannel.addEventListener('message', event => {
-      try {
-        const eventData = String(event.data);
-        const serverEvent = JSON.parse(eventData) as unknown;
-        if (onServerEvent) {
-          onServerEvent(serverEvent);
+      void (async () => {
+        try {
+          const eventData = String(event.data);
+          const serverEvent = JSON.parse(eventData) as {
+            type: string;
+            [key: string]: unknown;
+          };
+          
+          // Handle tool calls
+          if (serverEvent.type === 'response.function_call_arguments.done' && this.chat) {
+            await this.handleToolCall(serverEvent, dataChannel);
+          }
+          
+          if (onServerEvent) {
+            onServerEvent(serverEvent);
+          }
+        } catch (error) {
+          console.error('Failed to parse server event:', error);
         }
-      } catch (error) {
-        console.error('Failed to parse server event:', error);
-      }
+      })();
     });
 
     dataChannel.addEventListener('error', error => {
@@ -92,6 +123,53 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
     dataChannel.addEventListener('close', () => {
       // Connection closed
     });
+  }
+
+  /**
+   * Handles tool call execution from the AI
+   */
+  private async handleToolCall(
+    serverEvent: { type: string; [key: string]: unknown },
+    dataChannel: RTCDataChannel,
+  ): Promise<void> {
+    if (!this.chat) return;
+
+    try {
+      const callId = serverEvent.call_id as string;
+      const functionName = serverEvent.name as string;
+      const functionArgs = serverEvent.arguments as string;
+
+      // Parse arguments
+      const args = JSON.parse(functionArgs) as Record<string, unknown>;
+
+      // Execute tool via the chat's tool registry
+      new Notice(`Executing tool: ${functionName}...`);
+      const result = await this.chat.toolregistry.executeTool(functionName, args);
+
+      // Send tool result back to OpenAI
+      const toolResponse = {
+        type: 'conversation.item.create',
+        item: {
+          type: 'function_call_output',
+          call_id: callId,
+          output: result,
+        },
+      };
+
+      this.sendEvent(dataChannel, toolResponse);
+
+      // Request response generation
+      this.sendEvent(dataChannel, {
+        type: 'response.create',
+      });
+
+      new Notice(`Tool ${functionName} executed successfully`);
+    } catch (error) {
+      console.error('Tool execution error:', error);
+      new Notice(
+        `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   /**

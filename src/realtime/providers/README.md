@@ -7,10 +7,8 @@ This directory contains the provider abstraction layer for voice call functional
 The system uses a provider pattern to decouple voice call logic from specific provider implementations:
 
 - **`IVoiceCallProvider.ts`**: Interface defining the contract for voice call providers
-- **`OpenAIRealtimeProvider.ts`**: Base implementation for OpenAI's Realtime API (WebRTC)
-- **`OpenAIRealtimeProviderWithTools.ts`**: Extended OpenAI provider with PureChatLLMChat tool integration
-- **`GeminiLiveProvider.ts`**: Base implementation for Google Gemini Live API (WebSocket)
-- **`GeminiLiveProviderWithTools.ts`**: Extended Gemini provider with tool integration
+- **`OpenAIRealtimeProvider.ts`**: Implementation for OpenAI's Realtime API (WebRTC) with optional tool integration
+- **`GeminiLiveProvider.ts`**: Implementation for Google Gemini Live API (WebSocket) with optional tool integration
 - **`index.ts`**: Barrel export for convenient imports
 
 ## Supported Providers
@@ -19,20 +17,20 @@ The system uses a provider pattern to decouple voice call logic from specific pr
 - Uses WebRTC with SDP exchange via unified interface
 - Direct peer-to-peer audio connection
 - Data channel (`oai-events`) for bidirectional events
-- Supports tool calling when using `OpenAIRealtimeProviderWithTools`
+- Supports tool calling when configured with a `PureChatLLMChat` instance
 
 ### Google Gemini Live API
 - Uses WebSocket connection for real-time audio streaming
 - PCM audio encoding/decoding
-- Supports tool calling when using `GeminiLiveProviderWithTools`
+- Supports tool calling when configured with a `PureChatLLMChat` instance
 - Voice Activity Detection built-in
 
 ## Tool Integration
 
-Both tool-enabled providers (`OpenAIRealtimeProviderWithTools` and `GeminiLiveProviderWithTools`) extend their base implementations to enable AI tool access during voice conversations:
+Both providers (`OpenAIRealtimeProvider` and `GeminiLiveProvider`) support AI tool access during voice conversations when initialized with a chat instance:
 
 - Integrates with `PureChatLLMChat` to access the tool registry
-- Automatically includes tool definitions in the session configuration
+- Automatically includes tool definitions in the session configuration if available
 - Handles tool calls from the AI in real-time
 - Executes tools via the existing tool registry
 - Returns tool results to the AI for continued conversation
@@ -44,7 +42,7 @@ Both tool-enabled providers (`OpenAIRealtimeProviderWithTools` and `GeminiLivePr
 const chat = new PureChatLLMChat(plugin);
 
 // Create provider with tool integration
-const provider = new OpenAIRealtimeProviderWithTools(chat);
+const provider = new OpenAIRealtimeProvider(chat);
 
 const voiceCall = new VoiceCall(
   provider,
@@ -69,7 +67,7 @@ await voiceCall.startCall();
 const chat = new PureChatLLMChat(plugin);
 
 // Create provider with tool integration
-const provider = new GeminiLiveProviderWithTools(chat);
+const provider = new GeminiLiveProvider(chat);
 
 const voiceCall = new VoiceCall(
   provider,

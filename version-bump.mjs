@@ -10,16 +10,18 @@ writeFileSync('manifest.json', JSON.stringify(manifest, null, '\t'));
 
 // update versions.json with target version and minAppVersion from manifest.json
 let versions = JSON.parse(readFileSync('versions.json', 'utf8'));
-versions[targetVersion] = minAppVersion;
-writeFileSync('versions.json', JSON.stringify(versions, null, '\t'));
+if (!Object.values(versions).includes(minAppVersion)) {
+  versions[targetVersion] = minAppVersion;
+  writeFileSync('versions.json', JSON.stringify(versions, null, '\t'));
+}
 
 let appSett = JSON.parse(readFileSync('src/assets/s.json', 'utf8'));
 appSett.version = targetVersion;
 appSett.readme = readFileSync('README.md').toString();
 appSett.splash = readFileSync('src/assets/splash.md').toString();
-Object.entries(getObjectFromMarkdown(readFileSync('src/assets/templates.md').toString(), 1, 2)).forEach(
-  ([k, v]) => (appSett[k] = v),
-);
+Object.entries(
+  getObjectFromMarkdown(readFileSync('src/assets/templates.md').toString(), 1, 2),
+).forEach(([k, v]) => (appSett[k] = v));
 console.log(
   JSON.stringify(
     getObjectFromMarkdown(readFileSync('src/assets/templates.md').toString(), 1, 2),
