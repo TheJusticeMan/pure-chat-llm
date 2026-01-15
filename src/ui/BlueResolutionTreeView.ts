@@ -48,14 +48,20 @@ export class BlueResolutionTreeView extends ItemView {
     this.plugin.blueFileResolver.onResolutionEvent(this.handleResolutionEvent.bind(this));
 
     // Listen to workspace events for active file changes
+    // Only update when a MarkdownView becomes active (not when this view becomes active)
     this.registerEvent(
-      this.app.workspace.on('active-leaf-change', () => {
+      this.app.workspace.on('active-leaf-change', (leaf) => {
+        if (!leaf) return;
+        const view = leaf.view;
+        if (!(view instanceof MarkdownView)) return;
         this.onActiveFileChange();
       }),
     );
 
     this.registerEvent(
       this.app.workspace.on('file-open', () => {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!view) return;
         this.onActiveFileChange();
       }),
     );
