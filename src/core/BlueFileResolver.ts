@@ -8,7 +8,7 @@ import { MediaMessage, RoleType } from '../types';
  * Interface for tracking resolution context during recursive chat execution
  */
 export interface ResolutionContext {
-  /** Set of file paths currently being resolved (for cycle detection) */
+  /** Set of file paths in the current parent chain (for cycle detection) */
   visitedFiles: Set<string>;
   /** Current depth in the resolution tree */
   currentDepth: number;
@@ -28,6 +28,13 @@ export interface ResolutionContext {
  * - Depth limiting to prevent runaway recursion
  * - Per-invocation caching to avoid redundant API calls
  * - Configurable intermediate result persistence
+ *
+ * Cycle Detection vs Caching:
+ * - visitedFiles tracks the current parent chain (files in the call stack)
+ * - cache stores Promises for all files being resolved (for deduplication)
+ * - Cycle check happens BEFORE cache check to prevent deadlocks
+ * - Example: If A→B→A, we detect the cycle before B tries to await A's cached Promise
+ * - Siblings (A→B, A→C where B→D and C→D) safely share D's cached Promise
  */
 export class BlueFileResolver {
   private console: BrowserConsole;
@@ -86,20 +93,21 @@ export class BlueFileResolver {
       return app.vault.cachedRead(file);
     }
 
-    // Check cache for existing Promise first - this handles both deduplication
-    // and avoids false positive cycle detection for siblings/parallel references
-    if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
-      this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
-      return await context.cache.get(file.path)!;
-    }
-
-    // Check for cycles - only if not in cache
-    // True cycles occur when a file references itself in its own resolution chain
+    // Check for cycles FIRST - before checking cache
+    // A cycle occurs when a file is in its own parent chain (currently being resolved in the call stack)
+    // This prevents deadlocks where A→B→A would cause both to wait on each other's cached Promises
     if (context.visitedFiles.has(file.path)) {
       const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
       this.console.error(error);
       new Notice(error);
       return `[[${file.path}]] (Error: Circular dependency)`;
+    }
+
+    // Check cache for existing Promise - this handles deduplication for siblings/parallel references
+    // Safe to check after parent chain because we've already confirmed this file isn't in its own parent chain
+    if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
+      this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
+      return await context.cache.get(file.path)!;
     }
 
     // Check depth limit
