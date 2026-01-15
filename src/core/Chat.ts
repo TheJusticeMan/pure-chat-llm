@@ -2,9 +2,7 @@ import {
   App,
   EditorRange,
   Notice,
-  parseLinktext,
   parseYaml,
-  resolveSubpath,
   stringifyYaml,
   TFile,
 } from 'obsidian';
@@ -32,7 +30,6 @@ import {
   ChatOptions,
   ChatRequestOptions,
   ChatResponse,
-  MediaMessage,
   PureChatLLMAPI,
   RoleType,
   StreamDelta,
@@ -425,303 +422,6 @@ export class PureChatLLMChat {
     return this;
   }
 
-  /**
-   * Resolves file links in a given markdown string by replacing them with the content
-   * of the referenced files. If a file cannot be resolved, the original link is retained.
-   *
-   * @param markdown - The markdown string containing file links to resolve.
-   * @param activeFile - The currently active file, used as a reference for resolving relative links.
-   * @param app - The Obsidian application instance, providing access to the vault and metadata cache.
-   * @param plugin - Optional plugin instance for blue file resolution support
-   * @returns A promise that resolves to the markdown string with file links replaced by their content.
-   *
-   * @remarks
-   * - File links are expected to be in the format `[[filename]]` or `![[filename]]`.
-   * - If a file cannot be found, the original link will remain in the output.
-   * - This function uses asynchronous operations to read file contents, so it returns a promise.
-   * - If plugin is provided and blue file resolution is enabled, pending chats will be dynamically executed.
-   */
-  static async resolveFiles(
-    markdown: string,
-    activeFile: TFile,
-    app: App,
-    plugin?: PureChatLLM,
-  ): Promise<string> {
-    const regex = /^!?\[\[(.*?)\]\]$/gim;
-    const matches = Array.from(markdown.matchAll(regex));
-    const replacements: Promise<string>[] = [];
-
-    // Check if blue file resolution is enabled
-    const useBlueFileResolution = plugin?.settings.blueFileResolution.enabled;
-
-    if (useBlueFileResolution && plugin) {
-      // Use blue file resolver for dynamic chat execution
-      const resolver = new BlueFileResolver(plugin);
-      const context = resolver.createContext(activeFile);
-
-      for (const match of matches) {
-        const filename = match[1];
-        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
-        if (file instanceof TFile) {
-          replacements.push(resolver.resolveFile(file, context, app));
-        } else {
-          replacements.push(Promise.resolve(match[0]));
-        }
-      }
-    } else {
-      // Original behavior: just read static file content
-      for (const match of matches) {
-        const filename = match[1];
-        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
-        if (file instanceof TFile) {
-          replacements.push(app.vault.cachedRead(file));
-        } else {
-          replacements.push(Promise.resolve(match[0]));
-        }
-      }
-    }
-
-    if (replacements.length === 0) return markdown;
-
-    const resolved = await Promise.all(replacements);
-    let index = 0;
-    const result = markdown.replace(regex, () => resolved[index++] || '');
-    return result;
-  }
-
-  static getfileForLink(str: string, activeFile: TFile, app: App): TFile | null {
-    return app.metadataCache.getFirstLinkpathDest(parseLinktext(str).path, activeFile.path);
-  }
-
-  /**
-   * Major new function
-   * Retrieves the content of a linked file or a specific subpath within a file in Obsidian.
-   *
-   * Given a link string, the currently active file, and the Obsidian app instance, this method:
-   * - Parses the link to extract the file path and optional subpath.
-   * - Resolves the file reference using Obsidian's metadata cache.
-   * - If the file does not exist, returns the original link in double brackets.
-   * - If a subpath is specified and found, returns the corresponding substring from the file.
-   * - Otherwise, returns the entire file content (or dynamically generated if blue file resolution is enabled).
-   *
-   * @param str - The link string to resolve (e.g., "MyNote#Section").
-   * @param activeFile - The currently active file, used as context for relative links.
-   * @param app - The Obsidian app instance, providing access to the vault and metadata cache.
-   * @param plugin - Optional plugin instance for blue file resolution support
-   * @param context - Optional blue file resolution context (for recursive calls)
-   * @returns A promise that resolves to the content of the linked file or subpath, or the original link if not found.
-   */
-  static async retrieveLinkContent(
-    str: string,
-    activeFile: TFile,
-    app: App,
-    plugin?: PureChatLLM,
-    context?: import('./BlueFileResolver').ResolutionContext,
-  ): Promise<string> {
-    const { subpath, path } = parseLinktext(str);
-    const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
-    if (!file) return Promise.resolve(`[[${str}]]`);
-
-    // If subpath is specified, return the specific section (no blue file resolution for subpaths)
-    if (subpath) {
-      const cache = app.metadataCache.getFileCache(file);
-      const ref = cache && resolveSubpath(cache, subpath);
-      if (ref) {
-        const text = await app.vault.cachedRead(file);
-        return text.substring(ref.start.offset, ref.end?.offset).trim();
-      }
-    }
-
-    // Check if blue file resolution should be used
-    if (plugin?.settings.blueFileResolution.enabled && context) {
-      // Use blue file resolver
-      const resolver = new BlueFileResolver(plugin);
-      return resolver.resolveFile(file, context, app);
-    } else if (plugin?.settings.blueFileResolution.enabled && !context) {
-      // Create new context if not provided
-      const resolver = new BlueFileResolver(plugin);
-      const newContext = resolver.createContext(activeFile);
-      return resolver.resolveFile(file, newContext, app);
-    }
-
-    // Default: just read the file
-    return app.vault.cachedRead(file);
-  }
-
-  static async convertM4AToWav(buffer: ArrayBuffer): Promise<ArrayBuffer> {
-    const audioContext = new (
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    )();
-    const audioBuffer = await audioContext.decodeAudioData(buffer);
-
-    const numOfChan = audioBuffer.numberOfChannels;
-    const length = audioBuffer.length * numOfChan * 2 + 44;
-    const buffer2 = new ArrayBuffer(length);
-    const view = new DataView(buffer2);
-    let pos = 0;
-
-    function setUint16(data: number) {
-      view.setUint16(pos, data, true);
-      pos += 2;
-    }
-
-    function setUint32(data: number) {
-      view.setUint32(pos, data, true);
-      pos += 4;
-    }
-
-    // write WAVE header
-    setUint32(0x46464952); // "RIFF"
-    setUint32(length - 8); // file length - 8
-    setUint32(0x45564157); // "WAVE"
-
-    setUint32(0x20746d66); // "fmt " chunk
-    setUint32(16); // length = 16
-    setUint16(1); // PCM (uncompressed)
-    setUint16(numOfChan);
-    setUint32(audioBuffer.sampleRate);
-    setUint32(audioBuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-    setUint16(numOfChan * 2); // block-align
-    setUint16(16); // 16-bit
-
-    setUint32(0x61746164); // "data" - chunk
-    setUint32(length - pos - 4); // chunk length
-
-    // write interleaved data
-    const channels = [];
-    for (let i = 0; i < numOfChan; i++) channels.push(audioBuffer.getChannelData(i));
-
-    let sampleIdx = 0;
-    while (sampleIdx < audioBuffer.length) {
-      for (let i = 0; i < numOfChan; i++) {
-        let sample = Math.max(-1, Math.min(1, channels[i][sampleIdx])); // clamp
-        // bitwise OR 0 to truncate to integer
-        sample = (sample < 0 ? sample * 0x8000 : sample * 0x7fff) | 0;
-        view.setInt16(pos, sample, true);
-        pos += 2;
-      }
-      sampleIdx++;
-    }
-
-    return buffer2;
-  }
-
-  static async resolveFilesWithImagesAndAudio(
-    markdown: string,
-    activeFile: TFile,
-    app: App,
-    role: RoleType,
-    plugin?: PureChatLLM,
-    context?: import('./BlueFileResolver').ResolutionContext,
-  ): Promise<MediaMessage[] | string> {
-    const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
-
-    const resolved: MediaMessage[] = await Promise.all(
-      matches.map(async match => {
-        const [originalLink, link] = match;
-        const file = this.getfileForLink(link, activeFile, app);
-
-        // Not found, return as text
-        if (!(file instanceof TFile)) return { type: 'text', text: originalLink };
-
-        const ext = file.extension.toLowerCase();
-        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
-          const data = await app.vault.readBinary(file);
-          const mime =
-            ext === 'jpg'
-              ? 'image/jpeg'
-              : ext === 'jpeg'
-                ? 'image/jpeg'
-                : ext === 'png'
-                  ? 'image/png'
-                  : ext === 'gif'
-                    ? 'image/gif'
-                    : 'image/webp';
-          const url = await this.arrayBufferToBase64DataURL(data, mime);
-          return { type: 'image_url', image_url: { url } };
-        }
-        if (['mp3', 'wav', 'm4a'].includes(ext) && role === 'user') {
-          let data = await app.vault.readBinary(file);
-          let format = ext;
-          if (ext === 'm4a') {
-            data = await this.convertM4AToWav(data);
-            format = 'wav';
-          }
-          const url = await this.arrayBufferToBase64DataURL(data, `audio/${format}`);
-          return {
-            type: 'input_audio',
-            input_audio: {
-              data: url.split(',')[1],
-              format: format as 'wav' | 'mp3',
-            },
-          };
-        }
-        return {
-          type: 'text',
-          text: await this.retrieveLinkContent(link, activeFile, app, plugin, context),
-        };
-      }),
-    );
-
-    //get the surrounding text around the matches
-    let lastIndex = 0;
-    const allParts: MediaMessage[] = [];
-    for (const match of matches) {
-      const start = match.index ?? 0;
-      const end = start + match[0].length;
-
-      // Add text before the match
-      if (start > lastIndex) {
-        allParts.push({
-          type: 'text',
-          text: markdown.slice(lastIndex, start).trim(),
-        });
-      }
-
-      // Add the resolved match
-      const resolvedItem = resolved.shift();
-      if (resolvedItem) allParts.push(resolvedItem);
-
-      lastIndex = end;
-    }
-    // Add any remaining text after the last match
-    if (lastIndex < markdown.length)
-      allParts.push({
-        type: 'text',
-        text: markdown.slice(lastIndex).trim(),
-      });
-
-    const final = allParts.reduce((acc, item) => {
-      const prev = acc[acc.length - 1];
-      if (item.type === 'text' && prev?.type === 'text') {
-        prev.text += `\n${item.text}`;
-      } else {
-        acc.push(item);
-      }
-      return acc;
-    }, [] as MediaMessage[]);
-
-    if (final.length === 0) return markdown; // If no valid parts, return original markdown
-
-    if (final.length === 1 && final[0].type === 'text') return final[0].text; // If only one text part, return it directly
-
-    // Combine consecutive text items into one
-    return final;
-  }
-
-  // Helper function
-  static arrayBufferToBase64DataURL(buffer: ArrayBuffer, mime: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const blob = new Blob([buffer], { type: mime }); // Pass the mime type here
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result as string); // This is a data URL: data:image/png;base64,xxxx
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
   // Instance method: get chat instructions with resolved files
 
   /**
@@ -739,21 +439,22 @@ export class PureChatLLMChat {
   ): Promise<ChatRequestOptions> {
     this.file = activeFile;
 
+    // Create resolver instance
+    const resolver = new BlueFileResolver(this.plugin);
+    
     // Use provided context or create new one if blue file resolution is enabled
     if (!context && this.plugin.settings.blueFileResolution.enabled) {
-      const resolver = new BlueFileResolver(this.plugin);
       context = resolver.createContext(activeFile);
     }
 
     const messages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
         role: role,
-        content: await PureChatLLMChat.resolveFilesWithImagesAndAudio(
+        content: await resolver.resolveFilesWithImagesAndAudio(
           content,
           activeFile,
           app,
           role,
-          this.plugin,
           context,
         ),
       })),
@@ -807,18 +508,19 @@ export class PureChatLLMChat {
     }
     this.file = this.file || this.plugin.app.workspace.getActiveFile();
 
-    if (this.plugin.settings.resolveFilesForChatAnalysis)
+    if (this.plugin.settings.resolveFilesForChatAnalysis) {
+      const resolver = new BlueFileResolver(this.plugin);
       this.messages = await Promise.all(
         this.messages.map(async ({ role, content }) => ({
           role,
-          content: await PureChatLLMChat.resolveFiles(
+          content: await resolver.resolveFiles(
             content,
             this.file,
             this.plugin.app,
-            this.plugin,
           ),
         })),
       );
+    }
 
     new Notice('Generating chat response from template...');
     const messages: { role: RoleType; content: string }[] = [
