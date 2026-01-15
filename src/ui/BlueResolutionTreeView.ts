@@ -213,18 +213,19 @@ export class BlueResolutionTreeView extends ItemView {
     const legendEl = container.createDiv({ cls: 'resolution-legend' });
     legendEl.createEl('h3', { text: 'Status Legend' });
 
-    const statuses: Array<{ icon: string; status: ResolutionStatus; label: string }> = [
-      { icon: '⚪', status: 'idle', label: 'Idle' },
-      { icon: '⏳', status: 'resolving', label: 'Resolving' },
-      { icon: '✅', status: 'complete', label: 'Complete' },
-      { icon: '❌', status: 'error', label: 'Error' },
-      { icon: '📦', status: 'cached', label: 'Cached' },
-      { icon: '🔄', status: 'cycle-detected', label: 'Cycle Detected' },
+    const statuses: Array<{ status: ResolutionStatus; label: string }> = [
+      { status: 'idle', label: 'Idle' },
+      { status: 'resolving', label: 'Resolving' },
+      { status: 'complete', label: 'Complete' },
+      { status: 'error', label: 'Error' },
+      { status: 'cached', label: 'Cached' },
+      { status: 'cycle-detected', label: 'Cycle Detected' },
     ];
 
-    statuses.forEach(({ icon, status, label }) => {
+    statuses.forEach(({ status, label }) => {
       const itemEl = legendEl.createDiv({ cls: `legend-item legend-${status}` });
-      itemEl.createSpan({ cls: 'legend-icon', text: icon });
+      // Create a status indicator box instead of icon
+      itemEl.createSpan({ cls: `legend-indicator legend-indicator-${status}` });
       itemEl.createSpan({ cls: 'legend-label', text: label });
     });
   }
@@ -306,9 +307,15 @@ export class BlueResolutionTreeView extends ItemView {
       contentEl.createSpan({ cls: 'resolution-node-expand', text: '  ' });
     }
 
-    // Status icon
-    const statusIcon = this.getStatusIcon(node.status);
-    contentEl.createSpan({ cls: 'resolution-node-status', text: statusIcon });
+    // Status indicator (visual border/spinner element)
+    const statusIndicator = contentEl.createSpan({ 
+      cls: `resolution-node-status status-indicator-${node.status}` 
+    });
+    
+    // Add spinner for resolving state
+    if (node.status === 'resolving') {
+      statusIndicator.addClass('status-spinner');
+    }
 
     // File name (clickable)
     const nameEl = contentEl.createSpan({
@@ -336,7 +343,7 @@ export class BlueResolutionTreeView extends ItemView {
     if (node.error) {
       const errorBadge = contentEl.createSpan({
         cls: 'resolution-node-badge error-badge',
-        text: '⚠',
+        text: 'Error',
       });
       errorBadge.title = node.error;
     }
@@ -347,25 +354,6 @@ export class BlueResolutionTreeView extends ItemView {
       for (const child of node.children) {
         this.renderTreeNode(childrenContainer, child, indentLevel + 1);
       }
-    }
-  }
-
-  private getStatusIcon(status: ResolutionStatus): string {
-    switch (status) {
-      case 'idle':
-        return '⚪';
-      case 'resolving':
-        return '⏳';
-      case 'complete':
-        return '✅';
-      case 'error':
-        return '❌';
-      case 'cached':
-        return '📦';
-      case 'cycle-detected':
-        return '🔄';
-      default:
-        return '⚪';
     }
   }
 

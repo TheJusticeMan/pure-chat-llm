@@ -77,11 +77,18 @@ export class VoiceCallSideView extends ItemView {
 
   private renderStatus(container: HTMLElement): void {
     const statusContainer = container.createDiv({ cls: 'voice-call-status' });
-    const statusIcon = this.getStatusIcon(this.callState.status);
     const statusText = this.getStatusText(this.callState.status);
 
     statusContainer.createEl('div', { cls: 'status-indicator' }, el => {
-      el.createEl('span', { cls: `status-icon status-${this.callState.status}`, text: statusIcon });
+      const statusIndicator = el.createEl('span', { 
+        cls: `status-icon status-icon-${this.callState.status}` 
+      });
+      
+      // Add spinner for connecting state
+      if (this.callState.status === 'connecting') {
+        statusIndicator.addClass('status-spinner');
+      }
+      
       el.createEl('span', { cls: 'status-text', text: statusText });
     });
 
@@ -297,23 +304,6 @@ export class VoiceCallSideView extends ItemView {
     if (this.remoteAudioElement) {
       this.remoteAudioElement.srcObject = null;
       this.remoteAudioElement = null;
-    }
-  }
-
-  private getStatusIcon(status: CallState['status']): string {
-    switch (status) {
-      case 'idle':
-        return '⚪';
-      case 'connecting':
-        return '🟡';
-      case 'connected':
-        return '🟢';
-      case 'disconnected':
-        return '🔴';
-      case 'error':
-        return '❌';
-      default:
-        return '⚪';
     }
   }
 
