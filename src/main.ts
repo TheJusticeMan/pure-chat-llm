@@ -101,7 +101,7 @@ export default class PureChatLLM extends Plugin {
       this.activateView(),
     );
     this.addRibbonIcon('phone', 'Open voice call', () => this.activateVoiceCallView());
-    this.addRibbonIcon('git-branch', 'Open Blue Resolution Tree', () => this.activateBlueResolutionView());
+    this.addRibbonIcon('git-branch', 'Open blue resolution tree', () => this.activateBlueResolutionView());
 
     this.setupChatCommandHandlers();
     this.setupVoiceCallCommandHandlers();
@@ -351,7 +351,7 @@ export default class PureChatLLM extends Plugin {
     // Blue Resolution Tree commands
     this.addCommand({
       id: 'open-blue-resolution-tree',
-      name: 'Open Blue Resolution Tree view',
+      name: 'Open blue resolution tree view',
       icon: 'git-branch',
       callback: () => this.activateBlueResolutionView(),
     });

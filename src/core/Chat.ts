@@ -41,7 +41,6 @@ import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
 import { LLMService } from './LLMService';
-import { BlueFileResolver } from './BlueFileResolver';
 import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 
 

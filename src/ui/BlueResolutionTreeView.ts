@@ -39,7 +39,7 @@ export class BlueResolutionTreeView extends ItemView {
     this.console = new BrowserConsole(plugin.settings.debug, 'BlueResolutionTreeView');
     this.icon = 'git-branch';
     this.navigation = false;
-    this.boundResolutionEventHandler = this.handleResolutionEvent.bind(this);
+    this.boundResolutionEventHandler = this.handleResolutionEvent.bind(this) as (event: ResolutionEvent) => void;
   }
 
   getViewType(): string {
@@ -47,7 +47,7 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Blue Resolution Tree';
+    return 'Blue resolution tree';
   }
 
   async onOpen(): Promise<void> {
@@ -170,7 +170,7 @@ export class BlueResolutionTreeView extends ItemView {
 
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
-      .setName('Blue Resolution Tree')
+      .setName('Blue resolution tree')
       .setHeading()
       .addExtraButton(btn =>
         btn
@@ -178,7 +178,7 @@ export class BlueResolutionTreeView extends ItemView {
           .setTooltip('Refresh tree')
           .onClick(() => {
             this.clearTreeData();
-            this.analyzeCurrentFile();
+            void this.analyzeCurrentFile();
           }),
       )
       .addExtraButton(btn =>
@@ -216,7 +216,7 @@ export class BlueResolutionTreeView extends ItemView {
 
   private renderLegend(container: HTMLElement): void {
     const legendEl = container.createDiv({ cls: 'resolution-legend' });
-    legendEl.createEl('h3', { text: 'Status Legend' });
+    legendEl.createEl('h3', { text: 'Status legend' });
 
     const statuses: Array<{ status: ResolutionStatus; label: string }> = [
       { status: 'idle', label: 'Idle' },
@@ -258,7 +258,7 @@ export class BlueResolutionTreeView extends ItemView {
       this.renderTreeNode(treeContainer, rootNode, 0);
     } else {
       treeContainer.createEl('p', {
-        text: 'No resolution data available. Click "Analyze file" to scan for links.',
+        text: 'No resolution data available. Click analyze file to scan for links.',
       });
     }
   }
