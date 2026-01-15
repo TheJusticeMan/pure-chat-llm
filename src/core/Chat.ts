@@ -732,12 +732,15 @@ export class PureChatLLMChat {
    * @param app - The application instance, providing access to necessary utilities and context.
    * @returns A promise that resolves to an object containing the resolved messages with their roles and content.
    */
-  async getChatGPTinstructions(activeFile: TFile, app: App): Promise<ChatRequestOptions> {
+  async getChatGPTinstructions(
+    activeFile: TFile,
+    app: App,
+    context?: import('./BlueFileResolver').ResolutionContext,
+  ): Promise<ChatRequestOptions> {
     this.file = activeFile;
 
-    // Create blue file resolution context if enabled
-    let context: import('./BlueFileResolver').ResolutionContext | undefined;
-    if (this.plugin.settings.blueFileResolution.enabled) {
+    // Use provided context or create new one if blue file resolution is enabled
+    if (!context && this.plugin.settings.blueFileResolution.enabled) {
       const resolver = new BlueFileResolver(this.plugin);
       context = resolver.createContext(activeFile);
     }
@@ -904,11 +907,12 @@ export class PureChatLLMChat {
   completeChatResponse(
     file: TFile,
     streamcallback?: (textFragment: { content: string }) => boolean,
+    context?: import('./BlueFileResolver').ResolutionContext,
   ): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
       return Promise.resolve(this);
     }
-    return this.getChatGPTinstructions(file, this.plugin.app)
+    return this.getChatGPTinstructions(file, this.plugin.app, context)
       .then(options => this.sendChatRequest(options, streamcallback))
       .then(content => {
         this.appendMessage({

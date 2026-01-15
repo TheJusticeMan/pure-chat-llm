@@ -131,16 +131,12 @@ export class BlueFileResolver {
       this.console.log(`[Blue File Resolution] Executing pending chat: ${file.path}`);
 
       // It's a pending chat - execute it
-      // First, resolve any links in the chat messages recursively
-      chat.messages = await Promise.all(
-        chat.messages.map(async msg => ({
-          ...msg,
-          content: await this.resolveLinksInContent(msg.content, file, context, app),
-        })),
-      );
-
+      // Note: We pass the context to completeChatResponse so that getChatGPTinstructions
+      // can use resolveFilesWithImagesAndAudio with proper cycle detection, depth tracking,
+      // and caching. This ensures images and audio files are handled correctly.
+      
       // Execute the chat (without streaming for intermediate resolutions)
-      const response = await chat.completeChatResponse(file, undefined);
+      const response = await chat.completeChatResponse(file, undefined, context);
 
       // Get the assistant's response (second to last message, since completeChatResponse adds an empty user message)
       const assistantMessage =
