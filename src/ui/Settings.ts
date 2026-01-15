@@ -416,7 +416,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
     );
 
     new Setting(containerEl)
-      .setName('Enable Blue File Resolution')
+      .setName('Enable blue file resolution')
       .setDesc(
         'Turn on dynamic chat execution for [[note]] links. When enabled, linked notes that are pending chats will be executed recursively.',
       )
@@ -428,7 +428,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Maximum Resolution Depth')
+      .setName('Maximum resolution depth')
       .setDesc(
         'Maximum depth for recursive chat execution (1-20). Prevents runaway recursion. Default is 5.',
       )
@@ -446,7 +446,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Enable Caching')
+      .setName('Enable caching')
       .setDesc(
         'Cache intermediate chat results during resolution to avoid redundant API calls for the same file within a single invocation.',
       )
@@ -458,7 +458,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Write Intermediate Results')
+      .setName('Write intermediate results')
       .setDesc(
         'Save intermediate chat responses to disk. By default, only the root invocation writes results; nested executions are ephemeral.',
       )
