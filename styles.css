@@ -384,12 +384,13 @@ sup {
 .resolution-node-content[data-has-connector]::before {
   content: '';
   position: absolute;
-  left: 0;
+  left: -1.5em;
   top: 50%;
-  width: 1em;
+  width: 1.5em;
   height: 1px;
   background: rgba(0, 242, 255, 0.5);
   box-shadow: 0 0 4px rgba(0, 242, 255, 0.4);
+  transform: translateY(-50%);
 }
 
 .resolution-node-children {
@@ -403,12 +404,13 @@ sup {
 .resolution-node-children::before {
   content: '';
   position: absolute;
-  left: 0;
+  left: -1px;
   top: 0;
-  bottom: 1em;
+  bottom: 0.5em;
   width: 1px;
   background: rgba(0, 242, 255, 0.5);
   box-shadow: 0 0 4px rgba(0, 242, 255, 0.3);
+  pointer-events: none;
 }
 
 /* Status-based connector colors */

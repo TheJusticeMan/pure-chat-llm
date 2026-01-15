@@ -316,7 +316,7 @@ export class BlueResolutionTreeView extends ItemView {
     const nodeEl = container.createDiv({
       cls: `resolution-node resolution-node-${node.status}`,
     });
-    nodeEl.style.paddingLeft = `${indentLevel * 1.5}em`;
+    // Don't use inline paddingLeft - let CSS handle indentation via .resolution-node-children
 
     const contentEl = nodeEl.createDiv({ cls: 'resolution-node-content' });
 
@@ -331,7 +331,8 @@ export class BlueResolutionTreeView extends ItemView {
         cls: 'resolution-node-expand',
         text: node.isExpanded ? '▼' : '▶',
       });
-      expandBtn.addEventListener('click', () => {
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         node.isExpanded = !node.isExpanded;
         this.renderTree();
       });
@@ -339,16 +340,18 @@ export class BlueResolutionTreeView extends ItemView {
       contentEl.createSpan({ cls: 'resolution-node-expand', text: '  ' });
     }
 
-    // File/folder/image icon with glow
+    // Contextual icon with glow - folder for root/expandable, image for images, file for others
     const iconEl = contentEl.createSpan({ cls: 'resolution-node-icon' });
-    const iconName =
-      indentLevel === 0
-        ? 'folder'
-        : /\.(png|jpe?g)$/i.test(node.fileName)
-          ? 'image'
-          : node.fileName.endsWith('.md')
-            ? 'file'
-            : 'file-text';
+    let iconName = 'file-text';
+    
+    if (indentLevel === 0 || node.children.length > 0) {
+      iconName = 'folder';
+    } else if (/\.(png|jpe?g|gif|svg|webp)$/i.test(node.fileName)) {
+      iconName = 'image';
+    } else if (node.fileName.endsWith('.md')) {
+      iconName = 'file-text';
+    }
+    
     setIcon(iconEl, iconName);
 
     // Status indicator (visual border/spinner element)
