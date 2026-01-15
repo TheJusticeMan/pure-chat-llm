@@ -326,6 +326,12 @@ sup {
   font-size: 0.9em;
 }
 
+/* Style icons in legend */
+.legend-item .clickable-icon {
+  padding: 0.2em;
+  opacity: 0.9;
+}
+
 .resolution-tree-container {
   flex: 1;
   overflow-y: auto;

@@ -5,7 +5,6 @@ import {
   TFile,
   MarkdownView,
   Notice,
-  setIcon,
   ExtraButtonComponent,
 } from 'obsidian';
 import PureChatLLM from '../main';
@@ -229,6 +228,7 @@ export class BlueResolutionTreeView extends ItemView {
     const legendEl = container.createDiv({ cls: 'resolution-legend' });
     legendEl.createEl('h3', { text: 'Status legend' });
 
+    // Status indicators with icons
     const statuses: Array<{ status: ResolutionStatus; label: string }> = [
       { status: 'idle', label: 'Idle' },
       { status: 'resolving', label: 'Resolving' },
@@ -240,8 +240,27 @@ export class BlueResolutionTreeView extends ItemView {
 
     statuses.forEach(({ status, label }) => {
       const itemEl = legendEl.createDiv({ cls: `legend-item legend-${status}` });
-      // Create a status indicator box instead of icon
-      itemEl.createSpan({ cls: `legend-indicator legend-indicator-${status}` });
+      // Create icon indicator
+      new ExtraButtonComponent(itemEl)
+        .setDisabled(true)
+        .setIcon('file-text')
+        .extraSettingsEl.addClass(`status-indicator-${status}`);
+      itemEl.createSpan({ cls: 'legend-label', text: label });
+    });
+
+    // Icon types
+    legendEl.createEl('h3', { text: 'Icons', attr: { style: 'margin-top: 1em;' } });
+
+    const iconTypes = [
+      { icon: 'folder', label: 'Folder / Root' },
+      { icon: 'file-text', label: 'Markdown file' },
+      { icon: 'image', label: 'Image file' },
+      { icon: 'file', label: 'Other file' },
+    ];
+
+    iconTypes.forEach(({ icon, label }) => {
+      const itemEl = legendEl.createDiv({ cls: 'legend-item' });
+      new ExtraButtonComponent(itemEl).setDisabled(true).setIcon(icon);
       itemEl.createSpan({ cls: 'legend-label', text: label });
     });
   }
