@@ -86,7 +86,15 @@ export class BlueFileResolver {
       return app.vault.cachedRead(file);
     }
 
-    // Check for cycles
+    // Check cache for existing Promise first - this handles both deduplication
+    // and avoids false positive cycle detection for siblings/parallel references
+    if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
+      this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
+      return await context.cache.get(file.path)!;
+    }
+
+    // Check for cycles - only if not in cache
+    // True cycles occur when a file references itself in its own resolution chain
     if (context.visitedFiles.has(file.path)) {
       const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
       this.console.error(error);
@@ -99,12 +107,6 @@ export class BlueFileResolver {
       const warning = `[Blue File Resolution] Max depth (${blueFileResolution.maxDepth}) reached at: ${file.path}`;
       this.console.log(warning);
       return app.vault.cachedRead(file);
-    }
-
-    // Check cache for existing Promise
-    if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
-      this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
-      return await context.cache.get(file.path)!;
     }
 
     // Create the resolution Promise and start execution immediately.
