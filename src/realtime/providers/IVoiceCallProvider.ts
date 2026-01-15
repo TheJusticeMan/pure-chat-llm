@@ -1,53 +1,66 @@
+import { ToolDefinition } from '../../types';
+
 /**
  * Configuration for initializing a voice call session
  */
 export interface VoiceCallConfig {
   apiKey: string;
-  endpoint: string;
+  endpoint?: string;
   model?: string;
   instructions?: string;
   voice?: string;
+  tools?: ToolDefinition[];
   [key: string]: unknown;
 }
 
 /**
+ * Interface for tool execution capability
+ */
+export interface IToolExecutor {
+  executeTool(name: string, args: Record<string, unknown>): Promise<unknown>;
+  getToolDefinitions(): ToolDefinition[];
+}
+
+/**
  * Interface for voice call providers
- * Implementations should handle provider-specific WebRTC setup and signaling
+ * Decouples the transport (WebRTC vs WebSocket) from the application logic
  */
 export interface IVoiceCallProvider {
   /**
    * Initializes and starts a voice call session
-   * @param peerConnection The RTCPeerConnection to use
-   * @param localStream The local audio stream
+   * @param localStream The local audio stream from user's microphone
    * @param config Provider-specific configuration
    */
-  startSession(
-    peerConnection: RTCPeerConnection,
-    localStream: MediaStream,
-    config: VoiceCallConfig,
-  ): Promise<void>;
+  connect(localStream: MediaStream, config: VoiceCallConfig): Promise<void>;
 
   /**
-   * Sets up provider-specific data channel for events
-   * @param dataChannel The RTCDataChannel to configure
-   * @param onServerEvent Callback for server events
+   * Disconnects the session and cleans up resources
    */
-  setupDataChannel(dataChannel: RTCDataChannel, onServerEvent?: (event: unknown) => void): void;
+  disconnect(): Promise<void>;
 
   /**
-   * Sends a client event to the provider
-   * @param dataChannel The data channel to send through
-   * @param event The event to send
+   * Sends a generic event to the provider
+   * @param event The event payload
    */
-  sendEvent(dataChannel: RTCDataChannel, event: unknown): void;
-
-  /**
-   * Cleans up provider-specific resources
-   */
-  cleanup(): Promise<void>;
+  send(event: unknown): void;
 
   /**
    * Gets the provider name
    */
   getName(): string;
+
+  /**
+   * Callback for when a remote audio stream is received
+   */
+  onRemoteTrack(callback: (stream: MediaStream) => void): void;
+
+  /**
+   * Callback for when a server event is received
+   */
+  onMessage(callback: (event: unknown) => void): void;
+  
+  /**
+   * Callback for error handling
+   */
+  onError(callback: (error: Error) => void): void;
 }

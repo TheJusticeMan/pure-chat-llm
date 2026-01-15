@@ -3,13 +3,11 @@ import { CallState } from '../types';
 import { IVoiceCallProvider, VoiceCallConfig } from './providers/IVoiceCallProvider';
 
 /**
- * Manages WebRTC voice call connections using a provider pattern.
- * Supports multiple voice call providers through the IVoiceCallProvider interface.
+ * Manages voice call sessions using a provider pattern.
+ * Handles microphone access, UI state, and delegates transport to the provider.
  */
 export class VoiceCall {
-  private peerConnection: RTCPeerConnection | null = null;
   private localStream: MediaStream | null = null;
-  private dataChannel: RTCDataChannel | null = null;
   private state: CallState = {
     status: 'idle',
     isMuted: false,
@@ -23,22 +21,32 @@ export class VoiceCall {
     private onStateChange: (state: CallState) => void,
     private onServerEvent?: (event: unknown) => void,
     private onRemoteTrack?: (stream: MediaStream) => void,
-    private dataChannelName: string = 'oai-events',
-  ) {}
+  ) {
+    // Wire up provider callbacks
+    this.provider.onRemoteTrack(stream => {
+      if (this.onRemoteTrack) {
+        this.onRemoteTrack(stream);
+      }
+    });
+
+    this.provider.onMessage(event => {
+      if (this.onServerEvent) {
+        this.onServerEvent(event);
+      }
+    });
+    
+    this.provider.onError(error => {
+        this.updateState({ status: 'error', error: error.message });
+        new Notice(`Call error: ${error.message}`);
+    });
+  }
 
   /**
-   * Initializes and starts a voice call using the configured provider
+   * Initializes and starts a voice call
    */
   async startCall(): Promise<void> {
     try {
-      this.updateState({ status: 'connecting' });
-
-      // Create peer connection
-      this.peerConnection = new RTCPeerConnection();
-
-      // Set up data channel for sending and receiving events
-      this.dataChannel = this.peerConnection.createDataChannel(this.dataChannelName);
-      this.provider.setupDataChannel(this.dataChannel, this.onServerEvent);
+      this.updateState({ status: 'connecting', error: undefined });
 
       // Request microphone access
       this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -52,64 +60,37 @@ export class VoiceCall {
 
       this.state.isLocalAudioEnabled = true;
 
-      // Add local audio track for microphone input
-      this.localStream.getTracks().forEach(track => {
-        if (this.peerConnection && this.localStream) {
-          this.peerConnection.addTrack(track, this.localStream);
-        }
-      });
+      // Connect using the provider
+      await this.provider.connect(this.localStream, this.config);
 
-      // Handle remote audio tracks
-      this.peerConnection.ontrack = event => {
-        if (event.streams && event.streams[0]) {
-          const stream = event.streams[0];
+      this.updateState({ status: 'connected' });
+      new Notice(`Call started with ${this.provider.getName()}`);
 
-          // Notify UI layer of remote track
-          if (this.onRemoteTrack) {
-            this.onRemoteTrack(stream);
-          }
-
-          this.updateState({ status: 'connected' });
-        }
-      };
-
-      // Handle connection state changes
-      this.peerConnection.onconnectionstatechange = () => {
-        const state = this.peerConnection?.connectionState;
-        if (state === 'disconnected' || state === 'failed') {
-          this.updateState({ status: 'disconnected' });
-        } else if (state === 'connected') {
-          this.updateState({ status: 'connected' });
-        }
-      };
-
-      // Use provider to establish session
-      await this.provider.startSession(this.peerConnection, this.localStream, this.config);
-
-      // If we are still in connecting state, transition to connected
-      // This is necessary for providers like Gemini that don't use standard WebRTC track events
-      if (this.state.status === 'connecting') {
-        this.updateState({ status: 'connected' });
-      }
     } catch (error) {
       console.error('Failed to start call:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to start voice call';
       this.updateState({ status: 'error', error: errorMessage });
 
+      // Clean up stream if acquired but connection failed
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => track.stop());
+        this.localStream = null;
+      }
+
       if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
         new Notice('Microphone permission denied. Please allow microphone access.');
       } else {
-        new Notice(`Call error: ${errorMessage}`);
+        new Notice(`Call connection failed: ${errorMessage}`);
       }
     }
   }
 
   /**
-   * Sends a client event to the provider via data channel
+   * Sends a client event to the provider
    */
   sendEvent(event: unknown): void {
-    if (this.dataChannel) {
-      this.provider.sendEvent(this.dataChannel, event);
+    if (this.state.status === 'connected') {
+      this.provider.send(event);
     }
   }
 
@@ -133,25 +114,13 @@ export class VoiceCall {
    */
   async endCall(): Promise<void> {
     try {
-      // Provider-specific cleanup
-      await this.provider.cleanup();
-
-      // Close data channel
-      if (this.dataChannel) {
-        this.dataChannel.close();
-        this.dataChannel = null;
-      }
+      // Provider cleanup
+      await this.provider.disconnect();
 
       // Stop local tracks
       if (this.localStream) {
         this.localStream.getTracks().forEach(track => track.stop());
         this.localStream = null;
-      }
-
-      // Close peer connection
-      if (this.peerConnection) {
-        this.peerConnection.close();
-        this.peerConnection = null;
       }
 
       this.updateState({
@@ -164,14 +133,9 @@ export class VoiceCall {
       new Notice('Voice call ended');
     } catch (error) {
       console.error('Error ending call:', error);
+      // Even if cleanup fails, ensure UI is reset
+       this.updateState({ status: 'idle' });
     }
-  }
-
-  /**
-   * Gets the peer connection for accessing remote tracks
-   */
-  getPeerConnection(): RTCPeerConnection | null {
-    return this.peerConnection;
   }
 
   /**

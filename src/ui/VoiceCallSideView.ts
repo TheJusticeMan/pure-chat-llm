@@ -3,21 +3,21 @@ import { VoiceCall } from '../realtime/VoiceCall';
 import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
 import { GeminiLiveProvider } from '../realtime/providers/GeminiLiveProvider';
 import { PureChatLLMChat } from '../core/Chat';
-import { CallState, VOICE_CALL_VIEW_TYPE } from '../types';
+import { CallState, VOICE_CALL_VIEW_TYPE, ToolDefinition } from '../types';
+import { VoiceCallConfig } from '../realtime/providers/IVoiceCallProvider';
 import PureChatLLM from '../main';
 import { EmptyApiKey } from 'src/assets/constants';
+import { ChatToolExecutor } from '../realtime/ChatToolExecutor';
 
 type VoiceProvider = 'openai' | 'gemini';
 
 /**
  * Side panel view for managing voice calls in Obsidian.
- * Provides UI controls for starting/ending calls, muting, and displaying call status.
- * Integrates with PureChatLLMChat to enable tool access during voice conversations.
- * Supports multiple providers: OpenAI Realtime API and Google Gemini Live API.
  */
 export class VoiceCallSideView extends ItemView {
   private voiceCall: VoiceCall | null = null;
   private chat: PureChatLLMChat | null = null;
+  private toolExecutor: ChatToolExecutor | null = null;
   private selectedProvider: VoiceProvider = 'openai';
   private callState: CallState = {
     status: 'idle',
@@ -48,35 +48,21 @@ export class VoiceCallSideView extends ItemView {
     this.renderView();
   }
 
-  /**
-   * Renders the main view UI
-   */
   private renderView(): void {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass('voice-call-view');
 
-    // Header section
     this.renderHeader(contentEl);
-
-    // Status section
     this.renderStatus(contentEl);
-
-    // Controls section
     this.renderControls(contentEl);
-
-    // Remote audio element (hidden) - create early so it's ready for playback
     this.createRemoteAudioElement(contentEl);
 
-    // Instructions
     if (this.callState.status === 'idle') {
       this.renderInstructions(contentEl);
     }
   }
 
-  /**
-   * Renders the header with title and settings
-   */
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Voice call')
@@ -89,12 +75,8 @@ export class VoiceCallSideView extends ItemView {
       );
   }
 
-  /**
-   * Renders the call status display
-   */
   private renderStatus(container: HTMLElement): void {
     const statusContainer = container.createDiv({ cls: 'voice-call-status' });
-
     const statusIcon = this.getStatusIcon(this.callState.status);
     const statusText = this.getStatusText(this.callState.status);
 
@@ -109,23 +91,11 @@ export class VoiceCallSideView extends ItemView {
         text: `Error: ${this.callState.error}`,
       });
     }
-
-    // Participants
-    if (this.callState.remoteParticipants.length > 0) {
-      statusContainer.createEl('div', { cls: 'participants' }, el => {
-        el.createEl('strong', { text: 'Participants: ' });
-        el.createEl('span', { text: this.callState.remoteParticipants.join(', ') });
-      });
-    }
   }
 
-  /**
-   * Renders the control buttons
-   */
   private renderControls(container: HTMLElement): void {
     const controlsContainer = container.createDiv({ cls: 'voice-call-controls' });
 
-    // Start/Join Call button
     if (this.callState.status === 'idle' || this.callState.status === 'disconnected') {
       new Setting(controlsContainer)
         .addDropdown(dropdown =>
@@ -144,15 +114,9 @@ export class VoiceCallSideView extends ItemView {
             .onClick(() => {
               void this.startCall();
             }),
-        )
-        .addButton(btn =>
-          btn.setButtonText('Join call').onClick(() => {
-            void this.joinCall();
-          }),
         );
     }
 
-    // Error state - show retry button
     if (this.callState.status === 'error') {
       new Setting(controlsContainer).addButton(btn =>
         btn
@@ -165,7 +129,6 @@ export class VoiceCallSideView extends ItemView {
       );
     }
 
-    // Active call controls
     if (this.callState.status === 'connected' || this.callState.status === 'connecting') {
       new Setting(controlsContainer)
         .addButton(btn =>
@@ -186,47 +149,21 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
-  /**
-   * Renders usage instructions
-   */
   private renderInstructions(container: HTMLElement): void {
     const instructionsEl = container.createDiv({ cls: 'voice-call-instructions' });
-
     new Setting(instructionsEl).setName('How to use').setHeading();
+    instructionsEl.createEl('p', { text: '1. Click "start call" to initiate a new voice call' });
+    instructionsEl.createEl('p', { text: '2. Use "mute" to toggle your microphone' });
+    instructionsEl.createEl('p', { text: '3. Click "end call" to disconnect' });
 
-    instructionsEl.createEl('p', {
-      text: '1. Click "start call" to initiate a new voice call',
-    });
-    instructionsEl.createEl('p', {
-      text: '2. Click "join call" to join an existing call',
-    });
-    instructionsEl.createEl('p', {
-      text: '3. Use "mute" to toggle your microphone',
-    });
-    instructionsEl.createEl('p', {
-      text: '4. Click "end call" to disconnect',
-    });
-
-    // Show tool information if agent mode is enabled
     if (this.plugin.settings.agentMode) {
       instructionsEl.createEl('p', {
         cls: 'tool-info',
-        text: 'Agent mode enabled: AI can access tools for file management, search, and other operations.',
+        text: 'Agent mode enabled: AI can access tools.',
       });
     }
-
-    // Provider-specific notes
-    const providerName =
-      this.selectedProvider === 'openai' ? 'OpenAI Realtime API' : 'Google Gemini Live API';
-    instructionsEl.createEl('p', {
-      cls: 'voice-call-note',
-      text: `Using ${providerName}. Microphone permissions are required for voice calls.`,
-    });
   }
 
-  /**
-   * Creates hidden audio element for remote stream playback
-   */
   private createRemoteAudioElement(container: HTMLElement): void {
     if (!this.remoteAudioElement) {
       this.remoteAudioElement = container.createEl('audio', {
@@ -236,209 +173,133 @@ export class VoiceCallSideView extends ItemView {
         },
       });
       this.remoteAudioElement.setCssProps({ display: 'none' });
-
-      // Add error listener for debugging playback issues
       this.remoteAudioElement.addEventListener('error', e => {
         console.error('Audio playback error:', e);
       });
     }
   }
 
-  /**
-   * Starts a new voice call
-   */
   private async startCall(): Promise<void> {
     try {
-      // Ensure audio element is created before starting call
       if (!this.remoteAudioElement) {
         this.createRemoteAudioElement(this.contentEl);
       }
 
-      // Get API key for selected provider
-      let providerEndpoint;
-
-      if (this.selectedProvider === 'openai') {
-        // Find OpenAI endpoint in settings
-        providerEndpoint = this.plugin.settings.endpoints.find(ep => ep.name === 'OpenAI');
-        if (!providerEndpoint) {
-          // Fall back to current endpoint
+      // 1. Get API Key
+      let providerEndpoint = this.plugin.settings.endpoints.find(ep => 
+        ep.name === (this.selectedProvider === 'openai' ? 'OpenAI' : 'Gemini')
+      );
+      if (!providerEndpoint) {
           providerEndpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-        }
+      }
+
+      if (!providerEndpoint?.apiKey || providerEndpoint.apiKey === EmptyApiKey) {
+        throw new Error(`No API key for ${this.selectedProvider}. Check settings.`);
+      }
+
+      // 2. Setup Tool Executor if Agent Mode
+      let tools: ToolDefinition[] = [];
+      if (this.plugin.settings.agentMode) {
+        this.chat = new PureChatLLMChat(this.plugin);
+        this.toolExecutor = new ChatToolExecutor(this.chat);
+        tools = this.toolExecutor.getToolDefinitions();
+        new Notice('Initializing with tool access');
       } else {
-        // Find Gemini endpoint in settings
-        providerEndpoint = this.plugin.settings.endpoints.find(ep => ep.name === 'Gemini');
-        if (!providerEndpoint) {
-          // Fall back to current endpoint
-          providerEndpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-        }
+        this.chat = null;
+        this.toolExecutor = null;
+        new Notice('Initializing voice call');
       }
 
-      if (
-        !providerEndpoint ||
-        !providerEndpoint.apiKey ||
-        providerEndpoint.apiKey === EmptyApiKey
-      ) {
-        const providerName = this.selectedProvider === 'openai' ? 'OpenAI' : 'Gemini';
-        throw new Error(
-          `No API key configured for ${providerName}. Please add an endpoint named "${providerName}" in settings with a valid API key.`,
-        );
-      }
+      // 3. Configure Provider
+      const instructions = this.plugin.settings.agentMode
+        ? 'You are a helpful AI assistant with access to tools in Obsidian.'
+        : 'You are a helpful assistant.';
 
-      const apiKey = providerEndpoint.apiKey;
-
-      // Initialize provider based on selection
       let provider;
-      let sessionEndpoint: string;
-      let model: string;
-      let instructions: string;
+      const config: VoiceCallConfig = {
+        apiKey: providerEndpoint.apiKey,
+        instructions,
+        tools: tools,
+      };
 
       if (this.selectedProvider === 'openai') {
-        // OpenAI Realtime API
-        sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
-        model = 'gpt-realtime';
-        instructions = this.plugin.settings.agentMode
-          ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
-          : 'You are a helpful assistant.';
-
-        if (this.plugin.settings.agentMode) {
-          this.chat = new PureChatLLMChat(this.plugin);
-          provider = new OpenAIRealtimeProvider(this.chat);
-          new Notice('Initializing voice call with tool access');
-        } else {
-          provider = new OpenAIRealtimeProvider();
-          new Notice('Initializing voice call');
-        }
+        provider = new OpenAIRealtimeProvider(this.toolExecutor || undefined);
+        config.endpoint = 'https://api.openai.com/v1/realtime/calls';
+        config.model = 'gpt-realtime';
       } else {
-        // Google Gemini Live API
-        // Don't pass endpoint here - let the provider construct it with model param
-        sessionEndpoint = '';
-        model = 'models/gemini-2.0-flash-exp';
-        instructions = this.plugin.settings.agentMode
-          ? 'You are a helpful AI assistant with access to tools for file management, search, and other operations in Obsidian. Use these tools when needed to help the user.'
-          : 'You are a helpful assistant.';
-
-        if (this.plugin.settings.agentMode) {
-          this.chat = new PureChatLLMChat(this.plugin);
-          provider = new GeminiLiveProvider(this.chat);
-          new Notice('Initializing voice call with tool access');
-        } else {
-          provider = new GeminiLiveProvider();
-          new Notice('Initializing voice call');
-        }
+        provider = new GeminiLiveProvider(this.toolExecutor || undefined);
+        config.model = 'models/gemini-2.0-flash-exp';
+        config.voice = 'Puck';
       }
 
-      // Create voice call with provider
+      // 4. Create Voice Call
       this.voiceCall = new VoiceCall(
         provider,
-        {
-          apiKey,
-          endpoint: sessionEndpoint,
-          model,
-          instructions,
-          voice: this.selectedProvider === 'gemini' ? 'Puck' : undefined,
-        },
+        config,
         state => this.onCallStateChange(state),
         undefined,
-        stream => this.handleRemoteStream(stream),
+        stream => this.handleRemoteStream(stream)
       );
 
       await this.voiceCall.startCall();
+
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Failed to start call:', errorMsg);
-      new Notice('Failed to start voice call');
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Failed to start call:', msg);
+      new Notice(`Failed to start call: ${msg}`);
+      this.callState.error = msg;
+      this.renderView();
     }
   }
 
-  /**
-   * Handles incoming remote audio stream
-   */
   private handleRemoteStream(stream: MediaStream): void {
     if (this.remoteAudioElement) {
       this.remoteAudioElement.srcObject = stream;
-
-      // Try to play explicitly in case autoplay doesn't work
-      this.remoteAudioElement
-        .play()
-        .then(() => {
-          new Notice('Audio playback started');
-        })
-        .catch(err => {
-          console.error('Failed to start audio playback:', err);
-          new Notice('Failed to start audio playback. Click to enable audio.');
-        });
+      this.remoteAudioElement.play().catch(err => {
+        console.error('Auto-play failed:', err);
+        new Notice('Click to enable audio.');
+      });
     }
   }
 
-  /**
-   * Joins an existing voice call
-   */
-  private async joinCall(): Promise<void> {
-    // Join is similar to start for now
-    await this.startCall();
-  }
-
-  /**
-   * Toggles microphone mute
-   */
   private toggleMute(): void {
-    if (this.voiceCall) {
-      this.voiceCall.toggleMute();
-    }
+    this.voiceCall?.toggleMute();
   }
 
-  /**
-   * Ends the current voice call
-   */
   private async endCall(): Promise<void> {
     if (this.voiceCall) {
-      try {
-        await this.voiceCall.endCall();
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Failed to end call:', errorMsg);
-      }
+      await this.voiceCall.endCall();
       this.voiceCall = null;
     }
   }
 
-  /**
-   * Handles call state changes
-   */
   private onCallStateChange(state: CallState): void {
     this.callState = state;
-
-    // Re-render the view
     this.renderView();
   }
 
-  /**
-   * Resets the call state to idle, clearing any errors
-   */
   private resetCallState(): void {
-    // Clean up any existing voice call
     if (this.voiceCall) {
-      this.voiceCall.endCall().catch(err => {
-        console.error('Error during cleanup:', err);
-      });
+      void this.voiceCall.endCall();
       this.voiceCall = null;
     }
-
-    // Reset state to idle
     this.callState = {
       status: 'idle',
       isMuted: false,
       isLocalAudioEnabled: false,
       remoteParticipants: [],
     };
-
-    // Re-render the view
     this.renderView();
   }
 
-  /**
-   * Gets status icon for display
-   */
+  async onClose(): Promise<void> {
+    await this.endCall();
+    if (this.remoteAudioElement) {
+      this.remoteAudioElement.srcObject = null;
+      this.remoteAudioElement = null;
+    }
+  }
+
   private getStatusIcon(status: CallState['status']): string {
     switch (status) {
       case 'idle':
@@ -456,9 +317,6 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
-  /**
-   * Gets human-readable status text
-   */
   private getStatusText(status: CallState['status']): string {
     switch (status) {
       case 'idle':
@@ -473,25 +331,6 @@ export class VoiceCallSideView extends ItemView {
         return 'Connection error';
       default:
         return 'Unknown';
-    }
-  }
-
-  async onClose(): Promise<void> {
-    // Clean up voice call if active
-    if (this.voiceCall) {
-      try {
-        await this.voiceCall.endCall();
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Failed to cleanup voice call:', errorMsg);
-      }
-      this.voiceCall = null;
-    }
-
-    // Clean up audio element
-    if (this.remoteAudioElement) {
-      this.remoteAudioElement.srcObject = null;
-      this.remoteAudioElement = null;
     }
   }
 }

@@ -1,190 +1,201 @@
 import { Notice } from 'obsidian';
-import { PureChatLLMChat } from '../../core/Chat';
-import { IVoiceCallProvider, VoiceCallConfig } from './IVoiceCallProvider';
+import { IToolExecutor, IVoiceCallProvider, VoiceCallConfig } from './IVoiceCallProvider';
+
+interface OpenAIEvent {
+  type: string;
+  call_id?: string;
+  name?: string;
+  arguments?: string;
+  [key: string]: unknown;
+}
 
 /**
  * OpenAI Realtime API provider implementation
- * Implements the unified interface pattern with direct SDP exchange
+ * Manages WebRTC connection internally
  */
 export class OpenAIRealtimeProvider implements IVoiceCallProvider {
+  private peerConnection: RTCPeerConnection | null = null;
+  private dataChannel: RTCDataChannel | null = null;
   private sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
-  private chat: PureChatLLMChat | null = null;
+  
+  // Callbacks
+  private onRemoteTrackCallback?: (stream: MediaStream) => void;
+  private onMessageCallback?: (event: unknown) => void;
+  private onErrorCallback?: (error: Error) => void;
 
-  constructor(chat?: PureChatLLMChat) {
-    this.chat = chat || null;
-  }
+  constructor(private toolExecutor?: IToolExecutor) {}
 
   getName(): string {
-    return this.chat ? 'OpenAI Realtime API (with tools)' : 'OpenAI Realtime API';
+    return this.toolExecutor ? 'OpenAI Realtime API (Tools)' : 'OpenAI Realtime API';
   }
 
-  /**
-   * Starts a voice call session with OpenAI Realtime API
-   */
-  async startSession(
-    peerConnection: RTCPeerConnection,
-    localStream: MediaStream,
-    config: VoiceCallConfig,
-  ): Promise<void> {
-    // Create offer and set local description
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
+  onRemoteTrack(callback: (stream: MediaStream) => void): void {
+    this.onRemoteTrackCallback = callback;
+  }
 
-    // Prepare session configuration as per OpenAI docs
-    const sessionConfig: Record<string, unknown> = {
-      type: 'realtime',
-      model: config.model || 'gpt-realtime',
-      instructions: config.instructions || 'You are a helpful assistant.',
-      ...(config.voice && { audio: { output: { voice: config.voice } } }),
-    };
+  onMessage(callback: (event: unknown) => void): void {
+    this.onMessageCallback = callback;
+  }
+  
+  onError(callback: (error: Error) => void): void {
+    this.onErrorCallback = callback;
+  }
 
-    // Add tool definitions if chat is available
-    if (this.chat && this.chat.plugin.settings.agentMode) {
-      const toolDefinitions = this.chat.toolregistry.getAllDefinitions();
-      if (toolDefinitions.length > 0) {
-        // Convert tool definitions to OpenAI Realtime API format
-        sessionConfig.tools = toolDefinitions.map(tool => ({
+  async connect(localStream: MediaStream, config: VoiceCallConfig): Promise<void> {
+    try {
+      this.peerConnection = new RTCPeerConnection();
+
+      // Setup audio tracks
+      localStream.getTracks().forEach(track => {
+        this.peerConnection?.addTrack(track, localStream);
+      });
+
+      // Handle remote tracks
+      this.peerConnection.ontrack = event => {
+        if (event.streams && event.streams[0] && this.onRemoteTrackCallback) {
+          this.onRemoteTrackCallback(event.streams[0]);
+        }
+      };
+
+      // Create Data Channel
+      this.dataChannel = this.peerConnection.createDataChannel('oai-events');
+      this.setupDataChannel(this.dataChannel);
+
+      // Create Offer
+      const offer = await this.peerConnection.createOffer();
+      await this.peerConnection.setLocalDescription(offer);
+
+      // Prepare session config
+      const sessionConfig: Record<string, unknown> = {
+        type: 'realtime',
+        model: config.model || 'gpt-realtime',
+        instructions: config.instructions || 'You are a helpful assistant.',
+        ...(config.voice && { audio: { output: { voice: config.voice } } }),
+      };
+
+      // Add tools if available
+      if (this.toolExecutor && config.tools && config.tools.length > 0) {
+        sessionConfig.tools = config.tools.map(tool => ({
           type: tool.type,
           name: tool.function.name,
           description: tool.function.description,
           parameters: tool.function.parameters,
         }));
       }
+
+      // Exchange SDP
+      const formData = new FormData();
+      formData.append('sdp', offer.sdp || '');
+      formData.append('session', JSON.stringify(sessionConfig));
+
+      // eslint-disable-next-line no-restricted-globals
+      const response = await fetch(config.endpoint || this.sessionEndpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI API Error: ${response.status} - ${errorText}`);
+      }
+
+      const answerSdp = await response.text();
+      await this.peerConnection.setRemoteDescription({
+        type: 'answer',
+        sdp: answerSdp,
+      });
+
+    } catch (error) {
+      if (this.onErrorCallback && error instanceof Error) {
+        this.onErrorCallback(error);
+      }
+      throw error;
     }
-
-    // Create FormData with SDP and session config (unified interface pattern)
-    const formData = new FormData();
-    formData.append('sdp', offer.sdp || '');
-    formData.append('session', JSON.stringify(sessionConfig));
-
-    // Note: Using native fetch instead of requestUrl because:
-    // 1. OpenAI's unified interface requires multipart/form-data
-    // 2. requestUrl may not properly handle FormData body
-    // eslint-disable-next-line no-restricted-globals
-    const response = await fetch(config.endpoint || this.sessionEndpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create session: ${response.status} - ${errorText}`);
-    }
-
-    // Set remote description from OpenAI's answer
-    const answerSdp = await response.text();
-    const answer: RTCSessionDescriptionInit = {
-      type: 'answer',
-      sdp: answerSdp,
-    };
-    await peerConnection.setRemoteDescription(answer);
-
-    new Notice(this.chat ? 'Voice call started with tool access' : 'Voice call started');
   }
 
-  /**
-   * Sets up the OpenAI-specific data channel ('oai-events')
-   */
-  setupDataChannel(dataChannel: RTCDataChannel, onServerEvent?: (event: unknown) => void): void {
-    dataChannel.addEventListener('open', () => {
-      new Notice('Connected to OpenAI realtime API');
+  disconnect(): Promise<void> {
+    if (this.dataChannel) {
+      this.dataChannel.close();
+      this.dataChannel = null;
+    }
+    if (this.peerConnection) {
+      this.peerConnection.close();
+      this.peerConnection = null;
+    }
+    return Promise.resolve();
+  }
+
+  send(event: unknown): void {
+    if (this.dataChannel && this.dataChannel.readyState === 'open') {
+      this.dataChannel.send(JSON.stringify(event));
+    }
+  }
+
+  private setupDataChannel(dc: RTCDataChannel): void {
+    dc.addEventListener('open', () => {
+       // Channel ready
     });
 
-    dataChannel.addEventListener('message', event => {
+    dc.addEventListener('message', event => {
       void (async () => {
         try {
-          const eventData = String(event.data);
-          const serverEvent = JSON.parse(eventData) as {
-            type: string;
-            [key: string]: unknown;
-          };
+          const data = JSON.parse(event.data as string) as OpenAIEvent;
           
-          // Handle tool calls
-          if (serverEvent.type === 'response.function_call_arguments.done' && this.chat) {
-            await this.handleToolCall(serverEvent, dataChannel);
+          if (data.type === 'response.function_call_arguments.done' && this.toolExecutor) {
+            await this.handleToolCall(data);
           }
           
-          if (onServerEvent) {
-            onServerEvent(serverEvent);
+          if (this.onMessageCallback) {
+            this.onMessageCallback(data);
           }
-        } catch (error) {
-          console.error('Failed to parse server event:', error);
+        } catch (e) {
+          console.error('Failed to parse OpenAI event:', e);
         }
       })();
     });
-
-    dataChannel.addEventListener('error', error => {
-      console.error('Data channel error:', error);
-    });
-
-    dataChannel.addEventListener('close', () => {
-      // Connection closed
-    });
   }
 
-  /**
-   * Handles tool call execution from the AI
-   */
-  private async handleToolCall(
-    serverEvent: { type: string; [key: string]: unknown },
-    dataChannel: RTCDataChannel,
-  ): Promise<void> {
-    if (!this.chat) return;
+  private async handleToolCall(event: OpenAIEvent): Promise<void> {
+    if (!this.toolExecutor) return;
 
     try {
-      const callId = serverEvent.call_id as string;
-      const functionName = serverEvent.name as string;
-      const functionArgs = serverEvent.arguments as string;
+      const callId = event.call_id;
+      const name = event.name;
+      const args = JSON.parse(event.arguments || '{}') as Record<string, unknown>;
 
-      // Parse arguments
-      const args = JSON.parse(functionArgs) as Record<string, unknown>;
+      if (!name) return;
 
-      // Execute tool via the chat's tool registry
-      new Notice(`Executing tool: ${functionName}...`);
-      const result = await this.chat.toolregistry.executeTool(functionName, args);
+      new Notice(`Executing tool: ${name}`);
+      const result = await this.toolExecutor.executeTool(name, args);
 
-      // Send tool result back to OpenAI
+      // Send result back
       const toolResponse = {
         type: 'conversation.item.create',
         item: {
           type: 'function_call_output',
           call_id: callId,
-          output: result,
+          output: JSON.stringify(result),
         },
       };
+      this.send(toolResponse);
+      this.send({ type: 'response.create' }); // Trigger response
 
-      this.sendEvent(dataChannel, toolResponse);
-
-      // Request response generation
-      this.sendEvent(dataChannel, {
-        type: 'response.create',
-      });
-
-      new Notice(`Tool ${functionName} executed successfully`);
     } catch (error) {
-      console.error('Tool execution error:', error);
-      new Notice(
-        `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      console.error(`Tool execution failed:`, error);
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+       const toolResponse = {
+        type: 'conversation.item.create',
+        item: {
+          type: 'function_call_output',
+          call_id: event.call_id,
+          output: JSON.stringify({ error: errMsg }),
+        },
+      };
+      this.send(toolResponse);
+      this.send({ type: 'response.create' });
     }
-  }
-
-  /**
-   * Sends a client event to the OpenAI Realtime API via data channel
-   */
-  sendEvent(dataChannel: RTCDataChannel, event: unknown): void {
-    if (dataChannel.readyState === 'open') {
-      dataChannel.send(JSON.stringify(event));
-    }
-  }
-
-  /**
-   * Cleans up OpenAI-specific resources
-   */
-  async cleanup(): Promise<void> {
-    // No special cleanup needed for OpenAI
   }
 }
