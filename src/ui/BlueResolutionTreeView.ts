@@ -39,7 +39,9 @@ export class BlueResolutionTreeView extends ItemView {
     this.console = new BrowserConsole(plugin.settings.debug, 'BlueResolutionTreeView');
     this.icon = 'git-branch';
     this.navigation = false;
-    this.boundResolutionEventHandler = this.handleResolutionEvent.bind(this) as (event: ResolutionEvent) => void;
+    this.boundResolutionEventHandler = this.handleResolutionEvent.bind(this) as (
+      event: ResolutionEvent,
+    ) => void;
   }
 
   getViewType(): string {
@@ -317,7 +319,7 @@ export class BlueResolutionTreeView extends ItemView {
     nodeEl.style.paddingLeft = `${indentLevel * 1.5}em`;
 
     const contentEl = nodeEl.createDiv({ cls: 'resolution-node-content' });
-    
+
     // Add data attribute for tree connector styling
     if (indentLevel > 0) {
       contentEl.setAttribute('data-has-connector', 'true');
@@ -337,10 +339,16 @@ export class BlueResolutionTreeView extends ItemView {
       contentEl.createSpan({ cls: 'resolution-node-expand', text: '  ' });
     }
 
-    // File/folder icon with glow
+    // File/folder/image icon with glow
     const iconEl = contentEl.createSpan({ cls: 'resolution-node-icon' });
-    const hasChildren = node.children.length > 0;
-    const iconName = hasChildren ? 'folder' : 'file-text';
+    const iconName =
+      indentLevel === 0
+        ? 'folder'
+        : /\.(png|jpe?g)$/i.test(node.fileName)
+          ? 'image'
+          : node.fileName.endsWith('.md')
+            ? 'file'
+            : 'file-text';
     setIcon(iconEl, iconName);
 
     // Status indicator (visual border/spinner element)
