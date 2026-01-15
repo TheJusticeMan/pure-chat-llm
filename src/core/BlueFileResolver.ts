@@ -12,8 +12,8 @@ export interface ResolutionContext {
   visitedFiles: Set<string>;
   /** Current depth in the resolution tree */
   currentDepth: number;
-  /** Cache of resolved chat responses keyed by file path */
-  cache: Map<string, string>;
+  /** Cache of resolved chat responses keyed by file path (stores Promises for parallel resolution) */
+  cache: Map<string, Promise<string>>;
   /** The root file that initiated the resolution */
   rootFile: TFile;
 }
@@ -43,7 +43,7 @@ export class BlueFileResolver {
     return {
       visitedFiles: new Set<string>(),
       currentDepth: 0,
-      cache: new Map<string, string>(),
+      cache: new Map<string, Promise<string>>(),
       rootFile,
     };
   }
@@ -101,12 +101,47 @@ export class BlueFileResolver {
       return app.vault.cachedRead(file);
     }
 
-    // Check cache
+    // Check cache for existing Promise
     if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
       this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
-      return context.cache.get(file.path)!;
+      return await context.cache.get(file.path)!;
     }
 
+    // Create the resolution Promise and store it in cache immediately
+    const resolutionPromise = this.resolveFileInternal(file, context, app);
+    
+    // Store Promise in cache for concurrent resolution deduplication
+    if (blueFileResolution.enableCaching) {
+      context.cache.set(file.path, resolutionPromise);
+    }
+
+    try {
+      // Await the resolution
+      const result = await resolutionPromise;
+      return result;
+    } catch (error) {
+      // On error, remove the failed Promise from cache to allow retry
+      if (blueFileResolution.enableCaching) {
+        context.cache.delete(file.path);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Internal method that performs the actual file resolution logic.
+   * Separated from resolveFile to enable Promise-based caching.
+   *
+   * @param file - The file to resolve
+   * @param context - The resolution context
+   * @param app - The Obsidian app instance
+   * @returns The resolved content
+   */
+  private async resolveFileInternal(
+    file: TFile,
+    context: ResolutionContext,
+    app: App,
+  ): Promise<string> {
     // Mark file as being visited
     context.visitedFiles.add(file.path);
     context.currentDepth++;
@@ -147,13 +182,8 @@ export class BlueFileResolver {
 
       const resolvedContent = assistantMessage?.content || '';
 
-      // Cache the result
-      if (blueFileResolution.enableCaching) {
-        context.cache.set(file.path, resolvedContent);
-      }
-
       // Write intermediate results if configured (and not root file)
-      if (blueFileResolution.writeIntermediateResults && file.path !== context.rootFile.path) {
+      if (this.plugin.settings.blueFileResolution.writeIntermediateResults && file.path !== context.rootFile.path) {
         await app.vault.modify(file, response.markdown);
         this.console.log(`[Blue File Resolution] Wrote intermediate result to: ${file.path}`);
       }
