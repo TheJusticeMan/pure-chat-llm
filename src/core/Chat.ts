@@ -439,8 +439,8 @@ export class PureChatLLMChat {
   ): Promise<ChatRequestOptions> {
     this.file = activeFile;
 
-    // Create resolver instance
-    const resolver = new BlueFileResolver(this.plugin);
+    // Use the plugin's shared resolver instance
+    const resolver = this.plugin.blueFileResolver;
     
     // Use provided context or create new one if blue file resolution is enabled
     if (!context && this.plugin.settings.blueFileResolution.enabled) {
@@ -509,7 +509,7 @@ export class PureChatLLMChat {
     this.file = this.file || this.plugin.app.workspace.getActiveFile();
 
     if (this.plugin.settings.resolveFilesForChatAnalysis) {
-      const resolver = new BlueFileResolver(this.plugin);
+      const resolver = this.plugin.blueFileResolver;
       this.messages = await Promise.all(
         this.messages.map(async ({ role, content }) => ({
           role,
