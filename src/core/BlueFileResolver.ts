@@ -31,10 +31,12 @@ export interface ResolutionContext {
  *
  * Cycle Detection vs Caching:
  * - visitedFiles tracks the current parent chain (files in the call stack)
- * - cache stores Promises for all files being resolved (for deduplication)
- * - Cycle check happens BEFORE cache check to prevent deadlocks
- * - Example: If A→B→A, we detect the cycle before B tries to await A's cached Promise
- * - Siblings (A→B, A→C where B→D and C→D) safely share D's cached Promise
+ * - cache stores Promises for all files being resolved (shared across branches for deduplication)
+ * - Each parallel branch gets a COPY of the parent chain to track its own lineage
+ * - Cache check happens FIRST with parent chain validation to handle both:
+ *   - Sibling deduplication: A→B, A→C where both reference D share D's cached Promise
+ *   - Cycle detection: A→B→A detects cycle even if A's Promise is cached
+ * - Parent chain is copied for each sibling to prevent false positive cycle detection
  */
 export class BlueFileResolver {
   private console: BrowserConsole;
@@ -93,21 +95,30 @@ export class BlueFileResolver {
       return app.vault.cachedRead(file);
     }
 
-    // Check for cycles FIRST - before checking cache
-    // A cycle occurs when a file is in its own parent chain (currently being resolved in the call stack)
-    // This prevents deadlocks where A→B→A would cause both to wait on each other's cached Promises
+    // Check cache FIRST for existing Promise - this handles deduplication for siblings/parallel references
+    // If a file is already being resolved (Promise exists), we await it regardless of parent chain
+    // This is safe because:
+    // - If it's a sibling's child (not a cycle), we correctly deduplicate
+    // - If it IS a cycle, the cached Promise will never resolve (but we detect this below)
+    if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
+      // Check if this file is in our parent chain - if so, it's a cycle
+      if (context.visitedFiles.has(file.path)) {
+        const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
+        this.console.error(error);
+        new Notice(error);
+        return `[[${file.path}]] (Error: Circular dependency)`;
+      }
+      this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
+      return await context.cache.get(file.path)!;
+    }
+
+    // Check for cycles in parent chain - only for files we're about to resolve
+    // This catches cycles before we create a new Promise
     if (context.visitedFiles.has(file.path)) {
       const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
       this.console.error(error);
       new Notice(error);
       return `[[${file.path}]] (Error: Circular dependency)`;
-    }
-
-    // Check cache for existing Promise - this handles deduplication for siblings/parallel references
-    // Safe to check after parent chain because we've already confirmed this file isn't in its own parent chain
-    if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
-      this.console.log(`[Blue File Resolution] Cache hit for: ${file.path}`);
-      return await context.cache.get(file.path)!;
     }
 
     // Check depth limit
@@ -117,9 +128,16 @@ export class BlueFileResolver {
       return app.vault.cachedRead(file);
     }
 
+    // Add to parent chain BEFORE creating the Promise
+    // This ensures the parent chain is updated synchronously before any parallel work starts
+    context.visitedFiles.add(file.path);
+
     // Create the resolution Promise and start execution immediately.
     // This allows the work to begin while we store it in the cache for deduplication.
-    const resolutionPromise = this.resolveFileInternal(file, context, app);
+    const resolutionPromise = this.resolveFileInternal(file, context, app).finally(() => {
+      // Remove from parent chain when done (whether success or error)
+      context.visitedFiles.delete(file.path);
+    });
     
     // Store Promise in cache for concurrent resolution deduplication.
     // Even if caching is disabled, we still need to execute the resolution,
@@ -157,8 +175,7 @@ export class BlueFileResolver {
   ): Promise<string> {
     const { blueFileResolution } = this.plugin.settings;
 
-    // Mark file as being visited
-    context.visitedFiles.add(file.path);
+    // Increment depth (parent chain management handled in resolveFile)
     context.currentDepth++;
 
     try {
@@ -175,7 +192,6 @@ export class BlueFileResolver {
         // Not a pending chat, resolve links within it recursively
         const resolved = await this.resolveLinksInContent(content, file, context, app);
         context.currentDepth--;
-        context.visitedFiles.delete(file.path);
         return resolved;
       }
 
@@ -203,15 +219,13 @@ export class BlueFileResolver {
         this.console.log(`[Blue File Resolution] Wrote intermediate result to: ${file.path}`);
       }
 
-      // Clean up context
+      // Clean up depth
       context.currentDepth--;
-      context.visitedFiles.delete(file.path);
 
       return resolvedContent;
     } catch (error) {
       this.console.error(`[Blue File Resolution] Error resolving file ${file.path}:`, error);
       context.currentDepth--;
-      context.visitedFiles.delete(file.path);
       return `[[${file.path}]] (Error: ${error instanceof Error ? error.message : 'Unknown error'})`;
     }
   }
@@ -246,8 +260,14 @@ export class BlueFileResolver {
       const file = app.metadataCache.getFirstLinkpathDest(linkText, activeFile.path);
 
       if (file instanceof TFile) {
-        // Recursively resolve the file
-        replacements.push(this.resolveFile(file, context, app));
+        // Create a child context with a copy of the parent chain for each parallel branch
+        // This ensures each sibling has its own parent tracking and doesn't see other siblings in the chain
+        const childContext: ResolutionContext = {
+          ...context,
+          visitedFiles: new Set(context.visitedFiles), // Copy the parent chain
+        };
+        // Recursively resolve the file with the child context
+        replacements.push(this.resolveFile(file, childContext, app));
       } else {
         // File not found, keep original link
         replacements.push(Promise.resolve(match[0]));
