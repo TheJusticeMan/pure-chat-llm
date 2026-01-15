@@ -250,8 +250,9 @@ export class BlueResolutionTreeView extends ItemView {
 
     const treeContainer = contentEl.createDiv({ cls: 'resolution-tree-container' });
 
-    // Build tree structure from flat data
-    const rootNode = this.buildTreeNode(this.currentRootFile.path);
+    // Build tree structure from flat data with cycle detection
+    const visited = new Set<string>();
+    const rootNode = this.buildTreeNode(this.currentRootFile.path, visited);
 
     if (rootNode) {
       this.renderTreeNode(treeContainer, rootNode, 0);
@@ -262,21 +263,40 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
-  private buildTreeNode(filePath: string): TreeNode | null {
+  private buildTreeNode(filePath: string, visited: Set<string>): TreeNode | null {
     const nodeData = this.treeData.get(filePath);
     if (!nodeData) {
       return null;
     }
 
+    // Prevent infinite recursion on circular references
+    if (visited.has(filePath)) {
+      // Return a node without children to break the cycle
+      const fileName = filePath.split('/').pop() || filePath;
+      return {
+        filePath: nodeData.filePath,
+        fileName,
+        depth: nodeData.depth,
+        status: nodeData.status === 'idle' ? 'cycle-detected' : nodeData.status,
+        isPendingChat: nodeData.isPendingChat,
+        children: [], // No children to break recursion
+        error: nodeData.error,
+        isExpanded: true,
+      };
+    }
+
+    visited.add(filePath);
     const fileName = filePath.split('/').pop() || filePath;
 
     const children: TreeNode[] = [];
     for (const childPath of nodeData.children) {
-      const childNode = this.buildTreeNode(childPath);
+      const childNode = this.buildTreeNode(childPath, visited);
       if (childNode) {
         children.push(childNode);
       }
     }
+
+    visited.delete(filePath); // Remove from visited to allow this node in other branches
 
     return {
       filePath: nodeData.filePath,
