@@ -155,3 +155,26 @@ export interface CallState {
   remoteParticipants: string[];
   error?: string;
 }
+
+export const PURE_CHAT_LLM_ICON_SVG = `<g
+		stroke="currentColor"
+		fill="none"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	>
+		<path
+			stroke-width="8"
+			d="m 15.354732,74.616162 a 42.5,42.5 0 0 1 2.75854,-52.713966 42.5,42.5 0 0 1 51.947897,-9.369508"
+		/>
+		<path stroke-width="8" d="m 31.25,42.5 h 42.5" />
+		<path stroke-width="8" d="m 26.25,57.5 h 42.5" />
+		<path stroke-width="8" d="M 47.5,30 30,87.5" />
+		<path stroke-width="8" d="M 52.5,70 70,12.5" />
+		<path stroke-width="8" d="M 30,87.5 7.5,92.5 15,75" />
+		<path
+			stroke-width="8"
+			d="M 83.039667,23.267427 A 42.5,42.5 0 0 1 87.575737,69.857342 42.5,42.5 0 0 1 46.52797,92.357939"
+		/>
+	</g>`;
+
+export const PURE_CHAT_LLM_ICON_NAME = 'pure-chat-llm';
