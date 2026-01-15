@@ -337,54 +337,112 @@ sup {
 }
 
 .resolution-node {
+  position: relative;
   padding: 0.5em 0;
-  border-left: 1px solid rgba(0, 242, 255, 0.5);
   transition: all 0.2s ease;
   margin-bottom: 6px;
 }
 
 .resolution-node:hover {
   background-color: rgba(0, 242, 255, 0.05);
-  border-left-color: rgba(0, 242, 255, 0.8);
 }
 
 .resolution-node.resolution-node-idle {
-  border-left-color: rgba(0, 242, 255, 0.3);
+  /* No specific border styling needed - connectors handled by pseudo-elements */
 }
 
 .resolution-node.resolution-node-resolving {
-  border-left-color: rgba(0, 242, 255, 0.8);
   animation: pulse-neon 1.5s ease-in-out infinite;
 }
 
 .resolution-node.resolution-node-complete {
-  border-left-color: rgba(0, 255, 128, 0.7);
+  /* Connector color handled by pseudo-elements */
 }
 
 .resolution-node.resolution-node-error {
-  border-left-color: rgba(255, 64, 129, 0.7);
+  /* Connector color handled by pseudo-elements */
 }
 
 .resolution-node.resolution-node-cached {
-  border-left-color: rgba(100, 200, 255, 0.7);
+  /* Connector color handled by pseudo-elements */
 }
 
 .resolution-node.resolution-node-cycle-detected {
-  border-left-color: rgba(255, 170, 0, 0.7);
+  /* Connector color handled by pseudo-elements */
 }
 
 @keyframes pulse-neon {
   0%, 100% {
-    border-left-color: rgba(0, 242, 255, 0.5);
-    box-shadow: -2px 0 8px rgba(0, 242, 255, 0.3);
+    filter: drop-shadow(0 0 4px rgba(0, 242, 255, 0.3));
   }
   50% {
-    border-left-color: rgba(0, 242, 255, 1);
-    box-shadow: -2px 0 15px rgba(0, 242, 255, 0.6);
+    filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.6));
   }
 }
 
+/* Tree connectors using pseudo-elements */
+.resolution-node-content[data-has-connector]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1em;
+  height: 1px;
+  background: rgba(0, 242, 255, 0.5);
+  box-shadow: 0 0 4px rgba(0, 242, 255, 0.4);
+}
+
+.resolution-node-children {
+  position: relative;
+  padding-left: 0;
+  margin-left: 1.5em;
+  border-left: 1px solid rgba(0, 242, 255, 0.5);
+  box-shadow: -2px 0 6px rgba(0, 242, 255, 0.2);
+}
+
+.resolution-node-children::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 1em;
+  width: 1px;
+  background: rgba(0, 242, 255, 0.5);
+  box-shadow: 0 0 4px rgba(0, 242, 255, 0.3);
+}
+
+/* Status-based connector colors */
+.resolution-node-idle .resolution-node-children {
+  border-left-color: rgba(0, 242, 255, 0.3);
+}
+
+.resolution-node-resolving .resolution-node-children {
+  border-left-color: rgba(0, 242, 255, 0.8);
+  box-shadow: -2px 0 8px rgba(0, 242, 255, 0.4);
+}
+
+.resolution-node-complete .resolution-node-children {
+  border-left-color: rgba(0, 255, 128, 0.5);
+  box-shadow: -2px 0 6px rgba(0, 255, 128, 0.2);
+}
+
+.resolution-node-error .resolution-node-children {
+  border-left-color: rgba(255, 64, 129, 0.5);
+  box-shadow: -2px 0 6px rgba(255, 64, 129, 0.2);
+}
+
+.resolution-node-cached .resolution-node-children {
+  border-left-color: rgba(100, 200, 255, 0.5);
+  box-shadow: -2px 0 6px rgba(100, 200, 255, 0.2);
+}
+
+.resolution-node-cycle-detected .resolution-node-children {
+  border-left-color: rgba(255, 170, 0, 0.5);
+  box-shadow: -2px 0 6px rgba(255, 170, 0, 0.2);
+}
+
 .resolution-node-content {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5em;
@@ -420,6 +478,27 @@ sup {
 .resolution-node-expand:hover {
   color: rgba(0, 242, 255, 1);
   text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);
+}
+
+.resolution-node-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  color: rgba(0, 242, 255, 0.8);
+  filter: drop-shadow(0 0 4px rgba(0, 242, 255, 0.6));
+}
+
+.resolution-node-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.resolution-node-icon:hover {
+  color: rgba(0, 242, 255, 1);
+  filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.9));
 }
 
 .resolution-node-status {

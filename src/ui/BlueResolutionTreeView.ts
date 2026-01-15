@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Setting, TFile, MarkdownView, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Setting, TFile, MarkdownView, Notice, setIcon } from 'obsidian';
 import PureChatLLM from '../main';
 import {
   BLUE_RESOLUTION_TREE_VIEW_TYPE,
@@ -317,6 +317,11 @@ export class BlueResolutionTreeView extends ItemView {
     nodeEl.style.paddingLeft = `${indentLevel * 1.5}em`;
 
     const contentEl = nodeEl.createDiv({ cls: 'resolution-node-content' });
+    
+    // Add data attribute for tree connector styling
+    if (indentLevel > 0) {
+      contentEl.setAttribute('data-has-connector', 'true');
+    }
 
     // Expand/collapse button for nodes with children
     if (node.children.length > 0) {
@@ -331,6 +336,12 @@ export class BlueResolutionTreeView extends ItemView {
     } else {
       contentEl.createSpan({ cls: 'resolution-node-expand', text: '  ' });
     }
+
+    // File/folder icon with glow
+    const iconEl = contentEl.createSpan({ cls: 'resolution-node-icon' });
+    const hasChildren = node.children.length > 0;
+    const iconName = hasChildren ? 'folder' : 'file-text';
+    setIcon(iconEl, iconName);
 
     // Status indicator (visual border/spinner element)
     const statusIndicator = contentEl.createSpan({
