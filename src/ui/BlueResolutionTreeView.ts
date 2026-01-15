@@ -1,6 +1,11 @@
 import { ItemView, WorkspaceLeaf, Setting, TFile, MarkdownView, Notice } from 'obsidian';
 import PureChatLLM from '../main';
-import { BLUE_RESOLUTION_TREE_VIEW_TYPE, ResolutionEvent, ResolutionNodeData, ResolutionStatus } from '../types';
+import {
+  BLUE_RESOLUTION_TREE_VIEW_TYPE,
+  ResolutionEvent,
+  ResolutionNodeData,
+  ResolutionStatus,
+} from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
 
 interface TreeNode {
@@ -52,7 +57,7 @@ export class BlueResolutionTreeView extends ItemView {
     // Listen to workspace events for active file changes
     // Only update when a MarkdownView becomes active (not when this view becomes active)
     this.registerEvent(
-      this.app.workspace.on('active-leaf-change', (leaf) => {
+      this.app.workspace.on('active-leaf-change', leaf => {
         if (!leaf) return;
         const view = leaf.view;
         if (!(view instanceof MarkdownView)) return;
@@ -131,7 +136,7 @@ export class BlueResolutionTreeView extends ItemView {
 
   private clearTreeData(): void {
     this.treeData.clear();
-    
+
     // Initialize root node
     if (this.currentRootFile) {
       this.treeData.set(this.currentRootFile.path, {
@@ -232,7 +237,7 @@ export class BlueResolutionTreeView extends ItemView {
 
   private renderTree(): void {
     const { contentEl } = this;
-    
+
     // Remove existing tree container if it exists
     const existingTree = contentEl.querySelector('.resolution-tree-container');
     if (existingTree) {
@@ -247,7 +252,7 @@ export class BlueResolutionTreeView extends ItemView {
 
     // Build tree structure from flat data
     const rootNode = this.buildTreeNode(this.currentRootFile.path);
-    
+
     if (rootNode) {
       this.renderTreeNode(treeContainer, rootNode, 0);
     } else {
@@ -264,7 +269,7 @@ export class BlueResolutionTreeView extends ItemView {
     }
 
     const fileName = filePath.split('/').pop() || filePath;
-    
+
     const children: TreeNode[] = [];
     for (const childPath of nodeData.children) {
       const childNode = this.buildTreeNode(childPath);
@@ -308,10 +313,10 @@ export class BlueResolutionTreeView extends ItemView {
     }
 
     // Status indicator (visual border/spinner element)
-    const statusIndicator = contentEl.createSpan({ 
-      cls: `resolution-node-status status-indicator-${node.status}` 
+    const statusIndicator = contentEl.createSpan({
+      cls: `resolution-node-status status-indicator-${node.status}`,
     });
-    
+
     // Add spinner for resolving state
     if (node.status === 'resolving') {
       statusIndicator.addClass('status-spinner');
@@ -387,7 +392,9 @@ export class BlueResolutionTreeView extends ItemView {
       new Notice('Analysis complete');
     } catch (error) {
       this.console.error('Error analyzing file:', error);
-      new Notice('Error analyzing file: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      new Notice(
+        'Error analyzing file: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      );
     } finally {
       this.isAnalyzing = false;
     }
@@ -423,7 +430,10 @@ export class BlueResolutionTreeView extends ItemView {
     // Check if it's a pending chat
     const chat = new (await import('../core/Chat')).PureChatLLMChat(this.plugin);
     chat.setMarkdown(content);
-    const isPending = chat.validChat && chat.messages.length > 0 && chat.messages[chat.messages.length - 1].role === 'user';
+    const isPending =
+      chat.validChat &&
+      chat.messages.length > 0 &&
+      chat.messages[chat.messages.length - 1].role === 'user';
 
     // Update or create node
     const nodeData: ResolutionNodeData = this.treeData.get(file.path) || {
@@ -452,12 +462,12 @@ export class BlueResolutionTreeView extends ItemView {
     for (const match of matches) {
       const linkText = match[1];
       const linkedFile = this.app.metadataCache.getFirstLinkpathDest(linkText, file.path);
-      
+
       if (linkedFile instanceof TFile) {
         if (!nodeData.children.includes(linkedFile.path)) {
           nodeData.children.push(linkedFile.path);
         }
-        
+
         // Create a new visited set for this branch
         const branchVisited = new Set(visited);
         await this.scanFileLinks(linkedFile, file.path, depth + 1, branchVisited);
