@@ -331,16 +331,6 @@ export default class PureChatLLM extends Plugin {
         new Notice('Voice call panel opened. Click "start call" to begin.');
       },
     });
-
-    this.addCommand({
-      id: 'join-voice-call',
-      name: 'Join voice call',
-      icon: 'phone-incoming',
-      callback: () => {
-        void this.activateVoiceCallView();
-        new Notice('Voice call panel opened. Click "join call" to connect.');
-      },
-    });
   }
 
   status(text: string) {
