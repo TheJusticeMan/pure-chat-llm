@@ -359,21 +359,22 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     this.ws.send(JSON.stringify(toolResponse));
   }
 
+  private nextStartTime = 0;
+
   /**
-   * Plays queued audio from Gemini
+   * Plays queued audio from Gemini using scheduled playback
    */
   private async playQueuedAudio(): Promise<void> {
     if (this.isPlaying || this.remoteAudioQueue.length === 0 || !this.audioContext) return;
 
     this.isPlaying = true;
 
-    while (this.remoteAudioQueue.length > 0) {
-      const audioData = this.remoteAudioQueue.shift();
-      if (!audioData) continue;
+    try {
+      while (this.remoteAudioQueue.length > 0) {
+        const audioData = this.remoteAudioQueue.shift();
+        if (!audioData) continue;
 
-      try {
         // Gemini sends raw PCM 16-bit audio at 24kHz
-        // We need to convert it to an AudioBuffer manually because decodeAudioData expects a file header (WAV/MP3)
         const pcm16 = new Int16Array(audioData);
         const float32 = new Float32Array(pcm16.length);
 
@@ -389,18 +390,29 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
         const source = this.audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(this.audioContext.destination);
-        source.start();
 
-        // Wait for audio to finish playing
-        await new Promise(resolve => {
-          source.onended = resolve;
-        });
-      } catch (error) {
-        console.error('Failed to play audio:', error);
+        // Schedule playback
+        const currentTime = this.audioContext.currentTime;
+        
+        // If next start time is in the past (underrun), reset to current time
+        if (this.nextStartTime < currentTime) {
+          this.nextStartTime = currentTime;
+        }
+
+        source.start(this.nextStartTime);
+        
+        // Advance next start time by buffer duration
+        this.nextStartTime += audioBuffer.duration;
+      }
+    } catch (error) {
+      console.error('Failed to play audio:', error);
+    } finally {
+      this.isPlaying = false;
+      // Check if more items were added while processing
+      if (this.remoteAudioQueue.length > 0) {
+        void this.playQueuedAudio();
       }
     }
-
-    this.isPlaying = false;
   }
 
   /**
