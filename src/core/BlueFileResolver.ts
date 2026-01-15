@@ -142,6 +142,8 @@ export class BlueFileResolver {
     context: ResolutionContext,
     app: App,
   ): Promise<string> {
+    const { blueFileResolution } = this.plugin.settings;
+
     // Mark file as being visited
     context.visitedFiles.add(file.path);
     context.currentDepth++;
@@ -183,7 +185,7 @@ export class BlueFileResolver {
       const resolvedContent = assistantMessage?.content || '';
 
       // Write intermediate results if configured (and not root file)
-      if (this.plugin.settings.blueFileResolution.writeIntermediateResults && file.path !== context.rootFile.path) {
+      if (blueFileResolution.writeIntermediateResults && file.path !== context.rootFile.path) {
         await app.vault.modify(file, response.markdown);
         this.console.log(`[Blue File Resolution] Wrote intermediate result to: ${file.path}`);
       }
