@@ -20,6 +20,8 @@ class PCMProcessor extends AudioWorkletProcessor {
 registerProcessor('pcm-processor', PCMProcessor);
 `;
 
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 interface GeminiMessage {
   setupComplete?: boolean;
   serverContent?: {
@@ -37,6 +39,32 @@ interface GeminiMessage {
       id: string;
       name: string;
       args: Record<string, unknown>;
+    }>;
+  };
+}
+
+interface GeminiSetup {
+  setup: {
+    model: string;
+    generationConfig: {
+      responseModalities: string[];
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName: string;
+          };
+        };
+      };
+    };
+    systemInstruction?: {
+      parts: { text: string }[];
+    };
+    tools?: Array<{
+      function_declarations: Array<{
+        name: string;
+        description: string;
+        parameters: JsonValue;
+      }>;
     }>;
   };
 }
@@ -170,7 +198,7 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   private sendSetup(config: VoiceCallConfig) {
-      const setup: Record<string, unknown> = {
+      const setup: GeminiSetup = {
         setup: {
             model: config.model || 'models/gemini-2.0-flash-exp',
             generationConfig: {
@@ -185,8 +213,7 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
             },
             systemInstruction: {
                 parts: [{ text: config.instructions || 'You are a helpful assistant.' }]
-            },
-            tools: [] as unknown[]
+            }
         }
       };
 
@@ -197,19 +224,9 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
               parameters: this.removeAdditionalProperties(t.function.parameters)
            }));
            
-           // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-           const setupObj = setup.setup as any;
-
            if (functionDeclarations.length > 0) {
-               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-               setupObj.tools = [{ function_declarations: functionDeclarations }];
-           } else {
-               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-               delete setupObj.tools;
+               setup.setup.tools = [{ function_declarations: functionDeclarations }];
            }
-      } else {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-          delete (setup.setup as any).tools;
       }
 
       this.ws?.send(JSON.stringify(setup));
@@ -356,17 +373,19 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
       return bytes.buffer;
   }
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private removeAdditionalProperties(obj: any): any { // eslint-disable-line @typescript-eslint/no-unsafe-return
-    if (typeof obj !== 'object' || obj === null) return obj;
-    if (Array.isArray(obj)) return obj.map(i => this.removeAdditionalProperties(i));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const newObj: any = {};
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    for (const key of Object.keys(obj)) {
+  private removeAdditionalProperties(obj: unknown): JsonValue {
+    if (typeof obj !== 'object' || obj === null) return obj as JsonValue;
+    
+    if (Array.isArray(obj)) {
+      return obj.map(i => this.removeAdditionalProperties(i));
+    }
+
+    const newObj: Record<string, JsonValue> = {};
+    const record = obj as Record<string, unknown>;
+    
+    for (const key of Object.keys(record)) {
         if (key !== 'additionalProperties') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            newObj[key] = this.removeAdditionalProperties(obj[key]);
+            newObj[key] = this.removeAdditionalProperties(record[key]);
         }
     }
     return newObj;
