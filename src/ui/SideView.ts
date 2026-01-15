@@ -56,7 +56,7 @@ export class PureChatLLMSideView extends ItemView {
     public viewText = 'Conversation overview',
   ) {
     super(leaf);
-    this.icon = 'text';
+    this.icon = 'messages-square';
     this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMSideView');
     this.navigation = false;
   }

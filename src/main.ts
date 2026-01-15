@@ -84,7 +84,7 @@ export default class PureChatLLM extends Plugin {
     this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));
     this.registerView(VOICE_CALL_VIEW_TYPE, leaf => new VoiceCallSideView(leaf, this));
 
-    this.addRibbonIcon('text', 'Open conversation overview', () => this.activateView());
+    this.addRibbonIcon('messages-square', 'Open conversation overview', () => this.activateView());
     this.addRibbonIcon('phone', 'Open voice call', () => this.activateVoiceCallView());
 
     this.setupChatCommandHandlers();

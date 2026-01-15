@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-01-14
+
+### Added
+
+- New icons for Conversation Overview and Voice Call views
+- Refactored settings UI for improved organization and functionality
+
+### Changed
+
+- Minimum Obsidian app version is now 1.11.4
+- Various UI improvements and code refactoring
+
+### Fixed
+
+- Minor bug fixes and stability improvements
+
 ## [1.9.3] - 2026-01-14
 
 ### Added
