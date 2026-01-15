@@ -5,18 +5,54 @@ import { BrowserConsole } from '../utils/BrowserConsole';
 import { MediaMessage, RoleType } from '../types';
 
 /**
+ * Represents a node in the file resolution tree.
+ * Each node tracks a file being resolved and its relationship to parent nodes.
+ */
+class ResolutionTreeNode {
+  /** The file being resolved at this node */
+  public readonly file: TFile;
+  /** Parent node in the resolution tree (null for root) */
+  public readonly parent: ResolutionTreeNode | null;
+  /** Current depth in the tree (0 for root) */
+  public readonly depth: number;
+
+  constructor(file: TFile, parent: ResolutionTreeNode | null = null) {
+    this.file = file;
+    this.parent = parent;
+    this.depth = parent ? parent.depth + 1 : 0;
+  }
+
+  /**
+   * Checks if the given file path exists in this node's ancestor chain.
+   * This is used for cycle detection.
+   */
+  hasAncestor(filePath: string): boolean {
+    if (this.file.path === filePath) {
+      return true;
+    }
+    return this.parent ? this.parent.hasAncestor(filePath) : false;
+  }
+
+  /**
+   * Creates a child node for the given file.
+   */
+  createChild(file: TFile): ResolutionTreeNode {
+    return new ResolutionTreeNode(file, this);
+  }
+}
+
+/**
  * Interface for tracking resolution context during recursive chat execution
  */
 export interface ResolutionContext {
-  /** Set of file paths in the current parent chain (for cycle detection) */
-  visitedFiles: Set<string>;
-  /** Current depth in the resolution tree */
-  currentDepth: number;
+  /** Current node in the resolution tree */
+  currentNode: ResolutionTreeNode;
   /** Cache of resolved chat responses keyed by file path (stores Promises for parallel resolution) */
   cache: Map<string, Promise<string>>;
   /** The root file that initiated the resolution */
   rootFile: TFile;
 }
+
 
 /**
  * BlueFileResolver handles recursive, dynamic resolution of [[note]] links.
@@ -29,14 +65,13 @@ export interface ResolutionContext {
  * - Per-invocation caching to avoid redundant API calls
  * - Configurable intermediate result persistence
  *
- * Cycle Detection vs Caching:
- * - visitedFiles tracks the current parent chain (files in the call stack)
- * - cache stores Promises for all files being resolved (shared across branches for deduplication)
- * - Each parallel branch gets a COPY of the parent chain to track its own lineage
- * - Cache check happens FIRST with parent chain validation to handle both:
- *   - Sibling deduplication: A→B, A→C where both reference D share D's cached Promise
- *   - Cycle detection: A→B→A detects cycle even if A's Promise is cached
- * - Parent chain is copied for each sibling to prevent false positive cycle detection
+ * Architecture:
+ * - Uses a tree data structure (ResolutionTreeNode) to track file resolution hierarchy
+ * - Each node knows its parent, enabling efficient ancestor lookup for cycle detection
+ * - Each parallel branch gets its own tree node with proper parent linkage
+ * - Cache is shared across all branches for deduplication
+ * - Cache check validates ancestor chain to detect cycles (A→B→A)
+ * - Siblings (A→B, A→C) each have independent tree nodes, preventing false positives
  */
 export class BlueFileResolver {
   private console: BrowserConsole;
@@ -50,8 +85,7 @@ export class BlueFileResolver {
    */
   createContext(rootFile: TFile): ResolutionContext {
     return {
-      visitedFiles: new Set<string>(),
-      currentDepth: 0,
+      currentNode: new ResolutionTreeNode(rootFile),
       cache: new Map<string, Promise<string>>(),
       rootFile,
     };
@@ -96,13 +130,9 @@ export class BlueFileResolver {
     }
 
     // Check cache FIRST for existing Promise - this handles deduplication for siblings/parallel references
-    // If a file is already being resolved (Promise exists), we await it regardless of parent chain
-    // This is safe because:
-    // - If it's a sibling's child (not a cycle), we correctly deduplicate
-    // - If it IS a cycle, the cached Promise will never resolve (but we detect this below)
     if (blueFileResolution.enableCaching && context.cache.has(file.path)) {
-      // Check if this file is in our parent chain - if so, it's a cycle
-      if (context.visitedFiles.has(file.path)) {
+      // Check if this file is in our ancestor chain using tree structure - if so, it's a cycle
+      if (context.currentNode.hasAncestor(file.path)) {
         const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
         this.console.error(error);
         new Notice(error);
@@ -112,36 +142,34 @@ export class BlueFileResolver {
       return await context.cache.get(file.path)!;
     }
 
-    // Check for cycles in parent chain - only for files we're about to resolve
-    // This catches cycles before we create a new Promise
-    if (context.visitedFiles.has(file.path)) {
+    // Check for cycles in ancestor chain - only for files we're about to resolve
+    if (context.currentNode.hasAncestor(file.path)) {
       const error = `[Blue File Resolution] Circular dependency detected: ${file.path}`;
       this.console.error(error);
       new Notice(error);
       return `[[${file.path}]] (Error: Circular dependency)`;
     }
 
-    // Check depth limit
-    if (context.currentDepth >= blueFileResolution.maxDepth) {
+    // Check depth limit using tree node depth
+    if (context.currentNode.depth >= blueFileResolution.maxDepth) {
       const warning = `[Blue File Resolution] Max depth (${blueFileResolution.maxDepth}) reached at: ${file.path}`;
       this.console.log(warning);
       return app.vault.cachedRead(file);
     }
 
-    // Add to parent chain BEFORE creating the Promise
-    // This ensures the parent chain is updated synchronously before any parallel work starts
-    context.visitedFiles.add(file.path);
+    // Create a child node in the tree for this file
+    const childNode = context.currentNode.createChild(file);
+
+    // Create child context with the new tree node
+    const childContext: ResolutionContext = {
+      ...context,
+      currentNode: childNode,
+    };
 
     // Create the resolution Promise and start execution immediately.
-    // This allows the work to begin while we store it in the cache for deduplication.
-    const resolutionPromise = this.resolveFileInternal(file, context, app).finally(() => {
-      // Remove from parent chain when done (whether success or error)
-      context.visitedFiles.delete(file.path);
-    });
+    const resolutionPromise = this.resolveFileInternal(file, childContext, app);
     
     // Store Promise in cache for concurrent resolution deduplication.
-    // Even if caching is disabled, we still need to execute the resolution,
-    // we just won't store it for reuse.
     if (blueFileResolution.enableCaching) {
       context.cache.set(file.path, resolutionPromise);
     }
@@ -175,9 +203,6 @@ export class BlueFileResolver {
   ): Promise<string> {
     const { blueFileResolution } = this.plugin.settings;
 
-    // Increment depth (parent chain management handled in resolveFile)
-    context.currentDepth++;
-
     try {
       // Read the file content
       const content = await app.vault.cachedRead(file);
@@ -191,7 +216,6 @@ export class BlueFileResolver {
         this.console.log(`[Blue File Resolution] Not a pending chat: ${file.path}`);
         // Not a pending chat, resolve links within it recursively
         const resolved = await this.resolveLinksInContent(content, file, context, app);
-        context.currentDepth--;
         return resolved;
       }
 
@@ -219,13 +243,9 @@ export class BlueFileResolver {
         this.console.log(`[Blue File Resolution] Wrote intermediate result to: ${file.path}`);
       }
 
-      // Clean up depth
-      context.currentDepth--;
-
       return resolvedContent;
     } catch (error) {
       this.console.error(`[Blue File Resolution] Error resolving file ${file.path}:`, error);
-      context.currentDepth--;
       return `[[${file.path}]] (Error: ${error instanceof Error ? error.message : 'Unknown error'})`;
     }
   }
@@ -254,20 +274,16 @@ export class BlueFileResolver {
     }
 
     // Resolve each link
+    // Each sibling gets its own tree branch automatically via resolveFile's createChild
+    // No need to manually copy parent chain - the tree structure handles this
     const replacements: Promise<string>[] = [];
     for (const match of matches) {
       const linkText = match[1];
       const file = app.metadataCache.getFirstLinkpathDest(linkText, activeFile.path);
 
       if (file instanceof TFile) {
-        // Create a child context with a copy of the parent chain for each parallel branch
-        // This ensures each sibling has its own parent tracking and doesn't see other siblings in the chain
-        const childContext: ResolutionContext = {
-          ...context,
-          visitedFiles: new Set(context.visitedFiles), // Copy the parent chain
-        };
-        // Recursively resolve the file with the child context
-        replacements.push(this.resolveFile(file, childContext, app));
+        // Recursively resolve the file - it will create its own tree node
+        replacements.push(this.resolveFile(file, context, app));
       } else {
         // File not found, keep original link
         replacements.push(Promise.resolve(match[0]));
