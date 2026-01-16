@@ -381,10 +381,14 @@ export class BlueResolutionTreeView extends ItemView {
     const treeWrapper = contentEl.querySelector('.resolution-tree-wrapper') as HTMLElement;
     const container = treeWrapper || contentEl;
 
-    // Remove existing tree container if it exists
+    // Remove existing containers if they exist
     const existingTree = container.querySelector('.resolution-tree-container');
     if (existingTree) {
       existingTree.remove();
+    }
+    const existingGraph = container.querySelector('.resolution-graph-container');
+    if (existingGraph) {
+      existingGraph.remove();
     }
 
     if (!this.currentRootFile) {
@@ -411,10 +415,14 @@ export class BlueResolutionTreeView extends ItemView {
     const treeWrapper = contentEl.querySelector('.resolution-tree-wrapper') as HTMLElement;
     const container = treeWrapper || contentEl;
 
-    // Remove existing container if it exists
+    // Remove existing containers if they exist
     const existingGraph = container.querySelector('.resolution-graph-container');
     if (existingGraph) {
       existingGraph.remove();
+    }
+    const existingTree = container.querySelector('.resolution-tree-container');
+    if (existingTree) {
+      existingTree.remove();
     }
 
     if (!this.currentRootFile) {
@@ -441,30 +449,24 @@ export class BlueResolutionTreeView extends ItemView {
         ctx.scale(dpr, dpr);
       }
 
-      // Re-render graph with new size
-      if (this.graphRenderer) {
+      // Recreate and re-render graph with new size
+      if (this.treeData.size > 0) {
+        this.graphRenderer = new ResolutionGraphRenderer(canvas, this.treeData);
         this.graphRenderer.render();
+      } else {
+        if (ctx) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('No resolution data available.', rect.width / 2, rect.height / 2);
+        }
       }
     };
 
     // Initial size setup
     setTimeout(() => {
       updateCanvasSize();
-
-      // Create graph renderer
-      if (this.treeData.size > 0) {
-        this.graphRenderer = new ResolutionGraphRenderer(canvas, this.treeData);
-        this.graphRenderer.render();
-      } else {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-          ctx.font = '14px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('No resolution data available.', canvas.width / 2, canvas.height / 2);
-        }
-      }
     }, 50);
 
     // Handle window resize
