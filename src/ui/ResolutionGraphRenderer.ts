@@ -144,10 +144,10 @@ export class ResolutionGraphRenderer {
    * Calculate bounds of all nodes in the graph
    */
   private calculateGraphBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
-    let minX = Infinity,
-      maxX = -Infinity;
-    let minY = Infinity,
-      maxY = -Infinity;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
 
     for (const node of this.nodes.values()) {
       minX = Math.min(minX, node.x - node.radius);

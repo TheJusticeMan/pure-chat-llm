@@ -258,7 +258,7 @@ export class BlueResolutionTreeView extends ItemView {
     const header = this.contentEl.querySelector('.PUREfloattop');
     if (!header) return;
 
-    const lockButton = header.querySelector('[aria-label*="ock"]') as HTMLElement;
+    const lockButton = header.querySelector('[data-lock-button="true"]') as HTMLElement;
 
     if (this._locked) {
       header.addClass('locked-view');
@@ -377,7 +377,11 @@ export class BlueResolutionTreeView extends ItemView {
               this.locked ? 'Unlock view from current file' : 'Lock view to current file',
             );
           })
-          .then(btnSetting => this.locked && btnSetting.extraSettingsEl.addClass('locked-view')),
+          .then(btnSetting => {
+            // Add data attribute for reliable selection
+            btnSetting.extraSettingsEl.setAttribute('data-lock-button', 'true');
+            if (this.locked) btnSetting.extraSettingsEl.addClass('locked-view');
+          }),
       )
       .addExtraButton(btn =>
         btn
