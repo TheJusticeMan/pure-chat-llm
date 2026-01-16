@@ -363,6 +363,14 @@ export class ResolutionGraphRenderer {
   }
 
   /**
+   * Gets the node at a screen position (handles coordinate transformation)
+   */
+  public getNodeAtScreenPosition(screenX: number, screenY: number): GraphNode | null {
+    const graphPos = this.screenToGraph(screenX, screenY);
+    return this.getNodeAtPosition(graphPos.x, graphPos.y);
+  }
+
+  /**
    * Apply viewport transform to context
    */
   private applyTransform(): void {

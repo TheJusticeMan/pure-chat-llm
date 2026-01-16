@@ -543,11 +543,7 @@ export class BlueResolutionTreeView extends ItemView {
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      // Convert screen coords to graph coords
-      const graphX = (x - this.graphRenderer['transform'].offsetX) / this.graphRenderer['transform'].scale;
-      const graphY = (y - this.graphRenderer['transform'].offsetY) / this.graphRenderer['transform'].scale;
-
-      const node = this.graphRenderer.getNodeAtPosition(graphX, graphY);
+      const node = this.graphRenderer.getNodeAtScreenPosition(x, y);
       if (node) {
         this.openFile(node.id);
       }
