@@ -1,4 +1,5 @@
 import { ResolutionNodeData, ResolutionStatus } from '../types';
+import { getIcon } from 'obsidian';
 
 /**
  * Represents a node in the graph visualization
@@ -53,6 +54,7 @@ export class ResolutionGraphRenderer {
   private hasRendered: boolean = false;
   private width: number = 0;
   private height: number = 0;
+  private iconCache: Map<string, HTMLImageElement> = new Map();
 
   constructor(canvas: HTMLCanvasElement, treeData: Map<string, ResolutionNodeData>) {
     const context = canvas.getContext('2d');
@@ -186,7 +188,7 @@ export class ResolutionGraphRenderer {
   /**
    * Main render method - draws the entire graph
    */
-  public render(): void {
+  public async render(): Promise<void> {
     // Update canvas dimensions
     this.width = this.canvas.width;
     this.height = this.canvas.height;
@@ -208,7 +210,7 @@ export class ResolutionGraphRenderer {
     this.drawEdges();
 
     // Draw nodes on top
-    this.drawNodes();
+    await this.drawNodes();
 
     // Restore context
     this.ctx.restore();
@@ -254,9 +256,9 @@ export class ResolutionGraphRenderer {
   }
 
   /**
-   * Draws all nodes with status-based colors
+   * Draws all nodes with status-based colors and file type icons
    */
-  private drawNodes(): void {
+  private async drawNodes(): Promise<void> {
     const now = Date.now();
 
     for (const node of this.nodes.values()) {
@@ -295,6 +297,21 @@ export class ResolutionGraphRenderer {
         this.ctx.strokeStyle = nodeColor.replace(/[\d.]+\)$/, `${alpha})`);
         this.ctx.lineWidth = 3;
         this.ctx.stroke();
+      }
+
+      // Draw icon
+      const iconId = this.getNodeIcon(node);
+      const icon = await this.loadIcon(iconId);
+      
+      if (icon) {
+        const iconSize = node.radius * 1.2;
+        this.ctx.drawImage(
+          icon,
+          node.x - iconSize / 2,
+          node.y - iconSize / 2,
+          iconSize,
+          iconSize
+        );
       }
 
       // Draw file name label below node
@@ -408,6 +425,70 @@ export class ResolutionGraphRenderer {
   }
 
   /**
+   * Get the appropriate icon ID for a node based on its file type
+   */
+  private getNodeIcon(node: GraphNode): string {
+    const fileName = node.id.split('/').pop() || node.id;
+    
+    // Root node (depth 0)
+    if (node.data.depth === 0) {
+      return 'folder';
+    }
+    
+    // Image files
+    if (/\.(png|jpe?g|gif|webp)$/i.test(fileName)) {
+      return 'image';
+    }
+    
+    // Chat files
+    if (node.data.isChatFile) {
+      return 'pure-chat-llm';
+    }
+    
+    // Markdown files
+    if (fileName.endsWith('.md')) {
+      return 'file-text';
+    }
+    
+    // Other files
+    return 'file';
+  }
+
+  /**
+   * Load an Obsidian icon and convert it to HTMLImageElement for canvas rendering
+   */
+  private async loadIcon(iconId: string): Promise<HTMLImageElement | null> {
+    if (this.iconCache.has(iconId)) {
+      return this.iconCache.get(iconId)!;
+    }
+    
+    const svgElement = getIcon(iconId);
+    if (!svgElement) {
+      return null;
+    }
+    
+    const svgString = svgElement.outerHTML;
+    
+    // Convert SVG to data URL for canvas rendering
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(svgBlob);
+    
+    return new Promise((resolve) => {
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        this.iconCache.set(iconId, img);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
+  }
+
+  /**
    * Gets the node at a specific position (for click detection)
    */
   public getNodeAtPosition(x: number, y: number): GraphNode | null {
@@ -473,7 +554,7 @@ export class ResolutionGraphRenderer {
         (mouseY - this.transform.offsetY) * (newScale / this.transform.scale - 1);
       this.transform.scale = newScale;
 
-      this.render();
+      void this.render();
     });
 
     // Pan with Shift+drag or middle mouse button
@@ -507,7 +588,7 @@ export class ResolutionGraphRenderer {
         // Pan the view
         this.transform.offsetX = e.clientX - this.dragStartX;
         this.transform.offsetY = e.clientY - this.dragStartY;
-        this.render();
+        void this.render();
       } else if (this.draggedNode) {
         // Drag node
         const rect = this.canvas.getBoundingClientRect();
@@ -518,7 +599,7 @@ export class ResolutionGraphRenderer {
         this.draggedNode.x = graphPos.x;
         this.draggedNode.y = graphPos.y;
         this.nodePositionOverrides.set(this.draggedNode.id, { x: graphPos.x, y: graphPos.y });
-        this.render();
+        void this.render();
       }
     });
 
@@ -581,7 +662,7 @@ export class ResolutionGraphRenderer {
     this.transform.offsetY -=
       (centerY - this.transform.offsetY) * (newScale / this.transform.scale - 1);
     this.transform.scale = newScale;
-    this.render();
+    void this.render();
   }
 
   /**
@@ -596,7 +677,7 @@ export class ResolutionGraphRenderer {
     this.transform.offsetY -=
       (centerY - this.transform.offsetY) * (newScale / this.transform.scale - 1);
     this.transform.scale = newScale;
-    this.render();
+    void this.render();
   }
 
   /**
@@ -604,7 +685,7 @@ export class ResolutionGraphRenderer {
    */
   public resetView(): void {
     this.transform = { scale: 1, offsetX: 0, offsetY: 0 };
-    this.render();
+    void this.render();
   }
 
   /**
@@ -613,7 +694,7 @@ export class ResolutionGraphRenderer {
   public resetNodePositions(): void {
     this.nodePositionOverrides.clear();
     this.layoutNodes();
-    this.render();
+    void this.render();
   }
 
   /**
@@ -644,7 +725,7 @@ export class ResolutionGraphRenderer {
     });
 
     if (needsUpdate) {
-      this.render();
+      void this.render();
       requestAnimationFrame(() => this.animate());
     } else {
       this.isAnimating = false;
@@ -822,7 +903,7 @@ export class ResolutionGraphRenderer {
    */
   public setTransform(transform: ViewTransform): void {
     this.transform = { ...transform };
-    this.render();
+    void this.render();
   }
 
   /**

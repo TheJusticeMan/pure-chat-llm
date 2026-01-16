@@ -40,7 +40,7 @@ export class BlueResolutionTreeView extends ItemView {
   private currentRootFile: TFile | null = null;
   private lastActiveFile: TFile | null = null;
   private treeData: Map<string, ResolutionNodeData> = new Map();
-  private showLegend: boolean = true;
+  private showLegend: boolean = false;
   private isAnalyzing: boolean = false;
   private boundResolutionEventHandler: (event: ResolutionEvent) => void;
   private _locked: boolean = false;
@@ -351,7 +351,7 @@ export class BlueResolutionTreeView extends ItemView {
                   .onClick(() => {
                     if (this.graphRenderer) {
                       this.graphRenderer.showMinimap = !this.graphRenderer.showMinimap;
-                      this.graphRenderer.render();
+                      void this.graphRenderer.render();
                     }
                   }),
               )
@@ -525,12 +525,17 @@ export class BlueResolutionTreeView extends ItemView {
 
     // Set canvas size to match container
     const updateCanvasSize = () => {
-      const rect = graphContainer.getBoundingClientRect();
+      // Calculate available height by subtracting header height
+      const headerEl = contentEl.querySelector('.PUREfloattop') as HTMLElement;
+      const headerHeight = headerEl ? headerEl.clientHeight : 0;
+      const availableHeight = contentEl.clientHeight - headerHeight;
+      const availableWidth = contentEl.clientWidth;
+      
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
+      canvas.width = availableWidth * dpr;
+      canvas.height = availableHeight * dpr;
+      canvas.style.width = `${availableWidth}px`;
+      canvas.style.height = `${availableHeight}px`;
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
@@ -542,13 +547,13 @@ export class BlueResolutionTreeView extends ItemView {
         this.graphRenderer = new ResolutionGraphRenderer(canvas, this.treeData);
         this.graphRenderer.setupTooltips(graphContainer);
         this.graphRenderer.setupKeyboardShortcuts();
-        this.graphRenderer.render();
+        void this.graphRenderer.render();
         zoomIndicator.textContent = this.graphRenderer.getZoomLevel();
 
         // Update zoom indicator on render
         const originalRender = this.graphRenderer.render.bind(this.graphRenderer);
-        this.graphRenderer.render = () => {
-          originalRender();
+        this.graphRenderer.render = async () => {
+          await originalRender();
           zoomIndicator.textContent = this.graphRenderer!.getZoomLevel();
         };
       } else {
@@ -557,7 +562,7 @@ export class BlueResolutionTreeView extends ItemView {
           ctx.font = '14px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText('No resolution data available.', rect.width / 2, rect.height / 2);
+          ctx.fillText('No resolution data available.', availableWidth / 2, availableHeight / 2);
         }
       }
     };
