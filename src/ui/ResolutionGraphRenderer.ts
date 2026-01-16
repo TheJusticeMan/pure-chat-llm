@@ -1,4 +1,4 @@
-import { ResolutionNodeData, ResolutionStatus } from '../types';
+import { ResolutionNodeData, ResolutionStatus, PURE_CHAT_LLM_ICON_SVG, PURE_CHAT_LLM_ICON_NAME } from '../types';
 import { getIcon } from 'obsidian';
 
 /**
@@ -474,7 +474,7 @@ export class ResolutionGraphRenderer {
    */
   private async preloadIcons(): Promise<void> {
     // Pre-load all icon types we might use
-    const iconTypes = ['folder', 'pure-chat-llm', 'file-text', 'image', 'file'];
+    const iconTypes = ['folder', PURE_CHAT_LLM_ICON_NAME, 'file-text', 'image', 'file'];
     
     await Promise.all(
       iconTypes.map(iconId => this.loadIcon(iconId))
@@ -503,7 +503,7 @@ export class ResolutionGraphRenderer {
     
     // Chat files
     if (node.data.isChatFile) {
-      return 'pure-chat-llm';
+      return PURE_CHAT_LLM_ICON_NAME;
     }
     
     // Markdown files
@@ -523,7 +523,21 @@ export class ResolutionGraphRenderer {
       return this.iconCache.get(iconId)!;
     }
     
-    const svgElement = getIcon(iconId);
+    let svgElement: SVGSVGElement | null = null;
+    
+    // Handle pure-chat-llm icon specially since it's manually registered
+    if (iconId === PURE_CHAT_LLM_ICON_NAME) {
+      // Create SVG element from the SVG string in types.ts
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${PURE_CHAT_LLM_ICON_SVG}</svg>`,
+        'image/svg+xml'
+      );
+      svgElement = svgDoc.documentElement as unknown as SVGSVGElement;
+    } else {
+      svgElement = getIcon(iconId);
+    }
+    
     if (!svgElement) {
       return null;
     }
