@@ -11,17 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New icons for Conversation Overview and Voice Call views
-- Refactored settings UI for improved organization and functionality
+- **Blue File Resolution System**: Introduced a robust, specialized file resolution engine (`BlueFileResolver`) designed to recursively resolve note links, images, and audio files. This system replaces the previous ad-hoc logic with a graph-based approach that intelligently handles circular dependencies, depth limits, and caching for optimal performance.
+- **Blue Resolution Tree View**: Implemented a new "Blue Resolution Tree" side panel view. This interactive visualization allows users to explore the dependency graph of the current note in real-time.
+    - **Interactive Hierarchy**: Expand and collapse nodes to see exactly what files are being pulled into the context.
+    - **Status Indicators**: Visual cues for resolution status (resolved, missing, cyclic dependency, ignored).
+    - **Cyber-Neon Aesthetic**: A distinct visual style with "Blue" accents to differentiate it from standard Obsidian views.
+    - **Navigation**: Click on any node in the tree to immediately open that file in the editor.
+- **Enhanced Documentation**: Added `BLUE_FILE_RESOLUTION.md` providing in-depth architectural details and usage guides for the new resolution system.
+- **Visual Updates**: Updated icons for the Conversation Overview and Voice Call views to better align with the new design language.
+- **Settings Overhaul**: Refactored the settings UI to accommodate the new resolution options, improving organization and usability.
 
 ### Changed
 
-- Minimum Obsidian app version is now 1.11.4
-- Various UI improvements and code refactoring
+- **Core Logic Refactor**: Completely centralized all file resolution logic from `Chat.ts` into the `BlueFileResolver` class. This major architectural change improves maintainability and reliability of context generation.
+- **Dependency Management**: Updated the minimum required Obsidian app version to 1.11.4 to leverage the latest API capabilities.
+- **UI/UX Improvements**: Various refinements to the user interface and internal code structure for better stability and performance.
 
 ### Fixed
 
-- Minor bug fixes and stability improvements
+- **Stability Improvements**: Addressed various minor bugs and edge cases in the file resolution and chat handling logic.
 
 ## [1.9.3] - 2026-01-14
 
