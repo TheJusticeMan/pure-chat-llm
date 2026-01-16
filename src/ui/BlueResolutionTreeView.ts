@@ -591,6 +591,14 @@ export class BlueResolutionTreeView extends ItemView {
         this.openFile(node.id);
       }
     });
+    
+    // Add touch handler for node navigation
+    canvas.addEventListener('nodeclick', ((event: CustomEvent) => {
+      const nodeId = event.detail.nodeId;
+      if (nodeId) {
+        this.openFile(nodeId);
+      }
+    }) as EventListener);
   }
 
   private buildTreeNode(filePath: string, visited: Set<string>): TreeNode | null {

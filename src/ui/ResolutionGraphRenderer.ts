@@ -56,6 +56,9 @@ export class ResolutionGraphRenderer {
   private height: number = 0;
   private iconCache: Map<string, HTMLImageElement> = new Map();
   private iconsLoaded: boolean = false;
+  private touches: Map<number, { x: number; y: number }> = new Map();
+  private initialPinchDistance: number | null = null;
+  private initialScale: number = 1;
 
   constructor(canvas: HTMLCanvasElement, treeData: Map<string, ResolutionNodeData>) {
     const context = canvas.getContext('2d');
@@ -71,6 +74,7 @@ export class ResolutionGraphRenderer {
     this.buildGraph();
     this.layoutNodes();
     this.setupInteractivity();
+    this.setupTouchSupport();
     
     // Pre-load all icons asynchronously to avoid race conditions during render
     void this.preloadIcons();
@@ -269,47 +273,19 @@ export class ResolutionGraphRenderer {
       const nodeColor = this.getNodeColor(node.data.status);
       const fileName = node.id.split('/').pop() || node.id;
 
-      // Draw circle
-      this.ctx.fillStyle = nodeColor;
-      this.ctx.strokeStyle = this.getNodeBorderColor(node.data.status);
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      // Add glow effect for resolving nodes
-      if (node.data.status === 'resolving') {
-        this.ctx.shadowBlur = 20;
-        this.ctx.shadowColor = nodeColor;
-        this.ctx.beginPath();
-        this.ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        this.ctx.stroke();
-        this.ctx.shadowBlur = 0;
-      }
-
-      // Animated glow for recently changed nodes
-      const timestamp = this.animationTimestamps.get(node.id);
-      if (timestamp) {
-        const elapsed = now - timestamp;
-        const progress = elapsed / 1000; // 0 to 1
-        const alpha = 1 - progress;
-        const pulseRadius = node.radius + 10 + progress * 20;
-
-        this.ctx.beginPath();
-        this.ctx.arc(node.x, node.y, pulseRadius, 0, Math.PI * 2);
-        this.ctx.strokeStyle = nodeColor.replace(/[\d.]+\)$/, `${alpha})`);
-        this.ctx.lineWidth = 3;
-        this.ctx.stroke();
-      }
-
-      // Draw icon (only if icons are loaded, use cached version)
+      // Draw icon ONLY (no circle background)
       if (this.iconsLoaded) {
         const iconId = this.getNodeIcon(node);
         const icon = this.iconCache.get(iconId);
         
         if (icon) {
-          const iconSize = node.radius * 1.2;
+          // Calculate icon size (larger, no circle background)
+          const iconSize = node.radius * 2.5;
+          
+          // Apply status-based color tint
+          this.ctx.save();
+          
+          // Draw icon first
           this.ctx.drawImage(
             icon,
             node.x - iconSize / 2,
@@ -317,10 +293,73 @@ export class ResolutionGraphRenderer {
             iconSize,
             iconSize
           );
+          
+          // Apply color overlay for status
+          this.ctx.globalCompositeOperation = 'source-atop';
+          this.ctx.fillStyle = nodeColor;
+          this.ctx.fillRect(
+            node.x - iconSize / 2,
+            node.y - iconSize / 2,
+            iconSize,
+            iconSize
+          );
+          
+          this.ctx.restore();
+          
+          // Draw glow for pending chats (around icon, not circle)
+          if (node.data.isPendingChat) {
+            this.ctx.save();
+            this.ctx.strokeStyle = 'rgba(0, 200, 255, 0.6)';
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(
+              node.x - iconSize / 2 - 5,
+              node.y - iconSize / 2 - 5,
+              iconSize + 10,
+              iconSize + 10
+            );
+            this.ctx.restore();
+          }
+          
+          // Add glow effect for resolving nodes
+          if (node.data.status === 'resolving') {
+            this.ctx.save();
+            this.ctx.shadowBlur = 20;
+            this.ctx.shadowColor = nodeColor;
+            this.ctx.strokeStyle = this.getNodeBorderColor(node.data.status);
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(
+              node.x - iconSize / 2,
+              node.y - iconSize / 2,
+              iconSize,
+              iconSize
+            );
+            this.ctx.shadowBlur = 0;
+            this.ctx.restore();
+          }
+          
+          // Animated glow for recently changed nodes
+          const timestamp = this.animationTimestamps.get(node.id);
+          if (timestamp) {
+            const elapsed = now - timestamp;
+            const progress = elapsed / 1000; // 0 to 1
+            const alpha = 1 - progress;
+            const pulseSize = iconSize + 10 + progress * 20;
+
+            this.ctx.save();
+            this.ctx.strokeStyle = nodeColor.replace(/[\d.]+\)$/, `${alpha})`);
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(
+              node.x - pulseSize / 2,
+              node.y - pulseSize / 2,
+              pulseSize,
+              pulseSize
+            );
+            this.ctx.restore();
+          }
         }
       }
 
-      // Draw file name label below node
+      // Draw file name label below icon
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
       this.ctx.font = '12px sans-serif';
       this.ctx.textAlign = 'center';
@@ -337,7 +376,7 @@ export class ResolutionGraphRenderer {
         displayName += '...';
       }
 
-      this.ctx.fillText(displayName, node.x, node.y + node.radius + 8);
+      this.ctx.fillText(displayName, node.x, node.y + node.radius * 2 + 20);
     }
   }
 
@@ -641,6 +680,137 @@ export class ResolutionGraphRenderer {
       this.draggedNode = null;
       this.canvas.style.cursor = 'default';
     });
+  }
+
+  /**
+   * Setup touch support for mobile/tablet interaction
+   */
+  private setupTouchSupport(): void {
+    this.canvas.addEventListener('touchstart', (e: TouchEvent) => {
+      e.preventDefault();
+      
+      for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        this.touches.set(touch.identifier, {
+          x: touch.clientX,
+          y: touch.clientY
+        });
+      }
+      
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const node = this.getNodeAtScreenPosition(
+          touch.clientX - rect.left,
+          touch.clientY - rect.top
+        );
+        if (node) {
+          this.draggedNode = node;
+        }
+      }
+      
+      if (e.touches.length === 2) {
+        this.initialPinchDistance = this.getTouchDistance(
+          e.touches[0],
+          e.touches[1]
+        );
+        this.initialScale = this.transform.scale;
+      }
+    });
+    
+    this.canvas.addEventListener('touchmove', (e: TouchEvent) => {
+      e.preventDefault();
+      
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const prevTouch = this.touches.get(touch.identifier);
+        
+        if (prevTouch) {
+          const deltaX = touch.clientX - prevTouch.x;
+          const deltaY = touch.clientY - prevTouch.y;
+          
+          if (this.draggedNode) {
+            const rect = this.canvas.getBoundingClientRect();
+            const graphPos = this.screenToGraph(
+              touch.clientX - rect.left,
+              touch.clientY - rect.top
+            );
+            this.draggedNode.x = graphPos.x;
+            this.draggedNode.y = graphPos.y;
+            this.nodePositionOverrides.set(this.draggedNode.id, graphPos);
+          } else {
+            this.transform.offsetX += deltaX;
+            this.transform.offsetY += deltaY;
+          }
+          
+          this.touches.set(touch.identifier, {
+            x: touch.clientX,
+            y: touch.clientY
+          });
+          this.render();
+        }
+      } else if (e.touches.length === 2 && this.initialPinchDistance) {
+        const distance = this.getTouchDistance(e.touches[0], e.touches[1]);
+        const scale = (distance / this.initialPinchDistance) * this.initialScale;
+        this.transform.scale = Math.max(0.1, Math.min(5, scale));
+        this.render();
+      }
+    });
+    
+    this.canvas.addEventListener('touchend', (e: TouchEvent) => {
+      e.preventDefault();
+      
+      // Check if this was a tap (not a drag)
+      if (e.changedTouches.length === 1 && !this.draggedNode && this.touches.size === 1) {
+        const touch = e.changedTouches[0];
+        const prevTouch = this.touches.get(touch.identifier);
+        
+        if (prevTouch) {
+          const deltaX = Math.abs(touch.clientX - prevTouch.x);
+          const deltaY = Math.abs(touch.clientY - prevTouch.y);
+          
+          // If movement was minimal, treat it as a tap
+          if (deltaX < 10 && deltaY < 10) {
+            const rect = this.canvas.getBoundingClientRect();
+            const node = this.getNodeAtScreenPosition(
+              touch.clientX - rect.left,
+              touch.clientY - rect.top
+            );
+            
+            if (node) {
+              // Dispatch a custom event that can be listened to
+              const event = new CustomEvent('nodeclick', { detail: { nodeId: node.id } });
+              this.canvas.dispatchEvent(event);
+            }
+          }
+        }
+      }
+      
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        this.touches.delete(e.changedTouches[i].identifier);
+      }
+      
+      if (e.touches.length < 2) {
+        this.initialPinchDistance = null;
+      }
+      
+      this.draggedNode = null;
+    });
+    
+    this.canvas.addEventListener('touchcancel', () => {
+      this.touches.clear();
+      this.draggedNode = null;
+      this.initialPinchDistance = null;
+    });
+  }
+
+  /**
+   * Calculate distance between two touch points for pinch zoom
+   */
+  private getTouchDistance(touch1: Touch, touch2: Touch): number {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**
