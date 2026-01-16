@@ -544,3 +544,7 @@ sup {
 .resolution-node.is-collapsed > .resolution-node-children {
   display: none;
 }
+
+.locked-view {
+  border: 1px solid var(--interactive-accent);
+}

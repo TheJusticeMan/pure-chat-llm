@@ -429,6 +429,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
             .addToggle(toggle =>
               toggle.setValue(settings.blueFileResolution.enabled).onChange(async value => {
                 settings.blueFileResolution.enabled = value;
+                void this.plugin.blueView?.onOpen();
                 await this.plugin.saveSettings();
               }),
             ),

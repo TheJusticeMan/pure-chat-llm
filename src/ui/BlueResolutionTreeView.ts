@@ -37,10 +37,40 @@ interface TreeNode {
 export class BlueResolutionTreeView extends ItemView {
   private console: BrowserConsole;
   private currentRootFile: TFile | null = null;
+  private lastActiveFile: TFile | null = null;
   private treeData: Map<string, ResolutionNodeData> = new Map();
   private showLegend: boolean = true;
   private isAnalyzing: boolean = false;
   private boundResolutionEventHandler: (event: ResolutionEvent) => void;
+  private _locked: boolean = false;
+
+  get locked(): boolean {
+    return this._locked;
+  }
+
+  set locked(value: boolean) {
+    if (this._locked === value) return;
+    this._locked = value;
+
+    this.lastActiveFile =
+      this.lastActiveFile ||
+      this.currentRootFile ||
+      this.app.workspace.getActiveViewOfType(MarkdownView)?.file ||
+      null;
+
+    if (this._locked) {
+      this.renderView();
+    } else {
+      this.currentRootFile = null;
+      const file =
+        this.app.workspace.getActiveViewOfType(MarkdownView)?.file || this.lastActiveFile;
+      if (file) {
+        this.onActiveFileChange(file);
+      } else {
+        this.renderNoFileMessage();
+      }
+    }
+  }
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -50,6 +80,7 @@ export class BlueResolutionTreeView extends ItemView {
     this.console = new BrowserConsole(plugin.settings.debug, 'BlueResolutionTreeView');
     this.icon = 'list-tree';
     this.navigation = false;
+    this.plugin.blueView = this;
     this.boundResolutionEventHandler = this.handleResolutionEvent.bind(this) as (
       event: ResolutionEvent,
     ) => void;
@@ -133,14 +164,15 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   private onActiveFileChange(file: TFile): void {
+    this.lastActiveFile = file;
+    if (this.locked) return;
+
     if (file && file.extension === 'md') {
       // Only update if the file has changed
       if (this.currentRootFile?.path !== file.path) {
         this.currentRootFile = file;
         this.clearTreeData();
         this.renderView();
-        // Auto-analyze the file when it opens
-        void this.analyzeCurrentFile();
       }
     } else {
       this.currentRootFile = null;
@@ -190,6 +222,11 @@ export class BlueResolutionTreeView extends ItemView {
 
     // Create wrapper for tree to maintain order
     contentEl.createDiv({ cls: 'resolution-tree-wrapper' });
+
+    if (this.treeData.size <= 1 && !this.isAnalyzing) {
+      void this.analyzeCurrentFile();
+    }
+
     this.renderTree();
 
     if (this.showLegend) {
@@ -202,28 +239,27 @@ export class BlueResolutionTreeView extends ItemView {
       .setName('Blue resolution tree')
       .setClass('PUREfloattop')
       .setHeading()
-      .then(
-        setting =>
-          this.currentRootFile &&
+      .then(setting => {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        const editor = view?.editor;
+        if (editor && view)
+          setting.addExtraButton(btn =>
+            btn
+              .setIcon('send')
+              .setTooltip('Send chat message to linked chats')
+              .onClick(() => {
+                this.plugin.completeChatResponse(editor, view);
+              }),
+          );
+        if (this.currentRootFile)
           setting
-            .addExtraButton(btn => {
-              const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-              const editor = view?.editor;
-              if (!editor || !view) return new Notice('No active markdown editor found.');
-              return btn
-                .setIcon('send')
-                .setTooltip('Send chat message to linked chats')
-                .onClick(() => {
-                  this.plugin.completeChatResponse(editor, view);
-                });
-            })
             .addExtraButton(btn =>
               btn
                 .setIcon('refresh-cw')
                 .setTooltip('Refresh tree')
                 .onClick(() => {
                   this.clearTreeData();
-                  void this.analyzeCurrentFile();
+                  void this.renderView();
                 }),
             )
             .addExtraButton(btn =>
@@ -234,7 +270,17 @@ export class BlueResolutionTreeView extends ItemView {
                   this.showLegend = !this.showLegend;
                   this.renderView();
                 }),
-            ),
+            );
+        if (this.locked) setting.settingEl.addClass('locked-view');
+      })
+      .addExtraButton(btn =>
+        btn
+          .setIcon(this.locked ? 'lock' : 'unlock')
+          .setTooltip(this.locked ? 'Unlock view from current file' : 'Lock view to current file')
+          .onClick(() => {
+            this.locked = !this.locked;
+          })
+          .then(btnSetting => this.locked && btnSetting.extraSettingsEl.addClass('locked-view')),
       )
       .addExtraButton(btn =>
         btn
@@ -257,6 +303,7 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   private renderNoFileMessage(): void {
+    if (this.locked) return;
     this.contentEl.empty();
     this.currentRootFile = null;
 
@@ -467,10 +514,18 @@ export class BlueResolutionTreeView extends ItemView {
   private openFile(filePath: string): void {
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof TFile) {
+      this.lockViewToFile(this.currentRootFile);
       void this.app.workspace.getLeaf(false).openFile(file);
     } else {
       new Notice(`File not found: ${filePath}`);
     }
+  }
+
+  lockViewToFile(currentRootFile: TFile | null) {
+    if (currentRootFile) {
+      this.currentRootFile = currentRootFile;
+    }
+    this.locked = true;
   }
 
   private async analyzeCurrentFile(): Promise<void> {

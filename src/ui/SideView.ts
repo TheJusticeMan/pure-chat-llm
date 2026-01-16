@@ -130,6 +130,7 @@ export class PureChatLLMSideView extends ItemView {
       .setName('Pure Chat LLM')
       .setClass('PUREfloattop')
       .setHeading()
+      .addButton(btn => btn.setButtonText('Hot keys').onClick(() => this.plugin.openHotkeys()))
       .then(b => {
         const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
         if (editor)
@@ -152,8 +153,7 @@ export class PureChatLLMSideView extends ItemView {
           .setIcon('list-tree')
           .setTooltip('Open resolution tree view')
           .onClick(() => this.plugin.activateBlueResolutView()),
-      )
-      .addButton(btn => btn.setButtonText('Hot keys').onClick(() => this.plugin.openHotkeys()));
+      );
     new Setting(this.contentEl).setName(
       'The current editor does not contain a valid conversation.',
     );

@@ -76,6 +76,7 @@ export default class PureChatLLM extends Plugin {
   pureChatStatusElement: HTMLElement;
   codeBlock: { from: number; to: number } | null = null;
   blueFileResolver: BlueFileResolver;
+  blueView: BlueResolutionTreeView | null = null;
 
   async onload() {
     await this.loadSettings();
