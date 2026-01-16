@@ -1,11 +1,4 @@
-import {
-  App,
-  EditorRange,
-  Notice,
-  parseYaml,
-  stringifyYaml,
-  TFile,
-} from 'obsidian';
+import { App, EditorRange, Notice, parseYaml, stringifyYaml, TFile } from 'obsidian';
 import PureChatLLM, { StreamNotice } from '../main';
 import { ToolRegistry } from '../tools';
 import { ActiveContextTool } from '../tools/ActiveContext';
@@ -42,7 +35,7 @@ import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
 import { LLMService } from './LLMService';
 import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
-
+import { ResolutionContext } from './BlueFileResolver';
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -434,13 +427,13 @@ export class PureChatLLMChat {
   async getChatGPTinstructions(
     activeFile: TFile,
     app: App,
-    context?: import('./BlueFileResolver').ResolutionContext,
+    context?: ResolutionContext,
   ): Promise<ChatRequestOptions> {
     this.file = activeFile;
 
     // Use the plugin's shared resolver instance
     const resolver = this.plugin.blueFileResolver;
-    
+
     // Use provided context or create new one if blue file resolution is enabled
     if (!context && this.plugin.settings.blueFileResolution.enabled) {
       context = resolver.createContext(activeFile);
@@ -512,11 +505,7 @@ export class PureChatLLMChat {
       this.messages = await Promise.all(
         this.messages.map(async ({ role, content }) => ({
           role,
-          content: await resolver.resolveFiles(
-            content,
-            this.file,
-            this.plugin.app,
-          ),
+          content: await resolver.resolveFiles(content, this.file, this.plugin.app),
         })),
       );
     }
@@ -608,7 +597,7 @@ export class PureChatLLMChat {
   completeChatResponse(
     file: TFile,
     streamcallback?: (textFragment: { content: string }) => boolean,
-    context?: import('./BlueFileResolver').ResolutionContext,
+    context?: ResolutionContext,
   ): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
       return Promise.resolve(this);

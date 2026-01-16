@@ -45,7 +45,7 @@ export interface ChatParser {
 
 export const PURE_CHAT_LLM_VIEW_TYPE = 'pure-chat-llm-left-pane';
 export const VOICE_CALL_VIEW_TYPE = 'voice-call-side-view';
-export const BLUE_RESOLUTION_TREE_VIEW_TYPE = 'blue-resolution-tree-view';
+export const BLUE_RESOLUTION_VIEW_TYPE = 'blue-resolution-tree-view';
 
 // Tool Types
 export interface ToolParameter {
@@ -181,7 +181,13 @@ export const PURE_CHAT_LLM_ICON_SVG = `<g
 export const PURE_CHAT_LLM_ICON_NAME = 'pure-chat-llm';
 
 // Blue File Resolution Types
-export type ResolutionStatus = 'idle' | 'resolving' | 'complete' | 'error' | 'cached' | 'cycle-detected';
+export type ResolutionStatus =
+  | 'idle'
+  | 'resolving'
+  | 'complete'
+  | 'error'
+  | 'cached'
+  | 'cycle-detected';
 
 export interface ResolutionEvent {
   type: 'start' | 'complete' | 'error' | 'cache-hit' | 'cycle-detected' | 'depth-limit';
@@ -190,6 +196,7 @@ export interface ResolutionEvent {
   depth: number;
   status: ResolutionStatus;
   isPendingChat: boolean;
+  isChatFile?: boolean;
   error?: string;
   timestamp: number;
 }
@@ -205,6 +212,7 @@ export interface ResolutionNodeData {
   depth: number;
   status: ResolutionStatus;
   isPendingChat: boolean;
+  isChatFile?: boolean;
   children: string[];
   error?: string;
 }

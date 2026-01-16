@@ -53,7 +53,6 @@ export interface ResolutionContext {
   rootFile: TFile;
 }
 
-
 /**
  * BlueFileResolver handles recursive, dynamic resolution of [[note]] links.
  * If a linked file is a pending chat (ends with a user message), it executes
@@ -245,7 +244,7 @@ export class BlueFileResolver {
 
     // Create the resolution Promise and start execution immediately.
     const resolutionPromise = this.resolveFileInternal(file, childContext, app);
-    
+
     // Store Promise in cache for concurrent resolution deduplication.
     if (blueFileResolution.enableCaching) {
       context.cache.set(file.path, resolutionPromise);
@@ -290,12 +289,13 @@ export class BlueFileResolver {
 
       // Check if this is a pending chat
       const isPending = this.isPendingChat(content, chat);
-      
+      const isChatFile = chat.validChat && chat.messages.length > 0;
+
       if (!isPending) {
         this.console.log(`[Blue File Resolution] Not a pending chat: ${file.path}`);
         // Not a pending chat, resolve links within it recursively
         const resolved = await this.resolveLinksInContent(content, file, context, app);
-        
+
         // Emit complete event
         this.emitEvent({
           type: 'complete',
@@ -304,9 +304,10 @@ export class BlueFileResolver {
           depth: context.currentNode.depth,
           status: 'complete',
           isPendingChat: false,
+          isChatFile,
           timestamp: Date.now(),
         });
-        
+
         return resolved;
       }
 
@@ -316,7 +317,7 @@ export class BlueFileResolver {
       // Note: We pass the context to completeChatResponse so that getChatGPTinstructions
       // can use resolveFilesWithImagesAndAudio with proper cycle detection, depth tracking,
       // and caching. This ensures images and audio files are handled correctly.
-      
+
       // Execute the chat (without streaming for intermediate resolutions)
       const response = await chat.completeChatResponse(file, undefined, context);
 
@@ -342,13 +343,14 @@ export class BlueFileResolver {
         depth: context.currentNode.depth,
         status: 'complete',
         isPendingChat: true,
+        isChatFile: true,
         timestamp: Date.now(),
       });
 
       return resolvedContent;
     } catch (error) {
       this.console.error(`[Blue File Resolution] Error resolving file ${file.path}:`, error);
-      
+
       // Emit error event
       this.emitEvent({
         type: 'error',
@@ -360,7 +362,7 @@ export class BlueFileResolver {
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now(),
       });
-      
+
       return `[[${file.path}]] (Error: ${error instanceof Error ? error.message : 'Unknown error'})`;
     }
   }

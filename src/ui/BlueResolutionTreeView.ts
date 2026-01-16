@@ -6,15 +6,18 @@ import {
   MarkdownView,
   Notice,
   ExtraButtonComponent,
+  App,
 } from 'obsidian';
 import PureChatLLM from '../main';
 import {
-  BLUE_RESOLUTION_TREE_VIEW_TYPE,
+  BLUE_RESOLUTION_VIEW_TYPE,
+  PURE_CHAT_LLM_ICON_NAME,
   ResolutionEvent,
   ResolutionNodeData,
   ResolutionStatus,
 } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
+import { PureChatLLMChat } from '../core/Chat';
 
 interface TreeNode {
   filePath: string;
@@ -22,9 +25,9 @@ interface TreeNode {
   depth: number;
   status: ResolutionStatus;
   isPendingChat: boolean;
+  isChatFile?: boolean;
   children: TreeNode[];
   error?: string;
-  isExpanded: boolean;
 }
 
 /**
@@ -53,7 +56,7 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   getViewType(): string {
-    return BLUE_RESOLUTION_TREE_VIEW_TYPE;
+    return BLUE_RESOLUTION_VIEW_TYPE;
   }
 
   getDisplayText(): string {
@@ -67,24 +70,25 @@ export class BlueResolutionTreeView extends ItemView {
     // Listen to workspace events for active file changes
     // Only update when a MarkdownView becomes active (not when this view becomes active)
     this.registerEvent(
-      this.app.workspace.on('active-leaf-change', leaf => {
-        if (!leaf) return;
-        const view = leaf.view;
-        if (!(view instanceof MarkdownView)) return;
-        this.onActiveFileChange();
+      this.app.workspace.on('active-leaf-change', () => {
+        const file = this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
+        if (!file) return;
+        this.onActiveFileChange(file);
       }),
     );
 
     this.registerEvent(
       this.app.workspace.on('file-open', () => {
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!view) return;
-        this.onActiveFileChange();
+        const file = this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
+        if (!file) return this.renderNoFileMessage();
+        this.onActiveFileChange(file);
       }),
     );
 
     this.renderView();
-    this.onActiveFileChange();
+    const file = this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
+    if (!file) return;
+    this.onActiveFileChange(file);
   }
 
   async onClose(): Promise<void> {
@@ -107,6 +111,9 @@ export class BlueResolutionTreeView extends ItemView {
 
     nodeData.status = event.status;
     nodeData.isPendingChat = event.isPendingChat;
+    if (event.isChatFile !== undefined) {
+      nodeData.isChatFile = event.isChatFile;
+    }
     if (event.error) {
       nodeData.error = event.error;
     }
@@ -125,10 +132,7 @@ export class BlueResolutionTreeView extends ItemView {
     this.renderTree();
   }
 
-  private onActiveFileChange(): void {
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    const file = view?.file;
-
+  private onActiveFileChange(file: TFile): void {
     if (file && file.extension === 'md') {
       // Only update if the file has changed
       if (this.currentRootFile?.path !== file.path) {
@@ -167,55 +171,97 @@ export class BlueResolutionTreeView extends ItemView {
     this.renderHeader(contentEl);
 
     if (!this.currentRootFile) {
-      this.renderNoFileMessage(contentEl);
+      this.renderNoFileMessage();
       return;
     }
+
+    if (this.plugin.settings.blueFileResolution.enabled === false) {
+      new Setting(contentEl)
+        .addToggle(toggle =>
+          toggle.setValue(false).onChange(async value => {
+            this.plugin.settings.blueFileResolution.enabled = value;
+            await this.plugin.saveSettings();
+            this.renderView();
+          }),
+        )
+        .setDesc('Blue file resolution is currently disabled.');
+      return;
+    }
+
+    // Create wrapper for tree to maintain order
+    contentEl.createDiv({ cls: 'resolution-tree-wrapper' });
+    this.renderTree();
 
     if (this.showLegend) {
       this.renderLegend(contentEl);
     }
-
-    this.renderTree();
   }
 
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Blue resolution tree')
+      .setClass('PUREfloattop')
       .setHeading()
-      .addExtraButton(btn =>
-        btn
-          .setIcon('refresh-cw')
-          .setTooltip('Refresh tree')
-          .onClick(() => {
-            this.clearTreeData();
-            void this.analyzeCurrentFile();
-          }),
-      )
-      .addExtraButton(btn =>
-        btn
-          .setIcon('search')
-          .setTooltip('Analyze file (dry-run)')
-          .onClick(() => this.analyzeCurrentFile()),
-      )
-      .addExtraButton(btn =>
-        btn
-          .setIcon(this.showLegend ? 'eye-off' : 'eye')
-          .setTooltip(this.showLegend ? 'Hide legend' : 'Show legend')
-          .onClick(() => {
-            this.showLegend = !this.showLegend;
-            this.renderView();
-          }),
+      .then(
+        setting =>
+          this.currentRootFile &&
+          setting
+            .addExtraButton(btn => {
+              const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+              const editor = view?.editor;
+              if (!editor || !view) return new Notice('No active markdown editor found.');
+              return btn
+                .setIcon('send')
+                .setTooltip('Send chat message to linked chats')
+                .onClick(() => {
+                  this.plugin.completeChatResponse(editor, view);
+                });
+            })
+            .addExtraButton(btn =>
+              btn
+                .setIcon('refresh-cw')
+                .setTooltip('Refresh tree')
+                .onClick(() => {
+                  this.clearTreeData();
+                  void this.analyzeCurrentFile();
+                }),
+            )
+            .addExtraButton(btn =>
+              btn
+                .setIcon(this.showLegend ? 'eye-off' : 'eye')
+                .setTooltip(this.showLegend ? 'Hide legend' : 'Show legend')
+                .onClick(() => {
+                  this.showLegend = !this.showLegend;
+                  this.renderView();
+                }),
+            ),
       )
       .addExtraButton(btn =>
         btn
           .setIcon('settings')
           .setTooltip('Open settings')
           .onClick(() => this.plugin.openSettings()),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon(PURE_CHAT_LLM_ICON_NAME)
+          .setTooltip('Open conversation view')
+          .onClick(() => this.plugin.activateChatView()),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon('phone')
+          .setTooltip('Open voice call view')
+          .onClick(() => this.plugin.activateVoiceCallView()),
       );
   }
 
-  private renderNoFileMessage(container: HTMLElement): void {
-    const messageEl = container.createDiv({ cls: 'resolution-tree-no-file' });
+  private renderNoFileMessage(): void {
+    this.contentEl.empty();
+    this.currentRootFile = null;
+
+    this.renderHeader(this.contentEl);
+    const messageEl = this.contentEl.createDiv({ cls: 'resolution-tree-no-file' });
     messageEl.createEl('p', {
       text: 'No markdown file is currently open.',
     });
@@ -243,7 +289,7 @@ export class BlueResolutionTreeView extends ItemView {
       // Create icon indicator
       new ExtraButtonComponent(itemEl)
         .setDisabled(true)
-        .setIcon('file-text')
+        .setIcon(PURE_CHAT_LLM_ICON_NAME)
         .extraSettingsEl.addClass(`status-indicator-${status}`);
       itemEl.createSpan({ cls: 'legend-label', text: label });
     });
@@ -253,6 +299,7 @@ export class BlueResolutionTreeView extends ItemView {
 
     const iconTypes = [
       { icon: 'folder', label: 'Folder / Root' },
+      { icon: 'pure-chat-llm', label: 'Chat' },
       { icon: 'file-text', label: 'Markdown file' },
       { icon: 'image', label: 'Image file' },
       { icon: 'file', label: 'Other file' },
@@ -267,9 +314,11 @@ export class BlueResolutionTreeView extends ItemView {
 
   private renderTree(): void {
     const { contentEl } = this;
+    const treeWrapper = contentEl.querySelector('.resolution-tree-wrapper') as HTMLElement;
+    const container = treeWrapper || contentEl;
 
     // Remove existing tree container if it exists
-    const existingTree = contentEl.querySelector('.resolution-tree-container');
+    const existingTree = container.querySelector('.resolution-tree-container');
     if (existingTree) {
       existingTree.remove();
     }
@@ -278,7 +327,7 @@ export class BlueResolutionTreeView extends ItemView {
       return;
     }
 
-    const treeContainer = contentEl.createDiv({ cls: 'resolution-tree-container' });
+    const treeContainer = container.createDiv({ cls: 'resolution-tree-container' });
 
     // Build tree structure from flat data with cycle detection
     const visited = new Set<string>();
@@ -309,9 +358,9 @@ export class BlueResolutionTreeView extends ItemView {
         depth: nodeData.depth,
         status: nodeData.status === 'idle' ? 'cycle-detected' : nodeData.status,
         isPendingChat: nodeData.isPendingChat,
+        isChatFile: nodeData.isChatFile,
         children: [], // No children to break recursion
         error: nodeData.error,
-        isExpanded: true,
       };
     }
 
@@ -334,9 +383,9 @@ export class BlueResolutionTreeView extends ItemView {
       depth: nodeData.depth,
       status: nodeData.status,
       isPendingChat: nodeData.isPendingChat,
+      isChatFile: nodeData.isChatFile,
       children,
       error: nodeData.error,
-      isExpanded: true, // Start expanded
     };
   }
 
@@ -355,12 +404,21 @@ export class BlueResolutionTreeView extends ItemView {
 
     // Expand/collapse button for nodes with children
     if (node.children.length > 0) {
-      new ExtraButtonComponent(contentEl)
-        .setIcon(node.isExpanded ? 'chevron-down' : 'chevron-right')
-        .onClick(() => {
-          node.isExpanded = !node.isExpanded;
-          this.renderTree();
-        });
+      let nodeIsExpanded = true;
+      const expandBtn = new ExtraButtonComponent(contentEl).setIcon('chevron-down').onClick(() => {
+        // Toggle without re-rendering the whole tree
+        if (nodeIsExpanded) {
+          // Collapse
+          nodeEl.addClass('is-collapsed');
+          expandBtn.setIcon('chevron-right');
+          nodeIsExpanded = false;
+        } else {
+          // Expand
+          nodeEl.removeClass('is-collapsed');
+          expandBtn.setIcon('chevron-down');
+          nodeIsExpanded = true;
+        }
+      });
     }
 
     // Contextual icon with glow - folder for root/expandable, image for images, file for others
@@ -371,9 +429,11 @@ export class BlueResolutionTreeView extends ItemView {
           ? 'folder'
           : /\.(png|jpe?g)$/i.test(node.fileName)
             ? 'image'
-            : node.fileName.endsWith('.md')
-              ? 'file-text'
-              : 'file',
+            : node.isChatFile
+              ? 'pure-chat-llm'
+              : node.fileName.endsWith('.md')
+                ? 'file-text'
+                : 'file',
       )
       .extraSettingsEl.addClass(`status-indicator-${node.status}`);
 
@@ -385,14 +445,6 @@ export class BlueResolutionTreeView extends ItemView {
     nameEl.addEventListener('click', () => this.openFile(node.filePath));
     nameEl.title = node.filePath; // Full path on hover
 
-    // Only show pending badge if status is NOT complete/error/cached (conditional badges)
-    if (node.isPendingChat && node.status === 'idle') {
-      contentEl.createSpan({
-        cls: 'resolution-node-badge pending-chat',
-        text: 'Pending',
-      });
-    }
-
     // Error badge - only show if there's an actual error
     if (node.error) {
       const errorBadge = contentEl.createSpan({
@@ -402,9 +454,10 @@ export class BlueResolutionTreeView extends ItemView {
       errorBadge.title = node.error;
     }
 
-    // Render children if expanded
-    if (node.isExpanded && node.children.length > 0) {
+    // Render children container if children exist
+    if (node.children.length > 0) {
       const childrenContainer = nodeEl.createDiv({ cls: 'resolution-node-children' });
+
       for (const child of node.children) {
         this.renderTreeNode(childrenContainer, child, indentLevel + 1);
       }
@@ -435,10 +488,10 @@ export class BlueResolutionTreeView extends ItemView {
     this.clearTreeData();
 
     try {
-      new Notice('Analyzing file links...');
+      /* new Notice('Analyzing file links...'); */
       await this.scanFileLinks(this.currentRootFile, null, 0, new Set());
       this.renderTree();
-      new Notice('Analysis complete');
+      /* new Notice('Analysis complete'); */
     } catch (error) {
       this.console.error('Error analyzing file:', error);
       new Notice(
@@ -477,22 +530,21 @@ export class BlueResolutionTreeView extends ItemView {
     const content = await this.app.vault.cachedRead(file);
 
     // Check if it's a pending chat
-    const chat = new (await import('../core/Chat')).PureChatLLMChat(this.plugin);
+    const chat = new PureChatLLMChat(this.plugin);
     chat.setMarkdown(content);
-    const isPending =
-      chat.validChat &&
-      chat.messages.length > 0 &&
-      chat.messages[chat.messages.length - 1].role === 'user';
+    const isChatFile = BlueResolutionTreeView.isChatFile(chat);
 
     // Update or create node
     const nodeData: ResolutionNodeData = this.treeData.get(file.path) || {
       filePath: file.path,
       depth,
       status: 'idle',
-      isPendingChat: isPending,
+      isPendingChat: isChatFile,
+      isChatFile,
       children: [],
     };
-    nodeData.isPendingChat = isPending;
+    nodeData.isPendingChat = isChatFile;
+    nodeData.isChatFile = isChatFile;
     this.treeData.set(file.path, nodeData);
 
     // Add to parent's children
@@ -522,5 +574,40 @@ export class BlueResolutionTreeView extends ItemView {
         await this.scanFileLinks(linkedFile, file.path, depth + 1, branchVisited);
       }
     }
+  }
+
+  static isChatFile(chat: PureChatLLMChat): boolean {
+    return (
+      chat.validChat &&
+      chat.messages.length > 0 &&
+      chat.messages[chat.messages.length - 1].role === 'user'
+    );
+  }
+
+  /**
+   * Quickly checks if a file has any outgoing links (potential child chats).
+   */
+  static async hasChildChats(chat: PureChatLLMChat, file: TFile, app: App): Promise<boolean> {
+    try {
+      for (const message of chat.messages) {
+        const linkRegex = /\[\[([^\]]+)\]\]/g;
+        const matches = Array.from(message.content.matchAll(linkRegex));
+        for (const match of matches) {
+          const linkedFile = app.metadataCache.getFirstLinkpathDest(match[1], file.path);
+
+          if (
+            linkedFile instanceof TFile &&
+            BlueResolutionTreeView.isChatFile(
+              new PureChatLLMChat(chat.plugin).setMarkdown(await app.vault.cachedRead(linkedFile)),
+            )
+          ) {
+            return true;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for child chats:', error);
+    }
+    return false;
   }
 }

@@ -3,7 +3,7 @@ import { VoiceCall } from '../realtime/VoiceCall';
 import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
 import { GeminiLiveProvider } from '../realtime/providers/GeminiLiveProvider';
 import { PureChatLLMChat } from '../core/Chat';
-import { CallState, VOICE_CALL_VIEW_TYPE, ToolDefinition } from '../types';
+import { CallState, VOICE_CALL_VIEW_TYPE, ToolDefinition, PURE_CHAT_LLM_ICON_NAME } from '../types';
 import { VoiceCallConfig } from '../realtime/providers/IVoiceCallProvider';
 import PureChatLLM from '../main';
 import { EmptyApiKey } from 'src/assets/constants';
@@ -66,12 +66,25 @@ export class VoiceCallSideView extends ItemView {
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Voice call')
+      .setClass('PUREfloattop')
       .setHeading()
       .addExtraButton(btn =>
         btn
           .setIcon('settings')
           .setTooltip('Open settings')
           .onClick(() => this.plugin.openSettings()),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon(PURE_CHAT_LLM_ICON_NAME)
+          .setTooltip('Open conversation view')
+          .onClick(() => this.plugin.activateChatView()),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon('list-tree')
+          .setTooltip('Open resolution tree view')
+          .onClick(() => this.plugin.activateBlueResolutView()),
       );
   }
 
@@ -80,15 +93,15 @@ export class VoiceCallSideView extends ItemView {
     const statusText = this.getStatusText(this.callState.status);
 
     statusContainer.createEl('div', { cls: 'status-indicator' }, el => {
-      const statusIndicator = el.createEl('span', { 
-        cls: `status-icon status-icon-${this.callState.status}` 
+      const statusIndicator = el.createEl('span', {
+        cls: `status-icon status-icon-${this.callState.status}`,
       });
-      
+
       // Add spinner for connecting state
       if (this.callState.status === 'connecting') {
         statusIndicator.addClass('status-spinner');
       }
-      
+
       el.createEl('span', { cls: 'status-text', text: statusText });
     });
 
@@ -193,11 +206,11 @@ export class VoiceCallSideView extends ItemView {
       }
 
       // 1. Get API Key
-      let providerEndpoint = this.plugin.settings.endpoints.find(ep => 
-        ep.name === (this.selectedProvider === 'openai' ? 'OpenAI' : 'Gemini')
+      let providerEndpoint = this.plugin.settings.endpoints.find(
+        ep => ep.name === (this.selectedProvider === 'openai' ? 'OpenAI' : 'Gemini'),
       );
       if (!providerEndpoint) {
-          providerEndpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+        providerEndpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
       }
 
       if (!providerEndpoint?.apiKey || providerEndpoint.apiKey === EmptyApiKey) {
@@ -245,11 +258,10 @@ export class VoiceCallSideView extends ItemView {
         config,
         state => this.onCallStateChange(state),
         undefined,
-        stream => this.handleRemoteStream(stream)
+        stream => this.handleRemoteStream(stream),
       );
 
       await this.voiceCall.startCall();
-
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to start call:', msg);

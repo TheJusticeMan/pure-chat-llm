@@ -1,6 +1,5 @@
 import {
   App,
-  ButtonComponent,
   Editor,
   EditorRange,
   ExtraButtonComponent,
@@ -13,15 +12,15 @@ import {
   Setting,
   WorkspaceLeaf,
 } from 'obsidian';
-import { BrowserConsole } from '../utils/BrowserConsole';
+import { alloptions, EmptyApiKey } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
+import PureChatLLM from '../main';
+import { PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '../types';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { toTitleCase } from '../utils/toTitleCase';
 import { CodeHandling, SectionHandling } from './CodeHandling';
 import { CODE_PREVIEW_VIEW_TYPE } from './CodePreview';
-import PureChatLLM from '../main';
 import { AskForAPI } from './Modals';
-import { toTitleCase } from '../utils/toTitleCase';
-import { PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '../types';
-import { alloptions, EmptyApiKey } from 'src/assets/constants';
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -80,6 +79,7 @@ export class PureChatLLMSideView extends ItemView {
     this.registerEvent(
       this.app.workspace.on('file-open', () => {
         this.defaultContent();
+        /* this.console.log('Active leaf changed, updating side view'); */
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
         const editor = view?.editor;
         if (!view) return;
@@ -92,6 +92,7 @@ export class PureChatLLMSideView extends ItemView {
         if (!leaf) return;
         const v = leaf.view;
         if (!(v instanceof MarkdownView)) return;
+
         const e = v.editor;
         this.update(e, v);
         const c = e.getCursor();
@@ -127,6 +128,7 @@ export class PureChatLLMSideView extends ItemView {
 
     new Setting(this.contentEl)
       .setName('Pure Chat LLM')
+      .setClass('PUREfloattop')
       .setHeading()
       .then(b => {
         const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
@@ -139,6 +141,18 @@ export class PureChatLLMSideView extends ItemView {
           );
       })
       .addExtraButton(btn => btn.setIcon('settings').onClick(() => this.plugin.openSettings()))
+      .addExtraButton(btn =>
+        btn
+          .setIcon('phone')
+          .setTooltip('Open voice call view')
+          .onClick(() => this.plugin.activateVoiceCallView()),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon('list-tree')
+          .setTooltip('Open resolution tree view')
+          .onClick(() => this.plugin.activateBlueResolutView()),
+      )
       .addButton(btn => btn.setButtonText('Hot keys').onClick(() => this.plugin.openHotkeys()));
     new Setting(this.contentEl).setName(
       'The current editor does not contain a valid conversation.',
@@ -180,8 +194,65 @@ export class PureChatLLMSideView extends ItemView {
       this.defaultContent();
       return;
     }
+
+    /* container.createDiv({ text: '' }, contain => {
+      contain.addClass('PURE', 'floattop'); */
+
+    /* this. */
+
+    new Setting(container)
+      .setDesc(`${chat.endpoint.name} (${chat.options.model})`)
+      .setHeading()
+      .setClass('PUREfloattop')
+      .addExtraButton(btn =>
+        btn
+          .setIcon('cpu')
+          .setTooltip(`${chat.endpoint.name} (${chat.options.model})`)
+          .onClick(() => new ModelAndProviderChooser(this.app, this.plugin, editor)),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon(this.isExpanded ? 'chevron-up' : 'chevron-down')
+          .setTooltip(this.isExpanded ? 'Collapse view' : 'Expand view')
+          .onClick(() => {
+            this.isExpanded = !this.isExpanded;
+            this.update(editor, view);
+          }),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon(allshown ? 'chevrons-down-up' : 'chevrons-up-down')
+          //.setButtonText(allshown ? "Hide" : "Show all")
+          .setTooltip('Show all options')
+          .onClick(() =>
+            //new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat => )
+            editor.setValue(
+              new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat =>
+                allshown
+                  ? (chat.options = {
+                      model: chat.options.model,
+                      max_completion_tokens: chat.options.max_completion_tokens,
+                      stream: chat.options.stream,
+                    } as typeof chat.options)
+                  : Object.assign(chat.options, { ...alloptions }, { ...chat.options }),
+              ).markdown,
+            ),
+          ),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon('phone')
+          .setTooltip('Open voice call view')
+          .onClick(() => this.plugin.activateVoiceCallView()),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon('list-tree')
+          .setTooltip('Open resolution tree view')
+          .onClick(() => this.plugin.activateBlueResolutView()),
+      );
+    //});
     if (this.isExpanded) {
-      new Setting(container).setName('Tools used in this chat');
       new Setting(container).setName('Tools used in this chat').then(s => {
         (['Vault', 'UI', 'System', 'AI'] as const).forEach(classification => {
           s.addButton(btn => {
@@ -208,63 +279,7 @@ export class PureChatLLMSideView extends ItemView {
           });
         });
       });
-      /* (['Vault', 'UI', 'System', 'AI'] as const).forEach(classification => {
-        chat.toolregistry.getToolNamesByClassification(classification).forEach(toolname => {
-          new Setting(container).setName(toolname).then(s => {
-            const en = chat.options.tools?.includes(toolname);
-            s.addExtraButton(btn =>
-              btn
-                .setIcon(!en ? 'check' : 'cross')
-                .setTooltip('Enabled')
-                .onClick(() => {
-                  if (en) chat.options.tools = chat.options.tools?.filter(t => t !== toolname);
-                  else
-                    chat.options.tools = Array.from(
-                      new Set([...(chat.options.tools || []), toolname]),
-                    );
-
-                  editor.setValue(chat.Markdown);
-                }),
-            );
-          });
-        });
-      }); */
     }
-
-    container.createDiv({ text: '' }, contain => {
-      contain.addClass('PURE', 'floattop');
-
-      new ButtonComponent(contain)
-        .setButtonText(`${chat.endpoint.name} (${chat.options.model})`)
-        .onClick(() => new ModelAndProviderChooser(this.app, this.plugin, editor));
-
-      new ButtonComponent(contain)
-        .setIcon(this.isExpanded ? 'chevron-up' : 'chevron-down')
-        .setTooltip(this.isExpanded ? 'Collapse view' : 'Expand view')
-        .onClick(() => {
-          this.isExpanded = !this.isExpanded;
-          this.update(editor, view);
-        });
-
-      new ButtonComponent(contain)
-        .setIcon(allshown ? 'chevrons-down-up' : 'chevrons-up-down')
-        //.setButtonText(allshown ? "Hide" : "Show all")
-        .setTooltip('Show all options')
-        .onClick(() =>
-          //new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat => )
-          editor.setValue(
-            new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat =>
-              allshown
-                ? (chat.options = {
-                    model: chat.options.model,
-                    max_completion_tokens: chat.options.max_completion_tokens,
-                    stream: chat.options.stream,
-                  } as typeof chat.options)
-                : Object.assign(chat.options, { ...alloptions }, { ...chat.options }),
-            ).markdown,
-          ),
-        );
-    });
 
     container.addClass('PURESideView');
     // Process markdown messages
