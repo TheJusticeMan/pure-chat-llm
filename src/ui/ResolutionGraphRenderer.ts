@@ -110,10 +110,12 @@ export class ResolutionGraphRenderer {
   /**
    * Implements a layered/hierarchical layout algorithm.
    * Nodes are positioned based on their depth (vertical) and distributed horizontally within each layer.
+   * Uses a fixed virtual layout space independent of canvas dimensions.
    */
   private layoutNodes(): void {
-    const canvasWidth = this.canvas.width;
-    const canvasHeight = this.canvas.height;
+    // Use a fixed virtual layout space (aspect ratio independent of canvas)
+    const layoutWidth = 1000;
+    const layoutHeight = 800;
 
     // Group nodes by depth
     const layers: Map<number, GraphNode[]> = new Map();
@@ -127,12 +129,12 @@ export class ResolutionGraphRenderer {
 
     // Calculate layout parameters
     const maxDepth = Math.max(...Array.from(layers.keys()));
-    const verticalSpacing = maxDepth > 0 ? (canvasHeight - 160) / maxDepth : 0;
+    const verticalSpacing = maxDepth > 0 ? (layoutHeight - 160) / maxDepth : 0;
 
     // Position nodes
     for (const [depth, layerNodes] of layers) {
       const layerY = 80 + depth * Math.max(verticalSpacing, 120);
-      const horizontalSpacing = canvasWidth / (layerNodes.length + 1);
+      const horizontalSpacing = layoutWidth / (layerNodes.length + 1);
 
       layerNodes.forEach((node, index) => {
         node.x = horizontalSpacing * (index + 1);
