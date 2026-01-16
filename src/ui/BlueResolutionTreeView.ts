@@ -98,6 +98,11 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    // Restore saved view mode if available
+    if (this.plugin.settings.blueResolutionViewMode) {
+      this.viewMode = this.plugin.settings.blueResolutionViewMode;
+    }
+
     // Listen to resolution events
     this.plugin.blueFileResolver.onResolutionEvent(this.boundResolutionEventHandler);
 
@@ -279,8 +284,11 @@ export class BlueResolutionTreeView extends ItemView {
               btn
                 .setIcon(this.viewMode === 'tree' ? 'git-branch' : 'list-tree')
                 .setTooltip(this.viewMode === 'tree' ? 'Switch to graph view' : 'Switch to tree view')
-                .onClick(() => {
+                .onClick(async () => {
                   this.viewMode = this.viewMode === 'tree' ? 'graph' : 'tree';
+                  // Save view mode to settings for persistence
+                  this.plugin.settings.blueResolutionViewMode = this.viewMode;
+                  await this.plugin.saveSettings();
                   this.renderView();
                 }),
             )

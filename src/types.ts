@@ -25,6 +25,7 @@ export interface PureChatLLMSettings {
     enableCaching: boolean;
     writeIntermediateResults: boolean;
   };
+  blueResolutionViewMode?: 'tree' | 'graph';
 }
 
 export interface PureChatLLMAPI {
