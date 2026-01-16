@@ -27,17 +27,15 @@ Customization:
   --bigshadowhover: 4px 4px 16px var(--text-normal);
 }
 
-.PURE.floattop {
-  position: fixed;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.PUREfloattop {
+  position: sticky;
   top: 0;
   left: 0;
-  width: 100%;
-  background-color: var(--background-secondary);
-  border-bottom: var(--border-width) solid var(--background-modifier-border);
   padding: 0.5em;
+  box-sizing: border-box;
+  background-color: var(--background-secondary);
+  width: 100%;
+  border: var(--border-width) solid var(--background-modifier-border);
 }
 
 .PURE.messageContainer.user {
@@ -138,10 +136,6 @@ Customization:
   resize: vertical;
 }
 
-.PURESideView .PURE.messageContainer.system {
-  padding-top: 2em;
-}
-
 sup {
   font-weight: normal;
 }
@@ -167,29 +161,43 @@ sup {
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 0.5em;
+  gap: 0.75em;
   font-size: 1.1em;
   font-weight: 500;
 }
 
 .status-icon {
-  font-size: 1.5em;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
-.status-idle {
-  filter: grayscale(100%);
+.status-icon-idle {
+  border-color: var(--text-muted);
+  background-color: transparent;
 }
 
-.status-connecting {
-  animation: pulse 1.5s ease-in-out infinite;
+.status-icon-connecting {
+  border-color: var(--color-yellow);
+  background-color: transparent;
 }
 
-.status-connected {
-  filter: brightness(1.2);
+.status-icon-connected {
+  border-color: var(--color-green);
+  background-color: var(--color-green);
 }
 
-.status-error {
-  color: var(--text-error);
+.status-icon-disconnected {
+  border-color: var(--text-muted);
+  background-color: var(--text-muted);
+}
+
+.status-icon-error {
+  border-color: var(--color-red);
+  background-color: var(--color-red);
 }
 
 .status-error {
@@ -229,13 +237,287 @@ sup {
   color: var(--text-muted);
 }
 
-.participants {
-  font-size: 0.9em;
+/* Blue Resolution Tree View Styles */
+.blue-resolution-view {
+  display: flex;
+  flex-direction: column;
+  /* gap: 1em; */
+  padding: 1em;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.resolution-tree-no-file {
+  padding: 2em;
+  text-align: center;
   color: var(--text-muted);
 }
 
+.resolution-tree-no-file p {
+  margin: 0.5em 0;
+}
+
+.resolution-legend {
+  padding: 1em;
+  background-color: var(--background-secondary);
+  border-radius: var(--radius-m);
+  border: var(--border-width) solid var(--background-modifier-border);
+  margin-bottom: 1em;
+}
+
+.resolution-legend h3 {
+  margin: 0 0 0.5em 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.25em 0;
+}
+
+.legend-indicator {
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.legend-indicator-idle {
+  border-color: var(--text-muted);
+  background-color: transparent;
+}
+
+.legend-indicator-resolving {
+  border-color: var(--color-yellow);
+  background-color: transparent;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.legend-indicator-complete {
+  border-color: var(--color-green);
+  background-color: var(--color-green);
+}
+
+.legend-indicator-error {
+  border-color: var(--color-red);
+  background-color: var(--color-red);
+}
+
+.legend-indicator-cached {
+  border-color: var(--color-blue);
+  background-color: var(--color-blue);
+}
+
+.legend-indicator-cycle-detected {
+  border-color: var(--color-orange);
+  background-color: var(--color-orange);
+}
+
+.legend-label {
+  font-size: 0.9em;
+}
+
+/* Style icons in legend */
+.legend-item .clickable-icon {
+  padding: 0.2em;
+  opacity: 0.9;
+}
+
+.resolution-tree-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.resolution-node {
+  position: relative;
+  padding: 0.5em 0 0 1.5em;
+  transition: all 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.resolution-tree-container > .resolution-node:first-of-type {
+  padding-left: 0%;
+}
+.resolution-node:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Tree connectors using pseudo-elements */
+.resolution-node-content[data-has-connector]::before {
+  content: '';
+  position: absolute;
+  left: -0.75em;
+  top: 50%;
+  width: 0.75em;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.resolution-node-children {
+  position: relative;
+  padding-left: 0;
+  margin-left: 1.5em;
+}
+
+.resolution-node-children::before {
+  content: '';
+  position: absolute;
+  left: 0.75em;
+  top: 0;
+  bottom: 1px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+/* Status-based connector colors */
+.resolution-node-idle .resolution-node-children {
+  border-left-color: rgba(255, 255, 255, 0.3);
+}
+
+.resolution-node-resolving .resolution-node-children {
+  border-left-color: rgba(192, 132, 252, 0.8);
+}
+
+.resolution-node-complete .resolution-node-children {
+  border-left-color: rgba(0, 255, 128, 0.5);
+}
+
+.resolution-node-error .resolution-node-children {
+  border-left-color: rgba(255, 64, 129, 0.5);
+}
+
+.resolution-node-cached .resolution-node-children {
+  border-left-color: rgba(100, 200, 255, 0.5);
+}
+
+.resolution-node-cycle-detected .resolution-node-children {
+  border-left-color: rgba(255, 170, 0, 0.5);
+}
+
+.resolution-node-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* gap: 0.5em; */
+  cursor: default;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.5em 0.75em;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.resolution-node-content:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.status-indicator-idle {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.status-indicator-resolving {
+  color: rgba(192, 132, 252, 0.8);
+  animation: glow-pulse 1s ease-in-out infinite;
+}
+
+.status-indicator-complete {
+  color: rgba(0, 255, 128, 0.7);
+}
+
+.status-indicator-error {
+  color: rgba(255, 64, 129, 0.7);
+}
+
+.status-indicator-cached {
+  color: rgba(100, 200, 255, 0.7);
+}
+
+.status-indicator-cycle-detected {
+  color: rgba(255, 170, 0, 0.7);
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    /* box-shadow removed */
+  }
+  50% {
+    /* box-shadow removed */
+  }
+}
+
+/* Spinner animation for resolving/connecting states */
+.status-spinner {
+  animation: spin 1s linear infinite;
+  border-top-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.resolution-node-name {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  /* text-shadow removed */
+
+  /* Truncate long text with ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resolution-node-name:hover {
+  color: rgba(255, 255, 255, 1);
+  text-decoration: none;
+  /* text-shadow removed */
+}
+
+.resolution-node-badge {
+  font-size: 0.65em;
+  padding: 0.25em 0.6em;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+}
+
+.resolution-node-badge.pending-chat {
+  background: linear-gradient(135deg, rgba(0, 200, 255, 0.2), rgba(0, 150, 255, 0.3));
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.resolution-node-badge.error-badge {
+  background-color: var(--color-red);
+  color: var(--text-on-accent);
+  cursor: help;
+}
+
+.resolution-node-children {
+  margin-left: 0;
+}
+
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -243,3 +525,26 @@ sup {
   }
 }
 
+.participants {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Blue resolution tree folding */
+.resolution-node.is-collapsed > .resolution-node-children {
+  display: none;
+}
+
+.locked-view {
+  border: 1px solid var(--interactive-accent);
+}
