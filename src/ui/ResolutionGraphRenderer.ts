@@ -50,6 +50,9 @@ export class ResolutionGraphRenderer {
   private hoveredNode: GraphNode | null = null;
   public showMinimap: boolean = true;
   private minimapSize = { width: 150, height: 150 };
+  private hasRendered: boolean = false;
+  private width: number = 0;
+  private height: number = 0;
 
   constructor(canvas: HTMLCanvasElement, treeData: Map<string, ResolutionNodeData>) {
     const context = canvas.getContext('2d');
@@ -59,6 +62,8 @@ export class ResolutionGraphRenderer {
     this.ctx = context;
     this.canvas = canvas;
     this.treeData = treeData;
+    this.width = canvas.width;
+    this.height = canvas.height;
 
     this.buildGraph();
     this.layoutNodes();
@@ -136,9 +141,62 @@ export class ResolutionGraphRenderer {
   }
 
   /**
+   * Calculate bounds of all nodes in the graph
+   */
+  private calculateGraphBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+
+    for (const node of this.nodes.values()) {
+      minX = Math.min(minX, node.x - node.radius);
+      maxX = Math.max(maxX, node.x + node.radius);
+      minY = Math.min(minY, node.y - node.radius);
+      maxY = Math.max(maxY, node.y + node.radius);
+    }
+
+    return { minX, maxX, minY, maxY };
+  }
+
+  /**
+   * Fit the entire graph to view with padding
+   */
+  public fitToView(padding: number = 50): void {
+    if (this.nodes.size === 0) return;
+
+    const bounds = this.calculateGraphBounds();
+    const graphWidth = bounds.maxX - bounds.minX;
+    const graphHeight = bounds.maxY - bounds.minY;
+
+    // Calculate scale to fit graph in canvas with padding
+    const scaleX = (this.width - padding * 2) / graphWidth;
+    const scaleY = (this.height - padding * 2) / graphHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+
+    // Center the graph
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+
+    this.transform.scale = scale;
+    this.transform.offsetX = this.width / 2 - centerX * scale;
+    this.transform.offsetY = this.height / 2 - centerY * scale;
+  }
+
+  /**
    * Main render method - draws the entire graph
    */
   public render(): void {
+    // Update canvas dimensions
+    this.width = this.canvas.width;
+    this.height = this.canvas.height;
+
+    // Only fit on first render or when explicitly called
+    if (!this.hasRendered) {
+      this.fitToView();
+      this.hasRendered = true;
+    }
+
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -750,6 +808,21 @@ export class ResolutionGraphRenderer {
 
     // Restore context
     this.ctx.restore();
+  }
+
+  /**
+   * Get current transform state for saving/restoring
+   */
+  public getTransform(): ViewTransform {
+    return { ...this.transform };
+  }
+
+  /**
+   * Set transform state (for restoring saved state)
+   */
+  public setTransform(transform: ViewTransform): void {
+    this.transform = { ...transform };
+    this.render();
   }
 
   /**
