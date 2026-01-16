@@ -52,25 +52,24 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   set locked(value: boolean) {
-    if (this._locked === value) return;
+    if (this._locked === value) return; // No change
     this._locked = value;
 
+    // Store the current active file for unlocking reference
     this.lastActiveFile =
       this.lastActiveFile ||
       this.currentRootFile ||
       this.app.workspace.getActiveViewOfType(MarkdownView)?.file ||
       null;
 
-    if (this._locked) {
-      this.renderView();
-    } else {
-      this.currentRootFile = null;
-      const file =
-        this.app.workspace.getActiveViewOfType(MarkdownView)?.file || this.lastActiveFile;
-      if (file) {
-        this.onActiveFileChange(file);
-      } else {
-        this.renderNoFileMessage();
+    // ONLY update the header, don't re-render the entire view
+    this.updateHeaderLockState();
+
+    // When unlocking, check if we need to switch to a different file
+    if (!this._locked) {
+      const currentFile = this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
+      if (currentFile && currentFile.path !== this.currentRootFile?.path) {
+        this.onActiveFileChange(currentFile);
       }
     }
   }
@@ -252,6 +251,28 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   * Update only the header lock state without re-rendering the entire view
+   */
+  private updateHeaderLockState(): void {
+    const header = this.contentEl.querySelector('.PUREfloattop');
+    if (!header) return;
+
+    const lockButton = header.querySelector('[aria-label*="ock"]') as HTMLElement;
+
+    if (this._locked) {
+      header.addClass('locked-view');
+      if (lockButton) {
+        lockButton.setAttribute('aria-label', 'Unlock view from current file');
+      }
+    } else {
+      header.removeClass('locked-view');
+      if (lockButton) {
+        lockButton.setAttribute('aria-label', 'Lock view to current file');
+      }
+    }
+  }
+
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Blue resolution tree')
@@ -350,6 +371,11 @@ export class BlueResolutionTreeView extends ItemView {
           .setTooltip(this.locked ? 'Unlock view from current file' : 'Lock view to current file')
           .onClick(() => {
             this.locked = !this.locked;
+            // Manually update button icon since we're not re-rendering
+            btn.setIcon(this.locked ? 'lock' : 'unlock');
+            btn.setTooltip(
+              this.locked ? 'Unlock view from current file' : 'Lock view to current file',
+            );
           })
           .then(btnSetting => this.locked && btnSetting.extraSettingsEl.addClass('locked-view')),
       )
