@@ -162,6 +162,11 @@ export class BlueResolutionTreeView extends ItemView {
       }
     }
 
+    // Notify graph renderer if in graph mode
+    if (this.viewMode === 'graph' && this.graphRenderer) {
+      this.graphRenderer.onNodeStatusChange(event.filePath, event.status);
+    }
+
     // Re-render the tree
     this.renderTree();
   }
@@ -259,7 +264,7 @@ export class BlueResolutionTreeView extends ItemView {
                 this.plugin.completeChatResponse(editor, view);
               }),
           );
-        if (this.currentRootFile)
+        if (this.currentRootFile) {
           setting
             .addExtraButton(btn =>
               btn
@@ -288,6 +293,47 @@ export class BlueResolutionTreeView extends ItemView {
                   this.renderView();
                 }),
             );
+
+          // Add graph-specific controls when in graph mode
+          if (this.viewMode === 'graph') {
+            setting
+              .addExtraButton(btn =>
+                btn
+                  .setIcon('zoom-in')
+                  .setTooltip('Zoom in (Ctrl+Plus)')
+                  .onClick(() => this.graphRenderer?.zoomIn()),
+              )
+              .addExtraButton(btn =>
+                btn
+                  .setIcon('zoom-out')
+                  .setTooltip('Zoom out (Ctrl+Minus)')
+                  .onClick(() => this.graphRenderer?.zoomOut()),
+              )
+              .addExtraButton(btn =>
+                btn
+                  .setIcon('rotate-ccw')
+                  .setTooltip('Reset view (Ctrl+0)')
+                  .onClick(() => this.graphRenderer?.resetView()),
+              )
+              .addExtraButton(btn =>
+                btn
+                  .setIcon('map')
+                  .setTooltip('Toggle minimap')
+                  .onClick(() => {
+                    if (this.graphRenderer) {
+                      this.graphRenderer.showMinimap = !this.graphRenderer.showMinimap;
+                      this.graphRenderer.render();
+                    }
+                  }),
+              )
+              .addExtraButton(btn =>
+                btn
+                  .setIcon('refresh-ccw')
+                  .setTooltip('Reset node positions')
+                  .onClick(() => this.graphRenderer?.resetNodePositions()),
+              );
+          }
+        }
         if (this.locked) setting.settingEl.addClass('locked-view');
       })
       .addExtraButton(btn =>
@@ -435,6 +481,10 @@ export class BlueResolutionTreeView extends ItemView {
     // Create canvas
     const canvas = graphContainer.createEl('canvas', { cls: 'resolution-graph-canvas' });
 
+    // Create zoom level indicator
+    const zoomIndicator = graphContainer.createDiv({ cls: 'graph-zoom-indicator' });
+    zoomIndicator.textContent = '100%';
+
     // Set canvas size to match container
     const updateCanvasSize = () => {
       const rect = graphContainer.getBoundingClientRect();
@@ -452,7 +502,17 @@ export class BlueResolutionTreeView extends ItemView {
       // Recreate and re-render graph with new size
       if (this.treeData.size > 0) {
         this.graphRenderer = new ResolutionGraphRenderer(canvas, this.treeData);
+        this.graphRenderer.setupTooltips(graphContainer);
+        this.graphRenderer.setupKeyboardShortcuts();
         this.graphRenderer.render();
+        zoomIndicator.textContent = this.graphRenderer.getZoomLevel();
+
+        // Update zoom indicator on render
+        const originalRender = this.graphRenderer.render.bind(this.graphRenderer);
+        this.graphRenderer.render = () => {
+          originalRender();
+          zoomIndicator.textContent = this.graphRenderer!.getZoomLevel();
+        };
       } else {
         if (ctx) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
@@ -483,7 +543,11 @@ export class BlueResolutionTreeView extends ItemView {
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      const node = this.graphRenderer.getNodeAtPosition(x, y);
+      // Convert screen coords to graph coords
+      const graphX = (x - this.graphRenderer['transform'].offsetX) / this.graphRenderer['transform'].scale;
+      const graphY = (y - this.graphRenderer['transform'].offsetY) / this.graphRenderer['transform'].scale;
+
+      const node = this.graphRenderer.getNodeAtPosition(graphX, graphY);
       if (node) {
         this.openFile(node.id);
       }
