@@ -18,6 +18,7 @@ import {
 } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { PureChatLLMChat } from '../core/Chat';
+import { ResolutionGraphRenderer } from './ResolutionGraphRenderer';
 
 interface TreeNode {
   filePath: string;
@@ -43,6 +44,8 @@ export class BlueResolutionTreeView extends ItemView {
   private isAnalyzing: boolean = false;
   private boundResolutionEventHandler: (event: ResolutionEvent) => void;
   private _locked: boolean = false;
+  private viewMode: 'tree' | 'graph' = 'tree';
+  private graphRenderer: ResolutionGraphRenderer | null = null;
 
   get locked(): boolean {
     return this._locked;
@@ -227,7 +230,12 @@ export class BlueResolutionTreeView extends ItemView {
       void this.analyzeCurrentFile();
     }
 
-    this.renderTree();
+    // Render based on view mode
+    if (this.viewMode === 'graph') {
+      this.renderGraphView();
+    } else {
+      this.renderTree();
+    }
 
     if (this.showLegend) {
       this.renderLegend(contentEl);
@@ -260,6 +268,15 @@ export class BlueResolutionTreeView extends ItemView {
                 .onClick(() => {
                   this.clearTreeData();
                   void this.renderView();
+                }),
+            )
+            .addExtraButton(btn =>
+              btn
+                .setIcon(this.viewMode === 'tree' ? 'git-branch' : 'list-tree')
+                .setTooltip(this.viewMode === 'tree' ? 'Switch to graph view' : 'Switch to tree view')
+                .onClick(() => {
+                  this.viewMode = this.viewMode === 'tree' ? 'graph' : 'tree';
+                  this.renderView();
                 }),
             )
             .addExtraButton(btn =>
@@ -387,6 +404,88 @@ export class BlueResolutionTreeView extends ItemView {
         text: 'No resolution data available. Click analyze file to scan for links.',
       });
     }
+  }
+
+  private renderGraphView(): void {
+    const { contentEl } = this;
+    const treeWrapper = contentEl.querySelector('.resolution-tree-wrapper') as HTMLElement;
+    const container = treeWrapper || contentEl;
+
+    // Remove existing container if it exists
+    const existingGraph = container.querySelector('.resolution-graph-container');
+    if (existingGraph) {
+      existingGraph.remove();
+    }
+
+    if (!this.currentRootFile) {
+      return;
+    }
+
+    // Create graph container
+    const graphContainer = container.createDiv({ cls: 'resolution-graph-container' });
+
+    // Create canvas
+    const canvas = graphContainer.createEl('canvas', { cls: 'resolution-graph-canvas' });
+
+    // Set canvas size to match container
+    const updateCanvasSize = () => {
+      const rect = graphContainer.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(dpr, dpr);
+      }
+
+      // Re-render graph with new size
+      if (this.graphRenderer) {
+        this.graphRenderer.render();
+      }
+    };
+
+    // Initial size setup
+    setTimeout(() => {
+      updateCanvasSize();
+
+      // Create graph renderer
+      if (this.treeData.size > 0) {
+        this.graphRenderer = new ResolutionGraphRenderer(canvas, this.treeData);
+        this.graphRenderer.render();
+      } else {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('No resolution data available.', canvas.width / 2, canvas.height / 2);
+        }
+      }
+    }, 50);
+
+    // Handle window resize
+    const resizeObserver = new ResizeObserver(() => {
+      updateCanvasSize();
+    });
+    resizeObserver.observe(graphContainer);
+
+    // Add click handler for node navigation
+    canvas.addEventListener('click', (event: MouseEvent) => {
+      if (!this.graphRenderer) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      const node = this.graphRenderer.getNodeAtPosition(x, y);
+      if (node) {
+        this.openFile(node.id);
+      }
+    });
   }
 
   private buildTreeNode(filePath: string, visited: Set<string>): TreeNode | null {

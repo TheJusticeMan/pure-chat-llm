@@ -548,3 +548,24 @@ sup {
 .locked-view {
   border: 1px solid var(--interactive-accent);
 }
+
+/* Graph View Styles */
+.resolution-graph-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-m);
+}
+
+.resolution-graph-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.resolution-graph-canvas:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
