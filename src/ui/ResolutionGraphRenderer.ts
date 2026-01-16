@@ -52,7 +52,6 @@ export class ResolutionGraphRenderer {
 
     // Create nodes from tree data
     for (const [filePath, nodeData] of this.treeData) {
-      const fileName = filePath.split('/').pop() || filePath;
       this.nodes.set(filePath, {
         id: filePath,
         x: 0,
