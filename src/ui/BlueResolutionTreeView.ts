@@ -351,7 +351,7 @@ export class BlueResolutionTreeView extends ItemView {
                   .onClick(() => {
                     if (this.graphRenderer) {
                       this.graphRenderer.showMinimap = !this.graphRenderer.showMinimap;
-                      void this.graphRenderer.render();
+                      this.graphRenderer.render();
                     }
                   }),
               )
@@ -547,13 +547,13 @@ export class BlueResolutionTreeView extends ItemView {
         this.graphRenderer = new ResolutionGraphRenderer(canvas, this.treeData);
         this.graphRenderer.setupTooltips(graphContainer);
         this.graphRenderer.setupKeyboardShortcuts();
-        void this.graphRenderer.render();
+        // Don't call render here - it will be called after icons are preloaded
         zoomIndicator.textContent = this.graphRenderer.getZoomLevel();
 
         // Update zoom indicator on render
         const originalRender = this.graphRenderer.render.bind(this.graphRenderer);
-        this.graphRenderer.render = async () => {
-          await originalRender();
+        this.graphRenderer.render = () => {
+          originalRender();
           zoomIndicator.textContent = this.graphRenderer!.getZoomLevel();
         };
       } else {

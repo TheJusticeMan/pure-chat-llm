@@ -55,6 +55,7 @@ export class ResolutionGraphRenderer {
   private width: number = 0;
   private height: number = 0;
   private iconCache: Map<string, HTMLImageElement> = new Map();
+  private iconsLoaded: boolean = false;
 
   constructor(canvas: HTMLCanvasElement, treeData: Map<string, ResolutionNodeData>) {
     const context = canvas.getContext('2d');
@@ -70,6 +71,9 @@ export class ResolutionGraphRenderer {
     this.buildGraph();
     this.layoutNodes();
     this.setupInteractivity();
+    
+    // Pre-load all icons asynchronously to avoid race conditions during render
+    void this.preloadIcons();
   }
 
   /**
@@ -188,7 +192,7 @@ export class ResolutionGraphRenderer {
   /**
    * Main render method - draws the entire graph
    */
-  public async render(): Promise<void> {
+  public render(): void {
     // Update canvas dimensions
     this.width = this.canvas.width;
     this.height = this.canvas.height;
@@ -210,7 +214,7 @@ export class ResolutionGraphRenderer {
     this.drawEdges();
 
     // Draw nodes on top
-    await this.drawNodes();
+    this.drawNodes();
 
     // Restore context
     this.ctx.restore();
@@ -258,7 +262,7 @@ export class ResolutionGraphRenderer {
   /**
    * Draws all nodes with status-based colors and file type icons
    */
-  private async drawNodes(): Promise<void> {
+  private drawNodes(): void {
     const now = Date.now();
 
     for (const node of this.nodes.values()) {
@@ -299,19 +303,21 @@ export class ResolutionGraphRenderer {
         this.ctx.stroke();
       }
 
-      // Draw icon
-      const iconId = this.getNodeIcon(node);
-      const icon = await this.loadIcon(iconId);
-      
-      if (icon) {
-        const iconSize = node.radius * 1.2;
-        this.ctx.drawImage(
-          icon,
-          node.x - iconSize / 2,
-          node.y - iconSize / 2,
-          iconSize,
-          iconSize
-        );
+      // Draw icon (only if icons are loaded, use cached version)
+      if (this.iconsLoaded) {
+        const iconId = this.getNodeIcon(node);
+        const icon = this.iconCache.get(iconId);
+        
+        if (icon) {
+          const iconSize = node.radius * 1.2;
+          this.ctx.drawImage(
+            icon,
+            node.x - iconSize / 2,
+            node.y - iconSize / 2,
+            iconSize,
+            iconSize
+          );
+        }
       }
 
       // Draw file name label below node
@@ -422,6 +428,22 @@ export class ResolutionGraphRenderer {
       default:
         return 'rgba(255, 255, 255, 0.3)';
     }
+  }
+
+  /**
+   * Pre-load all necessary icons to avoid async loading during render
+   */
+  private async preloadIcons(): Promise<void> {
+    // Pre-load all icon types we might use
+    const iconTypes = ['folder', 'pure-chat-llm', 'file-text', 'image', 'file'];
+    
+    await Promise.all(
+      iconTypes.map(iconId => this.loadIcon(iconId))
+    );
+    
+    this.iconsLoaded = true;
+    // Trigger initial render after icons are loaded
+    this.render();
   }
 
   /**
@@ -554,7 +576,7 @@ export class ResolutionGraphRenderer {
         (mouseY - this.transform.offsetY) * (newScale / this.transform.scale - 1);
       this.transform.scale = newScale;
 
-      void this.render();
+      this.render();
     });
 
     // Pan with Shift+drag or middle mouse button
@@ -588,7 +610,7 @@ export class ResolutionGraphRenderer {
         // Pan the view
         this.transform.offsetX = e.clientX - this.dragStartX;
         this.transform.offsetY = e.clientY - this.dragStartY;
-        void this.render();
+        this.render();
       } else if (this.draggedNode) {
         // Drag node
         const rect = this.canvas.getBoundingClientRect();
@@ -599,7 +621,7 @@ export class ResolutionGraphRenderer {
         this.draggedNode.x = graphPos.x;
         this.draggedNode.y = graphPos.y;
         this.nodePositionOverrides.set(this.draggedNode.id, { x: graphPos.x, y: graphPos.y });
-        void this.render();
+        this.render();
       }
     });
 
@@ -662,7 +684,7 @@ export class ResolutionGraphRenderer {
     this.transform.offsetY -=
       (centerY - this.transform.offsetY) * (newScale / this.transform.scale - 1);
     this.transform.scale = newScale;
-    void this.render();
+    this.render();
   }
 
   /**
@@ -677,7 +699,7 @@ export class ResolutionGraphRenderer {
     this.transform.offsetY -=
       (centerY - this.transform.offsetY) * (newScale / this.transform.scale - 1);
     this.transform.scale = newScale;
-    void this.render();
+    this.render();
   }
 
   /**
@@ -685,7 +707,7 @@ export class ResolutionGraphRenderer {
    */
   public resetView(): void {
     this.transform = { scale: 1, offsetX: 0, offsetY: 0 };
-    void this.render();
+    this.render();
   }
 
   /**
@@ -694,7 +716,7 @@ export class ResolutionGraphRenderer {
   public resetNodePositions(): void {
     this.nodePositionOverrides.clear();
     this.layoutNodes();
-    void this.render();
+    this.render();
   }
 
   /**
@@ -725,7 +747,7 @@ export class ResolutionGraphRenderer {
     });
 
     if (needsUpdate) {
-      void this.render();
+      this.render();
       requestAnimationFrame(() => this.animate());
     } else {
       this.isAnimating = false;
@@ -903,7 +925,7 @@ export class ResolutionGraphRenderer {
    */
   public setTransform(transform: ViewTransform): void {
     this.transform = { ...transform };
-    void this.render();
+    this.render();
   }
 
   /**
