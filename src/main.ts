@@ -18,6 +18,7 @@ import {
 } from 'obsidian';
 
 import { DEFAULT_SETTINGS, EmptyApiKey } from './assets/constants';
+import { ObsidianFileSystemAdapter } from './adapters/ObsidianFileSystemAdapter';
 import { BlueFileResolver } from './core/BlueFileResolver';
 import { PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
@@ -88,8 +89,9 @@ export default class PureChatLLM extends Plugin {
     this.console.log('settings loaded', this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
 
-    // Initialize BlueFileResolver
-    this.blueFileResolver = new BlueFileResolver(this);
+    // Initialize BlueFileResolver with FileSystemPort
+    const fileSystem = new ObsidianFileSystemAdapter(this.app);
+    this.blueFileResolver = new BlueFileResolver(this, fileSystem);
 
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, leaf => new PureChatLLMSideView(leaf, this));
     this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));

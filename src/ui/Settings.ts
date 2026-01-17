@@ -45,7 +45,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   ifdefault<S extends keyof PureChatLLMSettings>(key: S): string {
     const { settings } = this.plugin;
     // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    return settings[key] !== DEFAULT_SETTINGS[key] ? settings[key].toString() : '';
+    return settings[key] !== DEFAULT_SETTINGS[key] ? String(settings[key] ?? '') : '';
   }
 
   display(): void {
