@@ -280,21 +280,27 @@ export class BlueFileResolver {
     const { blueFileResolution } = this.plugin.settings;
 
     try {
+      this.console.log(`[Blue File Resolution] Starting resolveFileInternal for: ${file.path}`);
+      
       // Read the file content
       const content = await app.vault.cachedRead(file);
+      this.console.log(`[Blue File Resolution] Read content (${content.length} chars) from: ${file.path}`);
 
       // Create a chat instance to parse the file
       const chat = new PureChatLLMChat(this.plugin);
       chat.setMarkdown(content);
+      this.console.log(`[Blue File Resolution] Parsed chat - validChat: ${chat.validChat}, messages: ${chat.messages.length}`);
 
       // Check if this is a pending chat
       const isPending = this.isPendingChat(content, chat);
       const isChatFile = chat.validChat && chat.messages.length > 0;
+      this.console.log(`[Blue File Resolution] isPending: ${isPending}, isChatFile: ${isChatFile}, lastMessageRole: ${chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].role : 'none'}`);
 
       if (!isPending) {
-        this.console.log(`[Blue File Resolution] Not a pending chat: ${file.path}`);
+        this.console.log(`[Blue File Resolution] Not a pending chat: ${file.path}, resolving links within content`);
         // Not a pending chat, resolve links within it recursively
         const resolved = await this.resolveLinksInContent(content, file, context, app);
+        this.console.log(`[Blue File Resolution] Resolved links in content (${resolved.length} chars): ${file.path}`);
 
         // Emit complete event
         this.emitEvent({
@@ -319,7 +325,9 @@ export class BlueFileResolver {
       // and caching. This ensures images and audio files are handled correctly.
 
       // Execute the chat (without streaming for intermediate resolutions)
+      this.console.log(`[Blue File Resolution] Calling completeChatResponse for: ${file.path}`);
       const response = await chat.completeChatResponse(file, undefined, context);
+      this.console.log(`[Blue File Resolution] completeChatResponse returned ${response.messages.length} messages for: ${file.path}`);
 
       // Get the assistant's response (second to last message, since completeChatResponse adds an empty user message)
       const assistantMessage =
@@ -328,6 +336,7 @@ export class BlueFileResolver {
           : response.messages[response.messages.length - 1];
 
       const resolvedContent = assistantMessage?.content || '';
+      this.console.log(`[Blue File Resolution] Extracted assistant message (${resolvedContent.length} chars) from: ${file.path}`);
 
       // Write intermediate results if configured (and not root file)
       if (blueFileResolution.writeIntermediateResults && file.path !== context.rootFile.path) {
@@ -347,6 +356,7 @@ export class BlueFileResolver {
         timestamp: Date.now(),
       });
 
+      this.console.log(`[Blue File Resolution] Returning resolved content (${resolvedContent.length} chars) for: ${file.path}`);
       return resolvedContent;
     } catch (error) {
       this.console.error(`[Blue File Resolution] Error resolving file ${file.path}:`, error);
@@ -386,6 +396,8 @@ export class BlueFileResolver {
     const regex = /^!?\[\[(.*?)\]\]$/gim;
     const matches = Array.from(content.matchAll(regex));
 
+    this.console.log(`[Blue File Resolution] resolveLinksInContent found ${matches.length} links in: ${activeFile.path}`);
+
     if (matches.length === 0) {
       return content;
     }
@@ -399,21 +411,30 @@ export class BlueFileResolver {
       const file = app.metadataCache.getFirstLinkpathDest(linkText, activeFile.path);
 
       if (file instanceof TFile) {
+        this.console.log(`[Blue File Resolution] Found linked file: ${file.path} from link: [[${linkText}]]`);
         // Recursively resolve the file - it will create its own tree node
         replacements.push(this.resolveFile(file, context, app));
       } else {
+        this.console.log(`[Blue File Resolution] File not found for link: [[${linkText}]], keeping original`);
         // File not found, keep original link
         replacements.push(Promise.resolve(match[0]));
       }
     }
 
     // Wait for all resolutions
+    this.console.log(`[Blue File Resolution] Waiting for ${replacements.length} resolutions in: ${activeFile.path}`);
     const resolved = await Promise.all(replacements);
+    this.console.log(`[Blue File Resolution] All resolutions complete for: ${activeFile.path}`);
 
     // Replace links with resolved content
     let index = 0;
-    const result = content.replace(regex, () => resolved[index++] || '');
+    const result = content.replace(regex, () => {
+      const replacement = resolved[index++] || '';
+      this.console.log(`[Blue File Resolution] Replacing link ${index} with content (${replacement.length} chars)`);
+      return replacement;
+    });
 
+    this.console.log(`[Blue File Resolution] resolveLinksInContent returning (${result.length} chars) for: ${activeFile.path}`);
     return result;
   }
 
@@ -427,12 +448,17 @@ export class BlueFileResolver {
    * @returns A promise that resolves to the markdown string with file links replaced by their content.
    */
   async resolveFiles(markdown: string, activeFile: TFile, app: App): Promise<string> {
+    this.console.log(`[Blue File Resolution] resolveFiles called for: ${activeFile.path}, enabled: ${this.plugin.settings.blueFileResolution.enabled}`);
+    
     const regex = /^!?\[\[(.*?)\]\]$/gim;
     const matches = Array.from(markdown.matchAll(regex));
     const replacements: Promise<string>[] = [];
 
+    this.console.log(`[Blue File Resolution] Found ${matches.length} matches in markdown`);
+
     // Check if blue file resolution is enabled
     if (this.plugin.settings.blueFileResolution.enabled) {
+      this.console.log(`[Blue File Resolution] Using blue file resolver (dynamic execution)`);
       // Use blue file resolver for dynamic chat execution
       const context = this.createContext(activeFile);
 
@@ -440,12 +466,15 @@ export class BlueFileResolver {
         const filename = match[1];
         const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
         if (file instanceof TFile) {
+          this.console.log(`[Blue File Resolution] Queuing resolution for: ${file.path}`);
           replacements.push(this.resolveFile(file, context, app));
         } else {
+          this.console.log(`[Blue File Resolution] File not found: ${filename}, keeping original link`);
           replacements.push(Promise.resolve(match[0]));
         }
       }
     } else {
+      this.console.log(`[Blue File Resolution] Using static file reading (feature disabled)`);
       // Original behavior: just read static file content
       for (const match of matches) {
         const filename = match[1];
@@ -458,11 +487,24 @@ export class BlueFileResolver {
       }
     }
 
-    if (replacements.length === 0) return markdown;
+    if (replacements.length === 0) {
+      this.console.log(`[Blue File Resolution] No replacements needed, returning original markdown`);
+      return markdown;
+    }
 
+    this.console.log(`[Blue File Resolution] Waiting for ${replacements.length} replacements`);
     const resolved = await Promise.all(replacements);
+    this.console.log(`[Blue File Resolution] All replacements complete`);
+    
     let index = 0;
-    const result = markdown.replace(regex, () => resolved[index++] || '');
+    const result = markdown.replace(regex, () => {
+      const replacement = resolved[index] || '';
+      this.console.log(`[Blue File Resolution] Replacement ${index + 1}: ${replacement.substring(0, 100)}${replacement.length > 100 ? '...' : ''} (${replacement.length} chars)`);
+      index++;
+      return replacement;
+    });
+
+    this.console.log(`[Blue File Resolution] resolveFiles returning (${result.length} chars)`);
     return result;
   }
 
