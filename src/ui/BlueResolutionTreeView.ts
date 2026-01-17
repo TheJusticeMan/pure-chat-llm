@@ -40,6 +40,7 @@ export class BlueResolutionTreeView extends ItemView {
   private viewMode: 'tree' | 'graph' = 'tree';
   private graphRenderer: ResolutionGraphRenderer | null = null;
   private treeRenderer: ResolutionTreeRenderer | null = null;
+  private renderContainer: HTMLElement | null = null; // Dedicated container for renderers
 
   get locked(): boolean {
     return this._locked;
@@ -234,8 +235,8 @@ export class BlueResolutionTreeView extends ItemView {
       return;
     }
 
-    // Create wrapper for tree to maintain order
-    contentEl.createDiv({ cls: 'resolution-tree-wrapper' });
+    // Create dedicated render container that renderers can safely empty
+    this.renderContainer = contentEl.createDiv({ cls: 'resolution-render-container' });
 
     if (this.treeData.size <= 1 && !this.isAnalyzing) {
       void this.analyzeCurrentFile();
@@ -463,56 +464,28 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   private renderTree(): void {
-    const { contentEl } = this;
-    const treeWrapper = contentEl.querySelector('.resolution-tree-wrapper') as HTMLElement;
-    const container = treeWrapper || contentEl;
-
-    // Remove existing containers if they exist
-    const existingTree = container.querySelector('.resolution-tree-container');
-    if (existingTree) {
-      existingTree.remove();
-    }
-    const existingGraph = container.querySelector('.resolution-graph-container');
-    if (existingGraph) {
-      existingGraph.remove();
-    }
-
-    if (!this.currentRootFile) {
+    if (!this.currentRootFile || !this.renderContainer) {
       return;
     }
 
-    // Delegate rendering to ResolutionTreeRenderer
+    // Delegate rendering to ResolutionTreeRenderer - it can safely empty the render container
     if (this.treeRenderer) {
-      this.treeRenderer.render(container, this.treeData, this.currentRootFile.path);
+      this.treeRenderer.render(this.renderContainer, this.treeData, this.currentRootFile.path);
     } else {
       // Fallback if renderer not initialized
-      container.createDiv({ cls: 'resolution-tree-container' }).createEl('p', {
+      this.renderContainer.createDiv({ cls: 'resolution-tree-container' }).createEl('p', {
         text: 'Tree renderer not initialized.',
       });
     }
   }
 
   private renderGraphView(): void {
-    const { contentEl } = this;
-    const treeWrapper = contentEl.querySelector('.resolution-tree-wrapper') as HTMLElement;
-    const container = treeWrapper || contentEl;
-
-    // Remove existing containers if they exist
-    const existingGraph = container.querySelector('.resolution-graph-container');
-    if (existingGraph) {
-      existingGraph.remove();
-    }
-    const existingTree = container.querySelector('.resolution-tree-container');
-    if (existingTree) {
-      existingTree.remove();
-    }
-
-    if (!this.currentRootFile) {
+    if (!this.currentRootFile || !this.renderContainer) {
       return;
     }
 
-    // Create graph container
-    const graphContainer = container.createDiv({ cls: 'resolution-graph-container' });
+    // Create graph container in the dedicated render container
+    const graphContainer = this.renderContainer.createDiv({ cls: 'resolution-graph-container' });
 
     // Create canvas
     const canvas = graphContainer.createEl('canvas', { cls: 'resolution-graph-canvas' });
@@ -524,10 +497,10 @@ export class BlueResolutionTreeView extends ItemView {
     // Set canvas size to match container
     const updateCanvasSize = () => {
       // Calculate available height by subtracting header height
-      const headerEl = contentEl.querySelector('.PUREfloattop') as HTMLElement;
+      const headerEl = this.contentEl.querySelector('.PUREfloattop') as HTMLElement;
       const headerHeight = headerEl ? headerEl.clientHeight : 0;
-      const availableHeight = contentEl.clientHeight - headerHeight;
-      const availableWidth = contentEl.clientWidth;
+      const availableHeight = this.contentEl.clientHeight - headerHeight;
+      const availableWidth = this.contentEl.clientWidth;
       
       const dpr = window.devicePixelRatio || 1;
       canvas.width = availableWidth * dpr;

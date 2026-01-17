@@ -34,8 +34,9 @@ export class ResolutionTreeRenderer {
 
   /**
    * Renders the tree structure in the DOM.
+   * The renderer can safely empty the container passed to it.
    * 
-   * @param containerEl - The container element to render into
+   * @param containerEl - The container element to render into (can be safely emptied)
    * @param treeData - Flat map of node data keyed by file path
    * @param rootPath - Path of the root file to start rendering from
    */
@@ -44,11 +45,8 @@ export class ResolutionTreeRenderer {
     treeData: Map<string, ResolutionNodeData>,
     rootPath: string,
   ): void {
-    // Remove existing tree container if it exists (don't empty the entire container)
-    const existingTree = containerEl.querySelector('.resolution-tree-container');
-    if (existingTree) {
-      existingTree.remove();
-    }
+    // Safe to empty the container - it's a dedicated render container
+    containerEl.empty();
 
     const treeContainer = containerEl.createDiv({ cls: 'resolution-tree-container' });
 
