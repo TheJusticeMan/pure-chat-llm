@@ -34,10 +34,10 @@ export class VoiceCall {
         this.onServerEvent(event);
       }
     });
-    
+
     this.provider.onError(error => {
-        this.updateState({ status: 'error', error: error.message });
-        new Notice(`Call error: ${error.message}`);
+      this.updateState({ status: 'error', error: error.message });
+      new Notice(`Call error: ${error.message}`);
     });
   }
 
@@ -65,7 +65,6 @@ export class VoiceCall {
 
       this.updateState({ status: 'connected' });
       new Notice(`Call started with ${this.provider.getName()}`);
-
     } catch (error) {
       console.error('Failed to start call:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to start voice call';
@@ -134,7 +133,7 @@ export class VoiceCall {
     } catch (error) {
       console.error('Error ending call:', error);
       // Even if cleanup fails, ensure UI is reset
-       this.updateState({ status: 'idle' });
+      this.updateState({ status: 'idle' });
     }
   }
 

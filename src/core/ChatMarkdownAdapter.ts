@@ -7,7 +7,7 @@ import { alloptions } from '../assets/constants';
 /**
  * ChatMarkdownAdapter handles serialization and deserialization of chat sessions
  * to/from markdown format.
- * 
+ *
  * Responsibilities:
  * - Parse markdown text into ChatSession objects
  * - Serialize ChatSession objects into markdown text
@@ -41,7 +41,7 @@ export class ChatMarkdownAdapter {
 
   /**
    * Parses markdown text into a ChatSession.
-   * 
+   *
    * @param markdown - The markdown text to parse
    * @param defaultOptions - Default chat options to use
    * @param systemPrompt - Default system prompt
@@ -93,7 +93,7 @@ export class ChatMarkdownAdapter {
 
   /**
    * Serializes a ChatSession into markdown text.
-   * 
+   *
    * @param session - The chat session to serialize
    * @returns Markdown text representation
    */
@@ -107,9 +107,13 @@ export class ChatMarkdownAdapter {
           .replace(/```json[\s\S]*?```/im, '')
           .replace(/---\n[\s\S]+?\n---/im, '')
           .trim()}`
-      : ChatMarkdownAdapter.changeCodeBlockMD(session.pretext, 'json', JSON.stringify(options, null, 2));
+      : ChatMarkdownAdapter.changeCodeBlockMD(
+          session.pretext,
+          'json',
+          JSON.stringify(options, null, 2),
+        );
 
-    const chatText = session.getChatText((role) => this.parseRole(role));
+    const chatText = session.getChatText(role => this.parseRole(role));
     return `${prechat.trim()}\n${chatText}`;
   }
 
@@ -145,7 +149,7 @@ export class ChatMarkdownAdapter {
 
   /**
    * Extracts the content of a code block from markdown based on language.
-   * 
+   *
    * @param markdown - The markdown string containing the code block
    * @param language - The programming language of the code block to extract
    * @returns The content of the code block as a string if found, otherwise null
@@ -158,7 +162,7 @@ export class ChatMarkdownAdapter {
 
   /**
    * Extracts all code blocks from a given markdown string.
-   * 
+   *
    * @param markdown - The markdown string to extract code blocks from
    * @returns An array of objects containing language and code
    */
@@ -179,7 +183,7 @@ export class ChatMarkdownAdapter {
 
   /**
    * Replaces or adds a code block in markdown text.
-   * 
+   *
    * @param text - The original markdown string
    * @param language - The programming language of the code block
    * @param newText - The new text to insert into the code block
@@ -196,7 +200,7 @@ export class ChatMarkdownAdapter {
 
   /**
    * Parses a JSON string into ChatOptions.
-   * 
+   *
    * @param str - The JSON string to parse
    * @returns Partial ChatOptions object or null if parsing fails
    */
@@ -218,7 +222,7 @@ export class ChatMarkdownAdapter {
 
   /**
    * Safely parses JSON, returning the parsed object or the original string on error.
-   * 
+   *
    * @param str - The string to parse
    * @returns Parsed object or original string
    */

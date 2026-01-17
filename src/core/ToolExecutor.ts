@@ -4,7 +4,7 @@ import { ChatRequestOptions, RoleType, StreamDelta, ToolCall } from '../types';
 
 /**
  * ToolExecutor handles the execution of tool calls from LLM responses.
- * 
+ *
  * Responsibilities:
  * - Execute tool calls using the ToolRegistry
  * - Manage tool execution flow
@@ -14,9 +14,7 @@ import { ChatRequestOptions, RoleType, StreamDelta, ToolCall } from '../types';
 export class ToolExecutor {
   private streamCallback?: (delta: StreamDelta) => boolean;
 
-  constructor(
-    private toolRegistry: ToolRegistry,
-  ) {}
+  constructor(private toolRegistry: ToolRegistry) {}
 
   /**
    * Sets the stream callback for tool status updates.
@@ -29,7 +27,7 @@ export class ToolExecutor {
 
   /**
    * Executes tool calls and updates the session and options.
-   * 
+   *
    * @param toolCalls - The tool calls to execute
    * @param session - The chat session to update
    * @param options - The request options to update
@@ -77,7 +75,7 @@ export class ToolExecutor {
 
   /**
    * Filters out tool calls that don't have corresponding responses.
-   * 
+   *
    * @param msgs - The messages to filter
    * @returns Filtered messages with only called tools
    */
@@ -106,7 +104,7 @@ export class ToolExecutor {
   /**
    * Fixes duplicated arguments in tool calls (a known issue with some LLMs).
    * If arguments are invalid JSON and the string is duplicated, returns the first half.
-   * 
+   *
    * @param args - The arguments string to fix
    * @returns Fixed arguments string
    */

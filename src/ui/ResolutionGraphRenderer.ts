@@ -1,4 +1,9 @@
-import { ResolutionNodeData, ResolutionStatus, PURE_CHAT_LLM_ICON_SVG, PURE_CHAT_LLM_ICON_NAME } from '../types';
+import {
+  ResolutionNodeData,
+  ResolutionStatus,
+  PURE_CHAT_LLM_ICON_SVG,
+  PURE_CHAT_LLM_ICON_NAME,
+} from '../types';
 import { getIcon } from 'obsidian';
 
 /**
@@ -101,7 +106,7 @@ export class ResolutionGraphRenderer {
   private touches: Map<number, { x: number; y: number; startTime: number }> = new Map();
   private rafId: number | null = null;
   private minimapClickHandlerAdded: boolean = false;
-  
+
   // Event handler cleanup tracking
   private eventHandlers: Array<{
     element: HTMLElement | Document | Window;
@@ -125,7 +130,7 @@ export class ResolutionGraphRenderer {
     this.layoutNodes();
     this.setupInteractivity();
     this.setupTouchSupport();
-    
+
     // Pre-load all icons asynchronously to avoid race conditions during render
     void this.preloadIcons();
   }
@@ -168,7 +173,7 @@ export class ResolutionGraphRenderer {
     // Clear interaction state
     this.interactionState = { type: 'idle' };
     this.hoveredNode = null;
-    
+
     // Clear touch data
     this.touches.clear();
   }
@@ -180,7 +185,7 @@ export class ResolutionGraphRenderer {
     element: HTMLElement | Document | Window,
     event: string,
     handler: EventListener,
-    options?: AddEventListenerOptions | boolean
+    options?: AddEventListenerOptions | boolean,
   ): void {
     try {
       element.addEventListener(event, handler, options);
@@ -240,11 +245,15 @@ export class ResolutionGraphRenderer {
 
     // Calculate layout parameters
     const maxDepth = Math.max(...Array.from(layers.keys()));
-    const verticalSpacing = maxDepth > 0 ? (layoutHeight - ResolutionGraphRenderer.LAYOUT_VERTICAL_PADDING) / maxDepth : 0;
+    const verticalSpacing =
+      maxDepth > 0
+        ? (layoutHeight - ResolutionGraphRenderer.LAYOUT_VERTICAL_PADDING) / maxDepth
+        : 0;
 
     // Position nodes
     for (const [depth, layerNodes] of layers) {
-      const layerY = 80 + depth * Math.max(verticalSpacing, ResolutionGraphRenderer.LAYOUT_MIN_VERTICAL_SPACING);
+      const layerY =
+        80 + depth * Math.max(verticalSpacing, ResolutionGraphRenderer.LAYOUT_MIN_VERTICAL_SPACING);
       const horizontalSpacing = layoutWidth / (layerNodes.length + 1);
 
       layerNodes.forEach((node, index) => {
@@ -403,35 +412,30 @@ export class ResolutionGraphRenderer {
         // Icons are loaded - draw them
         const iconId = this.getNodeIcon(node);
         const icon = this.iconCache.get(iconId);
-        
+
         if (icon) {
           // Calculate icon size (larger, no circle background)
           const iconSize = node.radius * ResolutionGraphRenderer.ICON_SIZE_MULTIPLIER;
-          
+
           // Apply status-based color tint
           this.ctx.save();
-          
+
           // Draw icon first
           this.ctx.drawImage(
             icon,
             node.x - iconSize / 2,
             node.y - iconSize / 2,
             iconSize,
-            iconSize
+            iconSize,
           );
-          
+
           // Apply color overlay for status
           this.ctx.globalCompositeOperation = 'source-atop';
           this.ctx.fillStyle = nodeColor;
-          this.ctx.fillRect(
-            node.x - iconSize / 2,
-            node.y - iconSize / 2,
-            iconSize,
-            iconSize
-          );
-          
+          this.ctx.fillRect(node.x - iconSize / 2, node.y - iconSize / 2, iconSize, iconSize);
+
           this.ctx.restore();
-          
+
           // Draw glow for pending chats (around icon, not circle)
           if (node.data.isPendingChat) {
             this.ctx.save();
@@ -441,11 +445,11 @@ export class ResolutionGraphRenderer {
               node.x - iconSize / 2 - ResolutionGraphRenderer.PENDING_CHAT_GLOW_SIZE,
               node.y - iconSize / 2 - ResolutionGraphRenderer.PENDING_CHAT_GLOW_SIZE,
               iconSize + ResolutionGraphRenderer.PENDING_CHAT_GLOW_SIZE * 2,
-              iconSize + ResolutionGraphRenderer.PENDING_CHAT_GLOW_SIZE * 2
+              iconSize + ResolutionGraphRenderer.PENDING_CHAT_GLOW_SIZE * 2,
             );
             this.ctx.restore();
           }
-          
+
           // Add glow effect for resolving nodes
           if (node.data.status === 'resolving') {
             this.ctx.save();
@@ -453,23 +457,21 @@ export class ResolutionGraphRenderer {
             this.ctx.shadowColor = nodeColor;
             this.ctx.strokeStyle = this.getNodeBorderColor(node.data.status);
             this.ctx.lineWidth = ResolutionGraphRenderer.RESOLVING_GLOW_WIDTH;
-            this.ctx.strokeRect(
-              node.x - iconSize / 2,
-              node.y - iconSize / 2,
-              iconSize,
-              iconSize
-            );
+            this.ctx.strokeRect(node.x - iconSize / 2, node.y - iconSize / 2, iconSize, iconSize);
             this.ctx.shadowBlur = 0;
             this.ctx.restore();
           }
-          
+
           // Animated glow for recently changed nodes
           const timestamp = this.animationTimestamps.get(node.id);
           if (timestamp) {
             const elapsed = now - timestamp;
             const progress = elapsed / ResolutionGraphRenderer.ANIMATION_DURATION_MS;
             const alpha = 1 - progress;
-            const pulseSize = iconSize + ResolutionGraphRenderer.PULSE_BASE_SIZE + progress * ResolutionGraphRenderer.PULSE_MAX_GROWTH;
+            const pulseSize =
+              iconSize +
+              ResolutionGraphRenderer.PULSE_BASE_SIZE +
+              progress * ResolutionGraphRenderer.PULSE_MAX_GROWTH;
 
             this.ctx.save();
             this.ctx.strokeStyle = nodeColor.replace(/[\d.]+\)$/, `${alpha})`);
@@ -478,7 +480,7 @@ export class ResolutionGraphRenderer {
               node.x - pulseSize / 2,
               node.y - pulseSize / 2,
               pulseSize,
-              pulseSize
+              pulseSize,
             );
             this.ctx.restore();
           }
@@ -505,13 +507,22 @@ export class ResolutionGraphRenderer {
       let displayName = fileName;
       const metrics = this.ctx.measureText(displayName);
       if (metrics.width > maxWidth) {
-        while (this.ctx.measureText(displayName + '...').width > maxWidth && displayName.length > 0) {
+        while (
+          this.ctx.measureText(displayName + '...').width > maxWidth &&
+          displayName.length > 0
+        ) {
           displayName = displayName.slice(0, -1);
         }
         displayName += '...';
       }
 
-      this.ctx.fillText(displayName, node.x, node.y + node.radius * ResolutionGraphRenderer.ICON_SIZE_MULTIPLIER / 2 + ResolutionGraphRenderer.LABEL_OFFSET_Y);
+      this.ctx.fillText(
+        displayName,
+        node.x,
+        node.y +
+          (node.radius * ResolutionGraphRenderer.ICON_SIZE_MULTIPLIER) / 2 +
+          ResolutionGraphRenderer.LABEL_OFFSET_Y,
+      );
     }
   }
 
@@ -520,7 +531,7 @@ export class ResolutionGraphRenderer {
    */
   private drawPlaceholderNode(node: GraphNode, nodeColor: string): void {
     const iconSize = node.radius * ResolutionGraphRenderer.ICON_SIZE_MULTIPLIER;
-    
+
     // Draw circle as placeholder
     this.ctx.beginPath();
     this.ctx.arc(node.x, node.y, iconSize / 2, 0, Math.PI * 2);
@@ -529,7 +540,7 @@ export class ResolutionGraphRenderer {
     this.ctx.strokeStyle = this.getNodeBorderColor(node.data.status);
     this.ctx.lineWidth = ResolutionGraphRenderer.EDGE_LINE_WIDTH;
     this.ctx.stroke();
-    
+
     // Draw loading indicator if still loading
     if (this.iconLoadingState === 'loading') {
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -634,21 +645,19 @@ export class ResolutionGraphRenderer {
    */
   private async preloadIcons(): Promise<void> {
     this.iconLoadingState = 'loading';
-    
+
     // Pre-load all icon types we might use
     const iconTypes = ['folder', PURE_CHAT_LLM_ICON_NAME, 'file-text', 'image', 'file'];
-    
+
     try {
-      await Promise.all(
-        iconTypes.map(iconId => this.loadIcon(iconId))
-      );
-      
+      await Promise.all(iconTypes.map(iconId => this.loadIcon(iconId)));
+
       this.iconLoadingState = 'loaded';
     } catch (error) {
       console.error('Failed to load icons:', error);
       this.iconLoadingState = 'error';
     }
-    
+
     // Trigger initial render after icons are loaded (or failed)
     this.render();
   }
@@ -658,27 +667,27 @@ export class ResolutionGraphRenderer {
    */
   private getNodeIcon(node: GraphNode): string {
     const fileName = node.id.split('/').pop() || node.id;
-    
+
     // Root node (depth 0)
     if (node.data.depth === 0) {
       return 'folder';
     }
-    
+
     // Image files
     if (/\.(png|jpe?g|gif|webp)$/i.test(fileName)) {
       return 'image';
     }
-    
+
     // Chat files
     if (node.data.isChatFile) {
       return PURE_CHAT_LLM_ICON_NAME;
     }
-    
+
     // Markdown files
     if (fileName.endsWith('.md')) {
       return 'file-text';
     }
-    
+
     // Other files
     return 'file';
   }
@@ -690,34 +699,34 @@ export class ResolutionGraphRenderer {
     if (this.iconCache.has(iconId)) {
       return this.iconCache.get(iconId)!;
     }
-    
+
     let svgElement: SVGSVGElement | null = null;
-    
+
     // Handle pure-chat-llm icon specially since it's manually registered
     if (iconId === PURE_CHAT_LLM_ICON_NAME) {
       // Create SVG element from the SVG string in types.ts
       const parser = new DOMParser();
       const svgDoc = parser.parseFromString(
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${PURE_CHAT_LLM_ICON_SVG}</svg>`,
-        'image/svg+xml'
+        'image/svg+xml',
       );
       svgElement = svgDoc.documentElement as unknown as SVGSVGElement;
     } else {
       svgElement = getIcon(iconId);
     }
-    
+
     if (!svgElement) {
       return null;
     }
-    
+
     const svgString = svgElement.outerHTML;
-    
+
     // Convert SVG to data URL for canvas rendering
     const img = new Image();
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(svgBlob);
-    
-    return new Promise((resolve) => {
+
+    return new Promise(resolve => {
       img.onload = () => {
         URL.revokeObjectURL(url);
         this.iconCache.set(iconId, img);
@@ -798,10 +807,13 @@ export class ResolutionGraphRenderer {
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
-      const zoomDelta = e.deltaY < 0 ? ResolutionGraphRenderer.ZOOM_INCREMENT : 1 / ResolutionGraphRenderer.ZOOM_INCREMENT;
+      const zoomDelta =
+        e.deltaY < 0
+          ? ResolutionGraphRenderer.ZOOM_INCREMENT
+          : 1 / ResolutionGraphRenderer.ZOOM_INCREMENT;
       const newScale = Math.max(
         ResolutionGraphRenderer.MIN_ZOOM,
-        Math.min(ResolutionGraphRenderer.MAX_ZOOM, this.transform.scale * zoomDelta)
+        Math.min(ResolutionGraphRenderer.MAX_ZOOM, this.transform.scale * zoomDelta),
       );
 
       // Show visual feedback when zoom limits are reached
@@ -833,13 +845,16 @@ export class ResolutionGraphRenderer {
         const graphPos = this.getMouseGraphPosition(e);
         this.interactionState.node.x = graphPos.x;
         this.interactionState.node.y = graphPos.y;
-        this.nodePositionOverrides.set(this.interactionState.node.id, { x: graphPos.x, y: graphPos.y });
+        this.nodePositionOverrides.set(this.interactionState.node.id, {
+          x: graphPos.x,
+          y: graphPos.y,
+        });
         this.scheduleRender();
       } else {
         // Check if hovering over a node for cursor feedback
         const graphPos = this.getMouseGraphPosition(e);
         const node = this.getNodeAtPosition(graphPos.x, graphPos.y);
-        
+
         if (node) {
           this.canvas.classList.add('graph-node-hover');
         } else {
@@ -898,7 +913,7 @@ export class ResolutionGraphRenderer {
     const dblClickHandler = (e: MouseEvent) => {
       const graphPos = this.getMouseGraphPosition(e);
       const node = this.getNodeAtPosition(graphPos.x, graphPos.y);
-      
+
       if (node) {
         // Remove manual override for this node
         this.nodePositionOverrides.delete(node.id);
@@ -917,7 +932,7 @@ export class ResolutionGraphRenderer {
   private setupTouchSupport(): void {
     const touchStartHandler = (e: TouchEvent) => {
       e.preventDefault();
-      
+
       for (let i = 0; i < e.touches.length; i++) {
         const touch = e.touches[i];
         this.touches.set(touch.identifier, {
@@ -926,13 +941,13 @@ export class ResolutionGraphRenderer {
           startTime: Date.now(),
         });
       }
-      
+
       if (e.touches.length === 1) {
         const touch = e.touches[0];
         const rect = this.canvas.getBoundingClientRect();
         const node = this.getNodeAtScreenPosition(
           touch.clientX - rect.left,
-          touch.clientY - rect.top
+          touch.clientY - rect.top,
         );
         if (node) {
           this.interactionState = {
@@ -942,7 +957,7 @@ export class ResolutionGraphRenderer {
           };
         }
       }
-      
+
       if (e.touches.length === 2) {
         const distance = this.getTouchDistance(e.touches[0], e.touches[1]);
         this.interactionState = {
@@ -952,24 +967,26 @@ export class ResolutionGraphRenderer {
         };
       }
     };
-    this.addEventListener(this.canvas, 'touchstart', touchStartHandler as EventListener, { passive: false });
-    
+    this.addEventListener(this.canvas, 'touchstart', touchStartHandler as EventListener, {
+      passive: false,
+    });
+
     const touchMoveHandler = (e: TouchEvent) => {
       e.preventDefault();
-      
+
       if (e.touches.length === 1) {
         const touch = e.touches[0];
         const prevTouch = this.touches.get(touch.identifier);
-        
+
         if (prevTouch) {
           const deltaX = touch.clientX - prevTouch.x;
           const deltaY = touch.clientY - prevTouch.y;
-          
+
           if (this.interactionState.type === 'dragging-node') {
             const rect = this.canvas.getBoundingClientRect();
             const graphPos = this.screenToGraph(
               touch.clientX - rect.left,
-              touch.clientY - rect.top
+              touch.clientY - rect.top,
             );
             this.interactionState.node.x = graphPos.x;
             this.interactionState.node.y = graphPos.y;
@@ -978,7 +995,7 @@ export class ResolutionGraphRenderer {
             this.transform.offsetX += deltaX;
             this.transform.offsetY += deltaY;
           }
-          
+
           this.touches.set(touch.identifier, {
             x: touch.clientX,
             y: touch.clientY,
@@ -988,40 +1005,51 @@ export class ResolutionGraphRenderer {
         }
       } else if (e.touches.length === 2 && this.interactionState.type === 'pinch-zooming') {
         const distance = this.getTouchDistance(e.touches[0], e.touches[1]);
-        const scale = (distance / this.interactionState.initialDistance) * this.interactionState.initialScale;
+        const scale =
+          (distance / this.interactionState.initialDistance) * this.interactionState.initialScale;
         this.transform.scale = Math.max(
           ResolutionGraphRenderer.MIN_ZOOM,
-          Math.min(ResolutionGraphRenderer.MAX_ZOOM, scale)
+          Math.min(ResolutionGraphRenderer.MAX_ZOOM, scale),
         );
         this.scheduleRender();
       }
     };
-    this.addEventListener(this.canvas, 'touchmove', touchMoveHandler as EventListener, { passive: false });
-    
+    this.addEventListener(this.canvas, 'touchmove', touchMoveHandler as EventListener, {
+      passive: false,
+    });
+
     const touchEndHandler = (e: TouchEvent) => {
       e.preventDefault();
-      
+
       // Check if this was a tap (not a drag) with improved detection
-      if (e.changedTouches.length === 1 && this.interactionState.type !== 'pinch-zooming' && this.touches.size === 1) {
+      if (
+        e.changedTouches.length === 1 &&
+        this.interactionState.type !== 'pinch-zooming' &&
+        this.touches.size === 1
+      ) {
         const touch = e.changedTouches[0];
         const prevTouch = this.touches.get(touch.identifier);
-        
+
         if (prevTouch) {
           const deltaX = Math.abs(touch.clientX - prevTouch.x);
           const deltaY = Math.abs(touch.clientY - prevTouch.y);
           const duration = Date.now() - prevTouch.startTime;
-          
+
           // Scale-aware tap threshold
           const tapThreshold = ResolutionGraphRenderer.TAP_THRESHOLD_PX / this.transform.scale;
-          
+
           // If movement was minimal and duration was short, treat it as a tap
-          if (deltaX < tapThreshold && deltaY < tapThreshold && duration < ResolutionGraphRenderer.TAP_MAX_DURATION_MS) {
+          if (
+            deltaX < tapThreshold &&
+            deltaY < tapThreshold &&
+            duration < ResolutionGraphRenderer.TAP_MAX_DURATION_MS
+          ) {
             const rect = this.canvas.getBoundingClientRect();
             const node = this.getNodeAtScreenPosition(
               touch.clientX - rect.left,
-              touch.clientY - rect.top
+              touch.clientY - rect.top,
             );
-            
+
             if (node) {
               // Dispatch a custom event that can be listened to
               const event = new CustomEvent('nodeclick', { detail: { nodeId: node.id } });
@@ -1030,17 +1058,19 @@ export class ResolutionGraphRenderer {
           }
         }
       }
-      
+
       for (let i = 0; i < e.changedTouches.length; i++) {
         this.touches.delete(e.changedTouches[i].identifier);
       }
-      
+
       if (e.touches.length < 2) {
         this.interactionState = { type: 'idle' };
       }
     };
-    this.addEventListener(this.canvas, 'touchend', touchEndHandler as EventListener, { passive: false });
-    
+    this.addEventListener(this.canvas, 'touchend', touchEndHandler as EventListener, {
+      passive: false,
+    });
+
     const touchCancelHandler = () => {
       this.touches.clear();
       this.interactionState = { type: 'idle' };
@@ -1092,7 +1122,10 @@ export class ResolutionGraphRenderer {
   public zoomIn(): void {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
-    const newScale = Math.min(ResolutionGraphRenderer.MAX_ZOOM, this.transform.scale * ResolutionGraphRenderer.ZOOM_INCREMENT);
+    const newScale = Math.min(
+      ResolutionGraphRenderer.MAX_ZOOM,
+      this.transform.scale * ResolutionGraphRenderer.ZOOM_INCREMENT,
+    );
     this.transform.offsetX -=
       (centerX - this.transform.offsetX) * (newScale / this.transform.scale - 1);
     this.transform.offsetY -=
@@ -1107,7 +1140,10 @@ export class ResolutionGraphRenderer {
   public zoomOut(): void {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
-    const newScale = Math.max(ResolutionGraphRenderer.MIN_ZOOM, this.transform.scale / ResolutionGraphRenderer.ZOOM_INCREMENT);
+    const newScale = Math.max(
+      ResolutionGraphRenderer.MIN_ZOOM,
+      this.transform.scale / ResolutionGraphRenderer.ZOOM_INCREMENT,
+    );
     this.transform.offsetX -=
       (centerX - this.transform.offsetX) * (newScale / this.transform.scale - 1);
     this.transform.offsetY -=
@@ -1177,7 +1213,11 @@ export class ResolutionGraphRenderer {
     this.tooltipElement.classList.add('graph-tooltip-hidden');
 
     const mouseMoveHandler = (e: MouseEvent) => {
-      if (this.interactionState.type === 'panning' || this.interactionState.type === 'dragging-node') return;
+      if (
+        this.interactionState.type === 'panning' ||
+        this.interactionState.type === 'dragging-node'
+      )
+        return;
 
       const graphPos = this.getMouseGraphPosition(e);
       const node = this.getNodeAtPosition(graphPos.x, graphPos.y);
@@ -1218,27 +1258,27 @@ export class ResolutionGraphRenderer {
 
     // Create body
     const bodyEl = this.tooltipElement.createDiv({ cls: 'tooltip-body' });
-    
+
     const pathRow = bodyEl.createDiv({ cls: 'tooltip-row' });
     pathRow.createSpan({ cls: 'tooltip-label', text: 'Path:' });
     pathRow.createSpan({ cls: 'tooltip-value', text: node.id });
-    
+
     const statusRow = bodyEl.createDiv({ cls: 'tooltip-row' });
     statusRow.createSpan({ cls: 'tooltip-label', text: 'Status:' });
     statusRow.createSpan({ cls: 'tooltip-value', text: node.data.status });
-    
+
     const depthRow = bodyEl.createDiv({ cls: 'tooltip-row' });
     depthRow.createSpan({ cls: 'tooltip-label', text: 'Depth:' });
     depthRow.createSpan({ cls: 'tooltip-value', text: node.data.depth.toString() });
-    
+
     if (node.data.isPendingChat) {
       bodyEl.createDiv({ cls: 'tooltip-badge', text: 'Pending Chat' });
     }
-    
+
     if (node.data.error) {
       bodyEl.createDiv({ cls: 'tooltip-error', text: node.data.error });
     }
-    
+
     bodyEl.createDiv({ cls: 'tooltip-hint', text: 'Click to open file' });
 
     // Position tooltip
@@ -1306,7 +1346,8 @@ export class ResolutionGraphRenderer {
     const graphWidth = maxX - minX + 100;
     const graphHeight = maxY - minY + 100;
     const scale =
-      Math.min(this.minimapSize.width / graphWidth, this.minimapSize.height / graphHeight) * ResolutionGraphRenderer.MINIMAP_SCALE_FACTOR;
+      Math.min(this.minimapSize.width / graphWidth, this.minimapSize.height / graphHeight) *
+      ResolutionGraphRenderer.MINIMAP_SCALE_FACTOR;
 
     // Draw nodes as small circles
     this.nodes.forEach(node => {
@@ -1331,31 +1372,34 @@ export class ResolutionGraphRenderer {
 
     // Restore context
     this.ctx.restore();
-    
+
     // Setup minimap click handler (only once)
     if (!this.minimapClickHandlerAdded) {
       const minimapClickHandler = (e: MouseEvent) => {
         const rect = this.canvas.getBoundingClientRect();
         const canvasX = e.clientX - rect.left;
         const canvasY = e.clientY - rect.top;
-        
+
         // Check if click is within minimap bounds
-        if (canvasX >= x && canvasX <= x + this.minimapSize.width &&
-            canvasY >= y && canvasY <= y + this.minimapSize.height) {
-          
+        if (
+          canvasX >= x &&
+          canvasX <= x + this.minimapSize.width &&
+          canvasY >= y &&
+          canvasY <= y + this.minimapSize.height
+        ) {
           // Convert click position to graph coordinates
           const relX = (canvasX - x) / scale - 50 + minX;
           const relY = (canvasY - y) / scale - 50 + minY;
-          
+
           // Pan to clicked location (center it)
           this.transform.offsetX = this.canvas.width / 2 - relX * this.transform.scale;
           this.transform.offsetY = this.canvas.height / 2 - relY * this.transform.scale;
-          
+
           this.scheduleRender();
           e.preventDefault();
         }
       };
-      
+
       this.addEventListener(this.canvas, 'click', minimapClickHandler as EventListener);
       this.minimapClickHandlerAdded = true;
     }

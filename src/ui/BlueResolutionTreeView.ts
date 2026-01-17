@@ -1,11 +1,11 @@
 import {
+  ExtraButtonComponent,
   ItemView,
-  WorkspaceLeaf,
-  Setting,
-  TFile,
   MarkdownView,
   Notice,
-  ExtraButtonComponent,
+  Setting,
+  TFile,
+  WorkspaceLeaf,
 } from 'obsidian';
 import PureChatLLM from '../main';
 import {
@@ -133,7 +133,7 @@ export class BlueResolutionTreeView extends ItemView {
       this.graphRenderer.destroy();
       this.graphRenderer = null;
     }
-    
+
     // Unregister resolution event listener
     this.plugin.blueFileResolver.offResolutionEvent(this.boundResolutionEventHandler);
   }
@@ -217,7 +217,7 @@ export class BlueResolutionTreeView extends ItemView {
       this.graphRenderer.destroy();
       this.graphRenderer = null;
     }
-    
+
     // Ensure view mode is synchronized with settings
     if (this.plugin.settings.blueResolutionViewMode) {
       this.viewMode = this.plugin.settings.blueResolutionViewMode;

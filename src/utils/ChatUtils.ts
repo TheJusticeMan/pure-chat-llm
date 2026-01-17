@@ -9,9 +9,9 @@ export class ChatUtils {
   /**
    * Determines if a chat instance represents a valid chat file
    * (ends with a user message, indicating it's pending execution).
-   * 
+   *
    * Moved from BlueResolutionTreeView.isChatFile()
-   * 
+   *
    * @param chat - The parsed chat instance to check
    * @returns true if the chat is valid and ends with a user message
    */
@@ -26,9 +26,9 @@ export class ChatUtils {
   /**
    * Checks if a chat file has any outgoing links to other chat files.
    * This is used to determine if a file has potential child chats.
-   * 
+   *
    * Moved from BlueResolutionTreeView.hasChildChats()
-   * 
+   *
    * @param chat - The parsed chat instance
    * @param file - The file to check for child chats
    * @param app - The Obsidian app instance
@@ -61,7 +61,7 @@ export class ChatUtils {
   /**
    * Extracts all chat file links from content.
    * Specifically looks for links to files with .chat extension.
-   * 
+   *
    * @param content - The markdown content to search
    * @returns Array of chat file paths found in the content
    */
@@ -80,7 +80,7 @@ export class ChatUtils {
   /**
    * Checks if content contains child chat references.
    * Uses regex to detect .chat file links.
-   * 
+   *
    * @param content - The markdown content to check
    * @returns true if the content contains at least one .chat link
    */

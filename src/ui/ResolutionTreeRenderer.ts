@@ -18,12 +18,12 @@ interface TreeNode {
 /**
  * Pure presentation layer for rendering the Blue File Resolution tree in DOM.
  * Extracted from BlueResolutionTreeView to separate concerns.
- * 
+ *
  * This class is responsible ONLY for:
  * - Converting flat tree data to hierarchical structure
  * - Rendering DOM elements for the tree
  * - Managing expand/collapse UI interactions
- * 
+ *
  * It does NOT:
  * - Perform any file I/O
  * - Execute business logic
@@ -35,7 +35,7 @@ export class ResolutionTreeRenderer {
   /**
    * Renders the tree structure in the DOM.
    * The renderer can safely empty the container passed to it.
-   * 
+   *
    * @param containerEl - The container element to render into (can be safely emptied)
    * @param treeData - Flat map of node data keyed by file path
    * @param rootPath - Path of the root file to start rendering from
@@ -66,7 +66,7 @@ export class ResolutionTreeRenderer {
   /**
    * Builds a hierarchical tree node from flat data.
    * Includes cycle detection to prevent infinite recursion.
-   * 
+   *
    * @param filePath - Path of the file to build a node for
    * @param treeData - Flat map of all node data
    * @param visited - Set of already visited paths (for cycle detection)
@@ -125,7 +125,7 @@ export class ResolutionTreeRenderer {
 
   /**
    * Renders a single tree node and its children recursively.
-   * 
+   *
    * @param container - Parent DOM element to render into
    * @param node - The tree node to render
    * @param indentLevel - Current indentation level (for visual hierarchy)
@@ -197,7 +197,7 @@ export class ResolutionTreeRenderer {
 
   /**
    * Determines the appropriate icon for a tree node based on its properties.
-   * 
+   *
    * @param node - The tree node to get an icon for
    * @param indentLevel - Current indentation level (root = 0)
    * @returns Icon name string for Obsidian's setIcon()
