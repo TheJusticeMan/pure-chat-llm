@@ -182,4 +182,5 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
     enableCaching: true,
     writeIntermediateResults: false,
   },
+  blueResolutionViewMode: 'tree',
 };

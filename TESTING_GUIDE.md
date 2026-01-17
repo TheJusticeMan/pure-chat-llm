@@ -228,6 +228,197 @@ This creates a cycle: [[root]]
 - ✅ Can still interact with nodes
 - ✅ Unlock restores normal behavior
 
+### 16. Zoom Controls - Mouse Wheel
+**Steps:**
+1. Open graph view with multiple nodes
+2. Hover over the canvas
+3. Scroll mouse wheel up (zoom in)
+4. Scroll mouse wheel down (zoom out)
+
+**Expected:**
+- ✅ Graph zooms centered on cursor position
+- ✅ Zoom level indicator updates (top-left corner)
+- ✅ Zoom range is constrained (0.1x to 5x)
+- ✅ Nodes and edges scale proportionally
+- ✅ Labels remain readable at all zoom levels
+
+### 17. Zoom Controls - Buttons
+**Steps:**
+1. Open graph view
+2. Click zoom in button (magnifying glass with +)
+3. Click zoom out button (magnifying glass with -)
+4. Click reset view button (circular arrow)
+
+**Expected:**
+- ✅ Zoom in centers on canvas center
+- ✅ Zoom out centers on canvas center
+- ✅ Reset returns to 1x zoom with no offset
+- ✅ Zoom indicator shows current level
+- ✅ Buttons are responsive and work smoothly
+
+### 18. Zoom Controls - Keyboard Shortcuts
+**Steps:**
+1. Open graph view
+2. Hover mouse over canvas
+3. Press Ctrl+Plus (or Cmd+Plus on Mac)
+4. Press Ctrl+Minus
+5. Press Ctrl+0
+
+**Expected:**
+- ✅ Ctrl+Plus zooms in
+- ✅ Ctrl+Minus zooms out
+- ✅ Ctrl+0 resets view
+- ✅ Shortcuts only work when hovering canvas
+- ✅ No conflicts with other Obsidian shortcuts
+
+### 19. Pan Controls - Shift+Drag
+**Steps:**
+1. Open graph view
+2. Hold Shift key
+3. Click and drag with left mouse button
+
+**Expected:**
+- ✅ Canvas pans in direction of drag
+- ✅ Cursor changes to "grabbing" during drag
+- ✅ Panning is smooth and responsive
+- ✅ Can pan in all directions
+- ✅ Minimap viewport indicator updates
+
+### 20. Pan Controls - Middle Mouse Button
+**Steps:**
+1. Open graph view
+2. Click and drag with middle mouse button
+
+**Expected:**
+- ✅ Canvas pans without needing Shift key
+- ✅ Cursor changes to "grabbing"
+- ✅ Behavior identical to Shift+drag
+
+### 21. Node Dragging
+**Steps:**
+1. Open graph view with multiple nodes
+2. Click and drag a node with left mouse button (no Shift)
+3. Release mouse button
+4. Drag another node
+
+**Expected:**
+- ✅ Node follows cursor during drag
+- ✅ Cursor changes to "move"
+- ✅ Node position updates in real-time
+- ✅ Edges update to follow node
+- ✅ Manual position is preserved
+- ✅ Other nodes remain in place
+
+### 22. Reset Node Positions
+**Steps:**
+1. Open graph view
+2. Drag several nodes to new positions
+3. Click "Reset node positions" button (refresh icon)
+
+**Expected:**
+- ✅ All nodes return to automatic layout
+- ✅ Manual position overrides are cleared
+- ✅ Layout recalculates properly
+- ✅ Graph remains functional
+
+### 23. Mini-map Display
+**Steps:**
+1. Open graph view with 10+ nodes
+2. Observe mini-map in top-right corner
+3. Zoom and pan the main view
+
+**Expected:**
+- ✅ Mini-map shows overview of entire graph
+- ✅ All nodes visible as small dots with correct colors
+- ✅ Viewport rectangle shows current view area
+- ✅ Viewport rectangle updates when panning/zooming
+- ✅ Mini-map has dark background with border
+
+### 24. Mini-map Toggle
+**Steps:**
+1. Open graph view
+2. Click "Toggle minimap" button (map icon)
+3. Click again to show
+
+**Expected:**
+- ✅ Mini-map disappears when toggled off
+- ✅ Mini-map reappears when toggled on
+- ✅ Button state is clear
+- ✅ No layout issues when toggling
+
+### 25. Node Tooltips - Basic Display
+**Steps:**
+1. Open graph view
+2. Hover mouse over a node
+3. Wait briefly
+4. Move to another node
+
+**Expected:**
+- ✅ Tooltip appears near cursor
+- ✅ Shows file name, path, status, depth
+- ✅ Tooltip has dark background with border
+- ✅ Text is readable and properly formatted
+- ✅ Tooltip follows cursor to new node
+- ✅ Tooltip disappears when leaving node
+
+### 26. Node Tooltips - Rich Content
+**Steps:**
+1. Create nodes with different states
+2. Hover over pending chat node
+3. Hover over error node
+4. Hover over cycle-detected node
+
+**Expected:**
+- ✅ Pending chat shows "Pending Chat" badge
+- ✅ Error shows red error message
+- ✅ Status icons match node status (○ ◐ ● ✗ ◉ ↻)
+- ✅ All tooltips show "Click to open file" hint
+
+### 27. Real-time Animation - Status Changes
+**Steps:**
+1. Create pending chat with linked files
+2. Open graph view
+3. Trigger resolution
+4. Watch nodes as they resolve
+
+**Expected:**
+- ✅ Nodes show expanding glow animation on status change
+- ✅ Animation lasts approximately 1 second
+- ✅ Multiple nodes can animate simultaneously
+- ✅ Animation is smooth at 60fps
+- ✅ No performance issues during animation
+
+### 28. Combined Interactions
+**Steps:**
+1. Open graph view
+2. Zoom in to 2x
+3. Pan to a different area
+4. Drag a node to new position
+5. Hover to see tooltip
+6. Click node to navigate
+
+**Expected:**
+- ✅ All features work together seamlessly
+- ✅ No conflicts between interactions
+- ✅ Transforms apply correctly
+- ✅ Tooltips position correctly after transforms
+- ✅ Click detection works with transforms
+
+### 29. Large Graph Performance
+**Steps:**
+1. Create graph with 100+ nodes
+2. Open graph view
+3. Test zoom, pan, drag operations
+4. Observe animation performance
+
+**Expected:**
+- ✅ Initial render completes in < 1 second
+- ✅ Zoom/pan remains smooth (60fps)
+- ✅ Node dragging is responsive
+- ✅ Mini-map updates without lag
+- ✅ Animations run smoothly
+- ✅ No console warnings about performance
+
 ## Visual Checks
 
 ### Color Accuracy
@@ -258,10 +449,10 @@ Compare rendered colors to specifications:
 - Performance is acceptable (no lag warnings)
 
 ## Known Limitations
-1. No zoom/pan controls (future enhancement)
-2. No drag-to-reposition (future enhancement)
-3. View mode doesn't persist (future enhancement)
-4. Very large graphs (100+ nodes) may be hard to navigate
+1. Very large graphs (200+ nodes) may experience some performance impact
+2. View mode preference doesn't persist between sessions (future enhancement)
+3. No physics-based force-directed layout option (future enhancement)
+4. No graph export to image feature (future enhancement)
 
 ## Reporting Issues
 When reporting issues, please include:

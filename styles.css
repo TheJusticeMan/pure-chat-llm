@@ -553,19 +553,128 @@ sup {
 .resolution-graph-container {
   width: 100%;
   height: 100%;
+  max-height: 100%; /* Prevent overflow */
+  overflow: hidden; /* Hide any overflow */
   display: flex;
   justify-content: center;
   align-items: center;
   background: rgba(0, 0, 0, 0.4);
   border-radius: var(--radius-m);
+  position: relative;
 }
 
 .resolution-graph-canvas {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
   cursor: pointer;
 }
 
 .resolution-graph-canvas:hover {
   background: rgba(0, 0, 0, 0.5);
+}
+
+/* Graph tooltip */
+.graph-tooltip {
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0;
+  pointer-events: none;
+  z-index: 1000;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  font-size: 0.9em;
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.75em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.tooltip-icon {
+  font-size: 1.2em;
+}
+
+.tooltip-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tooltip-body {
+  padding: 0.75em;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5em;
+  gap: 1em;
+}
+
+.tooltip-label {
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.tooltip-value {
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.tooltip-badge {
+  display: inline-block;
+  background: rgba(0, 200, 255, 0.2);
+  border: 1px solid rgba(0, 200, 255, 0.5);
+  border-radius: 4px;
+  padding: 0.25em 0.5em;
+  font-size: 0.75em;
+  margin-top: 0.5em;
+  font-weight: 600;
+}
+
+.tooltip-error {
+  color: var(--color-red);
+  font-size: 0.85em;
+  margin-top: 0.5em;
+  padding: 0.5em;
+  background: rgba(255, 64, 129, 0.1);
+  border-radius: 4px;
+}
+
+.tooltip-hint {
+  margin-top: 0.75em;
+  padding-top: 0.5em;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75em;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Zoom level indicator */
+.graph-zoom-indicator {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0.5em 0.75em;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  z-index: 100;
 }

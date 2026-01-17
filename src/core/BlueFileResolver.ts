@@ -2,7 +2,8 @@ import { App, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
 import PureChatLLM from '../main';
 import { PureChatLLMChat } from './Chat';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { MediaMessage, RoleType, ResolutionEvent } from '../types';
+import { MediaMessage, RoleType, ResolutionEvent, ResolutionNodeData } from '../types';
+import { ChatUtils } from '../utils/ChatUtils';
 
 /**
  * Represents a node in the file resolution tree.
@@ -280,21 +281,27 @@ export class BlueFileResolver {
     const { blueFileResolution } = this.plugin.settings;
 
     try {
+      this.console.log(`[Blue File Resolution] Starting resolveFileInternal for: ${file.path}`);
+      
       // Read the file content
       const content = await app.vault.cachedRead(file);
+      this.console.log(`[Blue File Resolution] Read content (${content.length} chars) from: ${file.path}`);
 
       // Create a chat instance to parse the file
       const chat = new PureChatLLMChat(this.plugin);
       chat.setMarkdown(content);
+      this.console.log(`[Blue File Resolution] Parsed chat - validChat: ${chat.validChat}, messages: ${chat.messages.length}`);
 
       // Check if this is a pending chat
       const isPending = this.isPendingChat(content, chat);
       const isChatFile = chat.validChat && chat.messages.length > 0;
+      this.console.log(`[Blue File Resolution] isPending: ${isPending}, isChatFile: ${isChatFile}, lastMessageRole: ${chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].role : 'none'}`);
 
       if (!isPending) {
-        this.console.log(`[Blue File Resolution] Not a pending chat: ${file.path}`);
+        this.console.log(`[Blue File Resolution] Not a pending chat: ${file.path}, resolving links within content`);
         // Not a pending chat, resolve links within it recursively
         const resolved = await this.resolveLinksInContent(content, file, context, app);
+        this.console.log(`[Blue File Resolution] Resolved links in content (${resolved.length} chars): ${file.path}`);
 
         // Emit complete event
         this.emitEvent({
@@ -319,7 +326,9 @@ export class BlueFileResolver {
       // and caching. This ensures images and audio files are handled correctly.
 
       // Execute the chat (without streaming for intermediate resolutions)
+      this.console.log(`[Blue File Resolution] Calling completeChatResponse for: ${file.path}`);
       const response = await chat.completeChatResponse(file, undefined, context);
+      this.console.log(`[Blue File Resolution] completeChatResponse returned ${response.messages.length} messages for: ${file.path}`);
 
       // Get the assistant's response (second to last message, since completeChatResponse adds an empty user message)
       const assistantMessage =
@@ -328,6 +337,7 @@ export class BlueFileResolver {
           : response.messages[response.messages.length - 1];
 
       const resolvedContent = assistantMessage?.content || '';
+      this.console.log(`[Blue File Resolution] Extracted assistant message (${resolvedContent.length} chars) from: ${file.path}`);
 
       // Write intermediate results if configured (and not root file)
       if (blueFileResolution.writeIntermediateResults && file.path !== context.rootFile.path) {
@@ -347,6 +357,7 @@ export class BlueFileResolver {
         timestamp: Date.now(),
       });
 
+      this.console.log(`[Blue File Resolution] Returning resolved content (${resolvedContent.length} chars) for: ${file.path}`);
       return resolvedContent;
     } catch (error) {
       this.console.error(`[Blue File Resolution] Error resolving file ${file.path}:`, error);
@@ -382,9 +393,11 @@ export class BlueFileResolver {
     context: ResolutionContext,
     app: App,
   ): Promise<string> {
-    // Match [[link]] patterns (whole line only, as per original implementation)
-    const regex = /^!?\[\[(.*?)\]\]$/gim;
+    // Match [[link]] patterns - allow whitespace on the line
+    const regex = /^\s*!?\[\[([^\]]+)\]\]\s*$/gim;
     const matches = Array.from(content.matchAll(regex));
+
+    this.console.log(`[Blue File Resolution] resolveLinksInContent found ${matches.length} links in: ${activeFile.path}`);
 
     if (matches.length === 0) {
       return content;
@@ -396,24 +409,41 @@ export class BlueFileResolver {
     const replacements: Promise<string>[] = [];
     for (const match of matches) {
       const linkText = match[1];
-      const file = app.metadataCache.getFirstLinkpathDest(linkText, activeFile.path);
+      const { subpath, path } = parseLinktext(linkText);
+      const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
 
       if (file instanceof TFile) {
-        // Recursively resolve the file - it will create its own tree node
-        replacements.push(this.resolveFile(file, context, app));
+        this.console.log(`[Blue File Resolution] Found linked file: ${file.path} from link: [[${linkText}]]${subpath ? ` with subpath: ${subpath}` : ''}`);
+        
+        // If subpath is specified, retrieve the specific section
+        if (subpath) {
+          this.console.log(`[Blue File Resolution] Resolving subpath for: ${file.path}#${subpath}`);
+          replacements.push(this.retrieveLinkContent(linkText, activeFile, app, context));
+        } else {
+          // Recursively resolve the file - it will create its own tree node
+          replacements.push(this.resolveFile(file, context, app));
+        }
       } else {
+        this.console.log(`[Blue File Resolution] File not found for link: [[${linkText}]], keeping original`);
         // File not found, keep original link
         replacements.push(Promise.resolve(match[0]));
       }
     }
 
     // Wait for all resolutions
+    this.console.log(`[Blue File Resolution] Waiting for ${replacements.length} resolutions in: ${activeFile.path}`);
     const resolved = await Promise.all(replacements);
+    this.console.log(`[Blue File Resolution] All resolutions complete for: ${activeFile.path}`);
 
     // Replace links with resolved content
     let index = 0;
-    const result = content.replace(regex, () => resolved[index++] || '');
+    const result = content.replace(regex, () => {
+      const replacement = resolved[index++] || '';
+      this.console.log(`[Blue File Resolution] Replacing link ${index} with content (${replacement.length} chars)`);
+      return replacement;
+    });
 
+    this.console.log(`[Blue File Resolution] resolveLinksInContent returning (${result.length} chars) for: ${activeFile.path}`);
     return result;
   }
 
@@ -427,42 +457,79 @@ export class BlueFileResolver {
    * @returns A promise that resolves to the markdown string with file links replaced by their content.
    */
   async resolveFiles(markdown: string, activeFile: TFile, app: App): Promise<string> {
-    const regex = /^!?\[\[(.*?)\]\]$/gim;
+    this.console.log(`[Blue File Resolution] resolveFiles called for: ${activeFile.path}, enabled: ${this.plugin.settings.blueFileResolution.enabled}`);
+    
+    // Match [[link]] patterns - allow whitespace on the line
+    const regex = /^\s*!?\[\[([^\]]+)\]\]\s*$/gim;
     const matches = Array.from(markdown.matchAll(regex));
     const replacements: Promise<string>[] = [];
 
+    this.console.log(`[Blue File Resolution] Found ${matches.length} matches in markdown`);
+
     // Check if blue file resolution is enabled
     if (this.plugin.settings.blueFileResolution.enabled) {
+      this.console.log(`[Blue File Resolution] Using blue file resolver (dynamic execution)`);
       // Use blue file resolver for dynamic chat execution
       const context = this.createContext(activeFile);
 
       for (const match of matches) {
-        const filename = match[1];
-        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        const linkText = match[1];
+        const { subpath, path } = parseLinktext(linkText);
+        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+        
         if (file instanceof TFile) {
-          replacements.push(this.resolveFile(file, context, app));
+          this.console.log(`[Blue File Resolution] Queuing resolution for: ${file.path}${subpath ? `#${subpath}` : ''}`);
+          
+          // If subpath is specified, use retrieveLinkContent
+          if (subpath) {
+            replacements.push(this.retrieveLinkContent(linkText, activeFile, app, context));
+          } else {
+            replacements.push(this.resolveFile(file, context, app));
+          }
         } else {
+          this.console.log(`[Blue File Resolution] File not found: ${linkText}, keeping original link`);
           replacements.push(Promise.resolve(match[0]));
         }
       }
     } else {
+      this.console.log(`[Blue File Resolution] Using static file reading (feature disabled)`);
       // Original behavior: just read static file content
       for (const match of matches) {
-        const filename = match[1];
-        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        const linkText = match[1];
+        const { subpath, path } = parseLinktext(linkText);
+        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+        
         if (file instanceof TFile) {
-          replacements.push(app.vault.cachedRead(file));
+          if (subpath) {
+            // Handle subpath even when feature is disabled
+            replacements.push(this.retrieveLinkContent(linkText, activeFile, app));
+          } else {
+            replacements.push(app.vault.cachedRead(file));
+          }
         } else {
           replacements.push(Promise.resolve(match[0]));
         }
       }
     }
 
-    if (replacements.length === 0) return markdown;
+    if (replacements.length === 0) {
+      this.console.log(`[Blue File Resolution] No replacements needed, returning original markdown`);
+      return markdown;
+    }
 
+    this.console.log(`[Blue File Resolution] Waiting for ${replacements.length} replacements`);
     const resolved = await Promise.all(replacements);
+    this.console.log(`[Blue File Resolution] All replacements complete`);
+    
     let index = 0;
-    const result = markdown.replace(regex, () => resolved[index++] || '');
+    const result = markdown.replace(regex, () => {
+      const replacement = resolved[index] || '';
+      this.console.log(`[Blue File Resolution] Replacement ${index + 1}: ${replacement.substring(0, 100)}${replacement.length > 100 ? '...' : ''} (${replacement.length} chars)`);
+      index++;
+      return replacement;
+    });
+
+    this.console.log(`[Blue File Resolution] resolveFiles returning (${result.length} chars)`);
     return result;
   }
 
@@ -492,14 +559,24 @@ export class BlueFileResolver {
     const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
     if (!file) return Promise.resolve(`[[${str}]]`);
 
-    // If subpath is specified, return the specific section (no blue file resolution for subpaths)
+    // If subpath is specified, return the specific section
     if (subpath) {
       const cache = app.metadataCache.getFileCache(file);
       const ref = cache && resolveSubpath(cache, subpath);
       if (ref) {
         const text = await app.vault.cachedRead(file);
-        return text.substring(ref.start.offset, ref.end?.offset).trim();
+        const sectionContent = text.substring(ref.start.offset, ref.end?.offset).trim();
+        
+        // If blue file resolution is enabled and we have a context, resolve links within the section
+        if (this.plugin.settings.blueFileResolution.enabled && context) {
+          this.console.log(`[Blue File Resolution] Resolving links within subpath: ${file.path}#${subpath}`);
+          return this.resolveLinksInContent(sectionContent, file, context, app);
+        }
+        
+        return sectionContent;
       }
+      // If subpath not found, return the link as-is
+      return `[[${str}]]`;
     }
 
     // Check if blue file resolution should be used
@@ -704,5 +781,151 @@ export class BlueFileResolver {
 
     // Combine consecutive text items into one
     return final;
+  }
+
+  /**
+   * Scans a file and its linked files recursively to build a tree structure.
+   * This is used by the Blue Resolution Tree View to visualize file dependencies.
+   * 
+   * The method performs a recursive scan of all [[link]] references in the file,
+   * building a graph of dependencies with cycle detection and depth limiting.
+   * 
+   * **Performance Considerations:**
+   * - Uses depth-first search with branch-specific visited sets
+   * - Respects maxDepth setting to prevent excessive recursion
+   * - Reads files using cachedRead for efficiency
+   * - For large vaults with many links, may take several seconds
+   * 
+   * **Error Handling:**
+   * - Silently handles missing linked files (they won't appear in the tree)
+   * - Detects circular dependencies and marks them with 'cycle-detected' status
+   * - Stops recursion at configured maxDepth (default from settings)
+   * 
+   * @param rootFile - The root file to start scanning from
+   * @returns A Promise resolving to a Map where:
+   *   - Keys are file paths (strings)
+   *   - Values are ResolutionNodeData objects containing:
+   *     - filePath: Full path to the file
+   *     - depth: Distance from root (0 for root)
+   *     - status: Resolution status ('idle', 'complete', 'error', etc.)
+   *     - isPendingChat: Whether this is a chat file awaiting execution
+   *     - isChatFile: Whether this is a valid chat file
+   *     - children: Array of child file paths
+   *     - error: Optional error message if scanning failed
+   * 
+   * @example
+   * ```typescript
+   * const rootFile = app.vault.getFileByPath('MyNote.md');
+   * const treeData = await resolver.scanFileLinks(rootFile);
+   * 
+   * // Access root node
+   * const root = treeData.get(rootFile.path);
+   * console.log(`Found ${root.children.length} linked files`);
+   * 
+   * // Check for cycles
+   * const hasCycles = Array.from(treeData.values())
+   *   .some(node => node.status === 'cycle-detected');
+   * ```
+   */
+  async scanFileLinks(rootFile: TFile): Promise<Map<string, ResolutionNodeData>> {
+    const treeData = new Map<string, ResolutionNodeData>();
+    const visited = new Set<string>();
+
+    // Initialize root node
+    treeData.set(rootFile.path, {
+      filePath: rootFile.path,
+      depth: 0,
+      status: 'idle',
+      isPendingChat: false,
+      children: [],
+    });
+
+    await this.scanFileRecursive(rootFile, null, 0, treeData, visited);
+
+    return treeData;
+  }
+
+  /**
+   * Recursively scans a file and its links to build the resolution tree.
+   * 
+   * @param file - The file to scan
+   * @param parentPath - The parent file path (null for root)
+   * @param depth - Current depth in the tree
+   * @param treeData - The map to populate with node data
+   * @param visited - Set of visited file paths (for cycle detection)
+   */
+  private async scanFileRecursive(
+    file: TFile,
+    parentPath: string | null,
+    depth: number,
+    treeData: Map<string, ResolutionNodeData>,
+    visited: Set<string>,
+  ): Promise<void> {
+    // Prevent infinite loops
+    if (visited.has(file.path)) {
+      // Mark as cycle
+      const nodeData = treeData.get(file.path);
+      if (nodeData) {
+        nodeData.status = 'cycle-detected';
+      }
+      return;
+    }
+
+    visited.add(file.path);
+
+    // Check depth limit
+    const maxDepth = this.plugin.settings.blueFileResolution.maxDepth;
+    if (depth >= maxDepth) {
+      return;
+    }
+
+    // Read file content
+    const content = await this.plugin.app.vault.cachedRead(file);
+
+    // Check if it's a pending chat using ChatUtils
+    const chat = new PureChatLLMChat(this.plugin);
+    chat.setMarkdown(content);
+    const isChatFile = ChatUtils.isChatFile(chat);
+
+    // Update or create node
+    const nodeData: ResolutionNodeData = treeData.get(file.path) || {
+      filePath: file.path,
+      depth,
+      status: 'idle',
+      isPendingChat: isChatFile,
+      isChatFile,
+      children: [],
+    };
+    nodeData.isPendingChat = isChatFile;
+    nodeData.isChatFile = isChatFile;
+    treeData.set(file.path, nodeData);
+
+    // Add to parent's children
+    if (parentPath) {
+      const parentNode = treeData.get(parentPath);
+      if (parentNode && !parentNode.children.includes(file.path)) {
+        parentNode.children.push(file.path);
+      }
+    }
+
+    // Find all [[link]] patterns
+    const linkRegex = /\[\[([^\]]+)\]\]/g;
+    const matches = Array.from(content.matchAll(linkRegex));
+
+    // Recursively scan linked files
+    for (const match of matches) {
+      const linkText = match[1];
+      const linkedFile = this.plugin.app.metadataCache.getFirstLinkpathDest(linkText, file.path);
+
+      if (linkedFile instanceof TFile) {
+        if (!nodeData.children.includes(linkedFile.path)) {
+          nodeData.children.push(linkedFile.path);
+        }
+
+        // Create a new visited set for this branch
+        const branchVisited = new Set(visited);
+        await this.scanFileRecursive(linkedFile, file.path, depth + 1, treeData, branchVisited);
+      }
+    }
   }
 }
