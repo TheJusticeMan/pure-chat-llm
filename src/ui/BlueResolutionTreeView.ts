@@ -22,7 +22,7 @@ import { ResolutionTreeRenderer } from './ResolutionTreeRenderer';
 /**
  * Side panel view for displaying the Blue File Resolution execution tree.
  * Shows the resolution tree/DAG for the currently active markdown file.
- * 
+ *
  * This view acts as a container/orchestrator that:
  * - Requests data from the business logic layer (BlueFileResolver)
  * - Delegates rendering to specialized renderers (ResolutionTreeRenderer, ResolutionGraphRenderer)
@@ -98,7 +98,7 @@ export class BlueResolutionTreeView extends ItemView {
     }
 
     // Initialize tree renderer (doesn't need container in constructor anymore)
-    this.treeRenderer = new ResolutionTreeRenderer((filePath) => this.openFile(filePath));
+    this.treeRenderer = new ResolutionTreeRenderer(filePath => this.openFile(filePath));
 
     // Listen to resolution events
     this.plugin.blueFileResolver.onResolutionEvent(this.boundResolutionEventHandler);
@@ -170,7 +170,7 @@ export class BlueResolutionTreeView extends ItemView {
     }
 
     // Re-render the tree
-    this.renderTree();
+    this.render();
   }
 
   private onActiveFileChange(file: TFile): void {
@@ -210,7 +210,7 @@ export class BlueResolutionTreeView extends ItemView {
     if (this.plugin.settings.blueResolutionViewMode) {
       this.viewMode = this.plugin.settings.blueResolutionViewMode;
     }
-    
+
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass('blue-resolution-view');
@@ -243,11 +243,7 @@ export class BlueResolutionTreeView extends ItemView {
     }
 
     // Render based on view mode
-    if (this.viewMode === 'graph') {
-      this.renderGraphView();
-    } else {
-      this.renderTree();
-    }
+    this.render();
 
     if (this.showLegend) {
       this.renderLegend(contentEl);
@@ -307,7 +303,9 @@ export class BlueResolutionTreeView extends ItemView {
             .addExtraButton(btn =>
               btn
                 .setIcon(this.viewMode === 'tree' ? 'git-branch' : 'list-tree')
-                .setTooltip(this.viewMode === 'tree' ? 'Switch to graph view' : 'Switch to tree view')
+                .setTooltip(
+                  this.viewMode === 'tree' ? 'Switch to graph view' : 'Switch to tree view',
+                )
                 .onClick(async () => {
                   this.viewMode = this.viewMode === 'tree' ? 'graph' : 'tree';
                   // Save view mode to settings for persistence
@@ -344,6 +342,7 @@ export class BlueResolutionTreeView extends ItemView {
               .addExtraButton(btn =>
                 btn
                   .setIcon('rotate-ccw')
+                  // eslint-disable-next-line obsidianmd/ui/sentence-case
                   .setTooltip('Reset view (Ctrl+0)')
                   .onClick(() => this.graphRenderer?.resetView()),
               )
@@ -479,6 +478,14 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  private render(): void {
+    if (this.viewMode === 'graph') {
+      this.renderGraphView();
+    } else {
+      this.renderTree();
+    }
+  }
+
   private renderGraphView(): void {
     if (!this.currentRootFile || !this.renderContainer) {
       return;
@@ -501,7 +508,7 @@ export class BlueResolutionTreeView extends ItemView {
       const headerHeight = headerEl ? headerEl.clientHeight : 0;
       const availableHeight = this.contentEl.clientHeight - headerHeight;
       const availableWidth = this.contentEl.clientWidth;
-      
+
       const dpr = window.devicePixelRatio || 1;
       canvas.width = availableWidth * dpr;
       canvas.height = availableHeight * dpr;
@@ -562,7 +569,7 @@ export class BlueResolutionTreeView extends ItemView {
         this.openFile(node.id);
       }
     });
-    
+
     // Add touch handler for node navigation
     canvas.addEventListener('nodeclick', ((event: CustomEvent<{ nodeId: string }>) => {
       const nodeId = event.detail?.nodeId;
@@ -607,7 +614,7 @@ export class BlueResolutionTreeView extends ItemView {
       /* new Notice('Analyzing file links...'); */
       // Delegate to BlueFileResolver for business logic
       this.treeData = await this.plugin.blueFileResolver.scanFileLinks(this.currentRootFile);
-      this.renderTree();
+      this.render();
       /* new Notice('Analysis complete'); */
     } catch (error) {
       this.console.error('Error analyzing file:', error);
