@@ -208,6 +208,11 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   private renderView(): void {
+    // Ensure view mode is synchronized with settings
+    if (this.plugin.settings.blueResolutionViewMode) {
+      this.viewMode = this.plugin.settings.blueResolutionViewMode;
+    }
+    
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass('blue-resolution-view');
