@@ -16,7 +16,6 @@ import {
   ResolutionStatus,
 } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { ChatUtils } from '../utils/ChatUtils';
 import { ResolutionGraphRenderer } from './ResolutionGraphRenderer';
 import { ResolutionTreeRenderer } from './ResolutionTreeRenderer';
 
@@ -97,11 +96,8 @@ export class BlueResolutionTreeView extends ItemView {
       this.viewMode = this.plugin.settings.blueResolutionViewMode;
     }
 
-    // Initialize tree renderer
-    this.treeRenderer = new ResolutionTreeRenderer(
-      this.contentEl,
-      (filePath) => this.openFile(filePath),
-    );
+    // Initialize tree renderer (doesn't need container in constructor anymore)
+    this.treeRenderer = new ResolutionTreeRenderer((filePath) => this.openFile(filePath));
 
     // Listen to resolution events
     this.plugin.blueFileResolver.onResolutionEvent(this.boundResolutionEventHandler);
@@ -487,7 +483,7 @@ export class BlueResolutionTreeView extends ItemView {
 
     // Delegate rendering to ResolutionTreeRenderer
     if (this.treeRenderer) {
-      this.treeRenderer.render(this.treeData, this.currentRootFile.path);
+      this.treeRenderer.render(container, this.treeData, this.currentRootFile.path);
     } else {
       // Fallback if renderer not initialized
       container.createDiv({ cls: 'resolution-tree-container' }).createEl('p', {
@@ -595,8 +591,8 @@ export class BlueResolutionTreeView extends ItemView {
     });
     
     // Add touch handler for node navigation
-    canvas.addEventListener('nodeclick', ((event: CustomEvent) => {
-      const nodeId = event.detail.nodeId;
+    canvas.addEventListener('nodeclick', ((event: CustomEvent<{ nodeId: string }>) => {
+      const nodeId = event.detail?.nodeId;
       if (nodeId) {
         this.openFile(nodeId);
       }

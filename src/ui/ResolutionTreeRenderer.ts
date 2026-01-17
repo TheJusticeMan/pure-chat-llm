@@ -30,27 +30,27 @@ interface TreeNode {
  * - Manage application state
  */
 export class ResolutionTreeRenderer {
-  constructor(
-    private containerEl: HTMLElement,
-    private onFileClick: (filePath: string) => void,
-  ) {}
+  constructor(private onFileClick: (filePath: string) => void) {}
 
   /**
    * Renders the tree structure in the DOM.
    * 
+   * @param containerEl - The container element to render into
    * @param treeData - Flat map of node data keyed by file path
    * @param rootPath - Path of the root file to start rendering from
    */
-  render(treeData: Map<string, ResolutionNodeData>, rootPath: string): void {
-    this.containerEl.empty();
-
-    // Remove existing tree container if it exists
-    const existingTree = this.containerEl.querySelector('.resolution-tree-container');
+  render(
+    containerEl: HTMLElement,
+    treeData: Map<string, ResolutionNodeData>,
+    rootPath: string,
+  ): void {
+    // Remove existing tree container if it exists (don't empty the entire container)
+    const existingTree = containerEl.querySelector('.resolution-tree-container');
     if (existingTree) {
       existingTree.remove();
     }
 
-    const treeContainer = this.containerEl.createDiv({ cls: 'resolution-tree-container' });
+    const treeContainer = containerEl.createDiv({ cls: 'resolution-tree-container' });
 
     // Build tree structure from flat data with cycle detection
     const visited = new Set<string>();
