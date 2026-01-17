@@ -1,10 +1,10 @@
+import { getIcon } from 'obsidian';
 import {
+  PURE_CHAT_LLM_ICON_NAME,
+  PURE_CHAT_LLM_ICON_SVG,
   ResolutionNodeData,
   ResolutionStatus,
-  PURE_CHAT_LLM_ICON_SVG,
-  PURE_CHAT_LLM_ICON_NAME,
 } from '../types';
-import { getIcon } from 'obsidian';
 
 /**
  * Represents a node in the graph visualization

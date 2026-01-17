@@ -1,10 +1,10 @@
 import { App, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
 import PureChatLLM from '../main';
-import { PureChatLLMChat } from './Chat';
-import { BrowserConsole } from '../utils/BrowserConsole';
-import { MediaMessage, RoleType, ResolutionEvent, ResolutionNodeData } from '../types';
-import { ChatUtils } from '../utils/ChatUtils';
 import { FileSystemPort } from '../ports/FileSystemPort';
+import { MediaMessage, ResolutionEvent, ResolutionNodeData, RoleType } from '../types';
+import { BrowserConsole } from '../utils/BrowserConsole';
+import { ChatUtils } from '../utils/ChatUtils';
+import { PureChatLLMChat } from './Chat';
 
 /**
  * Represents a node in the file resolution tree.

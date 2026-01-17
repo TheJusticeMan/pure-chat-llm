@@ -1,6 +1,6 @@
-import { ChatSession } from './ChatSession';
 import { ToolRegistry } from '../tools';
 import { ChatRequestOptions, RoleType, StreamDelta, ToolCall } from '../types';
+import { ChatSession } from './ChatSession';
 
 /**
  * ToolExecutor handles the execution of tool calls from LLM responses.

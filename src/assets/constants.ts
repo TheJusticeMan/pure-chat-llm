@@ -1,6 +1,6 @@
 import { PureChatLLMSettings } from 'src/types';
 import { version } from '../../package.json';
-import { splash, readme } from '../assets/s.json';
+import { readme, splash } from '../assets/s.json';
 
 export const EmptyApiKey = 'sk-XXXXXXXXX';
 

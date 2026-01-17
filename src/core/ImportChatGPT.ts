@@ -1,6 +1,6 @@
 import { App, Notice, TFolder } from 'obsidian';
-import { PureChatLLMChat } from './Chat';
 import PureChatLLM, { FolderSuggest } from '../main';
+import { PureChatLLMChat } from './Chat';
 
 // Author of a message
 interface ChatAuthor {

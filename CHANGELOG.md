@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-01-16
+
+### Added
+
+- **Graph View Mode**: Introduced a new visual way to explore file dependencies.
+    - **Interactive Graph**: Navigate the dependency tree with zoom, pan, and drag capabilities.
+    - **Minimap & Tooltips**: Added a minimap for better orientation and tooltips for file details.
+    - **Fit-to-View**: Automatically adjust the graph to fit the available viewport.
+    - **Touch Support**: Enabled interaction on touch devices.
+    - **Persistent View Mode**: The plugin now remembers your preference between Tree View and Graph View.
+
+### Changed
+
+- **Architectural Refactor**: Significant separation of concerns to improve code maintainability and testability.
+    - **Domain-Driven Design**: Introduced `ChatSession`, `ChatMarkdownAdapter`, and `ToolExecutor` classes to decouple business logic from UI.
+    - **FileSystem Port**: Abstracted file system operations behind a `FileSystemPort` interface.
+    - **Unified Rendering**: Centralized rendering logic for different views.
+
+### Fixed
+
+- **Memory Management**: Addressed critical memory leaks in the `ResolutionGraphRenderer`.
+- **Graph View Stability**: Fixed multiple issues related to click detection, icon duplication during zoom, and layout aspect ratios.
+- **Rendering Issues**: Corrected canvas clearing and dimension calculations for sharper graphics.
+- **Link Handling**: Improved support for links with whitespace and nested file resolution.
+
 ## [1.10.0] - 2026-01-14
 
 ### Added

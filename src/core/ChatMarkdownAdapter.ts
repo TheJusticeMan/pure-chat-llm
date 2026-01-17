@@ -1,8 +1,8 @@
 import { parseYaml, stringifyYaml } from 'obsidian';
-import { ChatSession } from './ChatSession';
+import { alloptions } from '../assets/constants';
 import { ChatOptions, RoleType } from '../types';
 import { CodeContent } from '../ui/CodeHandling';
-import { alloptions } from '../assets/constants';
+import { ChatSession } from './ChatSession';
 
 /**
  * ChatMarkdownAdapter handles serialization and deserialization of chat sessions

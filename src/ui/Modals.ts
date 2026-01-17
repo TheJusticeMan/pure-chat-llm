@@ -1,3 +1,4 @@
+import 'obsidian';
 import {
   App,
   ButtonComponent,
@@ -7,11 +8,10 @@ import {
   Setting,
   TextAreaComponent,
 } from 'obsidian';
+import { EmptyApiKey } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
 import PureChatLLM from '../main';
 import { PureChatLLMAPI } from '../types';
-import 'obsidian';
-import { EmptyApiKey } from 'src/assets/constants';
 
 /**
  * Modal dialog prompting the user to enter an OpenAI API key for the PureChatLLM plugin.
