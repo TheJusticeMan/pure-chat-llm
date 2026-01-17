@@ -1,4 +1,5 @@
-import { ResolutionNodeData, ResolutionStatus } from '../types';
+import { ResolutionNodeData, ResolutionStatus, PURE_CHAT_LLM_ICON_SVG, PURE_CHAT_LLM_ICON_NAME } from '../types';
+import { getIcon } from 'obsidian';
 
 /**
  * Represents a node in the graph visualization
@@ -50,6 +51,14 @@ export class ResolutionGraphRenderer {
   private hoveredNode: GraphNode | null = null;
   public showMinimap: boolean = true;
   private minimapSize = { width: 150, height: 150 };
+  private hasRendered: boolean = false;
+  private width: number = 0;
+  private height: number = 0;
+  private iconCache: Map<string, HTMLImageElement> = new Map();
+  private iconsLoaded: boolean = false;
+  private touches: Map<number, { x: number; y: number }> = new Map();
+  private initialPinchDistance: number | null = null;
+  private initialScale: number = 1;
 
   constructor(canvas: HTMLCanvasElement, treeData: Map<string, ResolutionNodeData>) {
     const context = canvas.getContext('2d');
@@ -59,10 +68,16 @@ export class ResolutionGraphRenderer {
     this.ctx = context;
     this.canvas = canvas;
     this.treeData = treeData;
+    this.width = canvas.width;
+    this.height = canvas.height;
 
     this.buildGraph();
     this.layoutNodes();
     this.setupInteractivity();
+    this.setupTouchSupport();
+    
+    // Pre-load all icons asynchronously to avoid race conditions during render
+    void this.preloadIcons();
   }
 
   /**
@@ -95,10 +110,12 @@ export class ResolutionGraphRenderer {
   /**
    * Implements a layered/hierarchical layout algorithm.
    * Nodes are positioned based on their depth (vertical) and distributed horizontally within each layer.
+   * Uses a fixed virtual layout space independent of canvas dimensions.
    */
   private layoutNodes(): void {
-    const canvasWidth = this.canvas.width;
-    const canvasHeight = this.canvas.height;
+    // Use a fixed virtual layout space (aspect ratio independent of canvas)
+    const layoutWidth = 1000;
+    const layoutHeight = 800;
 
     // Group nodes by depth
     const layers: Map<number, GraphNode[]> = new Map();
@@ -112,12 +129,12 @@ export class ResolutionGraphRenderer {
 
     // Calculate layout parameters
     const maxDepth = Math.max(...Array.from(layers.keys()));
-    const verticalSpacing = maxDepth > 0 ? (canvasHeight - 160) / maxDepth : 0;
+    const verticalSpacing = maxDepth > 0 ? (layoutHeight - 160) / maxDepth : 0;
 
     // Position nodes
     for (const [depth, layerNodes] of layers) {
       const layerY = 80 + depth * Math.max(verticalSpacing, 120);
-      const horizontalSpacing = canvasWidth / (layerNodes.length + 1);
+      const horizontalSpacing = layoutWidth / (layerNodes.length + 1);
 
       layerNodes.forEach((node, index) => {
         node.x = horizontalSpacing * (index + 1);
@@ -136,9 +153,62 @@ export class ResolutionGraphRenderer {
   }
 
   /**
+   * Calculate bounds of all nodes in the graph
+   */
+  private calculateGraphBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const node of this.nodes.values()) {
+      minX = Math.min(minX, node.x - node.radius);
+      maxX = Math.max(maxX, node.x + node.radius);
+      minY = Math.min(minY, node.y - node.radius);
+      maxY = Math.max(maxY, node.y + node.radius);
+    }
+
+    return { minX, maxX, minY, maxY };
+  }
+
+  /**
+   * Fit the entire graph to view with padding
+   */
+  public fitToView(padding: number = 50): void {
+    if (this.nodes.size === 0) return;
+
+    const bounds = this.calculateGraphBounds();
+    const graphWidth = bounds.maxX - bounds.minX;
+    const graphHeight = bounds.maxY - bounds.minY;
+
+    // Calculate scale to fit graph in canvas with padding
+    const scaleX = (this.width - padding * 2) / graphWidth;
+    const scaleY = (this.height - padding * 2) / graphHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+
+    // Center the graph
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+
+    this.transform.scale = scale;
+    this.transform.offsetX = this.width / 2 - centerX * scale;
+    this.transform.offsetY = this.height / 2 - centerY * scale;
+  }
+
+  /**
    * Main render method - draws the entire graph
    */
   public render(): void {
+    // Update canvas dimensions
+    this.width = this.canvas.width;
+    this.height = this.canvas.height;
+
+    // Only fit on first render or when explicitly called
+    if (!this.hasRendered) {
+      this.fitToView();
+      this.hasRendered = true;
+    }
+
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -196,7 +266,7 @@ export class ResolutionGraphRenderer {
   }
 
   /**
-   * Draws all nodes with status-based colors
+   * Draws all nodes with status-based colors and file type icons
    */
   private drawNodes(): void {
     const now = Date.now();
@@ -205,41 +275,93 @@ export class ResolutionGraphRenderer {
       const nodeColor = this.getNodeColor(node.data.status);
       const fileName = node.id.split('/').pop() || node.id;
 
-      // Draw circle
-      this.ctx.fillStyle = nodeColor;
-      this.ctx.strokeStyle = this.getNodeBorderColor(node.data.status);
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
+      // Draw icon ONLY (no circle background)
+      if (this.iconsLoaded) {
+        const iconId = this.getNodeIcon(node);
+        const icon = this.iconCache.get(iconId);
+        
+        if (icon) {
+          // Calculate icon size (larger, no circle background)
+          const iconSize = node.radius * 2.5;
+          
+          // Apply status-based color tint
+          this.ctx.save();
+          
+          // Draw icon first
+          this.ctx.drawImage(
+            icon,
+            node.x - iconSize / 2,
+            node.y - iconSize / 2,
+            iconSize,
+            iconSize
+          );
+          
+          // Apply color overlay for status
+          this.ctx.globalCompositeOperation = 'source-atop';
+          this.ctx.fillStyle = nodeColor;
+          this.ctx.fillRect(
+            node.x - iconSize / 2,
+            node.y - iconSize / 2,
+            iconSize,
+            iconSize
+          );
+          
+          this.ctx.restore();
+          
+          // Draw glow for pending chats (around icon, not circle)
+          if (node.data.isPendingChat) {
+            this.ctx.save();
+            this.ctx.strokeStyle = 'rgba(0, 200, 255, 0.6)';
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(
+              node.x - iconSize / 2 - 5,
+              node.y - iconSize / 2 - 5,
+              iconSize + 10,
+              iconSize + 10
+            );
+            this.ctx.restore();
+          }
+          
+          // Add glow effect for resolving nodes
+          if (node.data.status === 'resolving') {
+            this.ctx.save();
+            this.ctx.shadowBlur = 20;
+            this.ctx.shadowColor = nodeColor;
+            this.ctx.strokeStyle = this.getNodeBorderColor(node.data.status);
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(
+              node.x - iconSize / 2,
+              node.y - iconSize / 2,
+              iconSize,
+              iconSize
+            );
+            this.ctx.shadowBlur = 0;
+            this.ctx.restore();
+          }
+          
+          // Animated glow for recently changed nodes
+          const timestamp = this.animationTimestamps.get(node.id);
+          if (timestamp) {
+            const elapsed = now - timestamp;
+            const progress = elapsed / 1000; // 0 to 1
+            const alpha = 1 - progress;
+            const pulseSize = iconSize + 10 + progress * 20;
 
-      // Add glow effect for resolving nodes
-      if (node.data.status === 'resolving') {
-        this.ctx.shadowBlur = 20;
-        this.ctx.shadowColor = nodeColor;
-        this.ctx.beginPath();
-        this.ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        this.ctx.stroke();
-        this.ctx.shadowBlur = 0;
+            this.ctx.save();
+            this.ctx.strokeStyle = nodeColor.replace(/[\d.]+\)$/, `${alpha})`);
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(
+              node.x - pulseSize / 2,
+              node.y - pulseSize / 2,
+              pulseSize,
+              pulseSize
+            );
+            this.ctx.restore();
+          }
+        }
       }
 
-      // Animated glow for recently changed nodes
-      const timestamp = this.animationTimestamps.get(node.id);
-      if (timestamp) {
-        const elapsed = now - timestamp;
-        const progress = elapsed / 1000; // 0 to 1
-        const alpha = 1 - progress;
-        const pulseRadius = node.radius + 10 + progress * 20;
-
-        this.ctx.beginPath();
-        this.ctx.arc(node.x, node.y, pulseRadius, 0, Math.PI * 2);
-        this.ctx.strokeStyle = nodeColor.replace(/[\d.]+\)$/, `${alpha})`);
-        this.ctx.lineWidth = 3;
-        this.ctx.stroke();
-      }
-
-      // Draw file name label below node
+      // Draw file name label below icon
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
       this.ctx.font = '12px sans-serif';
       this.ctx.textAlign = 'center';
@@ -256,7 +378,7 @@ export class ResolutionGraphRenderer {
         displayName += '...';
       }
 
-      this.ctx.fillText(displayName, node.x, node.y + node.radius + 8);
+      this.ctx.fillText(displayName, node.x, node.y + node.radius * 2 + 20);
     }
   }
 
@@ -347,6 +469,100 @@ export class ResolutionGraphRenderer {
       default:
         return 'rgba(255, 255, 255, 0.3)';
     }
+  }
+
+  /**
+   * Pre-load all necessary icons to avoid async loading during render
+   */
+  private async preloadIcons(): Promise<void> {
+    // Pre-load all icon types we might use
+    const iconTypes = ['folder', PURE_CHAT_LLM_ICON_NAME, 'file-text', 'image', 'file'];
+    
+    await Promise.all(
+      iconTypes.map(iconId => this.loadIcon(iconId))
+    );
+    
+    this.iconsLoaded = true;
+    // Trigger initial render after icons are loaded
+    this.render();
+  }
+
+  /**
+   * Get the appropriate icon ID for a node based on its file type
+   */
+  private getNodeIcon(node: GraphNode): string {
+    const fileName = node.id.split('/').pop() || node.id;
+    
+    // Root node (depth 0)
+    if (node.data.depth === 0) {
+      return 'folder';
+    }
+    
+    // Image files
+    if (/\.(png|jpe?g|gif|webp)$/i.test(fileName)) {
+      return 'image';
+    }
+    
+    // Chat files
+    if (node.data.isChatFile) {
+      return PURE_CHAT_LLM_ICON_NAME;
+    }
+    
+    // Markdown files
+    if (fileName.endsWith('.md')) {
+      return 'file-text';
+    }
+    
+    // Other files
+    return 'file';
+  }
+
+  /**
+   * Load an Obsidian icon and convert it to HTMLImageElement for canvas rendering
+   */
+  private async loadIcon(iconId: string): Promise<HTMLImageElement | null> {
+    if (this.iconCache.has(iconId)) {
+      return this.iconCache.get(iconId)!;
+    }
+    
+    let svgElement: SVGSVGElement | null = null;
+    
+    // Handle pure-chat-llm icon specially since it's manually registered
+    if (iconId === PURE_CHAT_LLM_ICON_NAME) {
+      // Create SVG element from the SVG string in types.ts
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${PURE_CHAT_LLM_ICON_SVG}</svg>`,
+        'image/svg+xml'
+      );
+      svgElement = svgDoc.documentElement as unknown as SVGSVGElement;
+    } else {
+      svgElement = getIcon(iconId);
+    }
+    
+    if (!svgElement) {
+      return null;
+    }
+    
+    const svgString = svgElement.outerHTML;
+    
+    // Convert SVG to data URL for canvas rendering
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(svgBlob);
+    
+    return new Promise((resolve) => {
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        this.iconCache.set(iconId, img);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
   }
 
   /**
@@ -480,6 +696,137 @@ export class ResolutionGraphRenderer {
       this.draggedNode = null;
       this.canvas.style.cursor = 'default';
     });
+  }
+
+  /**
+   * Setup touch support for mobile/tablet interaction
+   */
+  private setupTouchSupport(): void {
+    this.canvas.addEventListener('touchstart', (e: TouchEvent) => {
+      e.preventDefault();
+      
+      for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        this.touches.set(touch.identifier, {
+          x: touch.clientX,
+          y: touch.clientY
+        });
+      }
+      
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const node = this.getNodeAtScreenPosition(
+          touch.clientX - rect.left,
+          touch.clientY - rect.top
+        );
+        if (node) {
+          this.draggedNode = node;
+        }
+      }
+      
+      if (e.touches.length === 2) {
+        this.initialPinchDistance = this.getTouchDistance(
+          e.touches[0],
+          e.touches[1]
+        );
+        this.initialScale = this.transform.scale;
+      }
+    });
+    
+    this.canvas.addEventListener('touchmove', (e: TouchEvent) => {
+      e.preventDefault();
+      
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const prevTouch = this.touches.get(touch.identifier);
+        
+        if (prevTouch) {
+          const deltaX = touch.clientX - prevTouch.x;
+          const deltaY = touch.clientY - prevTouch.y;
+          
+          if (this.draggedNode) {
+            const rect = this.canvas.getBoundingClientRect();
+            const graphPos = this.screenToGraph(
+              touch.clientX - rect.left,
+              touch.clientY - rect.top
+            );
+            this.draggedNode.x = graphPos.x;
+            this.draggedNode.y = graphPos.y;
+            this.nodePositionOverrides.set(this.draggedNode.id, graphPos);
+          } else {
+            this.transform.offsetX += deltaX;
+            this.transform.offsetY += deltaY;
+          }
+          
+          this.touches.set(touch.identifier, {
+            x: touch.clientX,
+            y: touch.clientY
+          });
+          this.render();
+        }
+      } else if (e.touches.length === 2 && this.initialPinchDistance) {
+        const distance = this.getTouchDistance(e.touches[0], e.touches[1]);
+        const scale = (distance / this.initialPinchDistance) * this.initialScale;
+        this.transform.scale = Math.max(0.1, Math.min(5, scale));
+        this.render();
+      }
+    });
+    
+    this.canvas.addEventListener('touchend', (e: TouchEvent) => {
+      e.preventDefault();
+      
+      // Check if this was a tap (not a drag)
+      if (e.changedTouches.length === 1 && !this.draggedNode && this.touches.size === 1) {
+        const touch = e.changedTouches[0];
+        const prevTouch = this.touches.get(touch.identifier);
+        
+        if (prevTouch) {
+          const deltaX = Math.abs(touch.clientX - prevTouch.x);
+          const deltaY = Math.abs(touch.clientY - prevTouch.y);
+          
+          // If movement was minimal, treat it as a tap
+          if (deltaX < 10 && deltaY < 10) {
+            const rect = this.canvas.getBoundingClientRect();
+            const node = this.getNodeAtScreenPosition(
+              touch.clientX - rect.left,
+              touch.clientY - rect.top
+            );
+            
+            if (node) {
+              // Dispatch a custom event that can be listened to
+              const event = new CustomEvent('nodeclick', { detail: { nodeId: node.id } });
+              this.canvas.dispatchEvent(event);
+            }
+          }
+        }
+      }
+      
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        this.touches.delete(e.changedTouches[i].identifier);
+      }
+      
+      if (e.touches.length < 2) {
+        this.initialPinchDistance = null;
+      }
+      
+      this.draggedNode = null;
+    });
+    
+    this.canvas.addEventListener('touchcancel', () => {
+      this.touches.clear();
+      this.draggedNode = null;
+      this.initialPinchDistance = null;
+    });
+  }
+
+  /**
+   * Calculate distance between two touch points for pinch zoom
+   */
+  private getTouchDistance(touch1: Touch, touch2: Touch): number {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**
@@ -750,6 +1097,21 @@ export class ResolutionGraphRenderer {
 
     // Restore context
     this.ctx.restore();
+  }
+
+  /**
+   * Get current transform state for saving/restoring
+   */
+  public getTransform(): ViewTransform {
+    return { ...this.transform };
+  }
+
+  /**
+   * Set transform state (for restoring saved state)
+   */
+  public setTransform(transform: ViewTransform): void {
+    this.transform = { ...transform };
+    this.render();
   }
 
   /**
