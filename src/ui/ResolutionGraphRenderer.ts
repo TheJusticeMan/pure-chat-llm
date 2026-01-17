@@ -353,8 +353,8 @@ export class ResolutionGraphRenderer {
       this.hasRendered = true;
     }
 
-    // Clear canvas
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    // Clear canvas - use CSS dimensions since context is scaled by DPR
+    this.ctx.clearRect(0, 0, this.width, this.height);
 
     // Save context and apply transform for main graph
     this.ctx.save();
