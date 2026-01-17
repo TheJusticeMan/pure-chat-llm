@@ -226,13 +226,9 @@ export class ResolutionGraphRenderer {
   /**
    * Implements a layered/hierarchical layout algorithm.
    * Nodes are positioned based on their depth (vertical) and distributed horizontally within each layer.
-   * Uses a fixed virtual layout space independent of canvas dimensions.
+   * Uses a virtual layout space that adapts to the graph structure.
    */
   private layoutNodes(): void {
-    // Use a fixed virtual layout space (aspect ratio independent of canvas)
-    const layoutWidth = ResolutionGraphRenderer.LAYOUT_WIDTH;
-    const layoutHeight = ResolutionGraphRenderer.LAYOUT_HEIGHT;
-
     // Group nodes by depth
     const layers: Map<number, GraphNode[]> = new Map();
     for (const node of this.nodes.values()) {
@@ -243,8 +239,21 @@ export class ResolutionGraphRenderer {
       layers.get(depth)!.push(node);
     }
 
-    // Calculate layout parameters
+    // Calculate graph structure metrics
     const maxDepth = Math.max(...Array.from(layers.keys()));
+    const maxWidth = Math.max(...Array.from(layers.values()).map(layer => layer.length));
+    
+    // Calculate layout dimensions based on graph structure
+    // This makes the layout aspect ratio independent of the graph's aspect ratio
+    // Width is based on the widest layer, height is based on the number of layers
+    const horizontalSpacingPerNode = 150; // Space allocated per node horizontally
+    const layoutWidth = Math.max(ResolutionGraphRenderer.LAYOUT_WIDTH, maxWidth * horizontalSpacingPerNode);
+    const layoutHeight = Math.max(
+      ResolutionGraphRenderer.LAYOUT_HEIGHT,
+      maxDepth * ResolutionGraphRenderer.LAYOUT_MIN_VERTICAL_SPACING + ResolutionGraphRenderer.LAYOUT_VERTICAL_PADDING
+    );
+
+    // Calculate layout parameters
     const verticalSpacing =
       maxDepth > 0
         ? (layoutHeight - ResolutionGraphRenderer.LAYOUT_VERTICAL_PADDING) / maxDepth
