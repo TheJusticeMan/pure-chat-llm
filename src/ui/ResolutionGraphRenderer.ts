@@ -100,6 +100,7 @@ export class ResolutionGraphRenderer {
   private iconLoadingState: IconLoadingState = 'loading';
   private touches: Map<number, { x: number; y: number; startTime: number }> = new Map();
   private rafId: number | null = null;
+  private minimapClickHandlerAdded: boolean = false;
   
   // Event handler cleanup tracking
   private eventHandlers: Array<{
@@ -167,6 +168,9 @@ export class ResolutionGraphRenderer {
     // Clear interaction state
     this.interactionState = { type: 'idle' };
     this.hoveredNode = null;
+    
+    // Clear touch data
+    this.touches.clear();
   }
 
   /**
@@ -178,8 +182,13 @@ export class ResolutionGraphRenderer {
     handler: EventListener,
     options?: AddEventListenerOptions | boolean
   ): void {
-    element.addEventListener(event, handler, options);
-    this.eventHandlers.push({ element, event, handler, options });
+    try {
+      element.addEventListener(event, handler, options);
+      this.eventHandlers.push({ element, event, handler, options });
+    } catch (error) {
+      console.error('Failed to add event listener:', error);
+      // Don't add to tracking array if addEventListener failed
+    }
   }
 
   /**
@@ -1324,7 +1333,7 @@ export class ResolutionGraphRenderer {
     this.ctx.restore();
     
     // Setup minimap click handler (only once)
-    if (!this.eventHandlers.some(h => h.event === 'minimapclick')) {
+    if (!this.minimapClickHandlerAdded) {
       const minimapClickHandler = (e: MouseEvent) => {
         const rect = this.canvas.getBoundingClientRect();
         const canvasX = e.clientX - rect.left;
@@ -1348,8 +1357,7 @@ export class ResolutionGraphRenderer {
       };
       
       this.addEventListener(this.canvas, 'click', minimapClickHandler as EventListener);
-      // Mark this as a special minimap handler
-      this.eventHandlers[this.eventHandlers.length - 1].event = 'minimapclick';
+      this.minimapClickHandlerAdded = true;
     }
   }
 
