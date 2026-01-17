@@ -787,8 +787,45 @@ export class BlueFileResolver {
    * Scans a file and its linked files recursively to build a tree structure.
    * This is used by the Blue Resolution Tree View to visualize file dependencies.
    * 
+   * The method performs a recursive scan of all [[link]] references in the file,
+   * building a graph of dependencies with cycle detection and depth limiting.
+   * 
+   * **Performance Considerations:**
+   * - Uses depth-first search with branch-specific visited sets
+   * - Respects maxDepth setting to prevent excessive recursion
+   * - Reads files using cachedRead for efficiency
+   * - For large vaults with many links, may take several seconds
+   * 
+   * **Error Handling:**
+   * - Silently handles missing linked files (they won't appear in the tree)
+   * - Detects circular dependencies and marks them with 'cycle-detected' status
+   * - Stops recursion at configured maxDepth (default from settings)
+   * 
    * @param rootFile - The root file to start scanning from
-   * @returns A map of file paths to their resolution node data
+   * @returns A Promise resolving to a Map where:
+   *   - Keys are file paths (strings)
+   *   - Values are ResolutionNodeData objects containing:
+   *     - filePath: Full path to the file
+   *     - depth: Distance from root (0 for root)
+   *     - status: Resolution status ('idle', 'complete', 'error', etc.)
+   *     - isPendingChat: Whether this is a chat file awaiting execution
+   *     - isChatFile: Whether this is a valid chat file
+   *     - children: Array of child file paths
+   *     - error: Optional error message if scanning failed
+   * 
+   * @example
+   * ```typescript
+   * const rootFile = app.vault.getFileByPath('MyNote.md');
+   * const treeData = await resolver.scanFileLinks(rootFile);
+   * 
+   * // Access root node
+   * const root = treeData.get(rootFile.path);
+   * console.log(`Found ${root.children.length} linked files`);
+   * 
+   * // Check for cycles
+   * const hasCycles = Array.from(treeData.values())
+   *   .some(node => node.status === 'cycle-detected');
+   * ```
    */
   async scanFileLinks(rootFile: TFile): Promise<Map<string, ResolutionNodeData>> {
     const treeData = new Map<string, ResolutionNodeData>();
