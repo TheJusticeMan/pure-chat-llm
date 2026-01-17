@@ -4,6 +4,7 @@ import { PureChatLLMChat } from './Chat';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { MediaMessage, RoleType, ResolutionEvent, ResolutionNodeData } from '../types';
 import { ChatUtils } from '../utils/ChatUtils';
+import { FileSystemPort } from '../ports/FileSystemPort';
 
 /**
  * Represents a node in the file resolution tree.
@@ -77,7 +78,10 @@ export class BlueFileResolver {
   private console: BrowserConsole;
   private eventListeners: Array<(event: ResolutionEvent) => void> = [];
 
-  constructor(private plugin: PureChatLLM) {
+  constructor(
+    private plugin: PureChatLLM,
+    private fileSystem: FileSystemPort,
+  ) {
     this.console = new BrowserConsole(plugin.settings.debug, 'BlueFileResolver');
   }
 
@@ -154,7 +158,7 @@ export class BlueFileResolver {
 
     // Check if feature is disabled
     if (!blueFileResolution.enabled) {
-      return app.vault.cachedRead(file);
+      return this.fileSystem.read(file);
     }
 
     // Emit start event
@@ -231,7 +235,7 @@ export class BlueFileResolver {
         isPendingChat: false,
         timestamp: Date.now(),
       });
-      return app.vault.cachedRead(file);
+      return this.fileSystem.read(file);
     }
 
     // Create a child node in the tree for this file
@@ -284,7 +288,7 @@ export class BlueFileResolver {
       this.console.log(`[Blue File Resolution] Starting resolveFileInternal for: ${file.path}`);
       
       // Read the file content
-      const content = await app.vault.cachedRead(file);
+      const content = await this.fileSystem.read(file);
       this.console.log(`[Blue File Resolution] Read content (${content.length} chars) from: ${file.path}`);
 
       // Create a chat instance to parse the file
@@ -341,7 +345,7 @@ export class BlueFileResolver {
 
       // Write intermediate results if configured (and not root file)
       if (blueFileResolution.writeIntermediateResults && file.path !== context.rootFile.path) {
-        await app.vault.modify(file, response.markdown);
+        await this.fileSystem.write(file, response.markdown);
         this.console.log(`[Blue File Resolution] Wrote intermediate result to: ${file.path}`);
       }
 
@@ -410,7 +414,7 @@ export class BlueFileResolver {
     for (const match of matches) {
       const linkText = match[1];
       const { subpath, path } = parseLinktext(linkText);
-      const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+      const file = this.fileSystem.getFirstLinkDest(path, activeFile.path);
 
       if (file instanceof TFile) {
         this.console.log(`[Blue File Resolution] Found linked file: ${file.path} from link: [[${linkText}]]${subpath ? ` with subpath: ${subpath}` : ''}`);
@@ -475,7 +479,7 @@ export class BlueFileResolver {
       for (const match of matches) {
         const linkText = match[1];
         const { subpath, path } = parseLinktext(linkText);
-        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+        const file = this.fileSystem.getFirstLinkDest(path, activeFile.path);
         
         if (file instanceof TFile) {
           this.console.log(`[Blue File Resolution] Queuing resolution for: ${file.path}${subpath ? `#${subpath}` : ''}`);
@@ -497,14 +501,14 @@ export class BlueFileResolver {
       for (const match of matches) {
         const linkText = match[1];
         const { subpath, path } = parseLinktext(linkText);
-        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+        const file = this.fileSystem.getFirstLinkDest(path, activeFile.path);
         
         if (file instanceof TFile) {
           if (subpath) {
             // Handle subpath even when feature is disabled
             replacements.push(this.retrieveLinkContent(linkText, activeFile, app));
           } else {
-            replacements.push(app.vault.cachedRead(file));
+            replacements.push(this.fileSystem.read(file));
           }
         } else {
           replacements.push(Promise.resolve(match[0]));
@@ -537,7 +541,7 @@ export class BlueFileResolver {
    * Gets the TFile for a link string.
    */
   private getFileForLink(str: string, activeFile: TFile, app: App): TFile | null {
-    return app.metadataCache.getFirstLinkpathDest(parseLinktext(str).path, activeFile.path);
+    return this.fileSystem.getFirstLinkDest(parseLinktext(str).path, activeFile.path);
   }
 
   /**
@@ -556,7 +560,7 @@ export class BlueFileResolver {
     context?: ResolutionContext,
   ): Promise<string> {
     const { subpath, path } = parseLinktext(str);
-    const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+    const file = this.fileSystem.getFirstLinkDest(path, activeFile.path);
     if (!file) return Promise.resolve(`[[${str}]]`);
 
     // If subpath is specified, return the specific section
@@ -564,7 +568,7 @@ export class BlueFileResolver {
       const cache = app.metadataCache.getFileCache(file);
       const ref = cache && resolveSubpath(cache, subpath);
       if (ref) {
-        const text = await app.vault.cachedRead(file);
+        const text = await this.fileSystem.read(file);
         const sectionContent = text.substring(ref.start.offset, ref.end?.offset).trim();
         
         // If blue file resolution is enabled and we have a context, resolve links within the section
@@ -590,7 +594,7 @@ export class BlueFileResolver {
     }
 
     // Default: just read the file
-    return app.vault.cachedRead(file);
+    return this.fileSystem.read(file);
   }
 
   /**
@@ -700,7 +704,7 @@ export class BlueFileResolver {
 
         const ext = file.extension.toLowerCase();
         if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
-          const data = await app.vault.readBinary(file);
+          const data = await this.fileSystem.readBinary(file);
           const mime =
             ext === 'jpg'
               ? 'image/jpeg'
@@ -715,7 +719,7 @@ export class BlueFileResolver {
           return { type: 'image_url', image_url: { url } };
         }
         if (['mp3', 'wav', 'm4a'].includes(ext) && role === 'user') {
-          let data = await app.vault.readBinary(file);
+          let data = await this.fileSystem.readBinary(file);
           let format = ext;
           if (ext === 'm4a') {
             data = await this.convertM4AToWav(data);
