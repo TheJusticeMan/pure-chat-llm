@@ -502,7 +502,7 @@ export class BlueResolutionTreeView extends ItemView {
     if (!this.currentRootFile || !this.renderContainer) {
       return;
     }
-
+    this.renderContainer.empty();
     // Create graph container in the dedicated render container
     const graphContainer = this.renderContainer.createDiv({ cls: 'resolution-graph-container' });
 
