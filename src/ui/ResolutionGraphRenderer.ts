@@ -123,9 +123,8 @@ export class ResolutionGraphRenderer {
     this.ctx = context;
     this.canvas = canvas;
     this.treeData = treeData;
-    // Use CSS dimensions for coordinate calculations, not internal canvas dimensions
-    this.width = canvas.clientWidth || canvas.width;
-    this.height = canvas.clientHeight || canvas.height;
+    this.width = canvas.width;
+    this.height = canvas.height;
 
     this.buildGraph();
     this.layoutNodes();
@@ -243,15 +242,19 @@ export class ResolutionGraphRenderer {
     // Calculate graph structure metrics
     const maxDepth = Math.max(...Array.from(layers.keys()));
     const maxWidth = Math.max(...Array.from(layers.values()).map(layer => layer.length));
-    
+
     // Calculate layout dimensions based on graph structure
     // This makes the layout aspect ratio independent of the graph's aspect ratio
     // Width is based on the widest layer, height is based on the number of layers
     const horizontalSpacingPerNode = 150; // Space allocated per node horizontally
-    const layoutWidth = Math.max(ResolutionGraphRenderer.LAYOUT_WIDTH, maxWidth * horizontalSpacingPerNode);
+    const layoutWidth = Math.max(
+      ResolutionGraphRenderer.LAYOUT_WIDTH,
+      maxWidth * horizontalSpacingPerNode,
+    );
     const layoutHeight = Math.max(
       ResolutionGraphRenderer.LAYOUT_HEIGHT,
-      maxDepth * ResolutionGraphRenderer.LAYOUT_MIN_VERTICAL_SPACING + ResolutionGraphRenderer.LAYOUT_VERTICAL_PADDING
+      maxDepth * ResolutionGraphRenderer.LAYOUT_MIN_VERTICAL_SPACING +
+        ResolutionGraphRenderer.LAYOUT_VERTICAL_PADDING,
     );
 
     // Calculate layout parameters
@@ -341,11 +344,9 @@ export class ResolutionGraphRenderer {
    * Main render method - draws the entire graph
    */
   public render(): void {
-    // Update canvas dimensions - use CSS dimensions for coordinate calculations
-    // The canvas internal dimensions may be scaled by DPR, but we need CSS dimensions
-    // for proper screen-to-graph coordinate transformation
-    this.width = this.canvas.clientWidth || this.canvas.width;
-    this.height = this.canvas.clientHeight || this.canvas.height;
+    // Update canvas dimensions
+    this.width = this.canvas.width;
+    this.height = this.canvas.height;
 
     // Only fit on first render or when explicitly called
     if (!this.hasRendered) {
@@ -353,8 +354,8 @@ export class ResolutionGraphRenderer {
       this.hasRendered = true;
     }
 
-    // Clear canvas - use CSS dimensions since context is scaled by DPR
-    this.ctx.clearRect(0, 0, this.width, this.height);
+    // Clear canvas
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Save context and apply transform for main graph
     this.ctx.save();
@@ -760,7 +761,7 @@ export class ResolutionGraphRenderer {
     for (const node of this.nodes.values()) {
       const distance = Math.sqrt(Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2));
       // Use the visual icon size for hit detection (icon is ICON_SIZE_MULTIPLIER times larger than radius)
-      const hitRadius = node.radius * ResolutionGraphRenderer.ICON_SIZE_MULTIPLIER / 2;
+      const hitRadius = (node.radius * ResolutionGraphRenderer.ICON_SIZE_MULTIPLIER) / 2;
       if (distance <= hitRadius) {
         return node;
       }
