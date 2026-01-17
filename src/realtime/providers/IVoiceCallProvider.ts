@@ -58,7 +58,7 @@ export interface IVoiceCallProvider {
    * Callback for when a server event is received
    */
   onMessage(callback: (event: unknown) => void): void;
-  
+
   /**
    * Callback for error handling
    */

@@ -4,7 +4,7 @@ import { ChatMessage, ChatOptions, RoleType } from '../types';
 /**
  * ChatSession represents a chat conversation as a pure domain model.
  * It contains the messages, options, and metadata for a chat session.
- * 
+ *
  * This class handles domain logic like message management, cleanup, and role reversal,
  * but does NOT handle:
  * - API communication
@@ -26,7 +26,7 @@ export class ChatSession {
   /**
    * Appends one or more messages to the chat session.
    * Optionally associates editor ranges (line positions) with each message.
-   * 
+   *
    * @param messages - The messages to append (single message or array)
    * @param clines - Optional editor ranges for the messages
    * @returns The session instance for chaining
@@ -34,10 +34,7 @@ export class ChatSession {
   appendMessage(message: ChatMessage): this;
   appendMessage(messages: ChatMessage[]): this;
   appendMessage(messages: ChatMessage[], clines: EditorRange[]): this;
-  appendMessage(
-    messageOrMessages: ChatMessage | ChatMessage[],
-    clines?: EditorRange[],
-  ): this {
+  appendMessage(messageOrMessages: ChatMessage | ChatMessage[], clines?: EditorRange[]): this {
     // Handle single message
     if (!Array.isArray(messageOrMessages)) {
       this.messages.push(messageOrMessages);
@@ -48,17 +45,19 @@ export class ChatSession {
     // Handle array of messages
     const messages = messageOrMessages;
     this.messages.push(...messages);
-    
+
     if (clines && clines.length === messages.length) {
       this.clines.push(...clines);
     } else {
       // Add empty clines if not provided
-      this.clines.push(...messages.map(() => ({ 
-        from: { line: 0, ch: 0 }, 
-        to: { line: 0, ch: 0 } 
-      })));
+      this.clines.push(
+        ...messages.map(() => ({
+          from: { line: 0, ch: 0 },
+          to: { line: 0, ch: 0 },
+        })),
+      );
     }
-    
+
     return this;
   }
 
@@ -67,7 +66,7 @@ export class ChatSession {
    * - Removes empty messages (except system messages)
    * - Ensures first message is system
    * - Ensures last message is user and empty
-   * 
+   *
    * @param systemPrompt - The default system prompt to use if needed
    * @returns The session instance for chaining
    */
@@ -103,7 +102,7 @@ export class ChatSession {
   /**
    * Reverses the roles of user and assistant messages.
    * Useful for importing conversations from other sources.
-   * 
+   *
    * @returns The session instance for chaining
    */
   reverseRoles(): this {
@@ -121,7 +120,7 @@ export class ChatSession {
   /**
    * Generates a text representation of the chat.
    * Each message is formatted with a role prefix.
-   * 
+   *
    * @param roleFormatter - Function to format the role prefix
    * @returns Text representation of the chat
    */

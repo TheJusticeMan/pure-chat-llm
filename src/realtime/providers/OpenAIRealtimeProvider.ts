@@ -17,7 +17,7 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   private peerConnection: RTCPeerConnection | null = null;
   private dataChannel: RTCDataChannel | null = null;
   private sessionEndpoint = 'https://api.openai.com/v1/realtime/calls';
-  
+
   // Callbacks
   private onRemoteTrackCallback?: (stream: MediaStream) => void;
   private onMessageCallback?: (event: unknown) => void;
@@ -36,7 +36,7 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   onMessage(callback: (event: unknown) => void): void {
     this.onMessageCallback = callback;
   }
-  
+
   onError(callback: (error: Error) => void): void {
     this.onErrorCallback = callback;
   }
@@ -107,7 +107,6 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
         type: 'answer',
         sdp: answerSdp,
       });
-
     } catch (error) {
       if (this.onErrorCallback && error instanceof Error) {
         this.onErrorCallback(error);
@@ -136,18 +135,18 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
 
   private setupDataChannel(dc: RTCDataChannel): void {
     dc.addEventListener('open', () => {
-       // Channel ready
+      // Channel ready
     });
 
     dc.addEventListener('message', event => {
       void (async () => {
         try {
           const data = JSON.parse(event.data as string) as OpenAIEvent;
-          
+
           if (data.type === 'response.function_call_arguments.done' && this.toolExecutor) {
             await this.handleToolCall(data);
           }
-          
+
           if (this.onMessageCallback) {
             this.onMessageCallback(data);
           }
@@ -182,11 +181,10 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
       };
       this.send(toolResponse);
       this.send({ type: 'response.create' }); // Trigger response
-
     } catch (error) {
       console.error(`Tool execution failed:`, error);
       const errMsg = error instanceof Error ? error.message : 'Unknown error';
-       const toolResponse = {
+      const toolResponse = {
         type: 'conversation.item.create',
         item: {
           type: 'function_call_output',

@@ -1,4 +1,5 @@
-import { App, EditorRange, Notice, parseYaml, stringifyYaml, TFile } from 'obsidian';
+import { App, EditorRange, Notice, TFile } from 'obsidian';
+import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import PureChatLLM, { StreamNotice } from '../main';
 import { ToolRegistry } from '../tools';
 import { ActiveContextTool } from '../tools/ActiveContext';
@@ -33,11 +34,10 @@ import {
 import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
-import { LLMService } from './LLMService';
-import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import { ResolutionContext } from './BlueFileResolver';
-import { ChatSession } from './ChatSession';
 import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
+import { ChatSession } from './ChatSession';
+import { LLMService } from './LLMService';
 import { ToolExecutor } from './ToolExecutor';
 
 /**
@@ -93,7 +93,7 @@ export class PureChatLLMChat {
       tools: this.toolregistry.getNameList(),
       messages: [],
     };
-    
+
     this.session = new ChatSession(options);
     this.adapter = new ChatMarkdownAdapter(
       this.parser,
@@ -202,7 +202,7 @@ export class PureChatLLMChat {
       tools: this.toolregistry.getNameList(),
       messages: [],
     };
-    
+
     this.session = this.adapter.parse(markdown, defaultOptions, this.plugin.settings.SystemPrompt);
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.updateEndpointFromModel();
@@ -664,7 +664,7 @@ export class PureChatLLMChat {
    * @returns {string} A formatted string containing all chat messages.
    */
   get chatText(): string {
-    return this.session.getChatText((role) => this.parseRole(role));
+    return this.session.getChatText(role => this.parseRole(role));
   }
 
   parseRole(role: RoleType): string {

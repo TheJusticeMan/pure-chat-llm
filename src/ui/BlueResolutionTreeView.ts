@@ -1,11 +1,11 @@
 import {
+  ExtraButtonComponent,
   ItemView,
-  WorkspaceLeaf,
-  Setting,
-  TFile,
   MarkdownView,
   Notice,
-  ExtraButtonComponent,
+  Setting,
+  TFile,
+  WorkspaceLeaf,
 } from 'obsidian';
 import PureChatLLM from '../main';
 import {
@@ -128,6 +128,12 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    // Cleanup graph renderer if it exists
+    if (this.graphRenderer) {
+      this.graphRenderer.destroy();
+      this.graphRenderer = null;
+    }
+
     // Unregister resolution event listener
     this.plugin.blueFileResolver.offResolutionEvent(this.boundResolutionEventHandler);
   }
@@ -206,6 +212,12 @@ export class BlueResolutionTreeView extends ItemView {
   }
 
   private renderView(): void {
+    // Cleanup previous renderer if switching views
+    if (this.graphRenderer) {
+      this.graphRenderer.destroy();
+      this.graphRenderer = null;
+    }
+
     // Ensure view mode is synchronized with settings
     if (this.plugin.settings.blueResolutionViewMode) {
       this.viewMode = this.plugin.settings.blueResolutionViewMode;
@@ -490,7 +502,7 @@ export class BlueResolutionTreeView extends ItemView {
     if (!this.currentRootFile || !this.renderContainer) {
       return;
     }
-
+    this.renderContainer.empty();
     // Create graph container in the dedicated render container
     const graphContainer = this.renderContainer.createDiv({ cls: 'resolution-graph-container' });
 

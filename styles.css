@@ -575,17 +575,35 @@ sup {
   background: rgba(0, 0, 0, 0.5);
 }
 
+/* Canvas cursor states */
+.resolution-graph-canvas.graph-node-hover {
+  cursor: grab;
+}
+
+.resolution-graph-canvas.graph-panning {
+  cursor: grabbing;
+}
+
+.resolution-graph-canvas.graph-dragging {
+  cursor: move;
+}
+
 /* Graph tooltip */
 .graph-tooltip {
   background: rgba(0, 0, 0, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   padding: 0;
+  position: absolute;
   pointer-events: none;
   z-index: 1000;
   max-width: 300px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   font-size: 0.9em;
+}
+
+.graph-tooltip-hidden {
+  display: none;
 }
 
 .tooltip-header {

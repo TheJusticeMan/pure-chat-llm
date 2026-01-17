@@ -78,7 +78,7 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
-  
+
   // Audio playback queue
   private nextStartTime = 0;
   private audioQueue: ArrayBuffer[] = [];
@@ -102,7 +102,7 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   onMessage(callback: (event: unknown) => void): void {
     this.onMessageCallback = callback;
   }
-  
+
   onError(callback: (error: Error) => void): void {
     this.onErrorCallback = callback;
   }
@@ -110,13 +110,13 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   async connect(localStream: MediaStream, config: VoiceCallConfig): Promise<void> {
     try {
       const endpoint = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${config.apiKey}`;
-      
+
       this.ws = new WebSocket(endpoint);
       this.ws.binaryType = 'arraybuffer';
 
       // Setup Audio Context (16kHz for input to Gemini)
       this.audioContext = new AudioContext({ sampleRate: 16000 }); // Gemini likes 16kHz input
-      
+
       // Load AudioWorklet
       const blob = new Blob([PCM_PROCESSOR_CODE], { type: 'application/javascript' });
       const url = URL.createObjectURL(blob);
@@ -126,33 +126,33 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
       // Setup processing pipeline
       this.sourceNode = this.audioContext.createMediaStreamSource(localStream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'pcm-processor');
-      
-      this.workletNode.port.onmessage = (event) => {
+
+      this.workletNode.port.onmessage = event => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this.sendAudioChunk(event.data);
       };
 
       this.sourceNode.connect(this.workletNode);
       this.workletNode.connect(this.audioContext.destination);
-      
+
       // Wait for WS Open
       await new Promise<void>((resolve, reject) => {
         if (!this.ws) return reject(new Error('No WS'));
-        
+
         const timer = setTimeout(() => reject(new Error('Timeout')), 10000);
 
         this.ws.onopen = () => {
-            clearTimeout(timer);
-            this.sendSetup(config);
-            resolve();
+          clearTimeout(timer);
+          this.sendSetup(config);
+          resolve();
         };
 
-        this.ws.onerror = (err) => {
-             clearTimeout(timer);
-             console.error('WS Error during connect', err);
+        this.ws.onerror = err => {
+          clearTimeout(timer);
+          console.error('WS Error during connect', err);
         };
-        
-        this.ws.onmessage = (event) => this.handleMessage(event);
+
+        this.ws.onmessage = event => this.handleMessage(event);
         this.ws.onclose = () => void this.disconnect();
       });
 
@@ -160,7 +160,6 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
       if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
       }
-
     } catch (error) {
       if (this.onErrorCallback && error instanceof Error) {
         this.onErrorCallback(error);
@@ -192,201 +191,203 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   send(event: unknown): void {
-     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-         this.ws.send(JSON.stringify(event));
-     }
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(event));
+    }
   }
 
   private sendSetup(config: VoiceCallConfig) {
-      const setup: GeminiSetup = {
-        setup: {
-            model: config.model || 'models/gemini-2.0-flash-exp',
-            generationConfig: {
-                responseModalities: ['AUDIO'],
-                speechConfig: {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: {
-                            voiceName: config.voice || 'Puck',
-                        }
-                    }
-                }
+    const setup: GeminiSetup = {
+      setup: {
+        model: config.model || 'models/gemini-2.0-flash-exp',
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: config.voice || 'Puck',
+              },
             },
-            systemInstruction: {
-                parts: [{ text: config.instructions || 'You are a helpful assistant.' }]
-            }
-        }
-      };
+          },
+        },
+        systemInstruction: {
+          parts: [{ text: config.instructions || 'You are a helpful assistant.' }],
+        },
+      },
+    };
 
-      if (this.toolExecutor && config.tools) {
-           const functionDeclarations = config.tools.map(t => ({
-              name: t.function.name,
-              description: t.function.description,
-              parameters: this.removeAdditionalProperties(t.function.parameters)
-           }));
-           
-           if (functionDeclarations.length > 0) {
-               setup.setup.tools = [{ function_declarations: functionDeclarations }];
-           }
+    if (this.toolExecutor && config.tools) {
+      const functionDeclarations = config.tools.map(t => ({
+        name: t.function.name,
+        description: t.function.description,
+        parameters: this.removeAdditionalProperties(t.function.parameters),
+      }));
+
+      if (functionDeclarations.length > 0) {
+        setup.setup.tools = [{ function_declarations: functionDeclarations }];
       }
+    }
 
-      this.ws?.send(JSON.stringify(setup));
+    this.ws?.send(JSON.stringify(setup));
   }
 
   private sendAudioChunk(data: ArrayBuffer) {
-      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-      const base64 = this.arrayBufferToBase64(data);
-      const msg = {
-          realtimeInput: {
-              mediaChunks: [{
-                  mimeType: 'audio/pcm;rate=16000',
-                  data: base64
-              }]
-          }
-      };
-      this.ws.send(JSON.stringify(msg));
+    const base64 = this.arrayBufferToBase64(data);
+    const msg = {
+      realtimeInput: {
+        mediaChunks: [
+          {
+            mimeType: 'audio/pcm;rate=16000',
+            data: base64,
+          },
+        ],
+      },
+    };
+    this.ws.send(JSON.stringify(msg));
   }
 
   private handleMessage(event: MessageEvent) {
-      let data: GeminiMessage;
-      try {
-          if (event.data instanceof ArrayBuffer) {
-              data = JSON.parse(new TextDecoder().decode(event.data)) as GeminiMessage;
-          } else {
-              data = JSON.parse(event.data as string) as GeminiMessage;
-          }
-      } catch (e) {
-          console.error('Parse error', e);
-          return;
+    let data: GeminiMessage;
+    try {
+      if (event.data instanceof ArrayBuffer) {
+        data = JSON.parse(new TextDecoder().decode(event.data)) as GeminiMessage;
+      } else {
+        data = JSON.parse(event.data as string) as GeminiMessage;
       }
+    } catch (e) {
+      console.error('Parse error', e);
+      return;
+    }
 
-      if (data.setupComplete && this.onMessageCallback) {
-          this.onMessageCallback({ type: 'connected' });
-      }
+    if (data.setupComplete && this.onMessageCallback) {
+      this.onMessageCallback({ type: 'connected' });
+    }
 
-      // Audio
-      if (data.serverContent?.modelTurn?.parts) {
-          for (const part of data.serverContent.modelTurn.parts) {
-              if (part.inlineData?.mimeType?.startsWith('audio/pcm') && part.inlineData.data) {
-                  const pcmData = this.base64ToArrayBuffer(part.inlineData.data);
-                  this.queueAudio(pcmData);
-              }
-          }
+    // Audio
+    if (data.serverContent?.modelTurn?.parts) {
+      for (const part of data.serverContent.modelTurn.parts) {
+        if (part.inlineData?.mimeType?.startsWith('audio/pcm') && part.inlineData.data) {
+          const pcmData = this.base64ToArrayBuffer(part.inlineData.data);
+          this.queueAudio(pcmData);
+        }
       }
+    }
 
-      // Tools
-      if (data.toolCall) {
-          void this.handleToolCall(data.toolCall);
-      }
+    // Tools
+    if (data.toolCall) {
+      void this.handleToolCall(data.toolCall);
+    }
   }
 
   private queueAudio(data: ArrayBuffer) {
-      this.audioQueue.push(data);
-      if (!this.isPlaying) {
-          void this.playQueue();
-      }
+    this.audioQueue.push(data);
+    if (!this.isPlaying) {
+      void this.playQueue();
+    }
   }
 
   private async playQueue() {
-      if (!this.audioContext || this.audioQueue.length === 0) {
-          this.isPlaying = false;
-          return;
-      }
-      this.isPlaying = true;
+    if (!this.audioContext || this.audioQueue.length === 0) {
+      this.isPlaying = false;
+      return;
+    }
+    this.isPlaying = true;
 
-      const chunk = this.audioQueue.shift();
-      if (!chunk) {
-        this.isPlaying = false;
-        return;
-      }
-      
-      const pcm16 = new Int16Array(chunk);
-      const float32 = new Float32Array(pcm16.length);
-      for(let i=0; i<pcm16.length; i++) {
-          float32[i] = pcm16[i] / 32768.0;
-      }
+    const chunk = this.audioQueue.shift();
+    if (!chunk) {
+      this.isPlaying = false;
+      return;
+    }
 
-      const buffer = this.audioContext.createBuffer(1, float32.length, 24000);
-      buffer.copyToChannel(float32, 0);
+    const pcm16 = new Int16Array(chunk);
+    const float32 = new Float32Array(pcm16.length);
+    for (let i = 0; i < pcm16.length; i++) {
+      float32[i] = pcm16[i] / 32768.0;
+    }
 
-      const source = this.audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(this.audioContext.destination);
+    const buffer = this.audioContext.createBuffer(1, float32.length, 24000);
+    buffer.copyToChannel(float32, 0);
 
-      const now = this.audioContext.currentTime;
-      const start = Math.max(now, this.nextStartTime);
-      source.start(start);
-      this.nextStartTime = start + buffer.duration;
+    const source = this.audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.audioContext.destination);
 
-      source.onended = () => {
-          void this.playQueue();
-      };
+    const now = this.audioContext.currentTime;
+    const start = Math.max(now, this.nextStartTime);
+    source.start(start);
+    this.nextStartTime = start + buffer.duration;
+
+    source.onended = () => {
+      void this.playQueue();
+    };
   }
 
   private async handleToolCall(toolCall: NonNullable<GeminiMessage['toolCall']>) {
-      if (!this.toolExecutor || !toolCall.functionCalls) return;
+    if (!this.toolExecutor || !toolCall.functionCalls) return;
 
-      const responses = [];
-      for (const call of toolCall.functionCalls) {
-          try {
-              new Notice(`Executing ${call.name}`);
-              const result = await this.toolExecutor.executeTool(call.name, call.args);
-              responses.push({
-                  id: call.id,
-                  name: call.name,
-                  response: { result }
-              });
-          } catch (e) {
-              const msg = e instanceof Error ? e.message : String(e);
-              responses.push({
-                  id: call.id,
-                  name: call.name,
-                  response: { error: msg }
-              });
-          }
+    const responses = [];
+    for (const call of toolCall.functionCalls) {
+      try {
+        new Notice(`Executing ${call.name}`);
+        const result = await this.toolExecutor.executeTool(call.name, call.args);
+        responses.push({
+          id: call.id,
+          name: call.name,
+          response: { result },
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        responses.push({
+          id: call.id,
+          name: call.name,
+          response: { error: msg },
+        });
       }
+    }
 
-      const responseMsg = {
-          toolResponse: {
-              functionResponses: responses
-          }
-      };
-      this.send(responseMsg);
+    const responseMsg = {
+      toolResponse: {
+        functionResponses: responses,
+      },
+    };
+    this.send(responseMsg);
   }
 
   // Helpers
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
-      let binary = '';
-      const bytes = new Uint8Array(buffer);
-      for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binary);
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   }
 
   private base64ToArrayBuffer(base64: string): ArrayBuffer {
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-      }
-      return bytes.buffer;
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
   }
-  
+
   private removeAdditionalProperties(obj: unknown): JsonValue {
     if (typeof obj !== 'object' || obj === null) return obj as JsonValue;
-    
+
     if (Array.isArray(obj)) {
       return obj.map(i => this.removeAdditionalProperties(i));
     }
 
     const newObj: Record<string, JsonValue> = {};
     const record = obj as Record<string, unknown>;
-    
+
     for (const key of Object.keys(record)) {
-        if (key !== 'additionalProperties') {
-            newObj[key] = this.removeAdditionalProperties(record[key]);
-        }
+      if (key !== 'additionalProperties') {
+        newObj[key] = this.removeAdditionalProperties(record[key]);
+      }
     }
     return newObj;
   }
