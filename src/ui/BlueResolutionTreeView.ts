@@ -6,7 +6,6 @@ import {
   MarkdownView,
   Notice,
   ExtraButtonComponent,
-  App,
 } from 'obsidian';
 import PureChatLLM from '../main';
 import {
@@ -17,23 +16,18 @@ import {
   ResolutionStatus,
 } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { PureChatLLMChat } from '../core/Chat';
+import { ChatUtils } from '../utils/ChatUtils';
 import { ResolutionGraphRenderer } from './ResolutionGraphRenderer';
-
-interface TreeNode {
-  filePath: string;
-  fileName: string;
-  depth: number;
-  status: ResolutionStatus;
-  isPendingChat: boolean;
-  isChatFile?: boolean;
-  children: TreeNode[];
-  error?: string;
-}
+import { ResolutionTreeRenderer } from './ResolutionTreeRenderer';
 
 /**
  * Side panel view for displaying the Blue File Resolution execution tree.
  * Shows the resolution tree/DAG for the currently active markdown file.
+ * 
+ * This view acts as a container/orchestrator that:
+ * - Requests data from the business logic layer (BlueFileResolver)
+ * - Delegates rendering to specialized renderers (ResolutionTreeRenderer, ResolutionGraphRenderer)
+ * - Handles user events and state management
  */
 export class BlueResolutionTreeView extends ItemView {
   private console: BrowserConsole;
@@ -46,6 +40,7 @@ export class BlueResolutionTreeView extends ItemView {
   private _locked: boolean = false;
   private viewMode: 'tree' | 'graph' = 'tree';
   private graphRenderer: ResolutionGraphRenderer | null = null;
+  private treeRenderer: ResolutionTreeRenderer | null = null;
 
   get locked(): boolean {
     return this._locked;
@@ -101,6 +96,12 @@ export class BlueResolutionTreeView extends ItemView {
     if (this.plugin.settings.blueResolutionViewMode) {
       this.viewMode = this.plugin.settings.blueResolutionViewMode;
     }
+
+    // Initialize tree renderer
+    this.treeRenderer = new ResolutionTreeRenderer(
+      this.contentEl,
+      (filePath) => this.openFile(filePath),
+    );
 
     // Listen to resolution events
     this.plugin.blueFileResolver.onResolutionEvent(this.boundResolutionEventHandler);
@@ -484,17 +485,13 @@ export class BlueResolutionTreeView extends ItemView {
       return;
     }
 
-    const treeContainer = container.createDiv({ cls: 'resolution-tree-container' });
-
-    // Build tree structure from flat data with cycle detection
-    const visited = new Set<string>();
-    const rootNode = this.buildTreeNode(this.currentRootFile.path, visited);
-
-    if (rootNode) {
-      this.renderTreeNode(treeContainer, rootNode, 0);
+    // Delegate rendering to ResolutionTreeRenderer
+    if (this.treeRenderer) {
+      this.treeRenderer.render(this.treeData, this.currentRootFile.path);
     } else {
-      treeContainer.createEl('p', {
-        text: 'No resolution data available. Click analyze file to scan for links.',
+      // Fallback if renderer not initialized
+      container.createDiv({ cls: 'resolution-tree-container' }).createEl('p', {
+        text: 'Tree renderer not initialized.',
       });
     }
   }
@@ -606,128 +603,6 @@ export class BlueResolutionTreeView extends ItemView {
     }) as EventListener);
   }
 
-  private buildTreeNode(filePath: string, visited: Set<string>): TreeNode | null {
-    const nodeData = this.treeData.get(filePath);
-    if (!nodeData) {
-      return null;
-    }
-
-    // Prevent infinite recursion on circular references
-    if (visited.has(filePath)) {
-      // Return a node without children to break the cycle
-      const fileName = filePath.split('/').pop() || filePath;
-      return {
-        filePath: nodeData.filePath,
-        fileName,
-        depth: nodeData.depth,
-        status: nodeData.status === 'idle' ? 'cycle-detected' : nodeData.status,
-        isPendingChat: nodeData.isPendingChat,
-        isChatFile: nodeData.isChatFile,
-        children: [], // No children to break recursion
-        error: nodeData.error,
-      };
-    }
-
-    visited.add(filePath);
-    const fileName = filePath.split('/').pop() || filePath;
-
-    const children: TreeNode[] = [];
-    for (const childPath of nodeData.children) {
-      const childNode = this.buildTreeNode(childPath, visited);
-      if (childNode) {
-        children.push(childNode);
-      }
-    }
-
-    visited.delete(filePath); // Remove from visited to allow this node in other branches
-
-    return {
-      filePath: nodeData.filePath,
-      fileName,
-      depth: nodeData.depth,
-      status: nodeData.status,
-      isPendingChat: nodeData.isPendingChat,
-      isChatFile: nodeData.isChatFile,
-      children,
-      error: nodeData.error,
-    };
-  }
-
-  private renderTreeNode(container: HTMLElement, node: TreeNode, indentLevel: number): void {
-    const nodeEl = container.createDiv({
-      cls: `resolution-node resolution-node-${node.status}`,
-    });
-    // Don't use inline paddingLeft - let CSS handle indentation via .resolution-node-children
-
-    const contentEl = nodeEl.createDiv({ cls: 'resolution-node-content' });
-
-    // Add data attribute for tree connector styling
-    if (indentLevel > 0) {
-      contentEl.setAttribute('data-has-connector', 'true');
-    }
-
-    // Expand/collapse button for nodes with children
-    if (node.children.length > 0) {
-      let nodeIsExpanded = true;
-      const expandBtn = new ExtraButtonComponent(contentEl).setIcon('chevron-down').onClick(() => {
-        // Toggle without re-rendering the whole tree
-        if (nodeIsExpanded) {
-          // Collapse
-          nodeEl.addClass('is-collapsed');
-          expandBtn.setIcon('chevron-right');
-          nodeIsExpanded = false;
-        } else {
-          // Expand
-          nodeEl.removeClass('is-collapsed');
-          expandBtn.setIcon('chevron-down');
-          nodeIsExpanded = true;
-        }
-      });
-    }
-
-    // Contextual icon with glow - folder for root/expandable, image for images, file for others
-    new ExtraButtonComponent(contentEl)
-      .setDisabled(true)
-      .setIcon(
-        indentLevel === 0
-          ? 'folder'
-          : /\.(png|jpe?g)$/i.test(node.fileName)
-            ? 'image'
-            : node.isChatFile
-              ? 'pure-chat-llm'
-              : node.fileName.endsWith('.md')
-                ? 'file-text'
-                : 'file',
-      )
-      .extraSettingsEl.addClass(`status-indicator-${node.status}`);
-
-    // File name (clickable, truncated with ellipsis)
-    const nameEl = contentEl.createSpan({
-      cls: 'resolution-node-name',
-      text: node.fileName,
-    });
-    nameEl.addEventListener('click', () => this.openFile(node.filePath));
-    nameEl.title = node.filePath; // Full path on hover
-
-    // Error badge - only show if there's an actual error
-    if (node.error) {
-      const errorBadge = contentEl.createSpan({
-        cls: 'resolution-node-badge error-badge',
-        text: 'Error',
-      });
-      errorBadge.title = node.error;
-    }
-
-    // Render children container if children exist
-    if (node.children.length > 0) {
-      const childrenContainer = nodeEl.createDiv({ cls: 'resolution-node-children' });
-
-      for (const child of node.children) {
-        this.renderTreeNode(childrenContainer, child, indentLevel + 1);
-      }
-    }
-  }
-
   private openFile(filePath: string): void {
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof TFile) {
@@ -761,7 +636,8 @@ export class BlueResolutionTreeView extends ItemView {
 
     try {
       /* new Notice('Analyzing file links...'); */
-      await this.scanFileLinks(this.currentRootFile, null, 0, new Set());
+      // Delegate to BlueFileResolver for business logic
+      this.treeData = await this.plugin.blueFileResolver.scanFileLinks(this.currentRootFile);
       this.renderTree();
       /* new Notice('Analysis complete'); */
     } catch (error) {
@@ -772,114 +648,5 @@ export class BlueResolutionTreeView extends ItemView {
     } finally {
       this.isAnalyzing = false;
     }
-  }
-
-  private async scanFileLinks(
-    file: TFile,
-    parentPath: string | null,
-    depth: number,
-    visited: Set<string>,
-  ): Promise<void> {
-    // Prevent infinite loops
-    if (visited.has(file.path)) {
-      // Mark as cycle
-      const nodeData = this.treeData.get(file.path);
-      if (nodeData) {
-        nodeData.status = 'cycle-detected';
-      }
-      return;
-    }
-
-    visited.add(file.path);
-
-    // Check depth limit
-    const maxDepth = this.plugin.settings.blueFileResolution.maxDepth;
-    if (depth >= maxDepth) {
-      return;
-    }
-
-    // Read file content
-    const content = await this.app.vault.cachedRead(file);
-
-    // Check if it's a pending chat
-    const chat = new PureChatLLMChat(this.plugin);
-    chat.setMarkdown(content);
-    const isChatFile = BlueResolutionTreeView.isChatFile(chat);
-
-    // Update or create node
-    const nodeData: ResolutionNodeData = this.treeData.get(file.path) || {
-      filePath: file.path,
-      depth,
-      status: 'idle',
-      isPendingChat: isChatFile,
-      isChatFile,
-      children: [],
-    };
-    nodeData.isPendingChat = isChatFile;
-    nodeData.isChatFile = isChatFile;
-    this.treeData.set(file.path, nodeData);
-
-    // Add to parent's children
-    if (parentPath) {
-      const parentNode = this.treeData.get(parentPath);
-      if (parentNode && !parentNode.children.includes(file.path)) {
-        parentNode.children.push(file.path);
-      }
-    }
-
-    // Find all [[link]] patterns
-    const linkRegex = /\[\[([^\]]+)\]\]/g;
-    const matches = Array.from(content.matchAll(linkRegex));
-
-    // Recursively scan linked files
-    for (const match of matches) {
-      const linkText = match[1];
-      const linkedFile = this.app.metadataCache.getFirstLinkpathDest(linkText, file.path);
-
-      if (linkedFile instanceof TFile) {
-        if (!nodeData.children.includes(linkedFile.path)) {
-          nodeData.children.push(linkedFile.path);
-        }
-
-        // Create a new visited set for this branch
-        const branchVisited = new Set(visited);
-        await this.scanFileLinks(linkedFile, file.path, depth + 1, branchVisited);
-      }
-    }
-  }
-
-  static isChatFile(chat: PureChatLLMChat): boolean {
-    return (
-      chat.validChat &&
-      chat.messages.length > 0 &&
-      chat.messages[chat.messages.length - 1].role === 'user'
-    );
-  }
-
-  /**
-   * Quickly checks if a file has any outgoing links (potential child chats).
-   */
-  static async hasChildChats(chat: PureChatLLMChat, file: TFile, app: App): Promise<boolean> {
-    try {
-      for (const message of chat.messages) {
-        const linkRegex = /\[\[([^\]]+)\]\]/g;
-        const matches = Array.from(message.content.matchAll(linkRegex));
-        for (const match of matches) {
-          const linkedFile = app.metadataCache.getFirstLinkpathDest(match[1], file.path);
-
-          if (
-            linkedFile instanceof TFile &&
-            BlueResolutionTreeView.isChatFile(
-              new PureChatLLMChat(chat.plugin).setMarkdown(await app.vault.cachedRead(linkedFile)),
-            )
-          ) {
-            return true;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error checking for child chats:', error);
-    }
-    return false;
   }
 }

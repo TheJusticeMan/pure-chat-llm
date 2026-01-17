@@ -2,7 +2,8 @@ import { App, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
 import PureChatLLM from '../main';
 import { PureChatLLMChat } from './Chat';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { MediaMessage, RoleType, ResolutionEvent } from '../types';
+import { MediaMessage, RoleType, ResolutionEvent, ResolutionNodeData } from '../types';
+import { ChatUtils } from '../utils/ChatUtils';
 
 /**
  * Represents a node in the file resolution tree.
@@ -780,5 +781,114 @@ export class BlueFileResolver {
 
     // Combine consecutive text items into one
     return final;
+  }
+
+  /**
+   * Scans a file and its linked files recursively to build a tree structure.
+   * This is used by the Blue Resolution Tree View to visualize file dependencies.
+   * 
+   * @param rootFile - The root file to start scanning from
+   * @returns A map of file paths to their resolution node data
+   */
+  async scanFileLinks(rootFile: TFile): Promise<Map<string, ResolutionNodeData>> {
+    const treeData = new Map<string, ResolutionNodeData>();
+    const visited = new Set<string>();
+
+    // Initialize root node
+    treeData.set(rootFile.path, {
+      filePath: rootFile.path,
+      depth: 0,
+      status: 'idle',
+      isPendingChat: false,
+      children: [],
+    });
+
+    await this.scanFileRecursive(rootFile, null, 0, treeData, visited);
+
+    return treeData;
+  }
+
+  /**
+   * Recursively scans a file and its links to build the resolution tree.
+   * 
+   * @param file - The file to scan
+   * @param parentPath - The parent file path (null for root)
+   * @param depth - Current depth in the tree
+   * @param treeData - The map to populate with node data
+   * @param visited - Set of visited file paths (for cycle detection)
+   */
+  private async scanFileRecursive(
+    file: TFile,
+    parentPath: string | null,
+    depth: number,
+    treeData: Map<string, ResolutionNodeData>,
+    visited: Set<string>,
+  ): Promise<void> {
+    // Prevent infinite loops
+    if (visited.has(file.path)) {
+      // Mark as cycle
+      const nodeData = treeData.get(file.path);
+      if (nodeData) {
+        nodeData.status = 'cycle-detected';
+      }
+      return;
+    }
+
+    visited.add(file.path);
+
+    // Check depth limit
+    const maxDepth = this.plugin.settings.blueFileResolution.maxDepth;
+    if (depth >= maxDepth) {
+      return;
+    }
+
+    // Read file content
+    const content = await this.plugin.app.vault.cachedRead(file);
+
+    // Check if it's a pending chat using ChatUtils
+    const chat = new PureChatLLMChat(this.plugin);
+    chat.setMarkdown(content);
+    const isChatFile = ChatUtils.isChatFile(chat);
+
+    // Update or create node
+    const nodeData: ResolutionNodeData = treeData.get(file.path) || {
+      filePath: file.path,
+      depth,
+      status: 'idle',
+      isPendingChat: isChatFile,
+      isChatFile,
+      children: [],
+    };
+    nodeData.isPendingChat = isChatFile;
+    nodeData.isChatFile = isChatFile;
+    treeData.set(file.path, nodeData);
+
+    // Add to parent's children
+    if (parentPath) {
+      const parentNode = treeData.get(parentPath);
+      if (parentNode && !parentNode.children.includes(file.path)) {
+        parentNode.children.push(file.path);
+      }
+    }
+
+    // Find all [[link]] patterns
+    const linkRegex = /\[\[([^\]]+)\]\]/g;
+    const matches = Array.from(content.matchAll(linkRegex));
+
+    // Recursively scan linked files
+    for (const match of matches) {
+      const linkText = match[1];
+      const linkedFile = this.plugin.app.metadataCache.getFirstLinkpathDest(linkText, file.path);
+
+      if (linkedFile instanceof TFile) {
+        if (!nodeData.children.includes(linkedFile.path)) {
+          nodeData.children.push(linkedFile.path);
+        }
+
+        // Create a new visited set for this branch
+        const branchVisited = new Set(visited);
+        await this.scanFileRecursive(linkedFile, file.path, depth + 1, treeData, branchVisited);
+      }
+    }
   }
 }
