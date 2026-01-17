@@ -36,12 +36,15 @@ import { toTitleCase } from '../utils/toTitleCase';
 import { LLMService } from './LLMService';
 import { alloptions, Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import { ResolutionContext } from './BlueFileResolver';
+import { ChatSession } from './ChatSession';
+import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
+import { ToolExecutor } from './ToolExecutor';
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
  *
- * Handles chat message management, markdown serialization/deserialization,
- * OpenAI API communication, and integration with Obsidian files and templates.
+ * This class now acts as a facade over the new domain classes (ChatSession, ChatMarkdownAdapter, ToolExecutor).
+ * It maintains backward compatibility while delegating to the new architecture.
  *
  * @remarks
  * - Supports parsing and formatting chat conversations in markdown.
@@ -59,15 +62,16 @@ import { ResolutionContext } from './BlueFileResolver';
  * @public
  */
 export class PureChatLLMChat {
-  options: ChatOptions;
-  messages: ChatMessage[] = [];
-  clines: EditorRange[] = [];
+  // Internal domain objects
+  private session: ChatSession;
+  private adapter: ChatMarkdownAdapter;
+  private toolExecutor: ToolExecutor;
+
+  // Keep existing public properties for compatibility
   plugin: PureChatLLM;
   console: BrowserConsole;
-  pretext = '';
   endpoint: PureChatLLMAPI;
   parser = '# role: {role}';
-  validChat = true;
   file: TFile;
   toolregistry: ToolRegistry = new ToolRegistry(this);
   llmService: LLMService;
@@ -77,17 +81,62 @@ export class PureChatLLMChat {
     this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMChat');
     this.llmService = new LLMService(plugin.settings.debug);
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    this.parser = this.plugin.settings.messageRoleFormatter;
 
     if (this.plugin.settings.agentMode) this.registerAvailableTools();
 
-    this.options = {
+    // Initialize new domain objects
+    const options: ChatOptions = {
       model: this.endpoint.defaultmodel,
       max_completion_tokens: this.plugin.settings.defaultmaxTokens,
       stream: true,
       tools: this.toolregistry.getNameList(),
       messages: [],
     };
-    this.parser = this.plugin.settings.messageRoleFormatter;
+    
+    this.session = new ChatSession(options);
+    this.adapter = new ChatMarkdownAdapter(
+      this.parser,
+      this.plugin.settings.useYAMLFrontMatter,
+      this.plugin.settings.agentMode,
+    );
+    this.toolExecutor = new ToolExecutor(this.toolregistry);
+  }
+
+  // Delegate to session for backward compatibility
+  get options(): ChatOptions {
+    return this.session.options;
+  }
+  set options(value: ChatOptions) {
+    this.session.options = value;
+  }
+
+  get messages(): ChatMessage[] {
+    return this.session.messages;
+  }
+  set messages(value: ChatMessage[]) {
+    this.session.messages = value;
+  }
+
+  get clines(): EditorRange[] {
+    return this.session.clines;
+  }
+  set clines(value: EditorRange[]) {
+    this.session.clines = value;
+  }
+
+  get pretext(): string {
+    return this.session.pretext;
+  }
+  set pretext(value: string) {
+    this.session.pretext = value;
+  }
+
+  get validChat(): boolean {
+    return this.session.validChat;
+  }
+  set validChat(value: boolean) {
+    this.session.validChat = value;
   }
 
   private registerAvailableTools() {
@@ -123,18 +172,7 @@ export class PureChatLLMChat {
    * of the chat options and the chat text.
    */
   get markdown(): string {
-    const options: Record<string, unknown> = { ...this.options };
-    delete options.messages;
-    if (!this.plugin.settings.agentMode) delete options.tools;
-
-    const prechat = this.plugin.settings.useYAMLFrontMatter
-      ? `---\n${stringifyYaml(options)}\n---\n${this.pretext
-          .replace(/```json[\s\S]*?```/im, '')
-          .replace(/---\n[\s\S]+?\n---/im, '')
-          .trim()}`
-      : PureChatLLMChat.changeCodeBlockMD(this.pretext, 'json', JSON.stringify(options, null, 2));
-
-    return `${prechat.trim()}\n${this.chatText}`;
+    return this.adapter.serialize(this.session);
   }
 
   /**
@@ -157,71 +195,17 @@ export class PureChatLLMChat {
    * - The `options` property is updated if valid JSON is found in the prechat section.
    */
   set markdown(markdown: string) {
-    markdown = '\n' + markdown.trim() + '\n'; // ensure newlines at start and end
-    const matches = Array.from(markdown.matchAll(this.regexForRoles));
-
-    this.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
-    this.messages = matches.map((match, index) => {
-      if (!match.index) {
-        this.clines.push({ from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } });
-        return {
-          role: 'user',
-          content: '',
-        };
-      }
-      const contentStart = match.index + match[0].length;
-      const contentEnd = index + 1 < matches.length ? matches[index + 1].index : markdown.length;
-      this.clines.push({
-        from: { line: markdown.substring(0, contentStart).split('\n').length, ch: 0 },
-        to: { line: markdown.substring(0, contentEnd).split('\n').length - 1, ch: 0 },
-      });
-      return {
-        role: match[1].toLowerCase() as RoleType,
-        content: markdown.substring(contentStart, contentEnd).trim(),
-      };
-    });
-
+    const defaultOptions: ChatOptions = {
+      model: this.endpoint.defaultmodel,
+      max_completion_tokens: this.plugin.settings.defaultmaxTokens,
+      stream: true,
+      tools: this.toolregistry.getNameList(),
+      messages: [],
+    };
+    
+    this.session = this.adapter.parse(markdown, defaultOptions, this.plugin.settings.SystemPrompt);
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
-    if (this.messages.length === 0) {
-      // if the file has no # role: system|user|assistant|developer
-      this.validChat = false;
-      this.messages = [];
-      this.appendMessage({
-        role: 'system',
-        content: this.plugin.settings.SystemPrompt,
-      }).appendMessage({ role: 'user', content: this.pretext });
-      this.pretext = '';
-      return;
-    }
-
-    this.parsePretextOptions();
     this.updateEndpointFromModel();
-  }
-
-  private parsePretextOptions() {
-    const optionsStr = PureChatLLMChat.extractCodeBlockMD(this.pretext, 'json');
-    if (optionsStr) {
-      this.options = { ...this.options, ...PureChatLLMChat.parseChatOptions(optionsStr) };
-    } else {
-      const yamlMatch = this.pretext.match(/^---\n([\s\S]+?)\n---/);
-      if (yamlMatch) {
-        try {
-          const yaml: unknown = parseYaml(yamlMatch[1]);
-          if (yaml && typeof yaml === 'object') {
-            const allowedKeys = Object.keys(alloptions);
-            const filteredOptions: Record<string, unknown> = {};
-            for (const key of allowedKeys) {
-              if (Object.prototype.hasOwnProperty.call(yaml, key)) {
-                filteredOptions[key] = (yaml as Record<string, unknown>)[key];
-              }
-            }
-            this.options = { ...this.options, ...filteredOptions };
-          }
-        } catch (e) {
-          console.error('Error parsing frontmatter YAML:', e);
-        }
-      }
-    }
   }
 
   updateEndpointFromModel() {
@@ -246,29 +230,7 @@ export class PureChatLLMChat {
   }
 
   cleanUpChat() {
-    // remove any empty messages except system
-    const indicesToKeep: number[] = [];
-    this.messages = this.messages.filter((msg, index) => {
-      const keep = msg.role === 'system' || msg.content.trim() !== '';
-      if (keep) indicesToKeep.push(index);
-      return keep;
-    });
-    this.clines = indicesToKeep.map(i => this.clines[i]);
-
-    // ensure first message is system
-    if (this.messages[0]?.role !== 'system') {
-      this.messages.unshift({
-        role: 'system',
-        content: this.plugin.settings.SystemPrompt,
-      });
-      this.clines.unshift({ from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } });
-    } else {
-      this.messages[0].content ||= this.plugin.settings.SystemPrompt;
-    }
-    // ensure last message is user and empty
-    if (this.messages.length === 0 || this.messages[this.messages.length - 1].role !== 'user') {
-      this.appendMessage({ role: 'user', content: '' });
-    }
+    this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
     return this;
   }
 
@@ -302,63 +264,19 @@ export class PureChatLLMChat {
    * @param markdown - The markdown string containing the code block.
    * @param language - The programming language of the code block to extract.
    * @returns The content of the code block as a string if found, otherwise `null`.
-   *
-   * @example
-   * ```typescript
-   * const markdown = `
-   * \`\`\`typescript
-   * const x = 42;
-   * \`\`\`
-   * `;
-   * const code = extractCodeBlockMD(markdown, "typescript");
-   * console.log(code); // Outputs: "const x = 42;"
-   * ```
    */
   static extractCodeBlockMD(markdown: string, language: string): string | null {
-    const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, 'im');
-    const match = markdown.match(regex);
-    return match ? match[1] : null;
+    return ChatMarkdownAdapter.extractCodeBlockMD(markdown, language);
   }
 
   /**
    * Extracts all code blocks from a given markdown string.
    *
-   * This method scans the provided markdown content and identifies all code blocks
-   * enclosed within triple backticks (```), optionally capturing the language identifier
-   * and the code content. It returns an array of objects, each containing the language
-   * and the code snippet.
-   *
    * @param markdown - The markdown string to extract code blocks from.
-   * @returns An array of objects, where each object contains:
-   * - `language`: The programming language of the code block (default is "plaintext").
-   * - `code`: The extracted code content, trimmed of leading and trailing whitespace.
-   *
-   * @example
-   * ```typescript
-   * const markdown = `
-   * Here is some code:
-   * \`\`\`javascript
-   * console.log("Hello, world!");
-   * \`\`\`
-   * `;
-   * const codeBlocks = extractAllCodeBlocks(markdown);
-   * console.log(codeBlocks);
-   * // Output: [{ language: "javascript", code: 'console.log("Hello, world!");' }]
-   * ```
+   * @returns An array of objects, where each object contains language and code.
    */
   static extractAllCodeBlocks(markdown: string): CodeContent[] {
-    const regex = /^```(\w*)\n([\s\S]*?)\n```/gm;
-    const matches: { language: string; code: string }[] = [];
-    let match;
-    while ((match = regex.exec(markdown)) !== null) {
-      const [, language, code] = match;
-      const lang = (language || 'plaintext').trim() || 'plaintext';
-      matches.push({
-        language: lang,
-        code: code.trim(),
-      });
-    }
-    return matches;
+    return ChatMarkdownAdapter.extractAllCodeBlocks(markdown);
   }
 
   /**
@@ -368,26 +286,9 @@ export class PureChatLLMChat {
    * @param language - The programming language of the code block to replace.
    * @param newText - The new text to insert into the code block.
    * @returns The modified markdown string with the updated code block content.
-   *
-   * @example
-   * ```typescript
-   * const markdown = `
-   * \`\`\`javascript
-   * console.log("Hello, world!");
-   * \`\`\`
-   * `;
-   * const updatedMarkdown = changeCodeBlockMD(markdown, "javascript", "console.log('New code');");
-   * console.log(updatedMarkdown);
-   * // Output: "\`\`\`javascript\nconsole.log('New code');\n\`\`\`"
-   * ```
    */
   static changeCodeBlockMD(text: string, language: string, newText: string) {
-    const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, 'im');
-    if (!regex.test(text)) return `${text}\n\`\`\`${language}\n${newText}\n\`\`\``;
-    return (
-      text.replace(regex, `\`\`\`${language}\n${newText}\n\`\`\``) ||
-      `${text}\n\`\`\`${language}\n${newText}\n\`\`\``
-    );
+    return ChatMarkdownAdapter.changeCodeBlockMD(text, language, newText);
   }
 
   /**
@@ -401,16 +302,19 @@ export class PureChatLLMChat {
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
    */
   appendMessage(...messages: { role: RoleType; content: string; cline?: EditorRange }[]) {
-    messages.forEach(message =>
-      this.plugin.settings.autoConcatMessagesFromSameRole &&
-      this.messages[this.messages.length - 1]?.role === message.role
-        ? (this.messages[this.messages.length - 1].content += message.content)
-        : (this.messages.push({
-            role: message.role,
-            content: message.content.trim(),
-          }),
-          this.clines.push(message.cline || { from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } })),
-    );
+    messages.forEach(message => {
+      if (
+        this.plugin.settings.autoConcatMessagesFromSameRole &&
+        this.messages[this.messages.length - 1]?.role === message.role
+      ) {
+        this.messages[this.messages.length - 1].content += message.content;
+      } else {
+        this.session.appendMessage({
+          role: message.role,
+          content: message.content.trim(),
+        });
+      }
+    });
     return this;
   }
 
@@ -661,14 +565,7 @@ export class PureChatLLMChat {
   }
 
   reverseRoles() {
-    this.messages = this.messages.map(msg => {
-      if (msg.role === 'user') {
-        msg.role = 'assistant';
-      } else if (msg.role === 'assistant') {
-        msg.role = 'user';
-      }
-      return msg;
-    });
+    this.session.reverseRoles();
     return this;
   }
 
@@ -685,13 +582,7 @@ export class PureChatLLMChat {
     tool_call_id?: string;
     tool_calls?: ToolCall[];
   }[] {
-    const [agent, ...responses] = msgs;
-    if (agent.tool_calls) {
-      agent.tool_calls = agent.tool_calls.filter(call =>
-        responses.some(i => i.tool_call_id === call.id),
-      );
-    }
-    return [agent, ...responses];
+    return this.toolExecutor.filterOutUncalledToolCalls(msgs);
   }
 
   async handleToolCalls(
@@ -700,53 +591,29 @@ export class PureChatLLMChat {
     streamcallback?: (textFragment: StreamDelta) => boolean,
     assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
   ): Promise<boolean> {
-    for (const call of toolCalls) {
-      const toolName = call.function.name;
-      if (this.toolregistry.getTool(toolName)) {
-        /* streamcallback?.({
-          role: 'tool',
-          content: `Executing ${toolName}...`,
-        }); */
-
-        this.toolregistry.setCallBack(streamcallback);
-        // if arguments are not valid JSON, check if it's a duplicated call and only take the first half
-
-        if (!PureChatLLMChat.tryJSONParse(call.function.arguments)) {
-          const halfLength = Math.floor(call.function.arguments.length / 2);
-          const firstHalf = call.function.arguments.slice(0, halfLength);
-          const secondHalf = call.function.arguments.slice(halfLength);
-          if (firstHalf === secondHalf) {
-            call.function.arguments = firstHalf;
-          }
-        }
-        const args = JSON.parse(call.function.arguments) as Record<string, unknown>;
-        const output = await this.toolregistry.executeTool(toolName, args);
-
-        if (assistantMessage && typeof assistantMessage.role === 'string')
-          this.appendMessage({
-            role: assistantMessage.role,
-            content: assistantMessage.content ?? '',
-          });
-
-        this.appendMessage({ role: 'tool', content: output ?? '' });
-
-        options.messages.push(
-          assistantMessage || { role: 'assistant', content: null, tool_calls: [call] },
-          { role: 'tool', content: output, tool_call_id: call.id },
-        );
-        return true;
-      }
-    }
-    return false;
+    this.toolExecutor.setStreamCallback(streamcallback);
+    return this.toolExecutor.executeToolCalls(toolCalls, this.session, options, assistantMessage);
   }
 
+  /**
+   * Attempts to parse a JSON string and return the resulting object.
+   * If the parsing fails due to invalid JSON, it returns `null`.
+   *
+   * @param str - The JSON string to parse.
+   * @returns The parsed object if successful, or `null` if parsing fails.
+   */
   static tryJSONParse(str: string): unknown {
-    try {
-      return JSON.parse(str);
-    } catch (e) {
-      console.debug('JSON parse error:', e);
-      return null;
-    }
+    return ChatMarkdownAdapter.tryJSONParse(str);
+  }
+
+  /**
+   * Parses a JSON string into ChatOptions.
+   *
+   * @param str - The JSON string to parse.
+   * @returns Partial ChatOptions object or null if parsing fails.
+   */
+  static parseChatOptions(str: string): Partial<ChatOptions> | null {
+    return ChatMarkdownAdapter.parseChatOptions(str);
   }
 
   /**
@@ -797,9 +664,7 @@ export class PureChatLLMChat {
    * @returns {string} A formatted string containing all chat messages.
    */
   get chatText(): string {
-    return this.messages
-      .map(msg => `${this.parseRole(msg.role)}\n${msg.content.trim()}`)
-      .join('\n');
+    return this.session.getChatText((role) => this.parseRole(role));
   }
 
   parseRole(role: RoleType): string {
@@ -807,33 +672,11 @@ export class PureChatLLMChat {
   }
 
   get regexForRoles() {
-    return new RegExp(
-      this.parser
-        .replace(/([\^$*+?.()|[\]])/g, '\\$1')
-        .replace(/{role}/g, '(system|user|assistant|developer|tool)'),
-      'gim',
-    );
+    return this.adapter.regexForRoles;
   }
 
   thencb(cb: (chat: this) => unknown): this {
     cb(this);
     return this;
-  }
-
-  /**
-   * Attempts to parse a JSON string and return the resulting object.
-   * If the parsing fails due to invalid JSON, it returns `null`.
-   *
-   * @param str - The JSON string to parse.
-   * @returns The parsed object if successful, or `null` if parsing fails.
-   */
-
-  static parseChatOptions(str: string): Partial<ChatOptions> | null {
-    try {
-      return JSON.parse(str) as Partial<ChatOptions>;
-    } catch (e) {
-      console.debug('JSON parse error:', e);
-      return null;
-    }
   }
 }
