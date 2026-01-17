@@ -392,8 +392,8 @@ export class BlueFileResolver {
     context: ResolutionContext,
     app: App,
   ): Promise<string> {
-    // Match [[link]] patterns (whole line only, as per original implementation)
-    const regex = /^!?\[\[(.*?)\]\]$/gim;
+    // Match [[link]] patterns - allow whitespace on the line
+    const regex = /^\s*!?\[\[([^\]]+)\]\]\s*$/gim;
     const matches = Array.from(content.matchAll(regex));
 
     this.console.log(`[Blue File Resolution] resolveLinksInContent found ${matches.length} links in: ${activeFile.path}`);
@@ -408,12 +408,20 @@ export class BlueFileResolver {
     const replacements: Promise<string>[] = [];
     for (const match of matches) {
       const linkText = match[1];
-      const file = app.metadataCache.getFirstLinkpathDest(linkText, activeFile.path);
+      const { subpath, path } = parseLinktext(linkText);
+      const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
 
       if (file instanceof TFile) {
-        this.console.log(`[Blue File Resolution] Found linked file: ${file.path} from link: [[${linkText}]]`);
-        // Recursively resolve the file - it will create its own tree node
-        replacements.push(this.resolveFile(file, context, app));
+        this.console.log(`[Blue File Resolution] Found linked file: ${file.path} from link: [[${linkText}]]${subpath ? ` with subpath: ${subpath}` : ''}`);
+        
+        // If subpath is specified, retrieve the specific section
+        if (subpath) {
+          this.console.log(`[Blue File Resolution] Resolving subpath for: ${file.path}#${subpath}`);
+          replacements.push(this.retrieveLinkContent(linkText, activeFile, app, context));
+        } else {
+          // Recursively resolve the file - it will create its own tree node
+          replacements.push(this.resolveFile(file, context, app));
+        }
       } else {
         this.console.log(`[Blue File Resolution] File not found for link: [[${linkText}]], keeping original`);
         // File not found, keep original link
@@ -450,7 +458,8 @@ export class BlueFileResolver {
   async resolveFiles(markdown: string, activeFile: TFile, app: App): Promise<string> {
     this.console.log(`[Blue File Resolution] resolveFiles called for: ${activeFile.path}, enabled: ${this.plugin.settings.blueFileResolution.enabled}`);
     
-    const regex = /^!?\[\[(.*?)\]\]$/gim;
+    // Match [[link]] patterns - allow whitespace on the line
+    const regex = /^\s*!?\[\[([^\]]+)\]\]\s*$/gim;
     const matches = Array.from(markdown.matchAll(regex));
     const replacements: Promise<string>[] = [];
 
@@ -463,13 +472,21 @@ export class BlueFileResolver {
       const context = this.createContext(activeFile);
 
       for (const match of matches) {
-        const filename = match[1];
-        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        const linkText = match[1];
+        const { subpath, path } = parseLinktext(linkText);
+        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+        
         if (file instanceof TFile) {
-          this.console.log(`[Blue File Resolution] Queuing resolution for: ${file.path}`);
-          replacements.push(this.resolveFile(file, context, app));
+          this.console.log(`[Blue File Resolution] Queuing resolution for: ${file.path}${subpath ? `#${subpath}` : ''}`);
+          
+          // If subpath is specified, use retrieveLinkContent
+          if (subpath) {
+            replacements.push(this.retrieveLinkContent(linkText, activeFile, app, context));
+          } else {
+            replacements.push(this.resolveFile(file, context, app));
+          }
         } else {
-          this.console.log(`[Blue File Resolution] File not found: ${filename}, keeping original link`);
+          this.console.log(`[Blue File Resolution] File not found: ${linkText}, keeping original link`);
           replacements.push(Promise.resolve(match[0]));
         }
       }
@@ -477,10 +494,17 @@ export class BlueFileResolver {
       this.console.log(`[Blue File Resolution] Using static file reading (feature disabled)`);
       // Original behavior: just read static file content
       for (const match of matches) {
-        const filename = match[1];
-        const file = app.metadataCache.getFirstLinkpathDest(filename, activeFile.path);
+        const linkText = match[1];
+        const { subpath, path } = parseLinktext(linkText);
+        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+        
         if (file instanceof TFile) {
-          replacements.push(app.vault.cachedRead(file));
+          if (subpath) {
+            // Handle subpath even when feature is disabled
+            replacements.push(this.retrieveLinkContent(linkText, activeFile, app));
+          } else {
+            replacements.push(app.vault.cachedRead(file));
+          }
         } else {
           replacements.push(Promise.resolve(match[0]));
         }
@@ -534,14 +558,24 @@ export class BlueFileResolver {
     const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
     if (!file) return Promise.resolve(`[[${str}]]`);
 
-    // If subpath is specified, return the specific section (no blue file resolution for subpaths)
+    // If subpath is specified, return the specific section
     if (subpath) {
       const cache = app.metadataCache.getFileCache(file);
       const ref = cache && resolveSubpath(cache, subpath);
       if (ref) {
         const text = await app.vault.cachedRead(file);
-        return text.substring(ref.start.offset, ref.end?.offset).trim();
+        const sectionContent = text.substring(ref.start.offset, ref.end?.offset).trim();
+        
+        // If blue file resolution is enabled and we have a context, resolve links within the section
+        if (this.plugin.settings.blueFileResolution.enabled && context) {
+          this.console.log(`[Blue File Resolution] Resolving links within subpath: ${file.path}#${subpath}`);
+          return this.resolveLinksInContent(sectionContent, file, context, app);
+        }
+        
+        return sectionContent;
       }
+      // If subpath not found, return the link as-is
+      return `[[${str}]]`;
     }
 
     // Check if blue file resolution should be used
