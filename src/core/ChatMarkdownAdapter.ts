@@ -206,16 +206,16 @@ export class ChatMarkdownAdapter {
    */
   static parseChatOptions(str: string): Partial<ChatOptions> | null {
     try {
-      const parsed = JSON.parse(str);
+      const parsed = JSON.parse(str) as Partial<ChatOptions>;
       const allowedKeys = Object.keys(alloptions);
       const filteredOptions: Record<string, unknown> = {};
       for (const key of allowedKeys) {
         if (Object.prototype.hasOwnProperty.call(parsed, key)) {
-          filteredOptions[key] = parsed[key];
+          filteredOptions[key] = parsed[key as keyof ChatOptions];
         }
       }
       return filteredOptions as Partial<ChatOptions>;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -228,7 +228,7 @@ export class ChatMarkdownAdapter {
    */
   static tryJSONParse(str: string): string | object {
     try {
-      return JSON.parse(str);
+      return JSON.parse(str) as object;
     } catch {
       return str;
     }
