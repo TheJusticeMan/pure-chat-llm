@@ -500,7 +500,7 @@ export class PureChatLLMChat {
    */
   completeChatResponse(
     file: TFile,
-    streamcallback?: (textFragment: { content: string }) => boolean,
+    streamcallback?: (textFragment: { content: string }) => Promise<boolean>,
     context?: ResolutionContext,
   ): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
@@ -547,7 +547,7 @@ export class PureChatLLMChat {
    */
   async sendChatRequest(
     options: ChatRequestOptions,
-    streamcallback?: (textFragment: StreamDelta) => boolean,
+    streamcallback?: (textFragment: StreamDelta) => Promise<boolean>,
   ): Promise<ChatResponse> {
     const response = await this.llmService.fetchResponse(
       this.endpoint,
@@ -588,7 +588,7 @@ export class PureChatLLMChat {
   async handleToolCalls(
     toolCalls: ToolCall[],
     options: ChatRequestOptions,
-    streamcallback?: (textFragment: StreamDelta) => boolean,
+    streamcallback?: (textFragment: StreamDelta) => Promise<boolean>,
     assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
   ): Promise<boolean> {
     this.toolExecutor.setStreamCallback(streamcallback);

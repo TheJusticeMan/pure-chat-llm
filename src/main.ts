@@ -573,7 +573,7 @@ export default class PureChatLLM extends Plugin {
 
     editor.replaceSelection(`\n${chat.parseRole('assistant...' as RoleType)}\n`);
     chat
-      .completeChatResponse(activeFile, e => {
+      .completeChatResponse(activeFile, async e => {
         this.setCursorEnd(editor);
         editor.replaceSelection(e.content);
         return true;
@@ -691,7 +691,7 @@ export class StreamNotice {
   ) {
     this.notice = new Notice(init || 'Generating response for selection...');
   }
-  change = (e: { content?: string }) => {
+  change = async (e: { content?: string }) => {
     if (!e?.content) return true;
     this.fulltext += e.content;
     this.notice.setMessage(this.fulltext);

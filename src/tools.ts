@@ -20,8 +20,8 @@ export abstract class Tool<TArgs = Record<string, unknown>> {
   ) {}
 
   // Send status update about what the tool is doing
-  protected status(message: string): void {
-    this.registry.statusUpdate(message);
+  protected async status(message: string): Promise<void> {
+    await this.registry.statusUpdate(message);
     /* this.platform.statusUpdate(`  ↳ ${message}`); */
   }
 
@@ -79,18 +79,18 @@ export type InferArgs<T extends ToolParameters> = {
 export class ToolRegistry {
   private allTools: Map<string, Tool<Record<string, unknown>>>;
   private enabledTools: Set<string>;
-  private streamCallback?: (textFragment: StreamDelta) => boolean;
+  private streamCallback?: (textFragment: StreamDelta) => Promise<boolean>;
 
   constructor(protected chat: PureChatLLMChat) {
     this.allTools = new Map();
     this.enabledTools = new Set();
   }
 
-  statusUpdate(message: string) {
-    this.streamCallback?.({ role: 'tool', content: `\n${message}` });
+  async statusUpdate(message: string) {
+    await this.streamCallback?.({ role: 'tool', content: `\n${message}` });
   }
 
-  setCallBack(streamcallback: ((textFragment: StreamDelta) => boolean) | undefined) {
+  setCallBack(streamcallback: ((textFragment: StreamDelta) => Promise<boolean>) | undefined) {
     this.streamCallback = streamcallback;
   }
 

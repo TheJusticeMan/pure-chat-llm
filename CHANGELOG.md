@@ -5,25 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.11.1] - 2026-01-23
+
+### Fixed
+
+- **Streaming Performance**: Resolved UI freezing during heavy LLM response streaming by implementing buffered updates (100ms debouncing) instead of updating the editor on every token.
+- **Memory Leak**: Fixed potential memory leaks in response streaming by adding proper `ReadableStream` reader cancellation on errors and early termination.
 
 ## [1.11.0] - 2026-01-16
 
 ### Added
 
 - **Graph View Mode**: Introduced a new visual way to explore file dependencies.
-    - **Interactive Graph**: Navigate the dependency tree with zoom, pan, and drag capabilities.
-    - **Minimap & Tooltips**: Added a minimap for better orientation and tooltips for file details.
-    - **Fit-to-View**: Automatically adjust the graph to fit the available viewport.
-    - **Touch Support**: Enabled interaction on touch devices.
-    - **Persistent View Mode**: The plugin now remembers your preference between Tree View and Graph View.
+  - **Interactive Graph**: Navigate the dependency tree with zoom, pan, and drag capabilities.
+  - **Minimap & Tooltips**: Added a minimap for better orientation and tooltips for file details.
+  - **Fit-to-View**: Automatically adjust the graph to fit the available viewport.
+  - **Touch Support**: Enabled interaction on touch devices.
+  - **Persistent View Mode**: The plugin now remembers your preference between Tree View and Graph View.
 
 ### Changed
 
 - **Architectural Refactor**: Significant separation of concerns to improve code maintainability and testability.
-    - **Domain-Driven Design**: Introduced `ChatSession`, `ChatMarkdownAdapter`, and `ToolExecutor` classes to decouple business logic from UI.
-    - **FileSystem Port**: Abstracted file system operations behind a `FileSystemPort` interface.
-    - **Unified Rendering**: Centralized rendering logic for different views.
+  - **Domain-Driven Design**: Introduced `ChatSession`, `ChatMarkdownAdapter`, and `ToolExecutor` classes to decouple business logic from UI.
+  - **FileSystem Port**: Abstracted file system operations behind a `FileSystemPort` interface.
+  - **Unified Rendering**: Centralized rendering logic for different views.
 
 ### Fixed
 
@@ -38,10 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Blue File Resolution System**: Introduced a robust, specialized file resolution engine (`BlueFileResolver`) designed to recursively resolve note links, images, and audio files. This system replaces the previous ad-hoc logic with a graph-based approach that intelligently handles circular dependencies, depth limits, and caching for optimal performance.
 - **Blue Resolution Tree View**: Implemented a new "Blue Resolution Tree" side panel view. This interactive visualization allows users to explore the dependency graph of the current note in real-time.
-    - **Interactive Hierarchy**: Expand and collapse nodes to see exactly what files are being pulled into the context.
-    - **Status Indicators**: Visual cues for resolution status (resolved, missing, cyclic dependency, ignored).
-    - **Cyber-Neon Aesthetic**: A distinct visual style with "Blue" accents to differentiate it from standard Obsidian views.
-    - **Navigation**: Click on any node in the tree to immediately open that file in the editor.
+  - **Interactive Hierarchy**: Expand and collapse nodes to see exactly what files are being pulled into the context.
+  - **Status Indicators**: Visual cues for resolution status (resolved, missing, cyclic dependency, ignored).
+  - **Cyber-Neon Aesthetic**: A distinct visual style with "Blue" accents to differentiate it from standard Obsidian views.
+  - **Navigation**: Click on any node in the tree to immediately open that file in the editor.
 - **Enhanced Documentation**: Added `BLUE_FILE_RESOLUTION.md` providing in-depth architectural details and usage guides for the new resolution system.
 - **Visual Updates**: Updated icons for the Conversation Overview and Voice Call views to better align with the new design language.
 - **Settings Overhaul**: Refactored the settings UI to accommodate the new resolution options, improving organization and usability.

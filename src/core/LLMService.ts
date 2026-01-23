@@ -34,7 +34,7 @@ export class LLMService {
     endpoint: PureChatLLMAPI,
     options: ChatRequestOptions,
     statusCallback?: (status: string) => void,
-    streamCallback?: (textFragment: StreamDelta) => boolean,
+    streamCallback?: (textFragment: StreamDelta) => Promise<boolean>,
   ): Promise<ChatResponse> {
     this.console.log('Sending chat request with options:', options);
     statusCallback?.(`running: ${options.model}`);
@@ -160,7 +160,7 @@ export class LLMService {
 
   async handleStreamingResponse(
     response: Response,
-    streamCallback: (textFragment: StreamDelta) => boolean,
+    streamCallback: (textFragment: StreamDelta) => Promise<boolean>,
   ): Promise<ChatResponse> {
     if (!response.body) {
       throw new Error('Response body is null. Streaming is not supported in this environment.');
@@ -171,6 +171,8 @@ export class LLMService {
     let buffer = '';
     let fullText = '';
     const fullcalls: ToolCall[] = [];
+    let contentBuffer = '';
+    let lastFlushTime = Date.now();
 
     while (!done) {
       const { value, done: streamDone } = await reader.read();
@@ -193,10 +195,18 @@ export class LLMService {
             const delta = data.choices?.[0]?.delta;
             if (delta?.content) {
               fullText += delta.content;
-              const continueProcessing = streamCallback(delta);
-              if (!continueProcessing) {
-                done = true;
-                break;
+              contentBuffer += delta.content;
+
+              // Flush buffer if enough time has passed (100ms debouncing)
+              if (Date.now() - lastFlushTime >= 100) {
+                const continueProcessing = await streamCallback({ content: contentBuffer });
+                contentBuffer = '';
+                lastFlushTime = Date.now();
+                if (!continueProcessing) {
+                  await reader.cancel();
+                  done = true;
+                  break;
+                }
               }
             } else if (delta?.tool_calls) {
               delta.tool_calls.forEach((call: ToolCall) => {
@@ -213,9 +223,16 @@ export class LLMService {
             }
           } catch (err) {
             console.error('Error parsing streaming data:', err);
+            await reader.cancel();
+            throw err;
           }
         }
       }
+    }
+
+    // Flush any remaining buffered content
+    if (contentBuffer) {
+      await streamCallback({ content: contentBuffer });
     }
 
     if (fullcalls.length > 0) {

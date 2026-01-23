@@ -12,7 +12,7 @@ import { ChatSession } from './ChatSession';
  * - Update chat session with tool execution results
  */
 export class ToolExecutor {
-  private streamCallback?: (delta: StreamDelta) => boolean;
+  private streamCallback?: (delta: StreamDelta) => Promise<boolean>;
 
   constructor(private toolRegistry: ToolRegistry) {}
 
@@ -20,7 +20,7 @@ export class ToolExecutor {
    * Sets the stream callback for tool status updates.
    * @param callback - The callback function to invoke with tool status updates
    */
-  setStreamCallback(callback?: (delta: StreamDelta) => boolean): void {
+  setStreamCallback(callback?: (delta: StreamDelta) => Promise<boolean>): void {
     this.streamCallback = callback;
     this.toolRegistry.setCallBack(callback);
   }
