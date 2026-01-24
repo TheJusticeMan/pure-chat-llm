@@ -583,7 +583,7 @@ export default class PureChatLLM extends Plugin {
         if (
           this.settings.AutogenerateTitle > 0 &&
           chat.messages.length >= this.settings.AutogenerateTitle &&
-          activeFile?.name.includes('Untitled') &&
+          (activeFile?.name.includes('Untitled') || / \d+\.md$/.test(activeFile?.name)) &&
           view
         ) {
           this.generateTitle(editor, view);
