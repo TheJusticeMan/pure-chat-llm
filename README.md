@@ -133,6 +133,7 @@ When **Agent Mode** is enabled in plugin settings, voice calls gain access to al
 The AI can autonomously use these tools during voice conversations to help you manage your vault, find information, and complete tasks—all through natural voice interaction.
 
 **Example interactions with tools:**
+
 - "Create a new note about my meeting today"
 - "Search my vault for notes mentioning project deadlines"
 - "Read my daily template and tell me what's on my schedule"
@@ -148,6 +149,7 @@ The AI can autonomously use these tools during voice conversations to help you m
 ### Technical Details
 
 The voice call feature uses:
+
 - **OpenAI Realtime API** via WebRTC for direct audio streaming
 - **Provider Pattern** for extensibility (supports multiple providers)
 - **PureChatLLMChat Integration** for tool access when agent mode is enabled
@@ -156,6 +158,7 @@ The voice call feature uses:
 - **Echo cancellation, noise suppression, and auto-gain control** for better audio quality
 
 The implementation follows OpenAI's unified interface pattern:
+
 1. Creates an RTCPeerConnection with local audio track
 2. Generates SDP offer
 3. POSTs SDP to `https://api.openai.com/v1/realtime/calls` with API key and session config

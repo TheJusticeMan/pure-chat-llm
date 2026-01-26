@@ -69,7 +69,7 @@ export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
 
       const oldValue = settings[key];
 
-      this.status(`Requesting approval to update setting "${key}"...`);
+      void this.status(`Requesting approval to update setting "${key}"...`);
 
       return new Promise(resolve => {
         new SettingsConfirmationModal(plugin.app, key, oldValue, parsedValue, approved => {

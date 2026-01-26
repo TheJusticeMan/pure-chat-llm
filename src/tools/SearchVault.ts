@@ -15,8 +15,8 @@ const searchVaultParameters = defineToolParameters({
     },
     limit: {
       type: 'integer',
-      description: 'Maximum number of matching files to return. Defaults to 50.',
-      default: 50,
+      description: 'Maximum number of matches/snippets to return (not files). Defaults to 20.',
+      default: 20,
     },
     context_lines: {
       type: 'integer',
@@ -43,7 +43,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     const { query, regex = false, limit = 20, context_lines = 1 } = args;
     const app = this.chat.plugin.app;
 
-    this.status(`Searching vault for "${query}"...`);
+    void this.status(`Searching vault for "${query}"...`);
 
     const files = app.vault.getMarkdownFiles();
     const results: string[] = [];

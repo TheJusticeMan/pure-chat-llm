@@ -55,7 +55,7 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
       return `Error: File not found at path "${normalizedPath}"`;
     }
 
-    this.status(`Preparing replacement for "${normalizedPath}"...`);
+    void this.status(`Preparing replacement for "${normalizedPath}"...`);
 
     try {
       const content = await app.vault.cachedRead(file);

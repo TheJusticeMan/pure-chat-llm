@@ -45,7 +45,7 @@ export class PatchNoteTool extends Tool<PatchNoteArgs> {
       return `Error: File not found at path "${normalizedPath}"`;
     }
 
-    this.status(`Preparing patch for "${normalizedPath}"...`);
+    void this.status(`Preparing patch for "${normalizedPath}"...`);
 
     try {
       const content = await app.vault.cachedRead(file);

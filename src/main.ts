@@ -84,7 +84,7 @@ export default class PureChatLLM extends Plugin {
     addIcon(PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_ICON_SVG);
 
     this.pureChatStatusElement = this.addStatusBarItem();
-    this.status('Loading...');
+    void this.status('Loading...');
     this.console = new BrowserConsole(this.settings.debug, 'PureChatLLM');
     this.console.log('settings loaded', this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
@@ -115,7 +115,7 @@ export default class PureChatLLM extends Plugin {
     this.registerEditorExtension(createCodeblockExtension(this.app, this));
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
-    this.status('');
+    void this.status('');
   }
 
   private onupdate: Array<() => void> = [];

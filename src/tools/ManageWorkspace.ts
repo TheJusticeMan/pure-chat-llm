@@ -11,7 +11,8 @@ const manageWorkspaceParameters = defineToolParameters({
     },
     path: {
       type: 'string',
-      description: 'The path of the file to open (required for "open").',
+      description:
+        'The path of the file to open (required for "open"). When closing, if provided, it targets the most recent tab showing this file.',
     },
     split: {
       type: 'string',
@@ -57,12 +58,30 @@ export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
     const app = this.chat.plugin.app;
 
     if (action === 'close') {
-      const activeLeaf = app.workspace.getMostRecentLeaf();
-      if (activeLeaf) {
-        activeLeaf.detach();
+      const normalizedTarget = path ? normalizePath(path) : undefined;
+
+      if (normalizedTarget) {
+        const markdownLeaves = app.workspace.getLeavesOfType('markdown');
+        const targetLeaf = [...markdownLeaves]
+          .reverse()
+          .find(leaf =>
+            leaf.view instanceof MarkdownView
+              ? normalizePath(leaf.view.file?.path || '') === normalizedTarget
+              : false,
+          );
+
+        if (targetLeaf) {
+          targetLeaf.detach();
+          return `Closed the most recent tab showing "${normalizedTarget}".`;
+        }
+      }
+
+      const fallbackLeaf = app.workspace.getMostRecentLeaf();
+      if (fallbackLeaf) {
+        fallbackLeaf.detach();
         return 'Successfully closed the active leaf.';
       }
-      return 'No active leaf found to close.';
+      return 'No leaf found to close.';
     }
 
     if (action === 'open') {
@@ -74,7 +93,7 @@ export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
         return `Error: File not found at path "${normalizedPath}"`;
       }
 
-      this.status(`Opening "${normalizedPath}"...`);
+      void this.status(`Opening "${normalizedPath}"...`);
 
       let leaf;
       if (split === 'horizontal') {

@@ -46,7 +46,7 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
     const app = this.chat.plugin.app;
     const files = app.vault.getFiles();
 
-    this.status(`Searching for files matching pattern: "${pattern}"...`);
+    void this.status(`Searching for files matching pattern: "${pattern}"...`);
 
     const regex = GlobToRegExp(pattern, { globstar: true });
     const matchedFiles = files.filter(file => regex.test(file.path)).slice(0, limit);

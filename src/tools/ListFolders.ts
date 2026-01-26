@@ -42,7 +42,7 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
       return `Error: Folder not found at path "${targetPath}"`;
     }
 
-    this.status(`Listing folders in "${targetPath}"...`);
+    void this.status(`Listing folders in "${targetPath}"...`);
 
     const folders: string[] = [];
 

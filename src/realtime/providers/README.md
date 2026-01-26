@@ -14,12 +14,14 @@ The system uses a provider pattern to decouple voice call logic from specific pr
 ## Supported Providers
 
 ### OpenAI Realtime API
+
 - Uses WebRTC with SDP exchange via unified interface
 - Direct peer-to-peer audio connection
 - Data channel (`oai-events`) for bidirectional events
 - Supports tool calling when configured with a `PureChatLLMChat` instance
 
 ### Google Gemini Live API
+
 - Uses WebSocket connection for real-time audio streaming
 - PCM audio encoding/decoding
 - Supports tool calling when configured with a `PureChatLLMChat` instance
@@ -86,6 +88,7 @@ await voiceCall.startCall();
 ```
 
 The AI can now use tools like:
+
 - `create_note`: Create new notes
 - `read_file`: Read file contents
 - `search_vault`: Search across the vault
@@ -110,18 +113,19 @@ To add support for a new voice call provider:
 
 ## Provider Comparison
 
-| Feature | OpenAI Realtime | Gemini Live |
-|---------|-----------------|-------------|
-| Protocol | WebRTC (SDP) | WebSocket |
-| Audio Format | Automatic | PCM16 (16kHz) |
-| Data Channel | RTCDataChannel | WebSocket messages |
-| Tool Support | ✅ Yes | ✅ Yes |
-| Voice Selection | ✅ Yes | ✅ Yes |
-| Model Options | gpt-realtime | gemini-2.0-flash-exp |
+| Feature         | OpenAI Realtime | Gemini Live          |
+| --------------- | --------------- | -------------------- |
+| Protocol        | WebRTC (SDP)    | WebSocket            |
+| Audio Format    | Automatic       | PCM16 (16kHz)        |
+| Data Channel    | RTCDataChannel  | WebSocket messages   |
+| Tool Support    | ✅ Yes          | ✅ Yes               |
+| Voice Selection | ✅ Yes          | ✅ Yes               |
+| Model Options   | gpt-realtime    | gemini-2.0-flash-exp |
 
 ## Provider Configuration
 
 The `VoiceCallConfig` interface defines common configuration options:
+
 - `apiKey`: Authentication key for the provider
 - `endpoint`: API endpoint URL (optional, uses defaults)
 - `model`: Model/service identifier (provider-specific)
@@ -132,6 +136,7 @@ The `VoiceCallConfig` interface defines common configuration options:
 ## Future Providers
 
 Examples of providers that could be added:
+
 - Azure Cognitive Services (with tool integration)
 - AWS Transcribe (with Lambda integration)
 - Custom WebRTC services

@@ -101,7 +101,7 @@ export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
       return `Error: Smart Connections ${type} collection is not available.`;
     }
 
-    this.status(`Searching Smart Connections (${type}) for "${query}"...`);
+    void this.status(`Searching Smart Connections (${type}) for "${query}"...`);
 
     try {
       // Execute lookup with verified API structure

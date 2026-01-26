@@ -48,7 +48,7 @@ export class CreateNoteTool extends Tool<CreateNoteArgs> {
     const { path, content, properties, overwrite } = args;
     const app = this.chat.plugin.app;
 
-    this.status(`Requesting user approval to create/update "${path}"...`);
+    void this.status(`Requesting user approval to create/update "${path}"...`);
 
     // Delegate execution to the Review Modal
     return await EditReview.prompt(

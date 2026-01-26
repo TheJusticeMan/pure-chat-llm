@@ -35,7 +35,7 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
       return `Error: File not found at path "${normalizedPath}"`;
     }
 
-    this.status(`Finding backlinks for "${normalizedPath}"...`);
+    void this.status(`Finding backlinks for "${normalizedPath}"...`);
 
     const backlinks: string[] = [];
     const resolvedLinks = app.metadataCache.resolvedLinks;

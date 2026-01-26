@@ -47,7 +47,7 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   readonly classification = 'AI';
   static _name = this.name;
   readonly description =
-    'Create high-quality, customized images from detailed Markdown prompts. Supports multiple outputs and aspect ratio customization for precise visual storytelling.';
+    'Create high-quality, customized images from detailed Markdown prompts. Supports multiple outputs and aspect ratio customization for precise visual storytelling. Available with OpenAI and xAI endpoints; Gemini image generation is currently unavailable.';
   readonly parameters = imageGenerationParameters;
 
   isAvailable(): boolean {
@@ -57,7 +57,10 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
 
   async execute(args: ImageGenerationArgs): Promise<string> {
     const { prompt, ratio = 'square', n = 1 } = args;
-    this.status(`Generating ${n} image(s) for prompt: "${prompt}"...`);
+    if (prompt.length > 4000) {
+      return 'Error: prompt exceeds the 4,000 character limit for image generation.';
+    }
+    void this.status(`Generating ${n} image(s) for prompt: "${prompt}"...`);
 
     try {
       // Cast the inferred types to the specific expected types for the request method if necessary,

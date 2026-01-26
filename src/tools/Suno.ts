@@ -243,7 +243,7 @@ export class SunoTool extends Tool<SunoArgs> {
       }
 
       if (action === 'create_music_video') {
-        this.status(`Creating music video...`);
+        void this.status(`Creating music video...`);
         const response = await requestUrl({
           url: `${baseUrl}/generate/video`,
           method: 'POST',
@@ -264,7 +264,7 @@ export class SunoTool extends Tool<SunoArgs> {
       }
 
       if (action === 'generate_music') {
-        this.status(`Generating music with Suno...`);
+        void this.status(`Generating music with Suno...`);
         const response = await requestUrl({
           url: `${baseUrl}/generate`,
           method: 'POST',
@@ -288,7 +288,7 @@ export class SunoTool extends Tool<SunoArgs> {
       }
 
       if (action === 'generate_lyrics') {
-        this.status(`Generating lyrics with Suno...`);
+        void this.status(`Generating lyrics with Suno...`);
         const response = await requestUrl({
           url: `${baseUrl}/lyrics`,
           method: 'POST',
@@ -304,7 +304,7 @@ export class SunoTool extends Tool<SunoArgs> {
       }
 
       if (action === 'check_status') {
-        this.status(`Checking status for task ${taskId}...`);
+        void this.status(`Checking status for task ${taskId}...`);
         const response = await requestUrl({
           url: `${baseUrl}/generate/record-info?taskId=${taskId}`,
           headers: { Authorization: `Bearer ${apiKey}` },
@@ -339,7 +339,7 @@ export class SunoTool extends Tool<SunoArgs> {
       }
 
       if (action === 'extend_music') {
-        this.status(`Extending music...`);
+        void this.status(`Extending music...`);
         const response = await requestUrl({
           url: `${baseUrl}/generate/extend`,
           method: 'POST',
@@ -360,7 +360,7 @@ export class SunoTool extends Tool<SunoArgs> {
       }
 
       if (action === 'separate_vocals') {
-        this.status(`Separating vocals...`);
+        void this.status(`Separating vocals...`);
         const response = await requestUrl({
           url: `${baseUrl}/vocal-removal/generate`,
           method: 'POST',

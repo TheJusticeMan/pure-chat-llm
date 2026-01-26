@@ -45,7 +45,7 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
     }
 
     try {
-      this.status(`Reading file "${normalizedPath}"...`);
+      void this.status(`Reading file "${normalizedPath}"...`);
       const content = await app.vault.cachedRead(file);
       const lines = content.split(/\r?\n/);
       const totalLines = lines.length;

@@ -35,7 +35,7 @@ export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
       return `Error: File not found at path "${normalizedPath}"`;
     }
 
-    this.status(`Requesting confirmation to delete "${normalizedPath}"...`);
+    void this.status(`Requesting confirmation to delete "${normalizedPath}"...`);
 
     return new Promise(resolve => {
       new DeleteConfirmationModal(app, file, result => {
