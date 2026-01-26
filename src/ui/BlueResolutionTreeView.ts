@@ -540,12 +540,9 @@ export class BlueResolutionTreeView extends ItemView {
         // Don't call render here - it will be called after icons are preloaded
         zoomIndicator.textContent = this.graphRenderer.getZoomLevel();
 
-        // Update zoom indicator on render
-        const originalRender = this.graphRenderer.render.bind(this.graphRenderer);
-        this.graphRenderer.render = () => {
-          originalRender();
-          zoomIndicator.textContent = this.graphRenderer!.getZoomLevel();
-        };
+        this.graphRenderer.onRender(
+          () => (zoomIndicator.textContent = this.graphRenderer?.getZoomLevel() || 'undefined'),
+        );
       } else {
         if (ctx) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';

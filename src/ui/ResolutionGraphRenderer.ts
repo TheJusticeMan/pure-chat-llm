@@ -106,6 +106,7 @@ export class ResolutionGraphRenderer {
   private touches: Map<number, { x: number; y: number; startTime: number }> = new Map();
   private rafId: number | null = null;
   private minimapClickHandlerAdded: boolean = false;
+  private onRenderCallback: ((graph: ResolutionGraphRenderer) => void) | null = null;
 
   // Event handler cleanup tracking
   private eventHandlers: Array<{
@@ -133,6 +134,11 @@ export class ResolutionGraphRenderer {
 
     // Pre-load all icons asynchronously to avoid race conditions during render
     void this.preloadIcons();
+  }
+
+  onRender(callback: (graph: ResolutionGraphRenderer) => void): this {
+    this.onRenderCallback = callback;
+    return this;
   }
 
   /**
@@ -369,6 +375,9 @@ export class ResolutionGraphRenderer {
 
     // Restore context
     this.ctx.restore();
+
+    // Invoke render callback if set
+    this.onRenderCallback?.(this);
 
     // Draw minimap on top (uses its own transform)
     this.renderMinimap();
