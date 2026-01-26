@@ -696,3 +696,38 @@ sup {
   pointer-events: none;
   z-index: 100;
 }
+
+/* Diff styles for EditReview */
+.diff-container {
+  font-family: var(--font-monospace);
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 1em;
+  background-color: var(--background-secondary);
+  max-height: 20em;
+  overflow-y: auto;
+}
+
+.diff-container div {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 0;
+}
+
+.diff-removed {
+  background-color: rgba(255, 63, 63, 0.2);
+}
+
+.diff-added {
+  background-color: rgba(63, 255, 63, 0.2);
+}
+
+.diff-equal {
+  background-color: transparent;
+  /* normal */
+}
+
+.diff-hunk {
+  color: var(--text-muted);
+  font-weight: bold;
+}

@@ -41,6 +41,7 @@
     "typescript-eslint": "^8.50.1"
   },
   "dependencies": {
+    "diff": "^8.0.3",
     "glob-to-regexp": "^0.4.1"
   }
 }

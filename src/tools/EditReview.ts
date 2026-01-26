@@ -1,11 +1,12 @@
+import { createPatch } from 'diff';
 import {
   App,
   Modal,
+  normalizePath,
+  Notice,
   Setting,
   TextAreaComponent,
   TFile,
-  normalizePath,
-  Notice,
   TFolder,
 } from 'obsidian';
 
@@ -81,16 +82,30 @@ class EditReviewModal extends Modal {
       propPre.createEl('code', { text: JSON.stringify(this.properties, null, 2) });
     }
 
-    // Original Content (if exists)
-    if (this.originalContent !== null) {
-      new Setting(contentEl).setName('Original content').setHeading();
+    // Diff
+    new Setting(contentEl).setName('Changes').setHeading();
 
-      const originalArea = new TextAreaComponent(contentEl);
-      originalArea.setValue(this.originalContent);
-      originalArea.setDisabled(true);
-      originalArea.inputEl.addClass('PUREcodePreview');
+    const diffContainer = contentEl.createEl('div');
+    diffContainer.addClass('diff-container');
+
+    if (this.originalContent !== null) {
+      const patch = createPatch(this.path, this.originalContent, this.newContent);
+      const lines = patch.split('\n');
+      for (const line of lines) {
+        const div = diffContainer.createEl('div');
+        if (line.startsWith('+')) {
+          div.addClass('diff-added');
+        } else if (line.startsWith('-')) {
+          div.addClass('diff-removed');
+        } else if (line.startsWith('@@')) {
+          div.addClass('diff-hunk');
+        } else {
+          div.addClass('diff-equal');
+        }
+        div.setText(line);
+      }
     } else {
-      contentEl.createEl('p', { text: 'New file' });
+      diffContainer.createEl('div').setText('New file - no diff available');
     }
 
     // New Content
