@@ -42,10 +42,13 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
 
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
+      const parentDir = normalizedPath.split('/').slice(0, -1).join('/');
+      const similarGlob = parentDir ? `${parentDir}/*.md` : '*.md';
+      const listFolderPath = parentDir || '/';
       return new ToolOutputBuilder()
         .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
-          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search similar files`,
-          `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
+          `glob_vault_files("${similarGlob}") - Search similar files`,
+          `list_vault_folders("${listFolderPath}") - Explore directory`,
           `create_obsidian_note(path="${normalizedPath}", ...) - Create the file`,
         ])
         .build();
@@ -133,11 +136,14 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
       return builder.build();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const parentDir = normalizedPath.split('/').slice(0, -1).join('/');
+      const similarGlob = parentDir ? `${parentDir}/*.md` : '*.md';
+      const listFolderPath = parentDir || '/';
       return new ToolOutputBuilder()
         .addError('FileReadError', `Failed to read file "${normalizedPath}": ${message}`, [
           `read_file("${normalizedPath}", offset=${offset ?? 0}, limit=${limit}) - Retry reading the file`,
-          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search similar files in the same folder`,
-          `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Inspect the containing directory`,
+          `glob_vault_files("${similarGlob}") - Search similar files in the same folder`,
+          `list_vault_folders("${listFolderPath}") - Inspect the containing directory`,
         ])
         .build();
     }

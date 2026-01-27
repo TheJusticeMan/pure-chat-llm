@@ -43,10 +43,12 @@ export class PatchNoteTool extends Tool<PatchNoteArgs> {
 
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
+      const parentDir = normalizedPath.split('/').slice(0, -1).join('/');
+      const similarGlob = parentDir ? `${parentDir}/*.md` : '*.md';
       return new ToolOutputBuilder()
         .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
           `read_file("${normalizedPath}") - Verify the correct path`,
-          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Find similar files`,
+          `glob_vault_files("${similarGlob}") - Find similar files`,
           `create_obsidian_note(path="${normalizedPath}", ...) - Create the file first`,
         ])
         .build();

@@ -33,10 +33,13 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
 
     const targetFile = app.vault.getAbstractFileByPath(normalizedPath);
     if (!targetFile || !(targetFile instanceof TFile)) {
+      const parentDir = normalizedPath.split('/').slice(0, -1).join('/');
+      const similarGlob = parentDir ? `${parentDir}/*.md` : '*.md';
+      const listFolderPath = parentDir || '/';
       return new ToolOutputBuilder()
         .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
-          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search similar files`,
-          `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
+          `glob_vault_files("${similarGlob}") - Search similar files`,
+          `list_vault_folders("${listFolderPath}") - Explore directory`,
         ])
         .build();
     }

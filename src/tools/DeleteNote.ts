@@ -33,10 +33,13 @@ export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
 
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
+      const parentDir = normalizedPath.split('/').slice(0, -1).join('/');
+      const similarGlob = parentDir ? `${parentDir}/*.md` : '*.md';
+      const listFolderPath = parentDir || '/';
       return new ToolOutputBuilder()
         .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
-          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search for similar files`,
-          `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
+          `glob_vault_files("${similarGlob}") - Search for similar files`,
+          `list_vault_folders("${listFolderPath}") - Explore directory`,
         ])
         .build();
     }

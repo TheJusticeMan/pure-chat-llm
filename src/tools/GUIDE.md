@@ -353,7 +353,8 @@ Found 5 files matching pattern
 | 5 | 05 - Projects/AI Agent/Archive.md  | 12.5 KB| 2 weeks ago|
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 Total size: 25.0 KB | Newest file: README.md (2 days ago)
+📊 Total size: 25.0 KB
+Newest file: README.md (2 days ago)
 
 💡 SUGGESTED ACTIONS:
 1. read_file("05 - Projects/AI Agent/README.md") to view the first match
