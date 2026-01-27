@@ -1,5 +1,6 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
 import { normalizePath, TFile } from 'obsidian';
+import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 const backlinksParameters = defineToolParameters({
   type: 'object',
@@ -32,24 +33,66 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
 
     const targetFile = app.vault.getAbstractFileByPath(normalizedPath);
     if (!targetFile || !(targetFile instanceof TFile)) {
-      return `Error: File not found at path "${normalizedPath}"`;
+      const parentDir = normalizedPath.split('/').slice(0, -1).join('/');
+      const similarGlob = parentDir ? `${parentDir}/*.md` : '*.md';
+      const listFolderPath = parentDir || '/';
+      return new ToolOutputBuilder()
+        .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
+          `glob_vault_files("${similarGlob}") - Search similar files`,
+          `list_vault_folders("${listFolderPath}") - Explore directory`,
+        ])
+        .build();
     }
 
     void this.status(`Finding backlinks for "${normalizedPath}"...`);
 
-    const backlinks: string[] = [];
+    const backlinks: Array<{ path: string; count: number }> = [];
     const resolvedLinks = app.metadataCache.resolvedLinks;
 
     for (const [sourcePath, links] of Object.entries(resolvedLinks)) {
       if (links[normalizedPath]) {
-        backlinks.push(sourcePath);
+        backlinks.push({ path: sourcePath, count: links[normalizedPath] });
       }
     }
 
     if (backlinks.length === 0) {
-      return `No backlinks found for "${normalizedPath}".`;
+      return new ToolOutputBuilder()
+        .addHeader(`BACKLINKS FOR: "${normalizedPath}"`)
+        .addKeyValue('Status', 'No backlinks found')
+        .addSeparator()
+        .addSuggestions(
+          `search_vault("[[${targetFile.basename}]]") - Find unresolved links`,
+          'This note is not linked from any other notes yet',
+        )
+        .build();
     }
 
-    return `Backlinks for "${normalizedPath}":\n${backlinks.join('\n')}`;
+    // Sort by link count (relationship strength)
+    backlinks.sort((a, b) => b.count - a.count);
+
+    const builder = new ToolOutputBuilder();
+    builder.addHeader(`BACKLINKS FOR: "${normalizedPath}"`);
+    builder.addKeyValue(
+      'Total backlinks',
+      `${backlinks.length} note${backlinks.length === 1 ? '' : 's'}`,
+    );
+    builder.addSeparator();
+
+    // Show backlinks with relationship strength
+    backlinks.forEach((backlink, idx) => {
+      const strength = backlink.count > 5 ? '[***]' : backlink.count > 2 ? '[**-]' : '[*--]';
+      builder.addKeyValue(
+        `${idx + 1}. ${backlink.path}`,
+        `${strength} (${backlink.count} link${backlink.count === 1 ? '' : 's'})`,
+      );
+    });
+
+    builder.addSeparator();
+    builder.addSuggestions(
+      `read_file("${backlinks[0].path}") - View the strongest connection`,
+      `search_vault("[[${targetFile.basename}]]") - See link contexts`,
+    );
+
+    return builder.build();
   }
 }

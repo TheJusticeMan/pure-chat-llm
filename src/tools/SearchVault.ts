@@ -1,4 +1,5 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
+import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 const searchVaultParameters = defineToolParameters({
   type: 'object',
@@ -46,8 +47,9 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     void this.status(`Searching vault for "${query}"...`);
 
     const files = app.vault.getMarkdownFiles();
-    const results: string[] = [];
+    const results: Array<{ file: string; lineNum: number; context: string }> = [];
     let matchCount = 0;
+    const searchStartTime = Date.now();
 
     for (const file of files) {
       if (matchCount >= limit) break;
@@ -78,11 +80,15 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
               .map((l, idx) => {
                 const lineNum = startLine + idx + 1;
                 const prefix = startLine + idx === i ? '>' : ' ';
-                return `${prefix} ${lineNum}: ${l}`;
+                return `${prefix} ${l}`;
               })
               .join('\n');
 
-            results.push(`File: ${file.path}\n${contextSnippet}\n`);
+            results.push({
+              file: file.path,
+              lineNum: i + 1,
+              context: contextSnippet,
+            });
             matchCount++;
             if (matchCount >= limit) break;
 
@@ -95,10 +101,56 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
       }
     }
 
+    const searchTime = ((Date.now() - searchStartTime) / 1000).toFixed(2);
+
     if (results.length === 0) {
-      return `No matches found for "${query}".`;
+      return new ToolOutputBuilder()
+        .addHeader(`SEARCH RESULTS: "${query}"`)
+        .addKeyValue('Status', 'No matches found')
+        .addKeyValue('Files searched', files.length.toString())
+        .addKeyValue('Time taken', `${searchTime}s`)
+        .addSeparator()
+        .addSuggestions(
+          'Try a different search term or use regex: true for pattern matching',
+          'Use glob_vault_files() to explore file structure',
+        )
+        .build();
     }
 
-    return results.join('\n---\n');
+    // Build structured output
+    const builder = new ToolOutputBuilder();
+    builder.addHeader(`SEARCH RESULTS: "${query}"`);
+    builder.addKeyValue(
+      'Found',
+      `${results.length} match${results.length === 1 ? '' : 'es'} across ${new Set(results.map(r => r.file)).size} file${new Set(results.map(r => r.file)).size === 1 ? '' : 's'}`,
+    );
+    builder.addKeyValue('Files searched', files.length.toString());
+    builder.addKeyValue('Time taken', `${searchTime}s`);
+    builder.addSeparator();
+
+    results.forEach((result, idx) => {
+      builder.addSection(`[${idx + 1}] ${result.file} (Line ${result.lineNum})`, result.context);
+    });
+
+    builder.addSeparator();
+
+    // Add suggestions based on results
+    const uniqueFiles = [...new Set(results.map(r => r.file))];
+    const suggestions = [];
+    if (uniqueFiles.length > 0) {
+      suggestions.push(`read_file("${uniqueFiles[0]}") to see full context`);
+    }
+    if (uniqueFiles.length > 1) {
+      suggestions.push(`get_backlinks("${uniqueFiles[0]}") to find related notes`);
+    }
+    if (results.length === limit) {
+      suggestions.push(`Increase limit parameter to see more results (current: ${limit})`);
+    }
+
+    if (suggestions.length > 0) {
+      builder.addSuggestions(...suggestions);
+    }
+
+    return builder.build();
   }
 }

@@ -5,10 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.11.1] - 2026-01-26
+## [Unreleased]
+
+## [1.11.1] - 2026-01-27
 
 ### Added
 
+- **ToolOutputBuilder Utility**: Introduced a new `ToolOutputBuilder` class that provides a fluent API for creating consistent, structured tool outputs across all tools with ASCII-only formatting.
+- **Enhanced Tool Output Formatting**: Completely redesigned tool outputs to be more informative and actionable for the LLM:
+  - **Rich Metadata**: Tools now return detailed metadata including file sizes, line counts, timestamps, and content statistics.
+  - **ASCII-Only Structure**: All outputs use only ASCII characters with markdown-style separators (`---`) for maximum compatibility.
+  - **Tabular Data**: File listings use markdown tables with human-readable sizes and relative timestamps.
+  - **Suggested Actions**: All tools provide contextual suggestions for logical next steps to guide the LLM.
+  - **Structured Errors**: Error messages include specific error types and actionable recovery options with example tool calls.
+- **Tool Output Format Guide**: Added comprehensive documentation in `src/tools/GUIDE.md` explaining output conventions, formatting standards, and interpretation guidelines.
 - **Setting to Remove Empty Messages**: Added a new setting option to automatically filter out empty or whitespace-only messages from chat sessions, improving chat cleanliness and relevance.
 - **Enhanced Tool Message Handling**: Improved tool message processing with better descriptions and more robust error handling.
 - **Diff Functionality in EditReview**: Implemented visual diff comparison in the EditReview component for enhanced content change visualization.
@@ -17,6 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **ReadFile Output**: Enhanced to include file metadata (size, lines, last modified), content statistics (headings, links, tags), pagination info, and navigation suggestions.
+- **SearchVault Output**: Now displays search statistics (files searched, time taken), numbered results with line numbers, and follow-up suggestions.
+- **GlobFiles Output**: Upgraded to show results in table format with file sizes, modification times, summary statistics, and suggested actions.
+- **Backlinks Output**: Enhanced to show relationship strength using ASCII brackets `[***]`/`[**-]`/`[*--]`, sort by connection count, and provide exploration suggestions.
+- **ListFolders Output**: Now includes folder statistics (file counts, total sizes) with summary information.
+- **DeleteNote Modal**: Updated confirmation dialog to show file details (size, last modified) before deletion.
+- **Edit Operations (CreateNote, PatchNote, ReplaceInNote)**: Approval messages now include operation details, line counts, character counts, and suggested next actions.
+- **Error Messages**: All file-not-found and operation errors now follow a consistent format with specific error types, recovery suggestions, and correct glob patterns for root-level files.
+- **ASCII-Only Output**: Replaced all non-ASCII characters (Unicode box drawing, bullets, checkmarks, arrows, curly quotes) with ASCII equivalents throughout all tool outputs and documentation.
 - **Tool Descriptions**: Refined all tool descriptions and error messages for improved clarity and user experience.
 - **Title Generation Logic**: Updated title generation to include numbered files, allowing better handling of copied notes with automatic title numbering.
 - **JSON Parsing in ChatMarkdownAdapter**: Refactored JSON parsing for improved type safety and error resilience.
@@ -24,8 +43,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Tool Error Handling**: Enhanced error handling across all vault tools with better error messages and recovery strategies.
+- **Root-Level File Glob Patterns**: Fixed invalid glob patterns (`/*.md`) generated for root-level files, now correctly uses `*.md` pattern.
+- **Conditional Suggestions**: Fixed empty suggestion strings in ListFolders output when recursive mode is enabled.
 - **Streaming Performance**: Resolved UI freezing during heavy LLM response streaming by implementing buffered updates (100ms debouncing) instead of updating the editor on every token.
 - **Memory Leak**: Fixed potential memory leaks in response streaming by adding proper `ReadableStream` reader cancellation on errors and early termination.
+
+### Documentation
+
+- Updated `src/tools/GUIDE.md` with a new "Tool Output Format Guide" section
+- Added before/after examples for key tools (ReadFile, SearchVault, GlobFiles)
+- Documented ASCII-only formatting standards and conventions
+- Included interpretation guidelines for LLMs
+- Updated CHANGELOG.md to consolidate all changes into version 1.11.1
 
 ## [1.11.0] - 2026-01-16
 
