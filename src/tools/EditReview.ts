@@ -200,7 +200,7 @@ class EditReviewModal extends Modal {
       const builder = new ToolOutputBuilder();
       builder.addHeader('✅', isNewFile ? 'NOTE CREATED' : 'PATCH OPERATION APPROVED');
       builder.addKeyValue('Target', this.path);
-      
+
       if (this.instruction) {
         builder.addKeyValue('Action', this.instruction);
       }
@@ -213,7 +213,10 @@ class EditReviewModal extends Modal {
 
       if (!isNewFile) {
         if (lineDiff !== 0) {
-          builder.addKeyValue('Lines changed', `${lineDiff > 0 ? '+' : ''}${lineDiff} (${originalLines} → ${newLines})`);
+          builder.addKeyValue(
+            'Lines changed',
+            `${lineDiff > 0 ? '+' : ''}${lineDiff} (${originalLines} → ${newLines})`,
+          );
         }
         builder.addKeyValue('Total characters', charCount.toLocaleString());
       } else {

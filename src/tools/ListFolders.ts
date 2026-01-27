@@ -41,14 +41,10 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
 
     if (!rootFolder || !(rootFolder instanceof TFolder)) {
       return new ToolOutputBuilder()
-        .addError(
-          'FolderNotFoundError',
-          `No folder exists at path "${targetPath}"`,
-          [
-            'list_vault_folders("/") - List folders from vault root',
-            'Check the folder path spelling and structure',
-          ],
-        )
+        .addError('FolderNotFoundError', `No folder exists at path "${targetPath}"`, [
+          'list_vault_folders("/") - List folders from vault root',
+          'Check the folder path spelling and structure',
+        ])
         .build();
     }
 
@@ -62,7 +58,7 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
           // Calculate folder statistics
           let fileCount = 0;
           let totalSize = 0;
-          
+
           const countFiles = (f: TFolder) => {
             for (const c of f.children) {
               if (c instanceof TFile) {
@@ -73,10 +69,10 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
               }
             }
           };
-          
+
           countFiles(child);
           folderStats.push({ path: child.path, fileCount, totalSize });
-          
+
           if (recursive) {
             walk(child, currentDepth + 1);
           }
@@ -128,7 +124,9 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
     // Add suggestions
     const suggestions = [];
     if (folderStats.length > 0) {
-      suggestions.push(`glob_vault_files("${folderStats[0].path}/**/*.md") - List files in first folder`);
+      suggestions.push(
+        `glob_vault_files("${folderStats[0].path}/**/*.md") - List files in first folder`,
+      );
     }
     if (!recursive && folderStats.length > 0) {
       suggestions.push(`list_vault_folders("${targetPath}", recursive=true) - See nested folders`);

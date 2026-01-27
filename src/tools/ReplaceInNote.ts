@@ -54,15 +54,11 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
       return new ToolOutputBuilder()
-        .addError(
-          'FileNotFoundError',
-          `No file exists at path "${normalizedPath}"`,
-          [
-            `read_file("${normalizedPath}") - Verify the correct path`,
-            `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Find similar files`,
-            `search_vault("${search}") - Find which files contain the search text`,
-          ],
-        )
+        .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
+          `read_file("${normalizedPath}") - Verify the correct path`,
+          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Find similar files`,
+          `search_vault("${search}") - Find which files contain the search text`,
+        ])
         .build();
     }
 

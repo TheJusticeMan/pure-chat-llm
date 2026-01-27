@@ -65,7 +65,7 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
     }
 
     const fields = include_fields as string[];
-    
+
     // Helper to format file size
     const formatSize = (bytes: number): string => {
       if (bytes < 1024) return `${bytes} B`;
@@ -80,8 +80,9 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor(diff / (1000 * 60));
-      
-      if (days > 7) return `${Math.floor(days / 7)} week${Math.floor(days / 7) === 1 ? '' : 's'} ago`;
+
+      if (days > 7)
+        return `${Math.floor(days / 7)} week${Math.floor(days / 7) === 1 ? '' : 's'} ago`;
       if (days > 0) return `${days} day${days === 1 ? '' : 's'} ago`;
       if (hours > 0) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
       if (minutes > 0) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
@@ -90,12 +91,15 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
 
     const builder = new ToolOutputBuilder();
     builder.addHeader('📁', `GLOB SEARCH RESULTS: "${pattern}"`);
-    builder.addKeyValue('Found', `${matchedFiles.length} file${matchedFiles.length === 1 ? '' : 's'} matching pattern`);
-    
+    builder.addKeyValue(
+      'Found',
+      `${matchedFiles.length} file${matchedFiles.length === 1 ? '' : 's'} matching pattern`,
+    );
+
     if (matchedFiles.length === limit) {
       builder.addKeyValue('⚠️  Note', 'Results limited to maximum, more files may exist');
     }
-    
+
     builder.addSeparator();
 
     // If requesting multiple fields, show as table
@@ -133,11 +137,16 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
     // Add summary statistics
     builder.addSeparator();
     const totalSize = matchedFiles.reduce((sum, f) => sum + f.stat.size, 0);
-    const newestFile = matchedFiles.reduce((newest, f) => 
-      f.stat.mtime > newest.stat.mtime ? f : newest, matchedFiles[0]);
-    
+    const newestFile = matchedFiles.reduce(
+      (newest, f) => (f.stat.mtime > newest.stat.mtime ? f : newest),
+      matchedFiles[0],
+    );
+
     builder.addKeyValue('📊 Total size', formatSize(totalSize));
-    builder.addKeyValue('Newest file', `${newestFile.name} (${formatTimeAgo(newestFile.stat.mtime)})`);
+    builder.addKeyValue(
+      'Newest file',
+      `${newestFile.name} (${formatTimeAgo(newestFile.stat.mtime)})`,
+    );
 
     // Add suggestions
     const suggestions = [];
@@ -147,7 +156,7 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
     if (matchedFiles.length > 3) {
       suggestions.push('Refine your pattern to narrow down results');
     }
-    
+
     if (suggestions.length > 0) {
       builder.addSuggestions(...suggestions);
     }

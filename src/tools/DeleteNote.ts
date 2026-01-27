@@ -34,14 +34,10 @@ export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
       return new ToolOutputBuilder()
-        .addError(
-          'FileNotFoundError',
-          `No file exists at path "${normalizedPath}"`,
-          [
-            `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search for similar files`,
-            `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
-          ],
-        )
+        .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
+          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search for similar files`,
+          `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
+        ])
         .build();
     }
 
@@ -71,13 +67,15 @@ class DeleteConfirmationModal extends Modal {
     contentEl.empty();
 
     contentEl.createEl('h2', { text: 'Confirm deletion' });
-    
+
     // Show file details
     const details = contentEl.createEl('div', { cls: 'delete-details' });
     details.createEl('p', { text: `File: ${this.file.path}` });
     details.createEl('p', { text: `Size: ${this.formatSize(this.file.stat.size)}` });
-    details.createEl('p', { text: `Last modified: ${new Date(this.file.stat.mtime).toLocaleString()}` });
-    
+    details.createEl('p', {
+      text: `Last modified: ${new Date(this.file.stat.mtime).toLocaleString()}`,
+    });
+
     contentEl.createEl('p', {
       text: '⚠️  This action cannot be undone. The file will be moved to trash.',
       cls: 'mod-warning',
@@ -93,7 +91,7 @@ class DeleteConfirmationModal extends Modal {
               await this.app.fileManager.trashFile(this.file);
               new Notice(`Deleted "${this.file.path}".`);
               this.resolved = true;
-              
+
               const result = new ToolOutputBuilder()
                 .addHeader('✅', 'FILE DELETED')
                 .addKeyValue('Deleted file', this.file.path)
@@ -101,13 +99,13 @@ class DeleteConfirmationModal extends Modal {
                 .addSeparator()
                 .addKeyValue('Status', '✓ Moved to trash')
                 .build();
-              
+
               this.onResolve(result);
               this.close();
             } catch (error) {
               const message = error instanceof Error ? error.message : String(error);
               this.resolved = true;
-              
+
               const result = new ToolOutputBuilder()
                 .addError('DeleteError', message, [
                   'Check file permissions',
@@ -115,7 +113,7 @@ class DeleteConfirmationModal extends Modal {
                   'Verify vault trash settings',
                 ])
                 .build();
-              
+
               this.onResolve(result);
               this.close();
             }

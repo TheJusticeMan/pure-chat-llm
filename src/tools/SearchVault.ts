@@ -133,7 +133,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     });
 
     builder.addSeparator();
-    
+
     // Add suggestions based on results
     const uniqueFiles = [...new Set(results.map(r => r.file))];
     const suggestions = [];
@@ -146,7 +146,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     if (results.length === limit) {
       suggestions.push(`Increase limit parameter to see more results (current: ${limit})`);
     }
-    
+
     if (suggestions.length > 0) {
       builder.addSuggestions(...suggestions);
     }

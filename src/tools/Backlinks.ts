@@ -34,14 +34,10 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
     const targetFile = app.vault.getAbstractFileByPath(normalizedPath);
     if (!targetFile || !(targetFile instanceof TFile)) {
       return new ToolOutputBuilder()
-        .addError(
-          'FileNotFoundError',
-          `No file exists at path "${normalizedPath}"`,
-          [
-            `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search similar files`,
-            `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
-          ],
-        )
+        .addError('FileNotFoundError', `No file exists at path "${normalizedPath}"`, [
+          `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search similar files`,
+          `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
+        ])
         .build();
     }
 
@@ -73,7 +69,10 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
 
     const builder = new ToolOutputBuilder();
     builder.addHeader('🔗', `BACKLINKS FOR: "${normalizedPath}"`);
-    builder.addKeyValue('Total backlinks', `${backlinks.length} note${backlinks.length === 1 ? '' : 's'}`);
+    builder.addKeyValue(
+      'Total backlinks',
+      `${backlinks.length} note${backlinks.length === 1 ? '' : 's'}`,
+    );
     builder.addSeparator();
 
     // Show backlinks with relationship strength
