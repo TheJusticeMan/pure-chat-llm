@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **ToolOutputBuilder Utility**: Introduced a new `ToolOutputBuilder` class that provides a fluent API for creating consistent, structured tool outputs across all tools.
+- **Enhanced Tool Output Formatting**: Completely redesigned tool outputs to be more informative and actionable for the LLM:
+  - **Rich Metadata**: Tools now return detailed metadata including file sizes, line counts, timestamps, and content statistics.
+  - **Visual Structure**: Added headers, separators, and emoji indicators for better visual organization (📄 files, 🔍 search, 📁 directories, 🔗 links, ✅ success, ❌ errors).
+  - **Tabular Data**: File listings now use markdown tables with human-readable sizes and relative timestamps.
+  - **Suggested Actions**: All tools provide contextual suggestions for logical next steps to guide the LLM.
+  - **Structured Errors**: Error messages now include specific error types and actionable recovery options.
+- **Tool Output Format Guide**: Added comprehensive documentation in GUIDE.md explaining output conventions, emoji meanings, and interpretation guidelines.
+
+### Changed
+
+- **ReadFile Output**: Enhanced to include file metadata (size, lines, last modified), content statistics (headings, links, tags), pagination info, and navigation suggestions.
+- **SearchVault Output**: Now displays search statistics (files searched, time taken), numbered results with line numbers, and follow-up suggestions.
+- **GlobFiles Output**: Upgraded to show results in table format with file sizes, modification times, summary statistics, and suggested actions.
+- **Backlinks Output**: Enhanced to show relationship strength indicators, sort by connection count, and provide exploration suggestions.
+- **ListFolders Output**: Now includes folder statistics (file counts, total sizes) with summary information.
+- **DeleteNote Modal**: Updated confirmation dialog to show file details (size, last modified) before deletion.
+- **Edit Operations (CreateNote, PatchNote, ReplaceInNote)**: Approval messages now include operation details, line counts, character counts, and suggested next actions.
+- **Error Messages**: All file-not-found and operation errors now follow a consistent format with specific error types and recovery suggestions.
+
+### Documentation
+
+- Updated `src/tools/GUIDE.md` with a new "Tool Output Format Guide" section
+- Added before/after examples for key tools (ReadFile, SearchVault, GlobFiles)
+- Documented emoji conventions and formatting standards
+- Included interpretation guidelines for LLMs
+
 ## [1.11.1] - 2026-01-26
 
 ### Added
