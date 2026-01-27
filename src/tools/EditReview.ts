@@ -236,7 +236,7 @@ class EditReviewModal extends Modal {
         if (lineDiff !== 0) {
           builder.addKeyValue(
             'Lines changed',
-            `${lineDiff > 0 ? '+' : ''}${lineDiff} (${originalLines} → ${newLines})`,
+            `${lineDiff > 0 ? '+' : ''}${lineDiff} (${originalLines} -> ${newLines})`,
           );
         }
         builder.addKeyValue('Total characters', charCount.toLocaleString());
@@ -246,7 +246,7 @@ class EditReviewModal extends Modal {
       }
 
       builder.addSeparator();
-      builder.addKeyValue('File Status', '✓ Saved successfully');
+      builder.addKeyValue('File Status', 'Saved successfully');
 
       // Add helpful suggestions
       builder.addSeparator();

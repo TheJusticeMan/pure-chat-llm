@@ -87,7 +87,7 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
 
       if (content === newContent) {
         return new ToolOutputBuilder()
-          .addHeader('ℹ️', 'NO MATCHES FOUND')
+          .addHeader('NO MATCHES FOUND')
           .addKeyValue('File', normalizedPath)
           .addKeyValue('Search term', `"${search}"`)
           .addKeyValue('Status', 'No changes made')

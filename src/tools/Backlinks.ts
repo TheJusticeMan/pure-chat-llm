@@ -80,7 +80,7 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
 
     // Show backlinks with relationship strength
     backlinks.forEach((backlink, idx) => {
-      const strength = backlink.count > 5 ? '●●●' : backlink.count > 2 ? '●●○' : '●○○';
+      const strength = backlink.count > 5 ? '[***]' : backlink.count > 2 ? '[**-]' : '[*--]';
       builder.addKeyValue(
         `${idx + 1}. ${backlink.path}`,
         `${strength} (${backlink.count} link${backlink.count === 1 ? '' : 's'})`,

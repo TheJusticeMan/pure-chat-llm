@@ -13,7 +13,7 @@ export class ToolOutputBuilder {
   addHeader(title: string, status?: string): this {
     const statusPart = status ? ` (${status})` : '';
     this.sections.push(`${title}${statusPart}`);
-    this.sections.push('━'.repeat(45));
+    this.sections.push('---');
     return this;
   }
 
@@ -31,7 +31,7 @@ export class ToolOutputBuilder {
    * Add a visual separator line
    */
   addSeparator(): this {
-    this.sections.push('━'.repeat(45));
+    this.sections.push('---');
     return this;
   }
 

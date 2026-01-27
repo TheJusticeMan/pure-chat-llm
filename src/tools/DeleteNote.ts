@@ -100,7 +100,7 @@ class DeleteConfirmationModal extends Modal {
                 .addKeyValue('Deleted file', this.file.path)
                 .addKeyValue('Size', this.formatSize(this.file.stat.size))
                 .addSeparator()
-                .addKeyValue('Status', '✓ Moved to trash')
+                .addKeyValue('Status', 'Moved to trash')
                 .build();
 
               this.onResolve(result);

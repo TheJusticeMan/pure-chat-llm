@@ -14,16 +14,16 @@ Tools use a consistent header-based format with sections:
 
 ```
 FILE READ SUCCESSFUL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Path: Projects/AI Research.md
 Size: 2,048 bytes (204 lines)
 Last Modified: 2025-01-27 14:23:05
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 METADATA
 - Frontmatter properties: 3 found
 - Headings: 4 sections
 - Links: 5 internal links
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Content:
 [file content here]
@@ -35,7 +35,7 @@ All errors follow a structured format with recovery suggestions:
 
 ```
 ERROR: FileNotFoundError (Recoverable)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Reason: No file exists at path "Projects/Missing.md"
 
 RECOVERY OPTIONS:
@@ -50,7 +50,7 @@ Tools that return multiple items use tables or numbered lists:
 
 ```
 GLOB SEARCH RESULTS: "Projects/*.md"
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Found 3 files matching pattern
 
 | # | File Path            | Size   | Modified   |
@@ -58,7 +58,7 @@ Found 3 files matching pattern
 | 1 | Projects/AI.md      | 2.1 KB | 2 days ago |
 | 2 | Projects/Research.md| 5.4 KB | 1 week ago |
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 STATISTICS - Total size: 7.5 KB | Newest: Projects/AI.md
 
 SUGGESTED ACTIONS:
@@ -72,14 +72,14 @@ Write operations show detailed change information:
 
 ```
 PATCH OPERATION APPROVED
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Target: Projects/AI.md
 Action: Appended to section "## Tasks"
-Lines changed: +3 (67 → 70)
+Lines changed: +3 (67 -> 70)
 Total characters: 1,234
 
-File Status: ✓ Saved successfully
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+File Status:  Saved successfully
+---
 SUGGESTED ACTIONS:
 1. manage_workspace() to open the updated file
 2. read_file("Projects/AI.md") to verify the changes
@@ -326,7 +326,7 @@ When tasked with a broad objective:
 
 ```
 GLOB SEARCH RESULTS: "05 - Projects/AI Agent/*.md"
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Found 5 files matching pattern
 
 | # | File Path                          | Size   | Modified   |
@@ -337,7 +337,7 @@ Found 5 files matching pattern
 | 4 | 05 - Projects/AI Agent/Notes.md    | 3.2 KB | 5 days ago |
 | 5 | 05 - Projects/AI Agent/Archive.md  | 12.5 KB| 2 weeks ago|
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 STATISTICS - Total size: 25.0 KB
 Newest file: README.md (2 days ago)
 
@@ -350,9 +350,9 @@ SUGGESTED ACTIONS:
 
 ```
 GLOB SEARCH RESULTS: "NonExistent/*.md"
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Status: No matches found
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 SUGGESTED ACTIONS:
 1. Check your glob pattern syntax (e.g., "**/*.md" for all markdown files)
 2. Use list_vault_folders() to explore directory structure
@@ -429,17 +429,17 @@ For files that are exceptionally long:
 
 ```
 FILE READ SUCCESSFUL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Path: 01 - Chats/Thematic Reflections/The Siren's Lure Script.md
 Size: 15,234 bytes (342 lines)
 Last Modified: 2025-01-26 18:45:32
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 METADATA
 - Frontmatter properties: 4 found
 - Headings: 8 sections
 - Links: 12 internal links
 - Tags: 3 tags
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Content:
 ---
@@ -458,7 +458,7 @@ tags: [screenplay, mythology, character-study]
 
 ```
 ERROR: FileNotFoundError (Recoverable)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Reason: No file exists at path "Projects/Missing.md"
 
 RECOVERY OPTIONS:
@@ -954,10 +954,10 @@ To find mentions of a topic that hasn't been formally linked with `[[wikilinks]]
 
 ```
 SEARCH RESULTS: "Hack by Will"
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Found 3 matches across 2 files (searched 456 files)
 Time taken: 0.45s
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 [1] Projects/Game Development/Notes.md (Line 42)
   The game design philosophy is inspired by
@@ -974,7 +974,7 @@ Time taken: 0.45s
 > where consciousness itself becomes the exploit
   for breaking free from predetermined patterns.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 SUGGESTED ACTIONS:
 1. read_file("Projects/Game Development/Notes.md") to see full context
 2. get_backlinks("Projects/Game Development/Notes.md") to find related notes
@@ -984,11 +984,11 @@ SUGGESTED ACTIONS:
 
 ```
 SEARCH RESULTS: "nonexistent term"
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 Status: No matches found
 Files searched: 456
 Time taken: 0.32s
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 SUGGESTED ACTIONS:
 1. Try a different search term or use regex: true for pattern matching
 2. Use glob_vault_files() to explore file structure
@@ -1331,15 +1331,15 @@ The LLM should use the `suno_music_gen` tool in the following scenarios:
 When the conversation turns to Justice's professional music production:
 
 - **Experimentation:** "Should we try a new melodic techno track with a supersaw synth lead?"
-- **Brand Development:** Generating demo tracks for "Why Balloons Don’t Pop" or "Epic Bitcrush" style evolutions.
+- **Brand Development:** Generating demo tracks for "Why Balloons Don't Pop" or "Epic Bitcrush" style evolutions.
 - **Technical Refinement:** Using `separate_vocals` to help Justice analyze the mix of a generated track for his FL Studio workflow.
 
 ### 2. Enhancing Narrative Projects
 
-When developing _The Fall And Rise Of The Mistaken Superhero_ or _The Siren’s Lure_:
+When developing _The Fall And Rise Of The Mistaken Superhero_ or _The Siren's Lure_:
 
 - **Atmospheric Scoring:** Creating a "Shepard's Tone" ambient piece for the Sirens or a "hooded" Walker-esque track for James's cynical moments.
-- **Thematic Lyrics:** Generating lyrics that reflect the "lost year," "Hack by Will," or Jessica’s faith.
+- **Thematic Lyrics:** Generating lyrics that reflect the "lost year," "Hack by Will," or Jessica's faith.
 - **Music Videos:** Creating conceptual visualizers for key story moments to aid visualization.
 
 ### 3. Exploring EDM Genres & Trends
