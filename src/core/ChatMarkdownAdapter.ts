@@ -66,8 +66,8 @@ export class ChatMarkdownAdapter {
       const contentStart = match.index + match[0].length;
       const contentEnd = index + 1 < matches.length ? matches[index + 1].index : markdown.length;
       session.clines.push({
-        from: { line: markdown.substring(0, contentStart).split('\n').length, ch: 0 },
-        to: { line: markdown.substring(0, contentEnd).split('\n').length - 1, ch: 0 },
+        from: { line: markdown.substring(0, contentStart).split('\n').length - 1, ch: 0 },
+        to: { line: markdown.substring(0, contentEnd).split('\n').length - 2, ch: 0 },
       });
       return {
         role: match[1].toLowerCase() as RoleType,

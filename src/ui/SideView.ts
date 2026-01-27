@@ -239,6 +239,21 @@ export class PureChatLLMSideView extends ItemView {
             ),
           ),
       )
+      .then(
+        b =>
+          chat.messages.some(m => m.role === 'tool') &&
+          b.addExtraButton(btn =>
+            btn
+              .setIcon('remove-formatting')
+              .setTooltip('Remove tool messages')
+              .onClick(() =>
+                editor.setValue(
+                  chat.thencb(c => (c.messages = c.messages.filter(m => m.role !== 'tool')))
+                    .markdown,
+                ),
+              ),
+          ),
+      )
       .addExtraButton(btn =>
         btn
           .setIcon('phone')

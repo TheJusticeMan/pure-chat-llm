@@ -40,6 +40,10 @@ export class ToolExecutor {
     options: ChatRequestOptions,
     assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
   ): Promise<boolean> {
+    let hasExecutedAnyTool = false;
+    const executedTools: { call: ToolCall; output: string }[] = [];
+
+    // Execute all tools first
     for (const call of toolCalls) {
       const toolName = call.function.name;
       if (this.toolRegistry.getTool(toolName)) {
@@ -50,27 +54,35 @@ export class ToolExecutor {
         const args = JSON.parse(fixedArguments) as Record<string, unknown>;
         const output = await this.toolRegistry.executeTool(toolName, args);
 
-        // Add assistant message if provided
-        if (assistantMessage && typeof assistantMessage.role === 'string') {
-          session.appendMessage({
-            role: assistantMessage.role,
-            content: assistantMessage.content ?? '',
-          });
-        }
-
-        // Add tool response to session
-        session.appendMessage({ role: 'tool', content: output ?? '' });
-
-        // Update request options
-        options.messages.push(
-          assistantMessage || { role: 'assistant', content: null, tool_calls: [call] },
-          { role: 'tool', content: output, tool_call_id: call.id },
-        );
-
-        return true;
+        executedTools.push({ call, output });
+        hasExecutedAnyTool = true;
       }
     }
-    return false;
+
+    // If any tools were executed, add the assistant message with all tool calls
+    if (hasExecutedAnyTool) {
+      // Add assistant message with all tool calls
+      const messageToAdd = assistantMessage || {
+        role: 'assistant' as RoleType,
+        content: null,
+        tool_calls: toolCalls,
+      };
+
+      session.appendMessage({
+        role: messageToAdd.role,
+        content: messageToAdd.content ?? '',
+      });
+
+      options.messages.push(messageToAdd);
+
+      // Add all tool responses
+      for (const { call, output } of executedTools) {
+        session.appendMessage({ role: 'tool', content: output ?? '' });
+        options.messages.push({ role: 'tool', content: output, tool_call_id: call.id });
+      }
+    }
+
+    return hasExecutedAnyTool;
   }
 
   /**

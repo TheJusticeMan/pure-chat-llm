@@ -170,7 +170,7 @@ export class LLMService {
     let done = false;
     let buffer = '';
     let fullText = '';
-    const fullcalls: ToolCall[] = [];
+    const fullcalls = new Map<string | number, ToolCall>();
     let contentBuffer = '';
     let lastFlushTime = Date.now();
 
@@ -193,6 +193,7 @@ export class LLMService {
           try {
             const data = JSON.parse(dataStr) as { choices: { delta: StreamDelta }[] };
             const delta = data.choices?.[0]?.delta;
+            this.console.log('Read chunk from stream:', delta);
             if (delta?.content) {
               fullText += delta.content;
               contentBuffer += delta.content;
@@ -209,15 +210,38 @@ export class LLMService {
                 }
               }
             } else if (delta?.tool_calls) {
+              this.console.log('Read tool_calls from stream:', delta.tool_calls);
               delta.tool_calls.forEach((call: ToolCall) => {
-                const index = call.index;
-                if (index === undefined) return;
-                if (!fullcalls[index]) fullcalls[index] = call;
-                if (call.function.arguments) {
-                  if (!fullcalls[index].function.arguments) {
-                    fullcalls[index].function.arguments = '';
+                this.console.log('Processing tool_call chunk:', call);
+                // Handle both OpenAI format (with index) and Gemini format (with id)
+                const key = call.index ?? call.id ?? 0;
+                if (key === undefined) return;
+                const existing = fullcalls.get(key);
+                if (!existing) {
+                  fullcalls.set(key, call);
+                } else {
+                  // Merge function object
+                  if (call.function) {
+                    if (!existing.function) {
+                      existing.function = { name: '', arguments: '' };
+                    }
+                    if (call.function.name) {
+                      existing.function.name = call.function.name;
+                    }
+                    if (call.function.arguments) {
+                      // Only append if not already present (avoid duplication)
+                      if (!existing.function.arguments.includes(call.function.arguments)) {
+                        existing.function.arguments += call.function.arguments;
+                      }
+                    }
                   }
-                  fullcalls[index].function.arguments += `${call.function.arguments}`;
+                  // Merge other fields
+                  if (call.id && !existing.id) {
+                    existing.id = call.id;
+                  }
+                  if (call.type && !existing.type) {
+                    existing.type = call.type;
+                  }
                 }
               });
             }
@@ -235,12 +259,13 @@ export class LLMService {
       await streamCallback({ content: contentBuffer });
     }
 
-    if (fullcalls.length > 0) {
-      fullcalls.forEach(call => {
+    if (fullcalls.size > 0) {
+      const toolCallsArray = Array.from(fullcalls.values()).map(call => {
         delete call.index;
+        return call;
       });
 
-      return { role: 'assistant', content: fullText, tool_calls: fullcalls };
+      return { role: 'assistant', content: fullText, tool_calls: toolCallsArray };
     }
     return { role: 'assistant', content: fullText };
   }

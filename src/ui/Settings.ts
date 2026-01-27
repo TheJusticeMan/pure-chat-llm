@@ -85,13 +85,14 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                   .setIcon('refresh-cw')
                   .setTooltip('Refresh list of models')
                   .onClick(async () => {
-                    this.plugin.settings.ModelsOnEndpoint[
+                    loadAllModels(this.plugin);
+                    /* this.plugin.settings.ModelsOnEndpoint[
                       this.plugin.settings.endpoints[this.plugin.settings.endpoint].name
                     ] = [];
                     void new PureChatLLMChat(this.plugin).getAllModels().then(models => {
                       void this.plugin.saveSettings();
                       new Notice('Model list refreshed');
-                    });
+                    }); */
                   }),
             ),
       )
@@ -373,6 +374,17 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       .addSetting(
         setting =>
           void setting
+            .setName('Remove empty messages')
+            .setDesc('Automatically remove messages with empty content when saving/loading chats.')
+            .addToggle(toggle =>
+              toggle
+                .setValue(settings.removeEmptyMessages)
+                .onChange(async value => await this.sett('removeEmptyMessages', value)),
+            ),
+      )
+      .addSetting(
+        setting =>
+          void setting
             .setName('Auto reverse roles')
             .setDesc(
               'Automatically switch roles when the last message is empty, for replying to self.',
@@ -547,4 +559,21 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
             ),
       );
   }
+}
+
+function loadAllModels(plugin: PureChatLLM): void {
+  const currentEndpoint = plugin.settings.endpoint;
+  plugin.settings.endpoints.forEach((endpoint, index) => {
+    try {
+      plugin.settings.endpoint = index;
+      plugin.settings.ModelsOnEndpoint[endpoint.name] = [];
+      void new PureChatLLMChat(plugin).getAllModels().then(models => {
+        void plugin.saveSettings();
+        new Notice('Model list refreshed');
+      });
+    } catch (e) {
+      plugin.console.error('Error loading models for endpoint', endpoint.name, e);
+    }
+  });
+  plugin.settings.endpoint = currentEndpoint;
 }

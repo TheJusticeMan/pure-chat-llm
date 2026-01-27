@@ -183,4 +183,5 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
     writeIntermediateResults: false,
   },
   blueResolutionViewMode: 'tree',
+  removeEmptyMessages: true,
 };

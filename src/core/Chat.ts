@@ -204,6 +204,8 @@ export class PureChatLLMChat {
     };
 
     this.session = this.adapter.parse(markdown, defaultOptions, this.plugin.settings.SystemPrompt);
+    if (this.plugin.settings.removeEmptyMessages) this.cleanUpChat();
+
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.updateEndpointFromModel();
   }

@@ -26,6 +26,7 @@ export interface PureChatLLMSettings {
     writeIntermediateResults: boolean;
   };
   blueResolutionViewMode?: 'tree' | 'graph';
+  removeEmptyMessages: boolean;
 }
 
 export interface PureChatLLMAPI {
