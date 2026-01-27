@@ -84,7 +84,7 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
 
     if (folderStats.length === 0) {
       const builder = new ToolOutputBuilder()
-        .addHeader('📁', `FOLDERS IN: "${targetPath}"`)
+        .addHeader(`FOLDERS IN: "${targetPath}"`)
         .addKeyValue('Status', 'No subfolders found')
         .addSeparator();
 
@@ -105,7 +105,7 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
     };
 
     const builder = new ToolOutputBuilder();
-    builder.addHeader('📁', `FOLDERS IN: "${targetPath}"`);
+    builder.addHeader(`FOLDERS IN: "${targetPath}"`);
     builder.addKeyValue('Total folders', folderStats.length.toString());
     builder.addKeyValue('Mode', recursive ? 'Recursive' : 'Direct children only');
     builder.addSeparator();
@@ -121,7 +121,7 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
     builder.addSeparator();
     const totalFiles = folderStats.reduce((sum, f) => sum + f.fileCount, 0);
     const totalSize = folderStats.reduce((sum, f) => sum + f.totalSize, 0);
-    builder.addKeyValue('📊 Total files', totalFiles.toString());
+    builder.addKeyValue('STATISTICS - Total files', totalFiles.toString());
     builder.addKeyValue('Total size', formatSize(totalSize));
 
     // Add suggestions

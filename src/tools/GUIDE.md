@@ -13,13 +13,13 @@ All tools in Pure Chat LLM now return structured, formatted output designed to e
 Tools use a consistent header-based format with sections:
 
 ```
-📄 FILE READ SUCCESSFUL
+FILE READ SUCCESSFUL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Path: Projects/AI Research.md
 Size: 2,048 bytes (204 lines)
 Last Modified: 2025-01-27 14:23:05
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 METADATA
+METADATA
 - Frontmatter properties: 3 found
 - Headings: 4 sections
 - Links: 5 internal links
@@ -34,11 +34,11 @@ Content:
 All errors follow a structured format with recovery suggestions:
 
 ```
-❌ ERROR: FileNotFoundError (Recoverable)
+ERROR: FileNotFoundError (Recoverable)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Reason: No file exists at path "Projects/Missing.md"
 
-🔧 RECOVERY OPTIONS:
+RECOVERY OPTIONS:
 1. glob_vault_files("Projects/*.md") - Search similar files
 2. create_obsidian_note(path="Projects/Missing.md", ...) - Create file
 3. list_vault_folders("Projects") - Explore directory
@@ -49,7 +49,7 @@ Reason: No file exists at path "Projects/Missing.md"
 Tools that return multiple items use tables or numbered lists:
 
 ```
-📁 GLOB SEARCH RESULTS: "Projects/*.md"
+GLOB SEARCH RESULTS: "Projects/*.md"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Found 3 files matching pattern
 
@@ -59,9 +59,9 @@ Found 3 files matching pattern
 | 2 | Projects/Research.md| 5.4 KB | 1 week ago |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 Total size: 7.5 KB | Newest: Projects/AI.md
+STATISTICS - Total size: 7.5 KB | Newest: Projects/AI.md
 
-💡 SUGGESTED ACTIONS:
+SUGGESTED ACTIONS:
 1. read_file("Projects/AI.md") to view the first match
 2. Refine your pattern to narrow down results
 ```
@@ -71,7 +71,7 @@ Found 3 files matching pattern
 Write operations show detailed change information:
 
 ```
-✅ PATCH OPERATION APPROVED
+PATCH OPERATION APPROVED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Target: Projects/AI.md
 Action: Appended to section "## Tasks"
@@ -80,25 +80,10 @@ Total characters: 1,234
 
 File Status: ✓ Saved successfully
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 SUGGESTED ACTIONS:
+SUGGESTED ACTIONS:
 1. manage_workspace() to open the updated file
 2. read_file("Projects/AI.md") to verify the changes
 ```
-
----
-
-## Emoji Conventions
-
-- 📄 File operations (read, write)
-- 🔍 Search operations
-- 📁 Directory/glob operations
-- 🔗 Link/relationship operations
-- ✅ Successful write/modification
-- ❌ Errors
-- ⚠️  Warnings or important notices
-- 📊 Statistics and metadata
-- 💡 Suggestions for next actions
-- 🔧 Recovery options
 
 ---
 
@@ -340,7 +325,7 @@ When tasked with a broad objective:
 **Example Output (Multiple Files Found):**
 
 ```
-📁 GLOB SEARCH RESULTS: "05 - Projects/AI Agent/*.md"
+GLOB SEARCH RESULTS: "05 - Projects/AI Agent/*.md"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Found 5 files matching pattern
 
@@ -353,10 +338,10 @@ Found 5 files matching pattern
 | 5 | 05 - Projects/AI Agent/Archive.md  | 12.5 KB| 2 weeks ago|
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 Total size: 25.0 KB
+STATISTICS - Total size: 25.0 KB
 Newest file: README.md (2 days ago)
 
-💡 SUGGESTED ACTIONS:
+SUGGESTED ACTIONS:
 1. read_file("05 - Projects/AI Agent/README.md") to view the first match
 2. Refine your pattern to narrow down results
 ```
@@ -364,11 +349,11 @@ Newest file: README.md (2 days ago)
 **Example Output (No Files Found):**
 
 ```
-📁 GLOB SEARCH RESULTS: "NonExistent/*.md"
+GLOB SEARCH RESULTS: "NonExistent/*.md"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Status: No matches found
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 SUGGESTED ACTIONS:
+SUGGESTED ACTIONS:
 1. Check your glob pattern syntax (e.g., "**/*.md" for all markdown files)
 2. Use list_vault_folders() to explore directory structure
 ```
@@ -443,13 +428,13 @@ For files that are exceptionally long:
 **Example Output (Successful Read):**
 
 ```
-📄 FILE READ SUCCESSFUL
+FILE READ SUCCESSFUL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Path: 01 - Chats/Thematic Reflections/The Siren's Lure Script.md
 Size: 15,234 bytes (342 lines)
 Last Modified: 2025-01-26 18:45:32
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 METADATA
+METADATA
 - Frontmatter properties: 4 found
 - Headings: 8 sections
 - Links: 12 internal links
@@ -472,11 +457,11 @@ tags: [screenplay, mythology, character-study]
 **Example Output (File Not Found):**
 
 ```
-❌ ERROR: FileNotFoundError (Recoverable)
+ERROR: FileNotFoundError (Recoverable)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Reason: No file exists at path "Projects/Missing.md"
 
-🔧 RECOVERY OPTIONS:
+RECOVERY OPTIONS:
 1. glob_vault_files("Projects/*.md") - Search similar files
 2. list_vault_folders("Projects") - Explore directory
 3. create_obsidian_note(path="Projects/Missing.md", ...) - Create the file
@@ -968,7 +953,7 @@ To find mentions of a topic that hasn't been formally linked with `[[wikilinks]]
 **Example Output (Matches Found):**
 
 ```
-🔍 SEARCH RESULTS: "Hack by Will"
+SEARCH RESULTS: "Hack by Will"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Found 3 matches across 2 files (searched 456 files)
 Time taken: 0.45s
@@ -990,7 +975,7 @@ Time taken: 0.45s
   for breaking free from predetermined patterns.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 SUGGESTED ACTIONS:
+SUGGESTED ACTIONS:
 1. read_file("Projects/Game Development/Notes.md") to see full context
 2. get_backlinks("Projects/Game Development/Notes.md") to find related notes
 ```
@@ -998,13 +983,13 @@ Time taken: 0.45s
 **Example Output (No Matches):**
 
 ```
-🔍 SEARCH RESULTS: "nonexistent term"
+SEARCH RESULTS: "nonexistent term"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Status: No matches found
 Files searched: 456
 Time taken: 0.32s
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 SUGGESTED ACTIONS:
+SUGGESTED ACTIONS:
 1. Try a different search term or use regex: true for pattern matching
 2. Use glob_vault_files() to explore file structure
 ```

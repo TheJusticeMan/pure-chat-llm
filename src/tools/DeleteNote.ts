@@ -80,7 +80,7 @@ class DeleteConfirmationModal extends Modal {
     });
 
     contentEl.createEl('p', {
-      text: '⚠️  This action cannot be undone. The file will be moved to trash.',
+      text: 'WARNING: This action cannot be undone. The file will be moved to trash.',
       cls: 'mod-warning',
     });
 
@@ -96,7 +96,7 @@ class DeleteConfirmationModal extends Modal {
               this.resolved = true;
 
               const result = new ToolOutputBuilder()
-                .addHeader('✅', 'FILE DELETED')
+                .addHeader('FILE DELETED')
                 .addKeyValue('Deleted file', this.file.path)
                 .addKeyValue('Size', this.formatSize(this.file.stat.size))
                 .addSeparator()

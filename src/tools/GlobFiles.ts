@@ -54,7 +54,7 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
 
     if (matchedFiles.length === 0) {
       return new ToolOutputBuilder()
-        .addHeader('📁', `GLOB SEARCH RESULTS: "${pattern}"`)
+        .addHeader(`GLOB SEARCH RESULTS: "${pattern}"`)
         .addKeyValue('Status', 'No matches found')
         .addSeparator()
         .addSuggestions(
@@ -90,14 +90,14 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
     };
 
     const builder = new ToolOutputBuilder();
-    builder.addHeader('📁', `GLOB SEARCH RESULTS: "${pattern}"`);
+    builder.addHeader(`GLOB SEARCH RESULTS: "${pattern}"`);
     builder.addKeyValue(
       'Found',
       `${matchedFiles.length} file${matchedFiles.length === 1 ? '' : 's'} matching pattern`,
     );
 
     if (matchedFiles.length === limit) {
-      builder.addKeyValue('⚠️  Note', 'Results limited to maximum, more files may exist');
+      builder.addKeyValue('NOTE', 'Results limited to maximum, more files may exist');
     }
 
     builder.addSeparator();
@@ -142,7 +142,7 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
       matchedFiles[0],
     );
 
-    builder.addKeyValue('📊 Total size', formatSize(totalSize));
+    builder.addKeyValue('STATISTICS - Total size', formatSize(totalSize));
     builder.addKeyValue(
       'Newest file',
       `${newestFile.name} (${formatTimeAgo(newestFile.stat.mtime)})`,

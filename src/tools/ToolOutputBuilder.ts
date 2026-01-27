@@ -7,13 +7,12 @@ export class ToolOutputBuilder {
 
   /**
    * Add a header with optional status indicator
-   * @param emoji - Visual indicator for the operation type
    * @param title - Title of the operation
    * @param status - Optional status (e.g., "Recoverable", "Success")
    */
-  addHeader(emoji: string, title: string, status?: string): this {
+  addHeader(title: string, status?: string): this {
     const statusPart = status ? ` (${status})` : '';
-    this.sections.push(`${emoji} ${title}${statusPart}`);
+    this.sections.push(`${title}${statusPart}`);
     this.sections.push('━'.repeat(45));
     return this;
   }
@@ -71,7 +70,7 @@ export class ToolOutputBuilder {
    * @param actions - Array of suggested actions
    */
   addSuggestions(...actions: string[]): this {
-    this.sections.push('\n💡 SUGGESTED ACTIONS:');
+    this.sections.push('\nSUGGESTED ACTIONS:');
     actions.forEach((action, i) => {
       this.sections.push(`${i + 1}. ${action}`);
     });
@@ -85,9 +84,9 @@ export class ToolOutputBuilder {
    * @param recovery - Array of recovery suggestions
    */
   addError(type: string, message: string, recovery: string[]): this {
-    this.addHeader('❌', `ERROR: ${type}`, 'Recoverable');
+    this.addHeader(`ERROR: ${type}`, 'Recoverable');
     this.sections.push(`Reason: ${message}\n`);
-    this.sections.push('🔧 RECOVERY OPTIONS:');
+    this.sections.push('RECOVERY OPTIONS:');
     recovery.forEach((opt, i) => this.sections.push(`${i + 1}. ${opt}`));
     return this;
   }

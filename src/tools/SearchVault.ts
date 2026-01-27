@@ -105,7 +105,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
 
     if (results.length === 0) {
       return new ToolOutputBuilder()
-        .addHeader('🔍', `SEARCH RESULTS: "${query}"`)
+        .addHeader(`SEARCH RESULTS: "${query}"`)
         .addKeyValue('Status', 'No matches found')
         .addKeyValue('Files searched', files.length.toString())
         .addKeyValue('Time taken', `${searchTime}s`)
@@ -119,7 +119,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
 
     // Build structured output
     const builder = new ToolOutputBuilder();
-    builder.addHeader('🔍', `SEARCH RESULTS: "${query}"`);
+    builder.addHeader(`SEARCH RESULTS: "${query}"`);
     builder.addKeyValue(
       'Found',
       `${results.length} match${results.length === 1 ? '' : 'es'} across ${new Set(results.map(r => r.file)).size} file${new Set(results.map(r => r.file)).size === 1 ? '' : 's'}`,

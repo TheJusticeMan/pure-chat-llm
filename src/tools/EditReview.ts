@@ -219,7 +219,7 @@ class EditReviewModal extends Modal {
 
       // Build enhanced success message
       const builder = new ToolOutputBuilder();
-      builder.addHeader('✅', isNewFile ? 'NOTE CREATED' : 'PATCH OPERATION APPROVED');
+      builder.addHeader(isNewFile ? 'NOTE CREATED' : 'PATCH OPERATION APPROVED');
       builder.addKeyValue('Target', this.path);
 
       if (this.instruction) {

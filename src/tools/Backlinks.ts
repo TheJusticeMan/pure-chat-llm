@@ -57,7 +57,7 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
 
     if (backlinks.length === 0) {
       return new ToolOutputBuilder()
-        .addHeader('🔗', `BACKLINKS FOR: "${normalizedPath}"`)
+        .addHeader(`BACKLINKS FOR: "${normalizedPath}"`)
         .addKeyValue('Status', 'No backlinks found')
         .addSeparator()
         .addSuggestions(
@@ -71,7 +71,7 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
     backlinks.sort((a, b) => b.count - a.count);
 
     const builder = new ToolOutputBuilder();
-    builder.addHeader('🔗', `BACKLINKS FOR: "${normalizedPath}"`);
+    builder.addHeader(`BACKLINKS FOR: "${normalizedPath}"`);
     builder.addKeyValue(
       'Total backlinks',
       `${backlinks.length} note${backlinks.length === 1 ? '' : 's'}`,

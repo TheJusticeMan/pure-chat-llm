@@ -71,7 +71,7 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
 
       // Build enhanced output with metadata
       const builder = new ToolOutputBuilder();
-      builder.addHeader('📄', 'FILE READ SUCCESSFUL');
+      builder.addHeader('FILE READ SUCCESSFUL');
       builder.addKeyValue('Path', normalizedPath);
       builder.addKeyValue('Size', `${file.stat.size.toLocaleString()} bytes (${totalLines} lines)`);
 
@@ -86,7 +86,7 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
       const cache = app.metadataCache.getFileCache(file);
       if (cache) {
         builder.addSeparator();
-        builder.addKeyValue('📊 METADATA', '');
+        builder.addKeyValue('METADATA', '');
 
         const frontmatterProps = cache.frontmatter ? Object.keys(cache.frontmatter).length - 1 : 0; // -1 for 'position' key
         if (frontmatterProps > 0) {
@@ -109,7 +109,7 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
       // Add truncation information and suggestions if needed
       if (start > 0 || end < totalLines) {
         builder.addSeparator();
-        builder.addKeyValue('⚠️  CONTENT TRUNCATED', '');
+        builder.addKeyValue('CONTENT TRUNCATED', '');
         builder.addKeyValue(
           'Showing lines',
           `${start + 1}-${Math.min(end, totalLines)} of ${totalLines} total`,
