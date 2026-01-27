@@ -1,5 +1,6 @@
 import { App, Modal, normalizePath, Notice, Setting, TFile } from 'obsidian';
 import { defineToolParameters, InferArgs, Tool } from '../tools';
+import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 const deleteNoteParameters = defineToolParameters({
   type: 'object',
@@ -32,7 +33,16 @@ export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
 
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
-      return `Error: File not found at path "${normalizedPath}"`;
+      return new ToolOutputBuilder()
+        .addError(
+          'FileNotFoundError',
+          `No file exists at path "${normalizedPath}"`,
+          [
+            `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search for similar files`,
+            `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
+          ],
+        )
+        .build();
     }
 
     void this.status(`Requesting confirmation to delete "${normalizedPath}"...`);
@@ -61,8 +71,16 @@ class DeleteConfirmationModal extends Modal {
     contentEl.empty();
 
     contentEl.createEl('h2', { text: 'Confirm deletion' });
+    
+    // Show file details
+    const details = contentEl.createEl('div', { cls: 'delete-details' });
+    details.createEl('p', { text: `File: ${this.file.path}` });
+    details.createEl('p', { text: `Size: ${this.formatSize(this.file.stat.size)}` });
+    details.createEl('p', { text: `Last modified: ${new Date(this.file.stat.mtime).toLocaleString()}` });
+    
     contentEl.createEl('p', {
-      text: `Are you sure you want to delete "${this.file.path}"? This action cannot be undone.`,
+      text: '⚠️  This action cannot be undone. The file will be moved to trash.',
+      cls: 'mod-warning',
     });
 
     new Setting(contentEl)
@@ -75,12 +93,30 @@ class DeleteConfirmationModal extends Modal {
               await this.app.fileManager.trashFile(this.file);
               new Notice(`Deleted "${this.file.path}".`);
               this.resolved = true;
-              this.onResolve(`Successfully deleted "${this.file.path}".`);
+              
+              const result = new ToolOutputBuilder()
+                .addHeader('✅', 'FILE DELETED')
+                .addKeyValue('Deleted file', this.file.path)
+                .addKeyValue('Size', this.formatSize(this.file.stat.size))
+                .addSeparator()
+                .addKeyValue('Status', '✓ Moved to trash')
+                .build();
+              
+              this.onResolve(result);
               this.close();
             } catch (error) {
               const message = error instanceof Error ? error.message : String(error);
               this.resolved = true;
-              this.onResolve(`Error deleting file: ${message}`);
+              
+              const result = new ToolOutputBuilder()
+                .addError('DeleteError', message, [
+                  'Check file permissions',
+                  'Ensure the file is not open in another application',
+                  'Verify vault trash settings',
+                ])
+                .build();
+              
+              this.onResolve(result);
               this.close();
             }
           }),
@@ -92,6 +128,12 @@ class DeleteConfirmationModal extends Modal {
           this.close();
         }),
       );
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   onClose() {

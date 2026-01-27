@@ -9,6 +9,7 @@ import {
   TFile,
   TFolder,
 } from 'obsidian';
+import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 export class EditReview {
   static async prompt(
@@ -168,6 +169,8 @@ class EditReviewModal extends Modal {
       // 2. Check for existing file
       const existingFile = this.app.vault.getAbstractFileByPath(this.path);
       let targetFile: TFile;
+      const isNewFile = !existingFile;
+      const originalContent = this.originalContent || '';
 
       if (existingFile) {
         if (!this.overwrite) {
@@ -192,11 +195,53 @@ class EditReviewModal extends Modal {
       }
 
       new Notice(`Successfully saved "${this.path}".`);
-      return `Successfully created/updated note at "${this.path}".`;
+
+      // Build enhanced success message
+      const builder = new ToolOutputBuilder();
+      builder.addHeader('✅', isNewFile ? 'NOTE CREATED' : 'PATCH OPERATION APPROVED');
+      builder.addKeyValue('Target', this.path);
+      
+      if (this.instruction) {
+        builder.addKeyValue('Action', this.instruction);
+      }
+
+      // Calculate changes
+      const originalLines = originalContent.split('\n').length;
+      const newLines = this.newContent.split('\n').length;
+      const lineDiff = newLines - originalLines;
+      const charCount = this.newContent.length;
+
+      if (!isNewFile) {
+        if (lineDiff !== 0) {
+          builder.addKeyValue('Lines changed', `${lineDiff > 0 ? '+' : ''}${lineDiff} (${originalLines} → ${newLines})`);
+        }
+        builder.addKeyValue('Total characters', charCount.toLocaleString());
+      } else {
+        builder.addKeyValue('Lines created', newLines.toString());
+        builder.addKeyValue('Characters', charCount.toLocaleString());
+      }
+
+      builder.addSeparator();
+      builder.addKeyValue('File Status', '✓ Saved successfully');
+
+      // Add helpful suggestions
+      builder.addSeparator();
+      builder.addSuggestions(
+        `manage_workspace() to open the ${isNewFile ? 'new' : 'updated'} file`,
+        `read_file("${this.path}") to verify the changes`,
+      );
+
+      return builder.build();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       new Notice(`Error saving note: ${message}`);
-      return `Error creating note: ${message}`;
+      return new ToolOutputBuilder()
+        .addError('FileSystemError', message, [
+          'Check file permissions and vault configuration',
+          'Verify the file path is valid',
+          'Ensure no other process is locking the file',
+        ])
+        .build();
     }
   }
 }

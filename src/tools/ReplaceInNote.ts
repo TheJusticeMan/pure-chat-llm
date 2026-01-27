@@ -1,6 +1,7 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
 import { TFile, normalizePath } from 'obsidian';
 import { EditReview } from './EditReview';
+import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 const replaceInNoteParameters = defineToolParameters({
   type: 'object',
@@ -52,7 +53,17 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
 
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
-      return `Error: File not found at path "${normalizedPath}"`;
+      return new ToolOutputBuilder()
+        .addError(
+          'FileNotFoundError',
+          `No file exists at path "${normalizedPath}"`,
+          [
+            `read_file("${normalizedPath}") - Verify the correct path`,
+            `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Find similar files`,
+            `search_vault("${search}") - Find which files contain the search text`,
+          ],
+        )
+        .build();
     }
 
     void this.status(`Preparing replacement for "${normalizedPath}"...`);
@@ -77,7 +88,18 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
       }
 
       if (content === newContent) {
-        return `No matches found for "${search}" in "${normalizedPath}". No changes made.`;
+        return new ToolOutputBuilder()
+          .addHeader('ℹ️', 'NO MATCHES FOUND')
+          .addKeyValue('File', normalizedPath)
+          .addKeyValue('Search term', `"${search}"`)
+          .addKeyValue('Status', 'No changes made')
+          .addSeparator()
+          .addSuggestions(
+            `read_file("${normalizedPath}") - Review the file content`,
+            `search_vault("${search}") - Find which files contain this text`,
+            'Try different search term or use regex: true for pattern matching',
+          )
+          .build();
       }
 
       // Trigger Review Modal
@@ -91,7 +113,13 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return `Error replacing text in note: ${message}`;
+      return new ToolOutputBuilder()
+        .addError('ReplaceError', message, [
+          `read_file("${normalizedPath}") - Check file content`,
+          'Verify search pattern syntax (especially for regex mode)',
+          'Check if replacement string contains valid characters',
+        ])
+        .build();
     }
   }
 }

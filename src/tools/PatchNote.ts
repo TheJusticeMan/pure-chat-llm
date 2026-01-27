@@ -1,6 +1,7 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
 import { TFile, normalizePath } from 'obsidian';
 import { EditReview } from './EditReview';
+import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 const patchNoteParameters = defineToolParameters({
   type: 'object',
@@ -42,7 +43,17 @@ export class PatchNoteTool extends Tool<PatchNoteArgs> {
 
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
-      return `Error: File not found at path "${normalizedPath}"`;
+      return new ToolOutputBuilder()
+        .addError(
+          'FileNotFoundError',
+          `No file exists at path "${normalizedPath}"`,
+          [
+            `read_file("${normalizedPath}") - Verify the correct path`,
+            `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Find similar files`,
+            `create_obsidian_note(path="${normalizedPath}", ...) - Create the file first`,
+          ],
+        )
+        .build();
     }
 
     void this.status(`Preparing patch for "${normalizedPath}"...`);
@@ -99,7 +110,13 @@ export class PatchNoteTool extends Tool<PatchNoteArgs> {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return `Error patching note: ${message}`;
+      return new ToolOutputBuilder()
+        .addError('PatchError', message, [
+          `read_file("${normalizedPath}") - Check file content and structure`,
+          'Verify the heading name matches exactly (case-insensitive)',
+          'Check if the file has proper markdown formatting',
+        ])
+        .build();
     }
   }
 }

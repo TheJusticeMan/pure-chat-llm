@@ -1,5 +1,6 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
 import { TFile, normalizePath } from 'obsidian';
+import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 const readFileParameters = defineToolParameters({
   type: 'object',
@@ -41,7 +42,17 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
 
     const file = app.vault.getAbstractFileByPath(normalizedPath);
     if (!file || !(file instanceof TFile)) {
-      return `Error: File not found at path "${normalizedPath}"`;
+      return new ToolOutputBuilder()
+        .addError(
+          'FileNotFoundError',
+          `No file exists at path "${normalizedPath}"`,
+          [
+            `glob_vault_files("${normalizedPath.split('/').slice(0, -1).join('/')}/*.md") - Search similar files`,
+            `list_vault_folders("${normalizedPath.split('/').slice(0, -1).join('/')}") - Explore directory`,
+            `create_obsidian_note(path="${normalizedPath}", ...) - Create the file`,
+          ],
+        )
+        .build();
     }
 
     try {
@@ -59,12 +70,61 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
       const slicedLines = lines.slice(start, end);
       const result = slicedLines.join('\n');
 
-      if (start > 0 || end < totalLines) {
-        return `[File content truncated: showing lines ${start + 1}-${Math.min(end, totalLines)} of ${totalLines} total lines...]
-${result}`;
+      // Build enhanced output with metadata
+      const builder = new ToolOutputBuilder();
+      builder.addHeader('📄', 'FILE READ SUCCESSFUL');
+      builder.addKeyValue('Path', normalizedPath);
+      builder.addKeyValue('Size', `${file.stat.size.toLocaleString()} bytes (${totalLines} lines)`);
+      
+      // Format last modified date
+      const lastModified = new Date(file.stat.mtime);
+      builder.addKeyValue('Last Modified', lastModified.toISOString().replace('T', ' ').split('.')[0]);
+
+      // Add metadata info if available
+      const cache = app.metadataCache.getFileCache(file);
+      if (cache) {
+        builder.addSeparator();
+        builder.addKeyValue('📊 METADATA', '');
+        
+        const frontmatterProps = cache.frontmatter ? Object.keys(cache.frontmatter).length - 1 : 0; // -1 for 'position' key
+        if (frontmatterProps > 0) {
+          builder.addKeyValue('- Frontmatter properties', `${frontmatterProps} found`);
+        }
+        
+        if (cache.headings && cache.headings.length > 0) {
+          builder.addKeyValue('- Headings', `${cache.headings.length} sections`);
+        }
+        
+        if (cache.links && cache.links.length > 0) {
+          builder.addKeyValue('- Links', `${cache.links.length} internal links`);
+        }
+        
+        if (cache.tags && cache.tags.length > 0) {
+          builder.addKeyValue('- Tags', `${cache.tags.length} tags`);
+        }
       }
 
-      return result;
+      // Add truncation information and suggestions if needed
+      if (start > 0 || end < totalLines) {
+        builder.addSeparator();
+        builder.addKeyValue('⚠️  CONTENT TRUNCATED', '');
+        builder.addKeyValue('Showing lines', `${start + 1}-${Math.min(end, totalLines)} of ${totalLines} total`);
+        builder.addSection('Content', result);
+        
+        const suggestions = [];
+        if (start > 0) {
+          suggestions.push(`read_file("${normalizedPath}", offset=${Math.max(0, start - limit)}, limit=${limit}) - Read previous section`);
+        }
+        if (end < totalLines) {
+          suggestions.push(`read_file("${normalizedPath}", offset=${end}, limit=${limit}) - Read next section`);
+        }
+        builder.addSuggestions(...suggestions);
+      } else {
+        builder.addSeparator();
+        builder.addSection('Content', result);
+      }
+
+      return builder.build();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return `Error reading file: ${message}`;
