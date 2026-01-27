@@ -5,10 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.11.1] - 2026-01-23
+## [1.11.1] - 2026-01-26
+
+### Added
+
+- **Setting to Remove Empty Messages**: Added a new setting option to automatically filter out empty or whitespace-only messages from chat sessions, improving chat cleanliness and relevance.
+- **Enhanced Tool Message Handling**: Improved tool message processing with better descriptions and more robust error handling.
+- **Diff Functionality in EditReview**: Implemented visual diff comparison in the EditReview component for enhanced content change visualization.
+- **onRender Callback in ResolutionGraphRenderer**: Added callback support for improved rendering control and extensibility in graph visualization.
+- **Async Stream Callbacks**: Enhanced `LLMService` and `ToolExecutor` to support asynchronous stream callbacks for more flexible response handling.
+
+### Changed
+
+- **Tool Descriptions**: Refined all tool descriptions and error messages for improved clarity and user experience.
+- **Title Generation Logic**: Updated title generation to include numbered files, allowing better handling of copied notes with automatic title numbering.
+- **JSON Parsing in ChatMarkdownAdapter**: Refactored JSON parsing for improved type safety and error resilience.
 
 ### Fixed
 
+- **Tool Error Handling**: Enhanced error handling across all vault tools with better error messages and recovery strategies.
 - **Streaming Performance**: Resolved UI freezing during heavy LLM response streaming by implementing buffered updates (100ms debouncing) instead of updating the editor on every token.
 - **Memory Leak**: Fixed potential memory leaks in response streaming by adding proper `ReadableStream` reader cancellation on errors and early termination.
 
