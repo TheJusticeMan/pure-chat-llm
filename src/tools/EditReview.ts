@@ -162,11 +162,15 @@ class EditReviewModal extends Modal {
             await this.app.vault.createFolder(currentPath);
           } else if (!(existingFolder instanceof TFolder)) {
             return new ToolOutputBuilder()
-              .addError('InvalidPathError', `Path component "${currentPath}" exists but is not a folder`, [
-                `list_vault_folders("${currentPath.split('/').slice(0, -1).join('/')}") - Inspect the parent directory`,
-                'Choose a different path that does not conflict with existing files',
-                'Rename or move the conflicting file',
-              ])
+              .addError(
+                'InvalidPathError',
+                `Path component "${currentPath}" exists but is not a folder`,
+                [
+                  `list_vault_folders("${currentPath.split('/').slice(0, -1).join('/')}") - Inspect the parent directory`,
+                  'Choose a different path that does not conflict with existing files',
+                  'Rename or move the conflicting file',
+                ],
+              )
               .build();
           }
         }

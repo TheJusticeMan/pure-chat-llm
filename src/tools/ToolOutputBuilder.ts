@@ -31,7 +31,7 @@ export class ToolOutputBuilder {
    * Add a visual separator line
    */
   addSeparator(): this {
-    this.sections.push('---');
+    this.sections.push('\n---');
     return this;
   }
 

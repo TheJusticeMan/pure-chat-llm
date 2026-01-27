@@ -1,17 +1,19 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
 import { ToolOutputBuilder } from './ToolOutputBuilder';
+import { BooleanSearchParser, ParsedQuery } from '../utils/BooleanSearchParser';
 
 const searchVaultParameters = defineToolParameters({
   type: 'object',
   properties: {
     query: {
       type: 'string',
-      description: 'The text or regex pattern to search for within the vault notes.',
+      description:
+        'The text phrase or boolean expression to search for (supports AND, OR, NOT, parentheses, and quoted phrases). Example: "life story OR escape AND trauma"',
     },
     regex: {
       type: 'boolean',
       description:
-        'Treat the query as a regular expression. Defaults to false (simple case-insensitive text search).',
+        'Treat query as a regular expression. Defaults to false (boolean or simple case-insensitive text search).',
       default: false,
     },
     limit: {
@@ -33,7 +35,8 @@ export type SearchVaultArgs = InferArgs<typeof searchVaultParameters>;
 export class SearchVaultTool extends Tool<SearchVaultArgs> {
   readonly name = 'search_vault';
   readonly classification = 'Vault';
-  readonly description = 'Performs a content search across all markdown notes in the vault.';
+  readonly description =
+    'Performs a content search with boolean logic (AND, OR, NOT, parentheses) across all markdown notes in the vault.';
   readonly parameters = searchVaultParameters;
 
   isAvailable(): boolean {
@@ -51,14 +54,41 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     let matchCount = 0;
     const searchStartTime = Date.now();
 
+    // Parse boolean query if not using regex
+    let parsedQuery: ParsedQuery | null = null;
+    let isBoolean = false;
+
+    if (!regex) {
+      isBoolean = BooleanSearchParser.isBooleanQuery(query);
+      if (isBoolean) {
+        try {
+          parsedQuery = BooleanSearchParser.parse(query);
+        } catch (error) {
+          // If parsing fails, fall back to simple search
+          console.warn(`Boolean query parsing failed: ${error}`);
+          isBoolean = false;
+        }
+      }
+    }
+
     for (const file of files) {
       if (matchCount >= limit) break;
 
       try {
         const content = await app.vault.cachedRead(file);
+        const contentLower = content.toLowerCase();
 
-        // Simple search check first to avoid heavy processing
-        if (!regex && !content.toLowerCase().includes(query.toLowerCase())) {
+        // Boolean or simple search check
+        let fileMatches = false;
+        if (regex) {
+          fileMatches = new RegExp(query, 'i').test(content);
+        } else if (isBoolean && parsedQuery) {
+          fileMatches = BooleanSearchParser.evaluate(parsedQuery, content);
+        } else {
+          fileMatches = contentLower.includes(query.toLowerCase());
+        }
+
+        if (!fileMatches) {
           continue;
         }
 
@@ -67,9 +97,11 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
         for (let i = 0; i < lines.length; i++) {
           let lineMatch = false;
           if (regex) {
-            if (new RegExp(query, 'i').test(lines[i])) lineMatch = true;
+            lineMatch = new RegExp(query, 'i').test(lines[i]);
+          } else if (isBoolean && parsedQuery) {
+            lineMatch = BooleanSearchParser.evaluate(parsedQuery, lines[i]);
           } else {
-            if (lines[i].toLowerCase().includes(query.toLowerCase())) lineMatch = true;
+            lineMatch = lines[i].toLowerCase().includes(query.toLowerCase());
           }
 
           if (lineMatch) {
@@ -77,8 +109,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
             const endLine = Math.min(lines.length - 1, i + context_lines);
             const contextSnippet = lines
               .slice(startLine, endLine + 1)
-              .map((l, idx) => {
-                const lineNum = startLine + idx + 1;
+              .map((l: string, idx: number) => {
                 const prefix = startLine + idx === i ? '>' : ' ';
                 return `${prefix} ${l}`;
               })
@@ -113,6 +144,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
         .addSuggestions(
           'Try a different search term or use regex: true for pattern matching',
           'Use glob_vault_files() to explore file structure',
+          'Try boolean operators: "term1 OR term2 AND term3"',
         )
         .build();
     }
@@ -120,9 +152,13 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     // Build structured output
     const builder = new ToolOutputBuilder();
     builder.addHeader(`SEARCH RESULTS: "${query}"`);
+    if (isBoolean) {
+      builder.addKeyValue('Query Type', 'Boolean (AND/OR/NOT operators)');
+    }
+    const uniqueFileSet = new Set(results.map(r => r.file));
     builder.addKeyValue(
       'Found',
-      `${results.length} match${results.length === 1 ? '' : 'es'} across ${new Set(results.map(r => r.file)).size} file${new Set(results.map(r => r.file)).size === 1 ? '' : 's'}`,
+      `${results.length} match${results.length === 1 ? '' : 'es'} across ${uniqueFileSet.size} file${uniqueFileSet.size === 1 ? '' : 's'}`,
     );
     builder.addKeyValue('Files searched', files.length.toString());
     builder.addKeyValue('Time taken', `${searchTime}s`);
@@ -135,7 +171,7 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     builder.addSeparator();
 
     // Add suggestions based on results
-    const uniqueFiles = [...new Set(results.map(r => r.file))];
+    const uniqueFiles = Array.from(new Set(results.map(r => r.file)));
     const suggestions = [];
     if (uniqueFiles.length > 0) {
       suggestions.push(`read_file("${uniqueFiles[0]}") to see full context`);
@@ -145,6 +181,9 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     }
     if (results.length === limit) {
       suggestions.push(`Increase limit parameter to see more results (current: ${limit})`);
+    }
+    if (isBoolean) {
+      suggestions.push('Try advanced queries: "(term1 OR term2) AND term3 NOT term4"');
     }
 
     if (suggestions.length > 0) {

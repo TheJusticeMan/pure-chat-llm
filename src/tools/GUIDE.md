@@ -53,7 +53,7 @@ GLOB SEARCH RESULTS: "Projects/*.md"
 ---
 Found 3 files matching pattern
 
-| # | File Path            | Size   | Modified   |
+| # | File Path           | Size   | Modified   |
 |---|---------------------|--------|------------|
 | 1 | Projects/AI.md      | 2.1 KB | 2 days ago |
 | 2 | Projects/Research.md| 5.4 KB | 1 week ago |
@@ -322,42 +322,6 @@ When tasked with a broad objective:
 }
 ```
 
-**Example Output (Multiple Files Found):**
-
-```
-GLOB SEARCH RESULTS: "05 - Projects/AI Agent/*.md"
----
-Found 5 files matching pattern
-
-| # | File Path                          | Size   | Modified   |
-|---|------------------------------------|--------|------------|
-| 1 | 05 - Projects/AI Agent/README.md   | 2.1 KB | 2 days ago |
-| 2 | 05 - Projects/AI Agent/Tools.md    | 5.4 KB | 1 week ago |
-| 3 | 05 - Projects/AI Agent/Tasks.md    | 1.8 KB | 3 days ago |
-| 4 | 05 - Projects/AI Agent/Notes.md    | 3.2 KB | 5 days ago |
-| 5 | 05 - Projects/AI Agent/Archive.md  | 12.5 KB| 2 weeks ago|
-
----
-STATISTICS - Total size: 25.0 KB
-Newest file: README.md (2 days ago)
-
-SUGGESTED ACTIONS:
-1. read_file("05 - Projects/AI Agent/README.md") to view the first match
-2. Refine your pattern to narrow down results
-```
-
-**Example Output (No Files Found):**
-
-```
-GLOB SEARCH RESULTS: "NonExistent/*.md"
----
-Status: No matches found
----
-SUGGESTED ACTIONS:
-1. Check your glob pattern syntax (e.g., "**/*.md" for all markdown files)
-2. Use list_vault_folders() to explore directory structure
-```
-
 ---
 
 # Tool Guide: read_file
@@ -423,48 +387,6 @@ For files that are exceptionally long:
   "limit": 500,
   "offset": 0
 }
-```
-
-**Example Output (Successful Read):**
-
-```
-FILE READ SUCCESSFUL
----
-Path: 01 - Chats/Thematic Reflections/The Siren's Lure Script.md
-Size: 15,234 bytes (342 lines)
-Last Modified: 2025-01-26 18:45:32
----
-METADATA
-- Frontmatter properties: 4 found
-- Headings: 8 sections
-- Links: 12 internal links
-- Tags: 3 tags
----
-
-Content:
----
-status: draft
-created: 2025-01-15
-tags: [screenplay, mythology, character-study]
----
-
-# The Siren's Lure Script
-
-## Act 1: The Call
-...
-```
-
-**Example Output (File Not Found):**
-
-```
-ERROR: FileNotFoundError (Recoverable)
----
-Reason: No file exists at path "Projects/Missing.md"
-
-RECOVERY OPTIONS:
-1. glob_vault_files("Projects/*.md") - Search similar files
-2. list_vault_folders("Projects") - Explore directory
-3. create_obsidian_note(path="Projects/Missing.md", ...) - Create the file
 ```
 
 ---
@@ -882,10 +804,10 @@ The `search_vault` tool performs a comprehensive text-based search across all Ma
 
 ## Parameters
 
-- **query** (string, required): The text or regular expression to search for.
+- **query** (string, required): The text phrase or boolean expression to search for (supports AND, OR, NOT, parentheses, and quoted phrases). Example: "life story OR escape AND trauma"
 - **regex** (boolean, default: false): Whether to treat the query as a regular expression.
 - **context_lines** (integer, default: 1): Number of lines of context to include around the match.
-- **limit** (integer, default: 50): Maximum number of matching files to return.
+- **limit** (integer, default: 20): Maximum number of matches/snippets to return (not files).
 
 ---
 
@@ -940,6 +862,52 @@ To find mentions of a topic that hasn't been formally linked with `[[wikilinks]]
 
 ---
 
+## Boolean Search Syntax
+
+The search tool now supports boolean operators for more precise searches:
+
+### Operators
+
+- **AND**: All terms must be present (implicit when terms are separated by AND)
+- **OR**: At least one term must be present (default operator)
+- **NOT**: Term must not be present
+- **()**: Group expressions for precedence
+- **""**: Quoted phrases for exact matching
+
+### Examples
+
+```json
+{
+  "query": "life story OR escape"
+}
+```
+
+Finds notes containing either "life story" OR "escape"
+
+```json
+{
+  "query": "escape AND trauma"
+}
+```
+
+Finds notes containing BOTH "escape" AND "trauma"
+
+```json
+{
+  "query": "(life story OR escape) AND trauma NOT draft"
+}
+```
+
+Finds notes about trauma related to life story or escape, but excludes drafts
+
+```json
+{
+  "query": "\"great escape\" AND morning"
+}
+```
+
+Finds notes containing exact phrase "great escape" AND "morning"
+
 ## Example Usage
 
 ```json
@@ -948,50 +916,6 @@ To find mentions of a topic that hasn't been formally linked with `[[wikilinks]]
   "context_lines": 2,
   "limit": 10
 }
-```
-
-**Example Output (Matches Found):**
-
-```
-SEARCH RESULTS: "Hack by Will"
----
-Found 3 matches across 2 files (searched 456 files)
-Time taken: 0.45s
----
-
-[1] Projects/Game Development/Notes.md (Line 42)
-  The game design philosophy is inspired by
-> "Hack by Will" - the ability to override reality
-  through sheer determination and creative thinking.
-
-[2] Creative Writing/Story Ideas.md (Line 15)
-  Character concept:
-> A protagonist who can literally "Hack by Will"
-  the fabric of the simulation they're trapped in.
-
-[3] Creative Writing/Story Ideas.md (Line 87)
-  This ties back to the "Hack by Will" theme
-> where consciousness itself becomes the exploit
-  for breaking free from predetermined patterns.
-
----
-SUGGESTED ACTIONS:
-1. read_file("Projects/Game Development/Notes.md") to see full context
-2. get_backlinks("Projects/Game Development/Notes.md") to find related notes
-```
-
-**Example Output (No Matches):**
-
-```
-SEARCH RESULTS: "nonexistent term"
----
-Status: No matches found
-Files searched: 456
-Time taken: 0.32s
----
-SUGGESTED ACTIONS:
-1. Try a different search term or use regex: true for pattern matching
-2. Use glob_vault_files() to explore file structure
 ```
 
 ---

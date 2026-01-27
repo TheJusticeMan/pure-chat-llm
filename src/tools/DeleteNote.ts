@@ -80,6 +80,7 @@ class DeleteConfirmationModal extends Modal {
     });
 
     contentEl.createEl('p', {
+      // eslint-disable-next-line obsidianmd/ui/sentence-case
       text: 'WARNING: This action cannot be undone. The file will be moved to trash.',
       cls: 'mod-warning',
     });
