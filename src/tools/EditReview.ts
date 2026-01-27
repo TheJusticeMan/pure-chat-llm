@@ -161,7 +161,13 @@ class EditReviewModal extends Modal {
           if (!existingFolder) {
             await this.app.vault.createFolder(currentPath);
           } else if (!(existingFolder instanceof TFolder)) {
-            return `Error: Path component "${currentPath}" exists but is not a folder.`;
+            return new ToolOutputBuilder()
+              .addError('InvalidPathError', `Path component "${currentPath}" exists but is not a folder`, [
+                `list_vault_folders("${currentPath.split('/').slice(0, -1).join('/')}") - Inspect the parent directory`,
+                'Choose a different path that does not conflict with existing files',
+                'Rename or move the conflicting file',
+              ])
+              .build();
           }
         }
       }
@@ -174,10 +180,25 @@ class EditReviewModal extends Modal {
 
       if (existingFile) {
         if (!this.overwrite) {
-          return `Error: File "${this.path}" already exists. Set 'overwrite' to true to replace it.`;
+          return new ToolOutputBuilder()
+            .addError(
+              'FileExistsError',
+              `File "${this.path}" already exists and overwrite is not enabled`,
+              [
+                `read_file("${this.path}") - Review the existing file content`,
+                'Set overwrite parameter to true if you want to replace the existing file',
+                'Choose a different file path to avoid overwriting',
+              ],
+            )
+            .build();
         }
         if (!(existingFile instanceof TFile)) {
-          return `Error: Path "${this.path}" exists but is not a file.`;
+          return new ToolOutputBuilder()
+            .addError('InvalidPathError', `Path "${this.path}" exists but is not a file`, [
+              `list_vault_folders("${this.path.split('/').slice(0, -1).join('/')}") - Inspect the containing directory`,
+              'Choose a different path that does not conflict with existing folders',
+            ])
+            .build();
         }
         // Atomic update using process
         await this.app.vault.process(existingFile, () => this.newContent);

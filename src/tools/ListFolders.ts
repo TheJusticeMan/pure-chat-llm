@@ -83,15 +83,18 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
     walk(rootFolder, 0);
 
     if (folderStats.length === 0) {
-      return new ToolOutputBuilder()
+      const builder = new ToolOutputBuilder()
         .addHeader('📁', `FOLDERS IN: "${targetPath}"`)
         .addKeyValue('Status', 'No subfolders found')
-        .addSeparator()
-        .addSuggestions(
-          'This directory has no subdirectories',
-          recursive ? '' : 'Try with recursive: true to see nested folders',
-        )
-        .build();
+        .addSeparator();
+
+      const suggestions = ['This directory has no subdirectories'];
+      if (!recursive) {
+        suggestions.push('Try with recursive: true to see nested folders');
+      }
+
+      builder.addSuggestions(...suggestions);
+      return builder.build();
     }
 
     // Helper to format size
