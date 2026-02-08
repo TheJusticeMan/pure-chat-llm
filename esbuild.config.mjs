@@ -1,6 +1,7 @@
 import esbuild from 'esbuild';
 import process from 'process';
 import builtins from 'builtin-modules';
+import fs from 'fs';
 
 const banner = `
 /**
@@ -18,6 +19,7 @@ const context = await esbuild.context({
   },
   entryPoints: ['src/main.ts'],
   bundle: true,
+  metafile: prod,
   external: [
     'obsidian',
     'electron',
@@ -44,7 +46,14 @@ const context = await esbuild.context({
 });
 
 if (prod) {
-  await context.rebuild();
+  const result = await context.rebuild();
+
+  // 3. Write the metafile to disk
+  if (result.metafile) {
+    fs.writeFileSync('meta.json', JSON.stringify(result.metafile, null, 2));
+    console.log('Analysis metafile generated: meta.json');
+  }
+
   process.exit(0);
 } else {
   await context.watch();

@@ -731,3 +731,7 @@ sup {
   color: var(--text-muted);
   font-weight: bold;
 }
+
+.vertical-tab-header-group-items[data-section='community-plugins'] .vertical-tab-nav-item-icon {
+  display: block;
+}

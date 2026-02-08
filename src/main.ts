@@ -376,37 +376,15 @@ export default class PureChatLLM extends Plugin {
 
   async openHotkeys(): Promise<void> {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
-    const setting = (
-      this.app as unknown as {
-        setting: {
-          open: () => Promise<void>;
-          openTabById: (id: string) => void;
-          activeTab: {
-            searchComponent: { setValue: (value: string) => void; onChanged: () => void };
-          };
-        };
-      }
-    ).setting;
-    await setting.open();
-    setting.openTabById('hotkeys');
-    setting.activeTab.searchComponent.setValue('Pure Chat LLM');
-    setting.activeTab.searchComponent.onChanged();
+    await this.app.setting.open();
+    this.app.setting.openTabById('hotkeys');
+    this.app.setting.activeTab.searchComponent.setValue('Pure Chat LLM');
+    this.app.setting.activeTab.searchComponent.onChanged();
   }
 
   async openSettings(): Promise<void> {
-    const setting = (
-      this.app as unknown as {
-        setting: {
-          open: () => Promise<void>;
-          openTabById: (id: string) => void;
-          activeTab: {
-            searchComponent: { setValue: (value: string) => void; onChanged: () => void };
-          };
-        };
-      }
-    ).setting;
-    await setting.open();
-    setting.openTabById('pure-chat-llm');
+    await this.app.setting.open();
+    this.app.setting.openTabById('pure-chat-llm');
   }
 
   onUserEnable() {
@@ -626,6 +604,23 @@ export default class PureChatLLM extends Plugin {
         ...loadedData.selectionTemplates,
       },
     };
+
+    const toSentenceCase = (str: string) =>
+      str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+    this.settings.chatTemplates = Object.fromEntries(
+      Object.entries(this.settings.chatTemplates).map(([key, value]) => [
+        toSentenceCase(key),
+        value,
+      ]),
+    );
+
+    this.settings.selectionTemplates = Object.fromEntries(
+      Object.entries(this.settings.selectionTemplates).map(([key, value]) => [
+        toSentenceCase(key),
+        value,
+      ]),
+    );
 
     // Compatibility fixes for older versions
 
@@ -1259,5 +1254,17 @@ aliases:
   onClose(): void {
     const { contentEl } = this;
     contentEl.empty();
+  }
+}
+
+declare module 'obsidian' {
+  interface App {
+    setting: {
+      open: () => Promise<void>;
+      openTabById: (id: string) => void;
+      activeTab: {
+        searchComponent: { setValue: (value: string) => void; onChanged: () => void };
+      };
+    };
   }
 }

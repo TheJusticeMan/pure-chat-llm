@@ -193,7 +193,6 @@ export class LLMService {
           try {
             const data = JSON.parse(dataStr) as { choices: { delta: StreamDelta }[] };
             const delta = data.choices?.[0]?.delta;
-            this.console.log('Read chunk from stream:', delta);
             if (delta?.content) {
               fullText += delta.content;
               contentBuffer += delta.content;
@@ -210,9 +209,7 @@ export class LLMService {
                 }
               }
             } else if (delta?.tool_calls) {
-              this.console.log('Read tool_calls from stream:', delta.tool_calls);
               delta.tool_calls.forEach((call: ToolCall) => {
-                this.console.log('Processing tool_call chunk:', call);
                 // Handle both OpenAI format (with index) and Gemini format (with id)
                 const key = call.index ?? call.id ?? 0;
                 if (key === undefined) return;

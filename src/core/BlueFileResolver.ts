@@ -5,6 +5,7 @@ import { MediaMessage, ResolutionEvent, ResolutionNodeData, RoleType } from '../
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { ChatUtils } from '../utils/ChatUtils';
 import { PureChatLLMChat } from './Chat';
+import { ToolOutputBuilder } from 'src/tools/ToolOutputBuilder';
 
 /**
  * Represents a node in the file resolution tree.
@@ -145,6 +146,22 @@ export class BlueFileResolver {
     return lastMessage.role === 'user';
   }
 
+  async readAndBuildToolOutput(file: TFile, addBuild: boolean): Promise<string> {
+    if (addBuild)
+      return new ToolOutputBuilder()
+        .addHeader(`FILE READ SUCCESSFUL`)
+        .addKeyValue(`File`, file.path)
+        .addKeyValue('Size', `${file.stat.size.toLocaleString()} bytes`)
+        .addKeyValue(
+          'Last Modified',
+          new Date(file.stat.mtime).toISOString().replace('T', ' ').split('.')[0],
+        )
+        .addSeparator()
+        .addSection('Content', await this.fileSystem.read(file))
+        .build();
+    else return await this.fileSystem.read(file);
+  }
+
   /**
    * Recursively resolves a file, executing pending chats if necessary.
    *
@@ -153,12 +170,18 @@ export class BlueFileResolver {
    * @param app - The Obsidian app instance
    * @returns The resolved content (either static or dynamically generated)
    */
-  async resolveFile(file: TFile, context: ResolutionContext, app: App): Promise<string> {
+  async resolveFile(
+    file: TFile,
+    context: ResolutionContext,
+    app: App,
+    hasTextOutsideMatches: boolean = true,
+  ): Promise<string> {
     const { blueFileResolution } = this.plugin.settings;
+    this.console.log(`Resolving file: ${file.path}`, { blueFileResolution, hasTextOutsideMatches });
 
     // Check if feature is disabled
     if (!blueFileResolution.enabled) {
-      return this.fileSystem.read(file);
+      return await this.readAndBuildToolOutput(file, hasTextOutsideMatches);
     }
 
     // Emit start event
@@ -235,7 +258,7 @@ export class BlueFileResolver {
         isPendingChat: false,
         timestamp: Date.now(),
       });
-      return this.fileSystem.read(file);
+      return await this.readAndBuildToolOutput(file, hasTextOutsideMatches);
     }
 
     // Create a child node in the tree for this file
@@ -417,8 +440,16 @@ export class BlueFileResolver {
     const regex = /^\s*!?\[\[([^\]]+)\]\]\s*$/gim;
     const matches = Array.from(content.matchAll(regex));
 
+    // see if there is any text outside of the matches
+    const textOutsideMatches = content
+      .replace(/^\s*!?\[\[([^\]]+)\]\]\s*$/gim, '')
+      .replace(/---/g, '')
+      .trim();
+    const hasTextOutsideMatches = textOutsideMatches.length > 0;
+
     this.console.log(
       `[Blue File Resolution] resolveLinksInContent found ${matches.length} links in: ${activeFile.path}`,
+      { hasTextOutsideMatches },
     );
 
     if (matches.length === 0) {
@@ -442,10 +473,12 @@ export class BlueFileResolver {
         // If subpath is specified, retrieve the specific section
         if (subpath) {
           this.console.log(`[Blue File Resolution] Resolving subpath for: ${file.path}#${subpath}`);
-          replacements.push(this.retrieveLinkContent(linkText, activeFile, app, context));
+          replacements.push(
+            this.retrieveLinkContent(linkText, activeFile, app, context, hasTextOutsideMatches),
+          );
         } else {
           // Recursively resolve the file - it will create its own tree node
-          replacements.push(this.resolveFile(file, context, app));
+          replacements.push(this.resolveFile(file, context, app, hasTextOutsideMatches));
         }
       } else {
         this.console.log(
@@ -498,7 +531,16 @@ export class BlueFileResolver {
     const matches = Array.from(markdown.matchAll(regex));
     const replacements: Promise<string>[] = [];
 
-    this.console.log(`[Blue File Resolution] Found ${matches.length} matches in markdown`);
+    // see if there is any text outside of the matches
+    const textOutsideMatches = markdown
+      .replace(/^\s*!?\[\[([^\]]+)\]\]\s*$/gim, '')
+      .replace(/---/g, '')
+      .trim();
+    const hasTextOutsideMatches = textOutsideMatches.length > 0;
+
+    this.console.log(`[Blue File Resolution] Found ${matches.length} matches in markdown`, {
+      hasTextOutsideMatches,
+    });
 
     // Check if blue file resolution is enabled
     if (this.plugin.settings.blueFileResolution.enabled) {
@@ -518,9 +560,11 @@ export class BlueFileResolver {
 
           // If subpath is specified, use retrieveLinkContent
           if (subpath) {
-            replacements.push(this.retrieveLinkContent(linkText, activeFile, app, context));
+            replacements.push(
+              this.retrieveLinkContent(linkText, activeFile, app, context, hasTextOutsideMatches),
+            );
           } else {
-            replacements.push(this.resolveFile(file, context, app));
+            replacements.push(this.resolveFile(file, context, app, hasTextOutsideMatches));
           }
         } else {
           this.console.log(
@@ -540,9 +584,11 @@ export class BlueFileResolver {
         if (file instanceof TFile) {
           if (subpath) {
             // Handle subpath even when feature is disabled
-            replacements.push(this.retrieveLinkContent(linkText, activeFile, app));
+            replacements.push(
+              this.retrieveLinkContent(linkText, activeFile, app, undefined, hasTextOutsideMatches),
+            );
           } else {
-            replacements.push(this.fileSystem.read(file));
+            replacements.push(this.readAndBuildToolOutput(file, hasTextOutsideMatches));
           }
         } else {
           replacements.push(Promise.resolve(match[0]));
@@ -596,6 +642,7 @@ export class BlueFileResolver {
     activeFile: TFile,
     app: App,
     context?: ResolutionContext,
+    hasTextOutsideMatches: boolean = true,
   ): Promise<string> {
     const { subpath, path } = parseLinktext(str);
     const file = this.fileSystem.getFirstLinkDest(path, activeFile.path);
@@ -626,15 +673,15 @@ export class BlueFileResolver {
     // Check if blue file resolution should be used
     if (this.plugin.settings.blueFileResolution.enabled && context) {
       // Use blue file resolver with provided context
-      return this.resolveFile(file, context, app);
+      return this.resolveFile(file, context, app, hasTextOutsideMatches);
     } else if (this.plugin.settings.blueFileResolution.enabled && !context) {
       // Create new context if not provided
       const newContext = this.createContext(activeFile);
-      return this.resolveFile(file, newContext, app);
+      return this.resolveFile(file, newContext, app, hasTextOutsideMatches);
     }
 
     // Default: just read the file
-    return this.fileSystem.read(file);
+    return await this.readAndBuildToolOutput(file, hasTextOutsideMatches);
   }
 
   /**
@@ -734,6 +781,13 @@ export class BlueFileResolver {
   ): Promise<MediaMessage[] | string> {
     const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
 
+    // see if there is any text outside of the matches
+    const textOutsideMatches = markdown
+      .replace(/^!?\[\[([^\]]+)\]\]$/gm, '')
+      .replace(/---/g, '')
+      .trim();
+    const hasTextOutsideMatches = textOutsideMatches.length > 0;
+
     const resolved: MediaMessage[] = await Promise.all(
       matches.map(async match => {
         const [originalLink, link] = match;
@@ -776,7 +830,13 @@ export class BlueFileResolver {
         }
         return {
           type: 'text',
-          text: await this.retrieveLinkContent(link, activeFile, app, context),
+          text: await this.retrieveLinkContent(
+            link,
+            activeFile,
+            app,
+            context,
+            hasTextOutsideMatches,
+          ),
         };
       }),
     );

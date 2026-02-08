@@ -41,7 +41,7 @@ export class ToolOutputBuilder {
    * @param content - Section content
    */
   addSection(title: string, content: string): this {
-    this.sections.push(`\n${title}:\n${content}`);
+    this.sections.push(`\n${title}:\n---\n${content}\n---`);
     return this;
   }
 
