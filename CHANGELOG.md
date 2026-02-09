@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **SystemPrompt Wikilink Support**: The SystemPrompt setting now accepts wikilinks (e.g., `[[MyPrompt]]`) that are resolved relative to the current chat file. This enables folder-specific system prompts by placing different prompt files in different folders. The feature includes:
+  - Wikilink resolution using `metadataCache.getFirstLinkpathDest`
+  - Automatic fallback to default prompt if file not found or empty
+  - File context stored in chat for proper resolution
+  - Updated settings UI to indicate wikilink format
+  - Console logging for debugging resolution issues
+  - Backward compatibility with direct text prompts
+
 - **Realtime System Prompt File Setting**: Added a new setting to configure a file path for the realtime voice call system prompt. When configured, the plugin will read the system prompt from the specified file instead of using hardcoded defaults. This makes it easy to customize the AI's behavior during voice calls. The feature includes:
   - New `realtimeSystemPromptFile` setting in plugin settings
   - UI control in settings with file path autocomplete (press `/` or `[` to browse files)
