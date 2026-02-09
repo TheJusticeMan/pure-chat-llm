@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Realtime System Prompt File Setting**: Added a new setting to configure a file path for the realtime voice call system prompt. When configured, the plugin will read the system prompt from the specified file instead of using hardcoded defaults. This makes it easy to customize the AI's behavior during voice calls. The feature includes:
+  - New `realtimeSystemPromptFile` setting in plugin settings
+  - UI control in settings with file path autocomplete (press `/` or `[` to browse files)
+  - Automatic fallback to default prompts if file is not found or empty
+  - User notifications when file reading fails or file is empty
+  - Works with both OpenAI Realtime and Gemini Live providers
+
 ## [1.12.0] - 2026-01-27
 
 ### Added
