@@ -638,7 +638,7 @@ export default class PureChatLLM extends Plugin {
     const activeFile = view.file;
     if (activeFile)
       void new PureChatLLMChat(this)
-        .setMarkdown(editor.getValue())
+        .setMarkdown(editor.getValue(), activeFile)
         .processChatWithTemplate(this.settings.chatTemplates['Conversation titler'])
         .then(title => {
           const sanitizedTitle = `${activeFile.parent?.path}/${title.content
@@ -672,7 +672,7 @@ export default class PureChatLLM extends Plugin {
     const activeFile = view.file;
     if (!activeFile) return;
     const editorcontent = editor.getValue();
-    const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
+    const chat = new PureChatLLMChat(this).setMarkdown(editorcontent, activeFile);
     if (chat.messages[chat.messages.length - 1].content === '' && chat.validChat) {
       if (chat.messages.pop()?.role == 'user' && this.settings.AutoReverseRoles)
         chat.reverseRoles();

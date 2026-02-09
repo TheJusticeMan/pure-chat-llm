@@ -117,11 +117,11 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         setting =>
           void setting
             .setName('Default system prompt')
-            .setDesc('System message for each new chat.  Press [ to link a file.')
+            .setDesc('Wikilink to a file containing the system prompt (e.g., [[MyPrompt]]). Resolved relative to the current file for folder-specific prompts. Leave empty for default.')
             .setClass('PURE')
             .addTextArea(text =>
               text
-                .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
+                .setPlaceholder('[[SystemPrompt]] or leave empty for default')
                 .setValue(this.ifdefault('SystemPrompt'))
                 .onChange(
                   async value =>
@@ -131,7 +131,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                   if (e.key === '/' || e.key === '[') {
                     e.preventDefault();
                     new FileSuggest(this.app, file => {
-                      // Insert the selected file at the cursor position
+                      // Insert the selected file at the cursor position as a wikilink
                       const cursorPos = text.inputEl.selectionStart ?? 0;
                       const before = text.inputEl.value.slice(0, cursorPos);
                       const after = text.inputEl.value.slice(cursorPos);

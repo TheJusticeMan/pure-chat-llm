@@ -805,7 +805,7 @@
       "format": "esm"
     },
     "src/core/Chat.ts": {
-      "bytes": 26063,
+      "bytes": 29392,
       "imports": [
         {
           "path": "obsidian",
@@ -1341,7 +1341,7 @@
       "format": "esm"
     },
     "src/ui/Settings.ts": {
-      "bytes": 23822,
+      "bytes": 23955,
       "imports": [
         {
           "path": "obsidian",
@@ -1615,7 +1615,7 @@
       "format": "esm"
     },
     "src/main.ts": {
-      "bytes": 50062,
+      "bytes": 50086,
       "imports": [
         {
           "path": "obsidian",
@@ -1917,7 +1917,7 @@
           "bytesInOutput": 791
         },
         "src/main.ts": {
-          "bytesInOutput": 20396
+          "bytesInOutput": 20400
         },
         "package.json": {
           "bytesInOutput": 16
@@ -1938,7 +1938,7 @@
           "bytesInOutput": 709
         },
         "src/core/Chat.ts": {
-          "bytesInOutput": 7423
+          "bytesInOutput": 8799
         },
         "src/tools.ts": {
           "bytesInOutput": 1984
@@ -2076,7 +2076,7 @@
           "bytesInOutput": 5484
         },
         "src/ui/Settings.ts": {
-          "bytesInOutput": 11175
+          "bytesInOutput": 11309
         },
         "src/core/ImportChatGPT.ts": {
           "bytesInOutput": 1774
@@ -2109,7 +2109,7 @@
           "bytesInOutput": 561
         }
       },
-      "bytes": 220153
+      "bytes": 221667
     }
   }
 }

@@ -1,5 +1,5 @@
 import { App, EditorRange, Notice, TFile } from 'obsidian';
-import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
+import { Chatsysprompt, DEFAULT_SETTINGS, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import PureChatLLM, { StreamNotice } from '../main';
 import { ToolRegistry } from '../tools';
 import { ActiveContextTool } from '../tools/ActiveContext';
@@ -217,23 +217,80 @@ export class PureChatLLMChat {
   }
 
   /**
+   * Resolves the SystemPrompt wikilink to actual content.
+   * If the setting is a wikilink like [[MyPrompt]], it resolves the file relative to the current file.
+   * If empty or file not found, returns the default system prompt.
+   *
+   * @param sourceFile - The file to resolve the wikilink relative to
+   * @returns A promise that resolves to the system prompt content
+   */
+  async resolveSystemPrompt(sourceFile?: TFile): Promise<string> {
+    const promptSetting = this.plugin.settings.SystemPrompt;
+    
+    // If empty, return default
+    if (!promptSetting || promptSetting.trim() === '') {
+      return this.getDefaultSystemPrompt();
+    }
+
+    // Check if it's a wikilink format [[...]]
+    const wikilinkMatch = promptSetting.match(/^\[\[(.+?)\]\]$/);
+    
+    if (!wikilinkMatch) {
+      // Not a wikilink, return as-is (backward compatibility)
+      return promptSetting;
+    }
+
+    // Extract the link path
+    const linkPath = wikilinkMatch[1];
+    
+    if (!sourceFile) {
+      // No source file to resolve from, return default
+      return this.getDefaultSystemPrompt();
+    }
+
+    try {
+      // Resolve the wikilink relative to the source file
+      const resolvedFile = this.plugin.app.metadataCache.getFirstLinkpathDest(
+        linkPath,
+        sourceFile.path
+      );
+
+      if (!resolvedFile || !(resolvedFile instanceof TFile)) {
+        // File not found, return default
+        this.console.log(`SystemPrompt file not found: ${linkPath}, using default`);
+        return this.getDefaultSystemPrompt();
+      }
+
+      // Read the file content
+      const content = await this.plugin.app.vault.cachedRead(resolvedFile);
+      
+      if (!content || content.trim() === '') {
+        // Empty file, return default
+        this.console.log(`SystemPrompt file is empty: ${linkPath}, using default`);
+        return this.getDefaultSystemPrompt();
+      }
+
+      return content.trim();
+    } catch (error) {
+      this.console.error(`Error reading SystemPrompt file: ${error}`);
+      return this.getDefaultSystemPrompt();
+    }
+  }
+
+  /**
+   * Gets the default system prompt from constants.
+   *
+   * @returns The default system prompt
+   */
+  private getDefaultSystemPrompt(): string {
+    return DEFAULT_SETTINGS.SystemPrompt;
+  }
+
+  /**
    * Sets the Markdown content for the chat and processes it into structured messages.
+   * For synchronous backward compatibility.
    *
-   * @param markdown - The Markdown string to be parsed. It is expected to contain
-   *                   sections prefixed with `# role: system|user|assistant|developer`
-   *                   to define the roles and their respective content.
-   *
-   * The method performs the following:
-   * - Splits the Markdown into a prechat section and chat sections based on the role markers.
-   * - If no role markers are found, initializes the messages with a system prompt and the
-   *   entire prechat content as a user message.
-   * - Parses each chat section into a message object with a role, content, and editor range.
-   * - Extracts JSON options from the prechat section if a JSON code block is present.
-   *
-   * Notes:
-   * - The `cline` property in each message represents the range of lines in the editor
-   *   corresponding to the message content.
-   * - The `options` property is updated if valid JSON is found in the prechat section.
+   * @param markdown - The Markdown string to be parsed.
    */
   set markdown(markdown: string) {
     const defaultOptions: ChatOptions = {
@@ -249,6 +306,58 @@ export class PureChatLLMChat {
 
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.updateEndpointFromModel();
+  }
+
+  /**
+   * Asynchronously sets the Markdown content for the chat with proper SystemPrompt resolution.
+   *
+   * @param markdown - The Markdown string to be parsed
+   * @param sourceFile - The file to use as context for resolving the SystemPrompt wikilink
+   * @returns Promise that resolves to this chat instance
+   */
+  async setMarkdownAsync(markdown: string, sourceFile?: TFile): Promise<this> {
+    const defaultOptions: ChatOptions = {
+      model: this.endpoint.defaultmodel,
+      max_completion_tokens: this.plugin.settings.defaultmaxTokens,
+      stream: true,
+      tools: this.toolregistry.getNameList(),
+      messages: [],
+    };
+
+    // Store the file for later use
+    if (sourceFile) {
+      this.file = sourceFile;
+    }
+
+    // Resolve the system prompt
+    const resolvedSystemPrompt = await this.resolveSystemPrompt(sourceFile);
+
+    this.session = this.adapter.parse(markdown, defaultOptions, resolvedSystemPrompt);
+    if (this.plugin.settings.removeEmptyMessages) {
+      this.session.cleanUpChat(resolvedSystemPrompt);
+    }
+
+    this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
+    this.updateEndpointFromModel();
+    
+    return this;
+  }
+
+  /**
+   * Sets the Markdown content for the chat with optional file context.
+   *
+   * @param markdown - The Markdown string to set
+   * @param sourceFile - Optional file context for SystemPrompt resolution
+   * @returns this instance for chaining
+   */
+  setMarkdown(markdown: string, sourceFile?: TFile): this {
+    if (sourceFile) {
+      // Store the file for async resolution
+      this.file = sourceFile;
+    }
+    // Use synchronous path with raw setting for immediate return
+    this.markdown = markdown;
+    return this;
   }
 
   /**
@@ -284,18 +393,6 @@ export class PureChatLLMChat {
    */
   cleanUpChat() {
     this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
-    return this;
-  }
-
-  /**
-   * Sets the markdown content for the current instance.
-   *
-   * @param markdown - The markdown string to set.
-   * @returns The current instance to allow method chaining.
-   */
-  setMarkdown(markdown: string) {
-    // make this chainable
-    this.markdown = markdown;
     return this;
   }
 
@@ -398,17 +495,29 @@ export class PureChatLLMChat {
       context = resolver.createContext(activeFile);
     }
 
+    // Resolve the system prompt
+    const resolvedSystemPrompt = await this.resolveSystemPrompt(activeFile);
+
     const messages = await Promise.all(
-      this.messages.map(async ({ role, content }) => ({
-        role: role,
-        content: await resolver.resolveFilesWithImagesAndAudio(
-          content,
-          activeFile,
-          app,
-          role,
-          context,
-        ),
-      })),
+      this.messages.map(async ({ role, content }) => {
+        let resolvedContent = content;
+        
+        // If this is a system message with the raw SystemPrompt setting, replace with resolved
+        if (role === 'system' && content === this.plugin.settings.SystemPrompt) {
+          resolvedContent = resolvedSystemPrompt;
+        }
+        
+        return {
+          role: role,
+          content: await resolver.resolveFilesWithImagesAndAudio(
+            resolvedContent,
+            activeFile,
+            app,
+            role,
+            context,
+          ),
+        };
+      }),
     );
 
     // For Gemini endpoint: ensure at least one user message exists
