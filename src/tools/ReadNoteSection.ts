@@ -1,5 +1,5 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
-import { TFile, normalizePath, parseLinktext, resolveSubpath } from 'obsidian';
+import { TFile, parseLinktext, resolveSubpath } from 'obsidian';
 import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 const readNoteSectionParameters = defineToolParameters({
@@ -164,14 +164,12 @@ export class ReadNoteSectionTool extends Tool<ReadNoteSectionArgs> {
       builder.addKeyValue('Path', normalizedPath);
 
       let contentToReturn = content;
-      let sectionInfo = '';
 
       // If subpath is specified, extract that section
       if (subpath && cache) {
         const ref = resolveSubpath(cache, subpath);
         if (ref) {
           contentToReturn = content.substring(ref.start.offset, ref.end?.offset).trim();
-          sectionInfo = ` (section: ${subpath})`;
           builder.addKeyValue('Section', subpath);
         } else {
           return new ToolOutputBuilder()

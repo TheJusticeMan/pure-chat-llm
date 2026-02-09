@@ -548,7 +548,7 @@
       "format": "esm"
     },
     "src/tools/ReadNoteSection.ts": {
-      "bytes": 8791,
+      "bytes": 8739,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -621,7 +621,7 @@
       "format": "esm"
     },
     "src/tools/WriteNoteSection.ts": {
-      "bytes": 8951,
+      "bytes": 8949,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -1995,7 +1995,7 @@
           "bytesInOutput": 2865
         },
         "src/tools/ReadNoteSection.ts": {
-          "bytesInOutput": 4536
+          "bytesInOutput": 4510
         },
         "src/tools/ReplaceInNote.ts": {
           "bytesInOutput": 2284
@@ -2109,7 +2109,7 @@
           "bytesInOutput": 561
         }
       },
-      "bytes": 218851
+      "bytes": 218825
     }
   }
 }

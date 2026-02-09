@@ -1,5 +1,5 @@
 import { defineToolParameters, InferArgs, Tool } from '../tools';
-import { TFile, normalizePath, parseLinktext, resolveSubpath } from 'obsidian';
+import { TFile, parseLinktext, resolveSubpath } from 'obsidian';
 import { EditReview } from './EditReview';
 import { ToolOutputBuilder } from './ToolOutputBuilder';
 
