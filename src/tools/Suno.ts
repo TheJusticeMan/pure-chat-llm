@@ -119,6 +119,9 @@ interface SunoCreditsData {
   credits: number;
 }
 
+/**
+ *
+ */
 export class SunoTool extends Tool<SunoArgs> {
   readonly name = 'suno_music_gen';
   readonly classification = 'AI';
@@ -126,16 +129,26 @@ export class SunoTool extends Tool<SunoArgs> {
     'A versatile tool for AI music creation using the Suno API. It can generate songs, lyrics, music videos, and perform audio manipulation like stem separation and track extension. Use this tool to turn text descriptions into complete musical compositions.';
   readonly parameters = sunoParameters;
 
+  /**
+   *
+   */
   private get apiKey(): string | undefined {
     const sunoEndpoint = this.chat.plugin.settings.endpoints.find(e => e.name === 'Suno');
     return sunoEndpoint?.apiKey;
   }
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     const key = this.apiKey;
     return !!key && key !== 'EMPTY' && key !== '';
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: SunoArgs): Promise<string> {
     const apiKey = this.apiKey;
     if (!apiKey) {
@@ -167,6 +180,10 @@ export class SunoTool extends Tool<SunoArgs> {
     return await this.sendRequest(args, apiKey);
   }
 
+  /**
+   *
+   * @param args
+   */
   private validateArgs(args: SunoArgs): string | null {
     const { action, prompt, customMode, style, title, taskId, audioId, continueAt } = args;
 
@@ -198,6 +215,10 @@ export class SunoTool extends Tool<SunoArgs> {
     return null;
   }
 
+  /**
+   *
+   * @param action
+   */
   private calculateCost(action: string): number {
     switch (action) {
       case 'generate_music':
@@ -214,6 +235,11 @@ export class SunoTool extends Tool<SunoArgs> {
     }
   }
 
+  /**
+   *
+   * @param args
+   * @param apiKey
+   */
   private async sendRequest(args: SunoArgs, apiKey: string): Promise<string> {
     const {
       action,
@@ -386,6 +412,9 @@ export class SunoTool extends Tool<SunoArgs> {
   }
 }
 
+/**
+ *
+ */
 class SunoConfirmationModal extends Modal {
   action: string;
   cost: number;
@@ -393,6 +422,14 @@ class SunoConfirmationModal extends Modal {
   onResolve: (confirmed: boolean) => void;
   resolved = false;
 
+  /**
+   *
+   * @param app
+   * @param action
+   * @param cost
+   * @param details
+   * @param onResolve
+   */
   constructor(
     app: App,
     action: string,
@@ -407,6 +444,9 @@ class SunoConfirmationModal extends Modal {
     this.onResolve = onResolve;
   }
 
+  /**
+   *
+   */
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
@@ -446,6 +486,9 @@ class SunoConfirmationModal extends Modal {
       );
   }
 
+  /**
+   *
+   */
   onClose() {
     if (!this.resolved) {
       this.onResolve(false);

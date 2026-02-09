@@ -24,6 +24,9 @@ const readFileParameters = defineToolParameters({
 
 export type ReadFileArgs = InferArgs<typeof readFileParameters>;
 
+/**
+ *
+ */
 export class ReadFileTool extends Tool<ReadFileArgs> {
   readonly name = 'read_file';
   readonly classification = 'Vault';
@@ -31,10 +34,17 @@ export class ReadFileTool extends Tool<ReadFileArgs> {
     'Reads the content of a file in the Obsidian vault. Supports line-based pagination.';
   readonly parameters = readFileParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ReadFileArgs): Promise<string> {
     const { path, offset, limit = 2000 } = args;
     const app = this.chat.plugin.app;

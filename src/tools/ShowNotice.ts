@@ -19,16 +19,26 @@ const showNoticeParameters = defineToolParameters({
 
 export type ShowNoticeArgs = InferArgs<typeof showNoticeParameters>;
 
+/**
+ *
+ */
 export class ShowNoticeTool extends Tool<ShowNoticeArgs> {
   readonly name = 'show_obsidian_notice';
   readonly classification = 'UI';
   readonly description = 'Displays a transient toast notification (notice) in the Obsidian UI.';
   readonly parameters = showNoticeParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ShowNoticeArgs): Promise<string> {
     const { message, duration = 5000 } = args;
     new Notice(message, duration);

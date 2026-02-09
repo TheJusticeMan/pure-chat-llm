@@ -1,8 +1,23 @@
 import { GraphNode, ViewTransform, GRAPH_CONSTANTS, getStatusColor } from './types';
 
+/**
+ *
+ */
 export class MinimapRenderer {
+  /**
+   *
+   * @param ctx
+   */
   constructor(private ctx: CanvasRenderingContext2D) {}
 
+  /**
+   *
+   * @param canvasWidth
+   * @param canvasHeight
+   * @param nodes
+   * @param transform
+   * @param showMinimap
+   */
   public render(
     canvasWidth: number,
     canvasHeight: number,
@@ -75,6 +90,14 @@ export class MinimapRenderer {
     this.ctx.restore();
   }
 
+  /**
+   *
+   * @param e
+   * @param canvas
+   * @param nodes
+   * @param transform
+   * @param onUpdate
+   */
   public handleMinimapClick(
     e: MouseEvent,
     canvas: HTMLCanvasElement,

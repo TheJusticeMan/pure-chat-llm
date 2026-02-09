@@ -15,6 +15,9 @@ const activeContextParameters = defineToolParameters({
 
 export type ActiveContextArgs = InferArgs<typeof activeContextParameters>;
 
+/**
+ *
+ */
 export class ActiveContextTool extends Tool<ActiveContextArgs> {
   readonly name = 'get_active_context';
   readonly classification = 'UI';
@@ -22,10 +25,17 @@ export class ActiveContextTool extends Tool<ActiveContextArgs> {
     'Retrieves information about the currently active note, including path, selection, and cursor position.';
   readonly parameters = activeContextParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ActiveContextArgs): Promise<string> {
     const { include_content = false } = args;
     const app = this.chat.plugin.app;

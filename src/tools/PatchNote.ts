@@ -25,6 +25,9 @@ const patchNoteParameters = defineToolParameters({
 
 export type PatchNoteArgs = InferArgs<typeof patchNoteParameters>;
 
+/**
+ *
+ */
 export class PatchNoteTool extends Tool<PatchNoteArgs> {
   readonly name = 'patch_note';
   readonly classification = 'Vault';
@@ -32,10 +35,17 @@ export class PatchNoteTool extends Tool<PatchNoteArgs> {
     'Appends text to a specific section or heading in a note. Triggers user review.';
   readonly parameters = patchNoteParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: PatchNoteArgs): Promise<string> {
     const { path, heading, new_content } = args;
     const app = this.chat.plugin.app;

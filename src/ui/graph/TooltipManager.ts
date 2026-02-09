@@ -1,15 +1,31 @@
 import { GraphNode } from './types';
 
+/**
+ *
+ */
 export class TooltipManager {
   private el: HTMLDivElement | null = null;
   private hovered: GraphNode | null = null;
 
+  /**
+   *
+   * @param container
+   */
   constructor(private container: HTMLElement) {}
 
+  /**
+   *
+   */
   public setup(): void {
     this.el = this.container.createDiv({ cls: 'graph-tooltip graph-tooltip-hidden' });
   }
 
+  /**
+   *
+   * @param node
+   * @param x
+   * @param y
+   */
   public update(node: GraphNode | null, x: number, y: number): void {
     if (!this.el) return;
     if (node && node !== this.hovered) {
@@ -21,6 +37,12 @@ export class TooltipManager {
     }
   }
 
+  /**
+   *
+   * @param node
+   * @param x
+   * @param y
+   */
   private show(node: GraphNode, x: number, y: number): void {
     if (!this.el) return;
     this.el.empty();
@@ -54,6 +76,9 @@ export class TooltipManager {
     this.el.classList.remove('graph-tooltip-hidden');
   }
 
+  /**
+   *
+   */
   public destroy(): void {
     this.el?.remove();
   }

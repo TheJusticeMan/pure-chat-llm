@@ -33,21 +33,38 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   plugin: PureChatLLM;
   icon: string = PURE_CHAT_LLM_ICON_NAME;
 
+  /**
+   *
+   * @param app
+   * @param plugin
+   */
   constructor(app: App, plugin: PureChatLLM) {
     super(app, plugin);
     this.plugin = plugin;
   }
+  /**
+   *
+   * @param key
+   * @param value
+   */
   async sett<S extends keyof PureChatLLMSettings>(key: S, value: PureChatLLMSettings[S]) {
     this.plugin.settings[key] = value;
     await this.plugin.saveSettings();
   }
 
+  /**
+   *
+   * @param key
+   */
   ifdefault<S extends keyof PureChatLLMSettings>(key: S): string {
     const { settings } = this.plugin;
     // eslint-disable-next-line @typescript-eslint/no-base-to-string
     return settings[key] !== DEFAULT_SETTINGS[key] ? String(settings[key] ?? '') : '';
   }
 
+  /**
+   *
+   */
   display(): void {
     const {
       containerEl,
@@ -561,6 +578,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 }
 
+/**
+ *
+ * @param plugin
+ */
 function loadAllModels(plugin: PureChatLLM): void {
   const currentEndpoint = plugin.settings.endpoint;
   plugin.settings.endpoints.forEach((endpoint, index) => {

@@ -30,6 +30,11 @@ export class AskForAPI extends Modal {
   private apiKey: string;
   private modal: string;
 
+  /**
+   *
+   * @param app
+   * @param plugin
+   */
   constructor(app: App, plugin: PureChatLLM) {
     super(app);
     this.plugin = plugin;
@@ -41,6 +46,9 @@ export class AskForAPI extends Modal {
     this.buildUI();
   }
 
+  /**
+   *
+   */
   private buildUI() {
     const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
 
@@ -89,6 +97,9 @@ export class AskForAPI extends Modal {
       .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
   }
 
+  /**
+   *
+   */
   private async saveAndClose() {
     this.plugin.settings.endpoints[this.plugin.settings.endpoint].apiKey =
       this.apiKey || EmptyApiKey;
@@ -108,6 +119,10 @@ export class AskForAPI extends Modal {
  * const codeArea = new CodeAreaComponent(containerElement);
  */
 export class CodeAreaComponent extends TextAreaComponent {
+  /**
+   *
+   * @param containerEl
+   */
   constructor(containerEl: HTMLElement) {
     super(containerEl);
     this.inputEl.addClass('PUREcodePreview');
@@ -149,6 +164,13 @@ export class EditWand extends Modal {
   // Callback for when user confirms the change
   onSubmit: (modifiedText: string) => void;
 
+  /**
+   *
+   * @param app
+   * @param plugin
+   * @param selection
+   * @param onSubmit
+   */
   constructor(
     app: App,
     plugin: PureChatLLM,
@@ -244,6 +266,9 @@ export class EditWand extends Modal {
       .addButton(btn => btn.setIcon('x').onClick(() => this.close()));
   }
 
+  /**
+   *
+   */
   async send() {
     const promptText = this.promptEl.getValue();
 
@@ -313,11 +338,19 @@ const endpointInputPlaceholders: PureChatLLMAPI = {
   getapiKey: 'https://example.com/get-api-key (Optional)',
 };
 
+/**
+ *
+ */
 export class EditModalProviders extends Modal {
   plugin: PureChatLLM;
   app: App;
   selectedIndex = 0; // Index of the currently selected endpoint
 
+  /**
+   *
+   * @param app
+   * @param plugin
+   */
   constructor(app: App, plugin: PureChatLLM) {
     super(app);
     this.plugin = plugin;
@@ -327,6 +360,9 @@ export class EditModalProviders extends Modal {
     this.buildUI();
   }
 
+  /**
+   *
+   */
   buildUI() {
     this.contentEl.empty();
     const { endpoints, endpoint } = this.plugin.settings;
@@ -391,6 +427,9 @@ export class EditModalProviders extends Modal {
     });
     this.setTitle(selectedEndpoint.name);
   }
+  /**
+   *
+   */
   onClose(): void {
     const { settings } = this.plugin;
     settings.endpoints = settings.endpoints.filter(endpoint => endpoint.name);

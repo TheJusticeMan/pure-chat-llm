@@ -9,13 +9,24 @@ import {
 } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
 
+/**
+ *
+ */
 export class LLMService {
   console: BrowserConsole;
 
+  /**
+   *
+   * @param debug
+   */
   constructor(debug: boolean) {
     this.console = new BrowserConsole(debug, 'LLMService');
   }
 
+  /**
+   *
+   * @param endpoint
+   */
   getHeaders(endpoint: PureChatLLMAPI): Record<string, string> {
     if (endpoint.endpoint.includes('api.anthropic.com')) {
       return {
@@ -30,6 +41,13 @@ export class LLMService {
     };
   }
 
+  /**
+   *
+   * @param endpoint
+   * @param options
+   * @param statusCallback
+   * @param streamCallback
+   */
   async fetchResponse(
     endpoint: PureChatLLMAPI,
     options: ChatRequestOptions,
@@ -158,6 +176,11 @@ export class LLMService {
     }
   }
 
+  /**
+   *
+   * @param response
+   * @param streamCallback
+   */
   async handleStreamingResponse(
     response: Response,
     streamCallback: (textFragment: StreamDelta) => Promise<boolean>,

@@ -12,6 +12,9 @@ import { InteractionManager } from './graph/InteractionManager';
 import { TooltipManager } from './graph/TooltipManager';
 import { MinimapRenderer } from './graph/MinimapRenderer';
 
+/**
+ *
+ */
 export class ResolutionGraphRenderer {
   private ctx: CanvasRenderingContext2D;
   private nodes: Map<string, GraphNode> = new Map();
@@ -28,6 +31,11 @@ export class ResolutionGraphRenderer {
   private onRenderCallback: ((g: ResolutionGraphRenderer) => void) | null = null;
   public showMinimap = true;
 
+  /**
+   *
+   * @param canvas
+   * @param treeData
+   */
   constructor(
     private canvas: HTMLCanvasElement,
     private treeData: Map<string, ResolutionNodeData>,
@@ -59,6 +67,9 @@ export class ResolutionGraphRenderer {
     });
   }
 
+  /**
+   *
+   */
   private buildGraph() {
     this.nodes.clear();
     this.edges = [];
@@ -68,6 +79,9 @@ export class ResolutionGraphRenderer {
     }
   }
 
+  /**
+   *
+   */
   private layoutNodes() {
     const layers: Map<number, GraphNode[]> = new Map();
     this.nodes.forEach(n => {
@@ -95,6 +109,9 @@ export class ResolutionGraphRenderer {
     });
   }
 
+  /**
+   *
+   */
   public render() {
     const { width, height } = this.canvas;
     if (!this.hasRendered) {
@@ -204,25 +221,45 @@ export class ResolutionGraphRenderer {
     }
   }
 
+  /**
+   *
+   */
   public zoomIn() {
     this.interaction.zoom(1.2);
   }
+  /**
+   *
+   */
   public zoomOut() {
     this.interaction.zoom(1 / 1.2);
   }
+  /**
+   *
+   */
   public resetNodePositions() {
     this.layoutNodes();
     this.scheduleRender();
   }
+  /**
+   *
+   */
   public setupKeyboardShortcuts() {
     /* InteractionManager handles this in setup() */
   }
 
+  /**
+   *
+   * @param x
+   * @param y
+   */
   public getNodeAtScreenPosition(x: number, y: number): GraphNode | null {
     const pos = screenToGraph(x, y, this.transform);
     return this.getNodeAtPosition(pos.x, pos.y);
   }
 
+  /**
+   *
+   */
   public scheduleRender() {
     if (this.rafId === null)
       this.rafId = requestAnimationFrame(() => {
@@ -231,6 +268,10 @@ export class ResolutionGraphRenderer {
       });
   }
 
+  /**
+   *
+   * @param padding
+   */
   public fitToView(padding = GRAPH_CONSTANTS.FIT_VIEW_PADDING) {
     if (this.nodes.size === 0) return;
     let minX = Infinity,
@@ -255,6 +296,11 @@ export class ResolutionGraphRenderer {
     this.transform.offsetY = this.canvas.height / 2 - ((minY + maxY) / 2) * s;
   }
 
+  /**
+   *
+   * @param x
+   * @param y
+   */
   public getNodeAtPosition(x: number, y: number): GraphNode | null {
     for (const n of this.nodes.values()) {
       if (
@@ -266,6 +312,11 @@ export class ResolutionGraphRenderer {
     return null;
   }
 
+  /**
+   *
+   * @param nodeId
+   * @param status
+   */
   public onNodeStatusChange(nodeId: string, status: ResolutionStatus) {
     this.animationTimestamps.set(nodeId, Date.now());
     if (!this.isAnimating) {
@@ -274,6 +325,9 @@ export class ResolutionGraphRenderer {
     }
   }
 
+  /**
+   *
+   */
   private animate() {
     const now = Date.now();
     let active = false;
@@ -287,6 +341,10 @@ export class ResolutionGraphRenderer {
     } else this.isAnimating = false;
   }
 
+  /**
+   *
+   * @param container
+   */
   public setupTooltips(container: HTMLElement) {
     this.tooltips = new TooltipManager(container);
     this.tooltips.setup();
@@ -297,17 +355,30 @@ export class ResolutionGraphRenderer {
     });
   }
 
+  /**
+   *
+   * @param cb
+   */
   public onRender(cb: (g: ResolutionGraphRenderer) => void): this {
     this.onRenderCallback = cb;
     return this;
   }
+  /**
+   *
+   */
   public getZoomLevel() {
     return Math.round(this.transform.scale * 100) + '%';
   }
+  /**
+   *
+   */
   public resetView() {
     Object.assign(this.transform, { scale: 1, offsetX: 0, offsetY: 0 });
     this.scheduleRender();
   }
+  /**
+   *
+   */
   public destroy() {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.interaction.destroy();

@@ -3,6 +3,7 @@ import tsparser from '@typescript-eslint/parser';
 import { defineConfig } from 'eslint/config';
 import obsidianmd from 'eslint-plugin-obsidianmd';
 import globals from 'globals';
+import jsdoc from 'eslint-plugin-jsdoc';
 
 export default defineConfig([
   {
@@ -19,6 +20,9 @@ export default defineConfig([
         ...globals.node,
         NodeJS: 'readonly',
       },
+    },
+    plugins: {
+      jsdoc,
     },
     rules: {
       /* '@typescript-eslint/naming-convention': 'error', */
@@ -42,6 +46,23 @@ export default defineConfig([
           enforceCamelCaseLower: true,
         },
       ],
+      'jsdoc/require-jsdoc': [
+        'error',
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: false,
+            FunctionExpression: false,
+          },
+        },
+      ],
+      'jsdoc/require-param-description': 'warn',
+      'jsdoc/require-returns-description': 'warn',
+      'jsdoc/check-param-names': 'error',
+      'jsdoc/require-param': 'error',
+      'jsdoc/require-returns': 'error',
       'prefer-const': 'error',
     },
   },

@@ -3,10 +3,16 @@ import { PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_ICON_SVG } from '../../types';
 import { GraphNode, IconLoadingState } from './types';
 import { getFileIconId } from './utils';
 
+/**
+ *
+ */
 export class IconLoader {
   private cache: Map<string, HTMLImageElement> = new Map();
   public loadingState: IconLoadingState = 'loading';
 
+  /**
+   *
+   */
   async preload(): Promise<void> {
     const iconTypes = ['folder', PURE_CHAT_LLM_ICON_NAME, 'file-text', 'image', 'file'];
     try {
@@ -17,14 +23,26 @@ export class IconLoader {
     }
   }
 
+  /**
+   *
+   * @param id
+   */
   get(id: string): HTMLImageElement | undefined {
     return this.cache.get(id);
   }
 
+  /**
+   *
+   * @param node
+   */
   getNodeIconId(node: GraphNode): string {
     return getFileIconId(node.id, node.data.isChatFile, node.data.depth);
   }
 
+  /**
+   *
+   * @param iconId
+   */
   private async load(iconId: string): Promise<HTMLImageElement | null> {
     if (this.cache.has(iconId)) return this.cache.get(iconId)!;
 
@@ -59,6 +77,9 @@ export class IconLoader {
     });
   }
 
+  /**
+   *
+   */
   destroy(): void {
     this.cache.clear();
   }

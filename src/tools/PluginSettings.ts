@@ -25,6 +25,9 @@ const pluginSettingsParameters = defineToolParameters({
 
 export type PluginSettingsArgs = InferArgs<typeof pluginSettingsParameters>;
 
+/**
+ *
+ */
 export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   readonly name = 'manage_plugin_settings';
   readonly classification = 'System';
@@ -32,10 +35,17 @@ export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
     'Reads or updates the Pure Chat LLM plugin settings. Updates trigger a user confirmation modal.';
   readonly parameters = pluginSettingsParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: PluginSettingsArgs): Promise<string> {
     const { action, key, value } = args;
     const plugin = this.chat.plugin;
@@ -96,6 +106,9 @@ export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   }
 }
 
+/**
+ *
+ */
 class SettingsConfirmationModal extends Modal {
   key: string;
   oldValue: unknown;
@@ -103,6 +116,14 @@ class SettingsConfirmationModal extends Modal {
   onResolve: (approved: boolean) => void;
   resolved = false;
 
+  /**
+   *
+   * @param app
+   * @param key
+   * @param oldValue
+   * @param newValue
+   * @param onResolve
+   */
   constructor(
     app: App,
     key: string,
@@ -117,6 +138,9 @@ class SettingsConfirmationModal extends Modal {
     this.onResolve = onResolve;
   }
 
+  /**
+   *
+   */
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
@@ -156,6 +180,9 @@ class SettingsConfirmationModal extends Modal {
       );
   }
 
+  /**
+   *
+   */
   onClose() {
     if (!this.resolved) {
       this.onResolve(false);

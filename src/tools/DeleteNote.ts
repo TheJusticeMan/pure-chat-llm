@@ -15,6 +15,9 @@ const deleteNoteParameters = defineToolParameters({
 
 export type DeleteNoteArgs = InferArgs<typeof deleteNoteParameters>;
 
+/**
+ *
+ */
 export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
   readonly name = 'delete_obsidian_note';
   readonly classification = 'Vault';
@@ -22,10 +25,17 @@ export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
     'Deletes a note or file from the vault. This triggers a user confirmation modal.';
   readonly parameters = deleteNoteParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: DeleteNoteArgs): Promise<string> {
     const { path } = args;
     const app = this.chat.plugin.app;
@@ -54,17 +64,29 @@ export class DeleteNoteTool extends Tool<DeleteNoteArgs> {
   }
 }
 
+/**
+ *
+ */
 class DeleteConfirmationModal extends Modal {
   file: TFile;
   onResolve: (result: string) => void;
   resolved = false;
 
+  /**
+   *
+   * @param app
+   * @param file
+   * @param onResolve
+   */
   constructor(app: App, file: TFile, onResolve: (result: string) => void) {
     super(app);
     this.file = file;
     this.onResolve = onResolve;
   }
 
+  /**
+   *
+   */
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
@@ -132,12 +154,19 @@ class DeleteConfirmationModal extends Modal {
       );
   }
 
+  /**
+   *
+   * @param bytes
+   */
   formatSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  /**
+   *
+   */
   onClose() {
     if (!this.resolved) {
       this.onResolve('Deletion review cancelled.');

@@ -78,7 +78,15 @@ type ChatMappingEntry = {
   id: string;
 }
  */
+/**
+ *
+ */
 export class ImportChatGPT {
+  /**
+   *
+   * @param app
+   * @param plugin
+   */
   constructor(
     public app: App,
     public plugin: PureChatLLM,
@@ -86,6 +94,9 @@ export class ImportChatGPT {
     void this.promptAndImport();
   }
 
+  /**
+   *
+   */
   private async promptAndImport() {
     try {
       const file = await this.getFileFromUser();
@@ -98,6 +109,9 @@ export class ImportChatGPT {
   }
 
   // Prompts user to select a folder; returns a Promise
+  /**
+   *
+   */
   private getFolderPath(): Promise<TFolder> {
     return new Promise(resolve => {
       new FolderSuggest(this.app, resolve, 'Where to load the files').open();
@@ -105,6 +119,9 @@ export class ImportChatGPT {
   }
 
   // Prompts user to select a file; returns a Promise<File>
+  /**
+   *
+   */
   private getFileFromUser(): Promise<File | null> {
     return new Promise(resolve => {
       const input = document.createElement('input');
@@ -121,6 +138,11 @@ export class ImportChatGPT {
     });
   }
 
+  /**
+   *
+   * @param file
+   * @param folderPath
+   */
   private async processChatFile(file: File, folderPath: string) {
     const text = await file.text();
     let chats: { title: string; [key: string]: unknown }[];
@@ -144,6 +166,12 @@ export class ImportChatGPT {
     }
   }
 
+  /**
+   *
+   * @param chat
+   * @param folder
+   * @param folderPath
+   */
   private async saveChatConversation(chat: ChatMappingEntry, folder: TFolder, folderPath: string) {
     const title = chat.title;
     const result = new PureChatLLMChat(this.plugin);
@@ -162,6 +190,12 @@ export class ImportChatGPT {
     );
   }
 
+  /**
+   *
+   * @param mapping
+   * @param rootId
+   * @param result
+   */
   private collectConversation(mapping: ChatMapping, rootId: string, result: PureChatLLMChat) {
     let currentId = rootId;
     while (currentId && mapping[currentId]) {

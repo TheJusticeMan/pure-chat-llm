@@ -1,6 +1,12 @@
 import { ViewTransform, GRAPH_CONSTANTS } from './types';
 import { PURE_CHAT_LLM_ICON_NAME } from '../../types';
 
+/**
+ *
+ * @param path
+ * @param isChat
+ * @param depth
+ */
 export function getFileIconId(path: string, isChat?: boolean, depth?: number): string {
   const name = path.split('/').pop() || path;
   if (depth === 0) return 'folder';
@@ -10,6 +16,12 @@ export function getFileIconId(path: string, isChat?: boolean, depth?: number): s
   return 'file';
 }
 
+/**
+ *
+ * @param screenX
+ * @param screenY
+ * @param transform
+ */
 export function screenToGraph(
   screenX: number,
   screenY: number,
@@ -21,6 +33,15 @@ export function screenToGraph(
   };
 }
 
+/**
+ *
+ * @param ctx
+ * @param x
+ * @param y
+ * @param fromX
+ * @param fromY
+ * @param color
+ */
 export function drawArrowhead(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -48,6 +69,12 @@ export function drawArrowhead(
   ctx.fill();
 }
 
+/**
+ *
+ * @param ctx
+ * @param text
+ * @param maxWidth
+ */
 export function truncateLabel(
   ctx: CanvasRenderingContext2D,
   text: string,

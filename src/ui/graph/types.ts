@@ -79,6 +79,11 @@ export const STATUS_COLORS: Record<ResolutionStatus, string> = {
   'cycle-detected': '255, 170, 0',
 };
 
+/**
+ *
+ * @param status
+ * @param alpha
+ */
 export function getStatusColor(status: ResolutionStatus, alpha: number = 1): string {
   const rgb = STATUS_COLORS[status] || STATUS_COLORS.idle;
   return `rgba(${rgb}, ${alpha})`;

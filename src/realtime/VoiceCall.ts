@@ -15,6 +15,14 @@ export class VoiceCall {
     remoteParticipants: [],
   };
 
+  /**
+   *
+   * @param provider
+   * @param config
+   * @param onStateChange
+   * @param onServerEvent
+   * @param onRemoteTrack
+   */
   constructor(
     private provider: IVoiceCallProvider,
     private config: VoiceCallConfig,
@@ -86,6 +94,7 @@ export class VoiceCall {
 
   /**
    * Sends a client event to the provider
+   * @param event
    */
   sendEvent(event: unknown): void {
     if (this.state.status === 'connected') {
@@ -146,6 +155,7 @@ export class VoiceCall {
 
   /**
    * Updates the call state and notifies listeners
+   * @param update
    */
   private updateState(update: Partial<CallState>): void {
     this.state = { ...this.state, ...update };

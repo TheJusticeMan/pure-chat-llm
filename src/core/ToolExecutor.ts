@@ -14,6 +14,10 @@ import { ChatSession } from './ChatSession';
 export class ToolExecutor {
   private streamCallback?: (delta: StreamDelta) => Promise<boolean>;
 
+  /**
+   *
+   * @param toolRegistry
+   */
   constructor(private toolRegistry: ToolRegistry) {}
 
   /**
@@ -32,6 +36,9 @@ export class ToolExecutor {
    * @param session - The chat session to update
    * @param options - The request options to update
    * @param assistantMessage - Optional assistant message containing the tool calls
+   * @param assistantMessage.role
+   * @param assistantMessage.content
+   * @param assistantMessage.tool_calls
    * @returns True if any tools were executed, false otherwise
    */
   async executeToolCalls(

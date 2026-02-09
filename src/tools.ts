@@ -8,18 +8,30 @@ import type {
 } from './types';
 
 // Abstract base class for all tools
+/**
+ *
+ */
 export abstract class Tool<TArgs = Record<string, unknown>> {
   abstract readonly name: string;
   abstract readonly description: string;
   abstract readonly parameters: ToolParameters;
   abstract readonly classification: ToolClassification;
 
+  /**
+   *
+   * @param chat
+   * @param registry
+   */
   constructor(
     protected chat: PureChatLLMChat,
     protected registry: ToolRegistry,
   ) {}
 
   // Send status update about what the tool is doing
+  /**
+   *
+   * @param message
+   */
   protected async status(message: string): Promise<void> {
     await this.registry.statusUpdate(message);
     /* this.platform.statusUpdate(`  ↳ ${message}`); */
@@ -32,6 +44,9 @@ export abstract class Tool<TArgs = Record<string, unknown>> {
   abstract execute(args: TArgs): Promise<string>;
 
   // Get the tool definition for OpenAI API (concrete implementation)
+  /**
+   *
+   */
   getDefinition(): ToolDefinition {
     return {
       type: 'function',
@@ -45,6 +60,10 @@ export abstract class Tool<TArgs = Record<string, unknown>> {
 }
 
 // Helper to create tool parameters with type inference
+/**
+ *
+ * @param params
+ */
 export function defineToolParameters<T extends ToolParameters>(params: T): T {
   return params;
 }
@@ -76,44 +95,78 @@ export type InferArgs<T extends ToolParameters> = {
 };
 
 // Tool registry to manage all available tools
+/**
+ *
+ */
 export class ToolRegistry {
   private allTools: Map<string, Tool<Record<string, unknown>>>;
   private enabledTools: Set<string>;
   private streamCallback?: (textFragment: StreamDelta) => Promise<boolean>;
 
+  /**
+   *
+   * @param chat
+   */
   constructor(protected chat: PureChatLLMChat) {
     this.allTools = new Map();
     this.enabledTools = new Set();
   }
 
+  /**
+   *
+   * @param message
+   */
   async statusUpdate(message: string) {
     await this.streamCallback?.({ role: 'tool', content: `\n${message}` });
   }
 
+  /**
+   *
+   * @param streamcallback
+   */
   setCallBack(streamcallback: ((textFragment: StreamDelta) => Promise<boolean>) | undefined) {
     this.streamCallback = streamcallback;
   }
 
+  /**
+   *
+   * @param toolName
+   */
   enable(toolName: string): this {
     this.enabledTools.add(toolName);
     return this;
   }
 
+  /**
+   *
+   * @param toolName
+   */
   disable(toolName: string): this {
     this.enabledTools.delete(toolName);
     return this;
   }
 
+  /**
+   *
+   */
   disableAll(): this {
     this.enabledTools.clear();
     return this;
   }
 
+  /**
+   *
+   * @param classification
+   */
   isClassificationEnabled(classification: ToolClassification): boolean {
     const settings = this.chat.plugin.settings;
     return settings.enabledToolClassifications?.[classification] ?? true;
   }
 
+  /**
+   *
+   * @param names
+   */
   getTools(names: string[]): Tool<Record<string, unknown>>[] {
     return names
       .map(name => this.allTools.get(name))
@@ -125,6 +178,9 @@ export class ToolRegistry {
       );
   }
 
+  /**
+   *
+   */
   getNameList(): string[] {
     return Array.from(this.enabledTools).filter(name => {
       const tool = this.allTools.get(name);
@@ -132,12 +188,19 @@ export class ToolRegistry {
     });
   }
 
+  /**
+   *
+   * @param classification
+   */
   getToolNamesByClassification(classification: ToolClassification): string[] {
     return Array.from(this.allTools.values())
       .filter(tool => tool.classification === classification)
       .map(tool => tool.name);
   }
 
+  /**
+   *
+   */
   get tools(): Tool<Record<string, unknown>>[] {
     return Array.from(this.enabledTools)
       .map(name => this.allTools.get(name))
@@ -149,11 +212,19 @@ export class ToolRegistry {
       );
   }
 
+  /**
+   *
+   * @param tool
+   */
   registerToolSpecial(tool: Tool<Record<string, unknown>>): this {
     this.allTools.set(tool.name, tool);
     return this;
   }
 
+  /**
+   *
+   * @param tool
+   */
   registerTool(
     tool: new (chat: PureChatLLMChat, registry: ToolRegistry) => Tool<Record<string, unknown>>,
   ): this {
@@ -163,21 +234,37 @@ export class ToolRegistry {
     return this;
   }
 
+  /**
+   *
+   * @param name
+   */
   getTool(name: string): Tool<Record<string, unknown>> | undefined {
     const tool = this.allTools.get(name);
     return tool && tool.isAvailable() ? tool : undefined;
   }
 
+  /**
+   *
+   * @param name
+   */
   classificationForTool(name: string): ToolClassification | undefined {
     return this.allTools.get(name)?.classification;
   }
 
+  /**
+   *
+   */
   getAllDefinitions(): ToolDefinition[] {
     return Array.from(this.allTools.values())
       .filter(tool => tool.isAvailable())
       .map(tool => tool.getDefinition());
   }
 
+  /**
+   *
+   * @param name
+   * @param args
+   */
   async executeTool(name: string, args: Record<string, unknown>): Promise<string> {
     const tool = this.getTool(name);
     if (!tool) {

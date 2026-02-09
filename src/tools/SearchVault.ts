@@ -32,6 +32,9 @@ const searchVaultParameters = defineToolParameters({
 
 export type SearchVaultArgs = InferArgs<typeof searchVaultParameters>;
 
+/**
+ *
+ */
 export class SearchVaultTool extends Tool<SearchVaultArgs> {
   readonly name = 'search_vault';
   readonly classification = 'Vault';
@@ -39,10 +42,17 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
     'Performs a content search with boolean logic (AND, OR, NOT, parentheses) across all markdown notes in the vault.';
   readonly parameters = searchVaultParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: SearchVaultArgs): Promise<string> {
     const { query, regex = false, limit = 20, context_lines = 1 } = args;
     const app = this.chat.plugin.app;

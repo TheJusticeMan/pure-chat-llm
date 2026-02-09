@@ -79,6 +79,14 @@ export default class PureChatLLM extends Plugin {
   blueFileResolver: BlueFileResolver;
   blueView: BlueResolutionTreeView | null = null;
 
+  /**
+   * Initializes the plugin by loading settings, registering views, commands, and setting up the UI.
+   *
+   * This method is called when the plugin is loaded. It sets up all the necessary components
+   * including status bar items, views, commands, context menus, and editor extensions.
+   *
+   * @returns {Promise<void>}
+   */
   async onload() {
     await this.loadSettings();
     addIcon(PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_ICON_SVG);
@@ -120,20 +128,48 @@ export default class PureChatLLM extends Plugin {
 
   private onupdate: Array<() => void> = [];
 
+  /**
+   * Notifies all registered listeners that the code block has been updated.
+   *
+   * Iterates through all registered callbacks in the onupdate array and invokes each one.
+   *
+   * @returns {void}
+   */
   callOnChange() {
     this.console.log('Code block updated, notifying listeners.');
     this.onupdate.forEach(callback => callback());
   }
 
+  /**
+   * Registers a callback to be invoked when the code block is updated.
+   *
+   * Adds the provided callback function to the list of listeners that will be notified
+   * whenever the code block changes.
+   *
+   * @param {() => void} cb - The callback function to register.
+   * @returns {void}
+   */
   onCodeBlockUpdate(cb: () => void) {
     this.console.log('Registered a new code block update listener.');
     this.onupdate.push(cb);
   }
 
+  /**
+   * Unregisters a previously registered code block update callback.
+   *
+   * Removes the specified callback from the list of listeners so it will no longer
+   * be invoked when the code block updates.
+   *
+   * @param {() => void} cb - The callback function to unregister.
+   * @returns {void}
+   */
   offCodeBlockUpdate(cb: () => void) {
     this.onupdate = this.onupdate.filter(c => c !== cb);
   }
 
+  /**
+   *
+   */
   private setupContextMenuActions() {
     this.registerEvent(
       this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
@@ -205,6 +241,9 @@ export default class PureChatLLM extends Plugin {
     );
   }
 
+  /**
+   *
+   */
   private setupChatCommandHandlers() {
     this.addCommand({
       id: 'complete-chat-response',
@@ -333,6 +372,9 @@ export default class PureChatLLM extends Plugin {
     });
   }
 
+  /**
+   *
+   */
   private setupVoiceCallCommandHandlers() {
     this.addCommand({
       id: 'open-voice-call',
@@ -360,11 +402,20 @@ export default class PureChatLLM extends Plugin {
     });
   }
 
+  /**
+   *
+   * @param text
+   */
   status(text: string) {
     // Display a message in the status bar
     this.pureChatStatusElement.setText(`[Pure Chat LLM] ${text}`);
   }
 
+  /**
+   *
+   * @param folder
+   * @param baseName
+   */
   generateUniqueFileName(folder: TFolder, baseName: string) {
     // Generate a unique file name in the specified folder
     const files = folder.children.filter(f => f instanceof TFile).map(f => f.name);
@@ -374,6 +425,9 @@ export default class PureChatLLM extends Plugin {
     return name;
   }
 
+  /**
+   *
+   */
   async openHotkeys(): Promise<void> {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
     await this.app.setting.open();
@@ -382,11 +436,17 @@ export default class PureChatLLM extends Plugin {
     this.app.setting.activeTab.searchComponent.onChanged();
   }
 
+  /**
+   *
+   */
   async openSettings(): Promise<void> {
     await this.app.setting.open();
     this.app.setting.openTabById('pure-chat-llm');
   }
 
+  /**
+   *
+   */
   onUserEnable() {
     void this.activateChatView();
     //this.openHotkeys();
@@ -399,6 +459,11 @@ export default class PureChatLLM extends Plugin {
 
   activateBlueResolutView = async () => await this.activateView(BLUE_RESOLUTION_VIEW_TYPE, 'right');
 
+  /**
+   *
+   * @param viewType
+   * @param position
+   */
   async activateView(viewType: string, position: 'right' | 'left' | '' = ''): Promise<void> {
     const { workspace } = this.app;
 
@@ -425,6 +490,12 @@ export default class PureChatLLM extends Plugin {
     }
   }
 
+  /**
+   *
+   * @param menu
+   * @param editor
+   * @param view
+   */
   addItemsToMenu(menu: Menu, editor: Editor, view: MarkdownView) {
     const selected = editor.getSelection();
     if (selected.length > 0)
@@ -470,6 +541,11 @@ export default class PureChatLLM extends Plugin {
     return menu;
   }
 
+  /**
+   *
+   * @param selected
+   * @param editor
+   */
   private editSelection(selected: string, editor: Editor) {
     new InstructPromptsHandler(
       this.app,
@@ -488,6 +564,9 @@ export default class PureChatLLM extends Plugin {
     ).open();
   }
 
+  /**
+   *
+   */
   askForApiKey() {
     new AskForAPI(this.app, this).open();
   }
@@ -577,6 +656,11 @@ export default class PureChatLLM extends Plugin {
       });
   }
 
+  /**
+   *
+   * @param editor
+   * @param intoview
+   */
   setCursorEnd(editor: Editor, intoview = false) {
     editor.setCursor(editor.lastLine(), editor.getLine(editor.lastLine()).length);
     if (intoview)
@@ -586,6 +670,9 @@ export default class PureChatLLM extends Plugin {
       });
   }
 
+  /**
+   *
+   */
   async loadSettings() {
     const loadedData: PureChatLLMSettings = {
       ...DEFAULT_SETTINGS,
@@ -654,6 +741,9 @@ export default class PureChatLLM extends Plugin {
     );
   }
 
+  /**
+   *
+   */
   async saveSettings() {
     this.settings.selectionTemplates = this.settings.selectionTemplates || {};
 
@@ -672,14 +762,25 @@ export default class PureChatLLM extends Plugin {
     await this.saveData(this.settings);
   }
 
+  /**
+   *
+   */
   onunload() {
     // Cleanup code if needed
   }
 }
 
+/**
+ *
+ */
 export class StreamNotice {
   fulltext = '';
   notice: Notice;
+  /**
+   *
+   * @param app
+   * @param init
+   */
   constructor(
     public app: App,
     init?: string,
@@ -714,6 +815,11 @@ export class StreamNotice {
 class InstructPromptsHandler extends FuzzySuggestModal<string> {
   onSubmit: (result: string) => void;
   templates: { [key: string]: string };
+  /**
+   *
+   * @param app
+   * @param onSubmit
+   */
   constructor(app: App, onSubmit: (result: string) => void, templates: { [key: string]: string }) {
     super(app);
     this.onSubmit = onSubmit;
@@ -721,14 +827,26 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
     this.setPlaceholder('Select a prompt...');
   }
 
+  /**
+   *
+   */
   getItems(): string[] {
     return Object.keys(this.templates);
   }
 
+  /**
+   *
+   * @param templateKey
+   */
   getItemText(templateKey: string): string {
     return templateKey;
   }
 
+  /**
+   *
+   * @param templateKey
+   * @param evt
+   */
   onChooseItem(templateKey: string, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(this.templates[templateKey]);
   }
@@ -745,6 +863,11 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
  */
 export class SelectionPromptEditor extends Modal {
   promptTitle: string;
+  /**
+   *
+   * @param app
+   * @param plugin
+   */
   constructor(
     app: App,
     private plugin: PureChatLLM,
@@ -756,6 +879,9 @@ export class SelectionPromptEditor extends Modal {
     this.plugin = plugin;
     this.update();
   }
+  /**
+   *
+   */
   update() {
     this.contentEl.empty();
     if (!this.promptTitle)
@@ -884,6 +1010,10 @@ export class SelectionPromptEditor extends Modal {
     this.setTitle(this.promptTitle);
   }
 
+  /**
+   *
+   * @param value
+   */
   private generateTemplateContent(value: string) {
     this.promptTitle = value;
     if (!this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = '';
@@ -912,6 +1042,9 @@ export class SelectionPromptEditor extends Modal {
     this.update();
   }
 
+  /**
+   *
+   */
   onClose(): void {
     void this.plugin.saveSettings();
   }
@@ -939,18 +1072,35 @@ export class SelectionPromptEditor extends Modal {
 export class FileSuggest extends FuzzySuggestModal<TFile> {
   onSubmit: (File: TFile) => void;
   files: TFile[];
+  /**
+   *
+   * @param app
+   * @param onSubmit
+   */
   constructor(app: App, onSubmit: (result: TFile) => void) {
     super(app);
     this.onSubmit = onSubmit;
     this.files = app.vault.getMarkdownFiles();
     this.setPlaceholder('Search for a file...');
   }
+  /**
+   *
+   */
   getItems(): TFile[] {
     return this.files;
   }
+  /**
+   *
+   * @param file
+   */
   getItemText(file: TFile): string {
     return file.path;
   }
+  /**
+   *
+   * @param file
+   * @param evt
+   */
   onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(file);
   }
@@ -981,31 +1131,63 @@ export class FileSuggest extends FuzzySuggestModal<TFile> {
 export class FolderSuggest extends FuzzySuggestModal<TFolder> {
   onSubmit: (result: TFolder) => void;
   folders: TFolder[];
+  /**
+   *
+   * @param app
+   * @param onSubmit
+   * @param prompt
+   */
   constructor(app: App, onSubmit: (result: TFolder) => void, prompt?: string) {
     super(app);
     this.onSubmit = onSubmit;
     this.folders = app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder);
     this.setPlaceholder(prompt || 'Search for a folder...');
   }
+  /**
+   *
+   */
   getItems(): TFolder[] {
     return this.folders;
   }
+  /**
+   *
+   * @param folder
+   */
   getItemText(folder: TFolder): string {
     return folder.path;
   }
+  /**
+   *
+   * @param folder
+   * @param evt
+   */
   onChooseItem(folder: TFolder, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(folder);
   }
 }
 
+/**
+ *
+ */
 export class PureChatEditorSuggest extends EditorSuggest<string> {
   type: string;
   plugin: PureChatLLM;
+  /**
+   *
+   * @param app
+   * @param plugin
+   */
   constructor(app: App, plugin: PureChatLLM) {
     super(app);
     this.plugin = plugin;
   }
 
+  /**
+   *
+   * @param cursor
+   * @param editor
+   * @param file
+   */
   onTrigger(
     cursor: EditorPosition,
     editor: Editor,
@@ -1022,6 +1204,10 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     else return null;
   }
 
+  /**
+   *
+   * @param context
+   */
   getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
     if (context.query === 'send') {
       this.type = 'send';
@@ -1055,6 +1241,11 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     return [];
   }
 
+  /**
+   *
+   * @param value
+   * @param el
+   */
   renderSuggestion(value: string, el: HTMLElement): void {
     switch (this.type) {
       case 'send':
@@ -1072,6 +1263,11 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
     }
   }
 
+  /**
+   *
+   * @param value
+   * @param evt
+   */
   selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
     if (!this.context) return;
     const { start, end, editor } = this.context;
@@ -1119,6 +1315,12 @@ export class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 }
 
+/**
+ *
+ * @param rawMarkdown
+ * @param level
+ * @param maxlevel
+ */
 export function getObjectFromMarkdown(
   rawMarkdown: string,
   level = 1,
@@ -1140,6 +1342,11 @@ export function getObjectFromMarkdown(
   );
 }
 
+/**
+ *
+ * @param obj
+ * @param level
+ */
 export function getMarkdownFromObject(
   obj: Record<string, string | Record<string, string | object>>,
   level = 1,
@@ -1162,13 +1369,23 @@ export function getMarkdownFromObject(
     .join('\n');
 }
 
+/**
+ *
+ */
 class LowUsageTagRemover extends Modal {
   numUses = 3;
+  /**
+   *
+   * @param app
+   */
   constructor(app: App) {
     super(app);
     this.open();
   }
 
+  /**
+   *
+   */
   onOpen(): void {
     const { contentEl } = this;
 
@@ -1189,6 +1406,10 @@ class LowUsageTagRemover extends Modal {
       );
   }
 
+  /**
+   *
+   * @param numUses
+   */
   private cleanupLowUsageTags(numUses: number) {
     // Get the frequency of all tags in the vault
     // If a tag is used less than three times, remove it from the files
@@ -1251,6 +1472,9 @@ aliases:
     this.close();
   }
 
+  /**
+   *
+   */
   onClose(): void {
     const { contentEl } = this;
     contentEl.empty();

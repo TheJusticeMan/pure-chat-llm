@@ -68,6 +68,9 @@ const smartConnectionsParameters = defineToolParameters({
 
 export type SmartConnectionsArgs = InferArgs<typeof smartConnectionsParameters>;
 
+/**
+ *
+ */
 export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
   readonly name = 'smart_connections_rag';
   readonly classification = 'AI';
@@ -75,12 +78,19 @@ export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
     'Performs a semantic search across the vault using the Smart Connections index to find relevant note snippets or files.';
   readonly parameters = smartConnectionsParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     const app = this.chat.plugin.app as AppWithPlugins;
     const plugin = app.plugins.getPlugin('smart-connections');
     return !!plugin && (!!plugin.env || !!plugin.smart_env);
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: SmartConnectionsArgs): Promise<string> {
     const { query, limit = 5, type = 'blocks' } = args;
     const app = this.chat.plugin.app as AppWithPlugins;

@@ -33,6 +33,11 @@ export class PureChatLLMSpeech {
   speechQueue: { audio: HTMLAudioElement }[] = [];
   isPlaying = false; // To prevent multiple concurrent plays
 
+  /**
+   *
+   * @param plugin
+   * @param chat
+   */
   constructor(plugin: PureChatLLM, chat: PureChatLLMChat) {
     this.plugin = plugin;
     this.chat = chat;
@@ -225,6 +230,9 @@ export class PureChatLLMSpeech {
     await playbackPromise;
   }
 
+  /**
+   *
+   */
   getVoices(): { name: string }[] {
     // OpenAI supported voices as of 2024
     return [

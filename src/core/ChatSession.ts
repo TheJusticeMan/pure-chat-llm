@@ -19,6 +19,10 @@ export class ChatSession {
   pretext: string = '';
   validChat: boolean = true;
 
+  /**
+   *
+   * @param options
+   */
   constructor(options: ChatOptions) {
     this.options = options;
   }
@@ -32,8 +36,19 @@ export class ChatSession {
    * @returns The session instance for chaining
    */
   appendMessage(message: ChatMessage): this;
+  /**
+   *
+   */
   appendMessage(messages: ChatMessage[]): this;
+  /**
+   *
+   */
   appendMessage(messages: ChatMessage[], clines: EditorRange[]): this;
+  /**
+   *
+   * @param messageOrMessages
+   * @param clines
+   */
   appendMessage(messageOrMessages: ChatMessage | ChatMessage[], clines?: EditorRange[]): this {
     // Handle single message
     if (!Array.isArray(messageOrMessages)) {

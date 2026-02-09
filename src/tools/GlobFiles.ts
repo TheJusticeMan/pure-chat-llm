@@ -31,6 +31,9 @@ const globFilesParameters = defineToolParameters({
 
 export type GlobFilesArgs = InferArgs<typeof globFilesParameters>;
 
+/**
+ *
+ */
 export class GlobFilesTool extends Tool<GlobFilesArgs> {
   readonly name = 'glob_vault_files';
   readonly classification = 'Vault';
@@ -38,10 +41,17 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
     'Searches the vault for file paths matching a specific glob pattern. Useful for discovering files or mapping vault structure.';
   readonly parameters = globFilesParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: GlobFilesArgs): Promise<string> {
     const { pattern, include_fields = ['path'], limit = 100 } = args;
     const app = this.chat.plugin.app;

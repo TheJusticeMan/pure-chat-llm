@@ -11,7 +11,19 @@ import {
 } from 'obsidian';
 import { ToolOutputBuilder } from './ToolOutputBuilder';
 
+/**
+ *
+ */
 export class EditReview {
+  /**
+   *
+   * @param app
+   * @param path
+   * @param newContent
+   * @param properties
+   * @param overwrite
+   * @param instruction
+   */
   static async prompt(
     app: App,
     path: string,
@@ -28,6 +40,9 @@ export class EditReview {
   }
 }
 
+/**
+ *
+ */
 class EditReviewModal extends Modal {
   path: string;
   newContent: string;
@@ -38,6 +53,16 @@ class EditReviewModal extends Modal {
   originalContent: string | null = null;
   resolved = false;
 
+  /**
+   *
+   * @param app
+   * @param path
+   * @param newContent
+   * @param properties
+   * @param overwrite
+   * @param instruction
+   * @param onResolve
+   */
   constructor(
     app: App,
     path: string,
@@ -56,6 +81,9 @@ class EditReviewModal extends Modal {
     this.onResolve = onResolve;
   }
 
+  /**
+   *
+   */
   async onOpen() {
     const { contentEl } = this;
     contentEl.empty();
@@ -141,6 +169,9 @@ class EditReviewModal extends Modal {
       );
   }
 
+  /**
+   *
+   */
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
@@ -149,6 +180,9 @@ class EditReviewModal extends Modal {
     }
   }
 
+  /**
+   *
+   */
   async applyEdit(): Promise<string> {
     try {
       // 1. Ensure directory exists

@@ -76,6 +76,10 @@ export class PureChatLLMChat {
   toolregistry: ToolRegistry = new ToolRegistry(this);
   llmService: LLMService;
 
+  /**
+   *
+   * @param plugin
+   */
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
     this.console = new BrowserConsole(plugin.settings.debug, 'PureChatLLMChat');
@@ -104,41 +108,74 @@ export class PureChatLLMChat {
   }
 
   // Delegate to session for backward compatibility
+  /**
+   *
+   */
   get options(): ChatOptions {
     return this.session.options;
   }
+  /**
+   *
+   */
   set options(value: ChatOptions) {
     this.session.options = value;
   }
 
+  /**
+   *
+   */
   get messages(): ChatMessage[] {
     return this.session.messages;
   }
+  /**
+   *
+   */
   set messages(value: ChatMessage[]) {
     this.session.messages = value;
   }
 
+  /**
+   *
+   */
   get clines(): EditorRange[] {
     return this.session.clines;
   }
+  /**
+   *
+   */
   set clines(value: EditorRange[]) {
     this.session.clines = value;
   }
 
+  /**
+   *
+   */
   get pretext(): string {
     return this.session.pretext;
   }
+  /**
+   *
+   */
   set pretext(value: string) {
     this.session.pretext = value;
   }
 
+  /**
+   *
+   */
   get validChat(): boolean {
     return this.session.validChat;
   }
+  /**
+   *
+   */
   set validChat(value: boolean) {
     this.session.validChat = value;
   }
 
+  /**
+   *
+   */
   private registerAvailableTools() {
     this.toolregistry
       .registerTool(ImageGenerationTool)
@@ -210,6 +247,9 @@ export class PureChatLLMChat {
     this.updateEndpointFromModel();
   }
 
+  /**
+   *
+   */
   updateEndpointFromModel() {
     const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
     const endpointName = Object.keys(ModelsOnEndpoint).find(name =>
@@ -221,6 +261,10 @@ export class PureChatLLMChat {
     return this;
   }
 
+  /**
+   *
+   * @param classification
+   */
   isEnabled(classification: string): boolean {
     if (!this.options.tools) return false;
     if (Array.isArray(this.options.tools)) {
@@ -231,6 +275,9 @@ export class PureChatLLMChat {
     return this.toolregistry.isClassificationEnabled(classification as ToolClassification);
   }
 
+  /**
+   *
+   */
   cleanUpChat() {
     this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
     return this;
@@ -302,6 +349,7 @@ export class PureChatLLMChat {
    *
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
+   * @param {...any} messages
    */
   appendMessage(...messages: { role: RoleType; content: string; cline?: EditorRange }[]) {
     messages.forEach(message => {
@@ -328,6 +376,7 @@ export class PureChatLLMChat {
    *
    * @param activeFile - The currently active file in the application, used for resolving file references.
    * @param app - The application instance, providing access to necessary utilities and context.
+   * @param context
    * @returns A promise that resolves to an object containing the resolved messages with their roles and content.
    */
   async getChatGPTinstructions(
@@ -447,6 +496,7 @@ export class PureChatLLMChat {
    *
    * @param templatePrompt - The instruction prompt containing the name and template for processing.
    * @param selectedText - The markdown text selected by the user to be processed.
+   * @param fileText
    * @returns A Promise resolving to the LLM's response containing the processed markdown,
    *          or an empty response if no text is selected.
    */
@@ -492,6 +542,7 @@ export class PureChatLLMChat {
    * @param file - The file object of type `TFile` that contains the context or data for the chat.
    * @param streamcallback - An optional callback function that processes text fragments as they are streamed.
    *                         The callback should return a boolean indicating whether to continue streaming.
+   * @param context
    * @returns A promise that resolves to the current instance (`this`) after processing the chat response.
    *
    * The method performs the following steps:
@@ -566,11 +617,18 @@ export class PureChatLLMChat {
     return response;
   }
 
+  /**
+   *
+   */
   reverseRoles() {
     this.session.reverseRoles();
     return this;
   }
 
+  /**
+   *
+   * @param msgs
+   */
   filterOutUncalledToolCalls(
     msgs: {
       role: RoleType;
@@ -587,6 +645,16 @@ export class PureChatLLMChat {
     return this.toolExecutor.filterOutUncalledToolCalls(msgs);
   }
 
+  /**
+   *
+   * @param toolCalls
+   * @param options
+   * @param streamcallback
+   * @param assistantMessage
+   * @param assistantMessage.role
+   * @param assistantMessage.content
+   * @param assistantMessage.tool_calls
+   */
   async handleToolCalls(
     toolCalls: ToolCall[],
     options: ChatRequestOptions,
@@ -669,14 +737,25 @@ export class PureChatLLMChat {
     return this.session.getChatText(role => this.parseRole(role));
   }
 
+  /**
+   *
+   * @param role
+   */
   parseRole(role: RoleType): string {
     return (JSON.parse(`"${this.parser}"`) as string).replace(/{role}/g, toTitleCase(role));
   }
 
+  /**
+   *
+   */
   get regexForRoles() {
     return this.adapter.regexForRoles;
   }
 
+  /**
+   *
+   * @param cb
+   */
   thencb(cb: (chat: this) => unknown): this {
     cb(this);
     return this;

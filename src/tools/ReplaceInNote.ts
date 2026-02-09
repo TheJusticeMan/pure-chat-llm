@@ -35,6 +35,9 @@ const replaceInNoteParameters = defineToolParameters({
 
 export type ReplaceInNoteArgs = InferArgs<typeof replaceInNoteParameters>;
 
+/**
+ *
+ */
 export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
   readonly name = 'replace_in_note';
   readonly classification = 'Vault';
@@ -42,10 +45,17 @@ export class ReplaceInNoteTool extends Tool<ReplaceInNoteArgs> {
     'Replaces text within a note using string or regex matching. Triggers user review.';
   readonly parameters = replaceInNoteParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ReplaceInNoteArgs): Promise<string> {
     const { path, search, replace, regex = false, case_sensitive = false } = args;
     const app = this.chat.plugin.app;

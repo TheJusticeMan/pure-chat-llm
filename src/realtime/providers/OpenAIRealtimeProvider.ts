@@ -23,24 +23,48 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   private onMessageCallback?: (event: unknown) => void;
   private onErrorCallback?: (error: Error) => void;
 
+  /**
+   *
+   * @param toolExecutor
+   */
   constructor(private toolExecutor?: IToolExecutor) {}
 
+  /**
+   *
+   */
   getName(): string {
     return this.toolExecutor ? 'OpenAI Realtime API (Tools)' : 'OpenAI Realtime API';
   }
 
+  /**
+   *
+   * @param callback
+   */
   onRemoteTrack(callback: (stream: MediaStream) => void): void {
     this.onRemoteTrackCallback = callback;
   }
 
+  /**
+   *
+   * @param callback
+   */
   onMessage(callback: (event: unknown) => void): void {
     this.onMessageCallback = callback;
   }
 
+  /**
+   *
+   * @param callback
+   */
   onError(callback: (error: Error) => void): void {
     this.onErrorCallback = callback;
   }
 
+  /**
+   *
+   * @param localStream
+   * @param config
+   */
   async connect(localStream: MediaStream, config: VoiceCallConfig): Promise<void> {
     try {
       this.peerConnection = new RTCPeerConnection();
@@ -115,6 +139,9 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
     }
   }
 
+  /**
+   *
+   */
   disconnect(): Promise<void> {
     if (this.dataChannel) {
       this.dataChannel.close();
@@ -127,12 +154,20 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
     return Promise.resolve();
   }
 
+  /**
+   *
+   * @param event
+   */
   send(event: unknown): void {
     if (this.dataChannel && this.dataChannel.readyState === 'open') {
       this.dataChannel.send(JSON.stringify(event));
     }
   }
 
+  /**
+   *
+   * @param dc
+   */
   private setupDataChannel(dc: RTCDataChannel): void {
     dc.addEventListener('open', () => {
       // Channel ready
@@ -157,6 +192,10 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
     });
   }
 
+  /**
+   *
+   * @param event
+   */
   private async handleToolCall(event: OpenAIEvent): Promise<void> {
     if (!this.toolExecutor) return;
 

@@ -19,6 +19,11 @@ class ResolutionTreeNode {
   /** Current depth in the tree (0 for root) */
   public readonly depth: number;
 
+  /**
+   *
+   * @param file The file associated with this node
+   * @param parent
+   */
   constructor(file: TFile, parent: ResolutionTreeNode | null = null) {
     this.file = file;
     this.parent = parent;
@@ -28,6 +33,9 @@ class ResolutionTreeNode {
   /**
    * Checks if the given file path exists in this node's ancestor chain.
    * This is used for cycle detection.
+   * @param filePath
+   *
+   * @returns true if the file path is found in the ancestor chain, false otherwise
    */
   hasAncestor(filePath: string): boolean {
     if (this.file.path === filePath) {
@@ -38,6 +46,9 @@ class ResolutionTreeNode {
 
   /**
    * Creates a child node for the given file.
+   * @param file
+   *
+   * @returns A new ResolutionTreeNode with this node as its parent
    */
   createChild(file: TFile): ResolutionTreeNode {
     return new ResolutionTreeNode(file, this);
@@ -79,6 +90,11 @@ export class BlueFileResolver {
   private console: BrowserConsole;
   private eventListeners: Array<(event: ResolutionEvent) => void> = [];
 
+  /**
+   *
+   * @param plugin
+   * @param fileSystem
+   */
   constructor(
     private plugin: PureChatLLM,
     private fileSystem: FileSystemPort,
@@ -88,6 +104,7 @@ export class BlueFileResolver {
 
   /**
    * Register a callback to receive resolution events
+   * @param callback
    */
   onResolutionEvent(callback: (event: ResolutionEvent) => void): void {
     this.eventListeners.push(callback);
@@ -95,6 +112,7 @@ export class BlueFileResolver {
 
   /**
    * Unregister a resolution event callback
+   * @param callback
    */
   offResolutionEvent(callback: (event: ResolutionEvent) => void): void {
     this.eventListeners = this.eventListeners.filter(cb => cb !== callback);
@@ -102,6 +120,7 @@ export class BlueFileResolver {
 
   /**
    * Emit a resolution event to all registered listeners
+   * @param event
    */
   private emitEvent(event: ResolutionEvent): void {
     this.eventListeners.forEach(listener => {
@@ -115,6 +134,8 @@ export class BlueFileResolver {
 
   /**
    * Creates a new resolution context for a top-level invocation
+   * @param rootFile
+   * @returns A new ResolutionContext with the root file as the current node
    */
   createContext(rootFile: TFile): ResolutionContext {
     return {
@@ -146,6 +167,12 @@ export class BlueFileResolver {
     return lastMessage.role === 'user';
   }
 
+  /**
+   * Reads a file and optionally wraps it in a tool output format with metadata.
+   * @param file
+   * @param addBuild
+   * @returns The file content, optionally wrapped in a tool output format with metadata
+   */
   async readAndBuildToolOutput(file: TFile, addBuild: boolean): Promise<string> {
     if (addBuild)
       return new ToolOutputBuilder()
@@ -168,6 +195,7 @@ export class BlueFileResolver {
    * @param file - The file to resolve
    * @param context - The resolution context
    * @param app - The Obsidian app instance
+   * @param hasTextOutsideMatches
    * @returns The resolved content (either static or dynamically generated)
    */
   async resolveFile(
@@ -623,6 +651,11 @@ export class BlueFileResolver {
 
   /**
    * Gets the TFile for a link string.
+   * @param str The link string to resolve.
+   * @param activeFile The currently active file, used as context for relative links.
+   * @param app The Obsidian app instance, providing access to the vault and metadata cache.
+   *
+   * @returns The TFile corresponding to the link, or null if not found
    */
   private getFileForLink(str: string, activeFile: TFile, app: App): TFile | null {
     return this.fileSystem.getFirstLinkDest(parseLinktext(str).path, activeFile.path);
@@ -635,6 +668,7 @@ export class BlueFileResolver {
    * @param activeFile - The currently active file, used as context for relative links.
    * @param app - The Obsidian app instance, providing access to the vault and metadata cache.
    * @param context - Optional blue file resolution context (for recursive calls)
+   * @param hasTextOutsideMatches
    * @returns A promise that resolves to the content of the linked file or subpath.
    */
   async retrieveLinkContent(
@@ -686,6 +720,8 @@ export class BlueFileResolver {
 
   /**
    * Converts m4a audio to WAV format.
+   * @param buffer The ArrayBuffer containing the m4a audio data.
+   * @returns A promise that resolves to an ArrayBuffer containing the WAV audio data.
    */
   private async convertM4AToWav(buffer: ArrayBuffer): Promise<ArrayBuffer> {
     const audioContext = new (
@@ -748,6 +784,9 @@ export class BlueFileResolver {
 
   /**
    * Converts ArrayBuffer to base64 data URL.
+   * @param buffer The ArrayBuffer to convert.
+   * @param mime The MIME type of the data.
+   * @returns A promise that resolves to a base64 data URL string.
    */
   private arrayBufferToBase64DataURL(buffer: ArrayBuffer, mime: string): Promise<string> {
     return new Promise((resolve, reject) => {

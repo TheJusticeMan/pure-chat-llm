@@ -51,6 +51,12 @@ export class PureChatLLMSideView extends ItemView {
   console: BrowserConsole = new BrowserConsole(this.plugin.settings.debug, 'PureChatLLMSideView');
   navigation: boolean = false;
 
+  /**
+   *
+   * @param leaf
+   * @param plugin
+   * @param viewText
+   */
   constructor(
     leaf: WorkspaceLeaf,
     public plugin: PureChatLLM,
@@ -59,14 +65,23 @@ export class PureChatLLMSideView extends ItemView {
     super(leaf);
   }
 
+  /**
+   *
+   */
   getViewType() {
     return PURE_CHAT_LLM_VIEW_TYPE;
   }
 
+  /**
+   *
+   */
   getDisplayText() {
     return this.viewText;
   }
 
+  /**
+   *
+   */
   async onOpen() {
     // when a file is loaded or changed, update the view
 
@@ -122,8 +137,10 @@ export class PureChatLLMSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   defaultContent() {
-    //MarkdownRenderer.render(this.app, splash, this.contentEl, view.file?.basename || "", this);
     this.contentEl.empty();
 
     new Setting(this.contentEl)
@@ -178,6 +195,11 @@ export class PureChatLLMSideView extends ItemView {
       .setDesc('This will speak the current chat using two voices.');
   }
 
+  /**
+   *
+   * @param editor
+   * @param view
+   */
   update(editor: Editor, view: MarkdownView) {
     //MetadataCache
     //resolveSubpath
@@ -309,6 +331,13 @@ export class PureChatLLMSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param chat
+   * @param container
+   * @param editor
+   * @param view
+   */
   private renderChatMessages(
     chat: PureChatLLMChat,
     container: HTMLElement,
@@ -435,6 +464,12 @@ export class PureChatLLMSideView extends ItemView {
     });
   }
 
+  /**
+   *
+   * @param editor
+   * @param position
+   * @param select
+   */
   private goToPostion(editor: Editor, position: EditorRange, select = false) {
     if (select) {
       editor.setSelections([{ anchor: position.from, head: position.to }]);
@@ -450,6 +485,12 @@ export class PureChatLLMSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param code
+   * @param language
+   * @param editor
+   */
   openCodePreview(code: string, language: string, editor: Editor) {
     this.console.log('Opening code preview', { code, language });
     void this.app.workspace.getLeaf('tab').setViewState({
@@ -459,6 +500,9 @@ export class PureChatLLMSideView extends ItemView {
     });
   }
 
+  /**
+   *
+   */
   async onClose() {
     // Nothing to clean up.
   }
@@ -466,12 +510,21 @@ export class PureChatLLMSideView extends ItemView {
 
 type ModelAndProvider = { name: string; ismodel: boolean };
 
+/**
+ *
+ */
 export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
   items: ModelAndProvider[];
   modellist: ModelAndProvider[] = [];
   currentmodel = '';
   firstrun = true;
 
+  /**
+   *
+   * @param app
+   * @param plugin
+   * @param editor
+   */
   constructor(
     app: App,
     private plugin: PureChatLLM,
@@ -488,14 +541,26 @@ export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
     this.firstrun = false;
   }
 
+  /**
+   *
+   */
   getItems(): ModelAndProvider[] {
     return [...this.items, ...this.modellist];
   }
 
+  /**
+   *
+   * @param item
+   */
   getItemText(item: ModelAndProvider): string {
     return item.name + (item.ismodel ? '' : '       (provider)');
   }
 
+  /**
+   *
+   * @param item
+   * @param evt
+   */
   onChooseItem(item: ModelAndProvider, evt: MouseEvent | KeyboardEvent): void {
     // see if it's a provider or a model
     const endpointnum = this.plugin.settings.endpoints.findIndex(e => e.name === item.name);
@@ -513,6 +578,10 @@ export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       );
   }
 
+  /**
+   *
+   * @param endpointIndex
+   */
   updatemodelist(endpointIndex: number): void {
     this.currentmodel = this.plugin.settings.endpoints[endpointIndex].name;
     this.plugin.settings.endpoint = endpointIndex;

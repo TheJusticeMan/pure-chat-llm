@@ -10,6 +10,13 @@ export interface CodeSnippetState {
 }
 
 export const CODE_PREVIEW_VIEW_TYPE = 'pure-chat-llm-code-preview';
+/**
+ *
+ * @param app
+ * @param code
+ * @param language
+ * @param editor
+ */
 export function openCodePreview(app: App, code: string, language: string, editor: Editor) {
   void app.workspace.getLeaf('split').setViewState({
     type: CODE_PREVIEW_VIEW_TYPE,
@@ -18,8 +25,16 @@ export function openCodePreview(app: App, code: string, language: string, editor
   });
 }
 
+/**
+ *
+ */
 export class CodePreview extends ItemView {
   state?: CodeSnippetState;
+  /**
+   *
+   * @param leaf
+   * @param plugin
+   */
   constructor(
     leaf: WorkspaceLeaf,
     public plugin: PureChatLLM,
@@ -28,14 +43,25 @@ export class CodePreview extends ItemView {
     this.icon = 'code';
   }
 
+  /**
+   *
+   */
   getViewType(): string {
     return CODE_PREVIEW_VIEW_TYPE;
   }
 
+  /**
+   *
+   */
   getDisplayText(): string {
     return 'Code preview';
   }
 
+  /**
+   *
+   * @param state
+   * @param result
+   */
   setState(state: CodeSnippetState, result: ViewStateResult): Promise<void> {
     this.renderCodePreview(state);
     this.state = state;
@@ -58,10 +84,17 @@ export class CodePreview extends ItemView {
     });
   };
 
+  /**
+   *
+   */
   async onOpen() {
     //this.renderCodePreview();
   }
 
+  /**
+   *
+   * @param state
+   */
   private renderCodePreview(state: CodeSnippetState) {
     this.contentEl.empty();
     this.contentEl.addClass('PURECodePreview');
@@ -82,6 +115,9 @@ export class CodePreview extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   async onClose() {
     this.plugin.offCodeBlockUpdate(this.update);
     this.contentEl.empty();
@@ -105,11 +141,19 @@ export function createCodeblockExtension(app: App, plugin: PureChatLLM) {
       decorations: DecorationSet;
       app: App;
       plugin: PureChatLLM;
+      /**
+       *
+       * @param view
+       */
       constructor(private view: EditorView) {
         this.decorations = Decoration.none;
         this.app = app;
         this.plugin = plugin;
       }
+      /**
+       *
+       * @param update
+       */
       update(update: ViewUpdate) {
         syntaxTree(update.view.state).iterate({
           from: update.view.state.selection.main.from,

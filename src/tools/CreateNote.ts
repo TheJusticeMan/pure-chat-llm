@@ -33,6 +33,9 @@ const createNoteParameters = defineToolParameters({
 
 export type CreateNoteArgs = InferArgs<typeof createNoteParameters>;
 
+/**
+ *
+ */
 export class CreateNoteTool extends Tool<CreateNoteArgs> {
   readonly name = 'create_obsidian_note';
   readonly classification = 'Vault';
@@ -40,10 +43,17 @@ export class CreateNoteTool extends Tool<CreateNoteArgs> {
     'Creates a new markdown note in the Obsidian vault with optional frontmatter properties. This triggers a user review before saving.';
   readonly parameters = createNoteParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true; // Always available
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: CreateNoteArgs): Promise<string> {
     const { path, content, properties, overwrite } = args;
     const app = this.chat.plugin.app;

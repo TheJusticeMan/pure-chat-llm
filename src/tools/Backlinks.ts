@@ -15,6 +15,9 @@ const backlinksParameters = defineToolParameters({
 
 export type BacklinksArgs = InferArgs<typeof backlinksParameters>;
 
+/**
+ *
+ */
 export class BacklinksTool extends Tool<BacklinksArgs> {
   readonly name = 'get_backlinks';
   readonly classification = 'Vault';
@@ -22,10 +25,17 @@ export class BacklinksTool extends Tool<BacklinksArgs> {
     'Finds all notes that link to a specific note (backlinks), helping map relationships in the vault.';
   readonly parameters = backlinksParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: BacklinksArgs): Promise<string> {
     const { path } = args;
     const app = this.chat.plugin.app;

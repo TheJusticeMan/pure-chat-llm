@@ -42,10 +42,16 @@ export class BlueResolutionTreeView extends ItemView {
   private treeRenderer: ResolutionTreeRenderer | null = null;
   private renderContainer: HTMLElement | null = null; // Dedicated container for renderers
 
+  /**
+   *
+   */
   get locked(): boolean {
     return this._locked;
   }
 
+  /**
+   *
+   */
   set locked(value: boolean) {
     if (this._locked === value) return; // No change
     this._locked = value;
@@ -69,6 +75,11 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param leaf
+   * @param plugin
+   */
   constructor(
     leaf: WorkspaceLeaf,
     private plugin: PureChatLLM,
@@ -83,14 +94,23 @@ export class BlueResolutionTreeView extends ItemView {
     ) => void;
   }
 
+  /**
+   *
+   */
   getViewType(): string {
     return BLUE_RESOLUTION_VIEW_TYPE;
   }
 
+  /**
+   *
+   */
   getDisplayText(): string {
     return 'Blue resolution tree';
   }
 
+  /**
+   *
+   */
   async onOpen(): Promise<void> {
     // Restore saved view mode if available
     if (this.plugin.settings.blueResolutionViewMode) {
@@ -127,6 +147,9 @@ export class BlueResolutionTreeView extends ItemView {
     this.onActiveFileChange(file);
   }
 
+  /**
+   *
+   */
   async onClose(): Promise<void> {
     // Cleanup graph renderer if it exists
     if (this.graphRenderer) {
@@ -138,6 +161,10 @@ export class BlueResolutionTreeView extends ItemView {
     this.plugin.blueFileResolver.offResolutionEvent(this.boundResolutionEventHandler);
   }
 
+  /**
+   *
+   * @param event
+   */
   private handleResolutionEvent(event: ResolutionEvent): void {
     this.console.log('Resolution event received:', event);
 
@@ -179,6 +206,10 @@ export class BlueResolutionTreeView extends ItemView {
     this.render();
   }
 
+  /**
+   *
+   * @param file
+   */
   private onActiveFileChange(file: TFile): void {
     this.lastActiveFile = file;
     if (this.locked) return;
@@ -196,6 +227,9 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   private clearTreeData(): void {
     this.treeData.clear();
 
@@ -211,6 +245,9 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   private renderView(): void {
     // Cleanup previous renderer if switching views
     if (this.graphRenderer) {
@@ -284,6 +321,10 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param container
+   */
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Blue resolution tree')
@@ -417,6 +458,9 @@ export class BlueResolutionTreeView extends ItemView {
       );
   }
 
+  /**
+   *
+   */
   private renderNoFileMessage(): void {
     if (this.locked) return;
     this.contentEl.empty();
@@ -432,6 +476,10 @@ export class BlueResolutionTreeView extends ItemView {
     });
   }
 
+  /**
+   *
+   * @param container
+   */
   private renderLegend(container: HTMLElement): void {
     const legendEl = container.createDiv({ cls: 'resolution-legend' });
     legendEl.createEl('h3', { text: 'Status legend' });
@@ -474,6 +522,9 @@ export class BlueResolutionTreeView extends ItemView {
     });
   }
 
+  /**
+   *
+   */
   private renderTree(): void {
     if (!this.currentRootFile || !this.renderContainer) {
       return;
@@ -490,6 +541,9 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   private render(): void {
     if (this.viewMode === 'graph') {
       this.renderGraphView();
@@ -498,6 +552,9 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   private renderGraphView(): void {
     if (!this.currentRootFile || !this.renderContainer) {
       return;
@@ -588,6 +645,10 @@ export class BlueResolutionTreeView extends ItemView {
     }) as EventListener);
   }
 
+  /**
+   *
+   * @param filePath
+   */
   private openFile(filePath: string): void {
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof TFile) {
@@ -598,6 +659,10 @@ export class BlueResolutionTreeView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param currentRootFile
+   */
   lockViewToFile(currentRootFile: TFile | null) {
     if (currentRootFile) {
       this.currentRootFile = currentRootFile;
@@ -605,6 +670,9 @@ export class BlueResolutionTreeView extends ItemView {
     this.locked = true;
   }
 
+  /**
+   *
+   */
   private async analyzeCurrentFile(): Promise<void> {
     if (!this.currentRootFile) {
       new Notice('No file to analyze');

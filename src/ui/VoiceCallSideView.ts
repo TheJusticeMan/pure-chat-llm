@@ -27,6 +27,11 @@ export class VoiceCallSideView extends ItemView {
   };
   private remoteAudioElement: HTMLAudioElement | null = null;
 
+  /**
+   *
+   * @param leaf
+   * @param plugin
+   */
   constructor(
     leaf: WorkspaceLeaf,
     private plugin: PureChatLLM,
@@ -36,18 +41,30 @@ export class VoiceCallSideView extends ItemView {
     this.navigation = false;
   }
 
+  /**
+   *
+   */
   getViewType(): string {
     return VOICE_CALL_VIEW_TYPE;
   }
 
+  /**
+   *
+   */
   getDisplayText(): string {
     return 'Voice call';
   }
 
+  /**
+   *
+   */
   async onOpen(): Promise<void> {
     this.renderView();
   }
 
+  /**
+   *
+   */
   private renderView(): void {
     const { contentEl } = this;
     contentEl.empty();
@@ -63,6 +80,10 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param container
+   */
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Voice call')
@@ -88,6 +109,10 @@ export class VoiceCallSideView extends ItemView {
       );
   }
 
+  /**
+   *
+   * @param container
+   */
   private renderStatus(container: HTMLElement): void {
     const statusContainer = container.createDiv({ cls: 'voice-call-status' });
     const statusText = this.getStatusText(this.callState.status);
@@ -113,6 +138,10 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param container
+   */
   private renderControls(container: HTMLElement): void {
     const controlsContainer = container.createDiv({ cls: 'voice-call-controls' });
 
@@ -169,6 +198,10 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param container
+   */
   private renderInstructions(container: HTMLElement): void {
     const instructionsEl = container.createDiv({ cls: 'voice-call-instructions' });
     new Setting(instructionsEl).setName('How to use').setHeading();
@@ -184,6 +217,10 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param container
+   */
   private createRemoteAudioElement(container: HTMLElement): void {
     if (!this.remoteAudioElement) {
       this.remoteAudioElement = container.createEl('audio', {
@@ -199,6 +236,9 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   private async startCall(): Promise<void> {
     try {
       if (!this.remoteAudioElement) {
@@ -271,6 +311,10 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param stream
+   */
   private handleRemoteStream(stream: MediaStream): void {
     if (this.remoteAudioElement) {
       this.remoteAudioElement.srcObject = stream;
@@ -281,10 +325,16 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   */
   private toggleMute(): void {
     this.voiceCall?.toggleMute();
   }
 
+  /**
+   *
+   */
   private async endCall(): Promise<void> {
     if (this.voiceCall) {
       await this.voiceCall.endCall();
@@ -292,11 +342,18 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param state
+   */
   private onCallStateChange(state: CallState): void {
     this.callState = state;
     this.renderView();
   }
 
+  /**
+   *
+   */
   private resetCallState(): void {
     if (this.voiceCall) {
       void this.voiceCall.endCall();
@@ -311,6 +368,9 @@ export class VoiceCallSideView extends ItemView {
     this.renderView();
   }
 
+  /**
+   *
+   */
   async onClose(): Promise<void> {
     await this.endCall();
     if (this.remoteAudioElement) {
@@ -319,6 +379,10 @@ export class VoiceCallSideView extends ItemView {
     }
   }
 
+  /**
+   *
+   * @param status
+   */
   private getStatusText(status: CallState['status']): string {
     switch (status) {
       case 'idle':

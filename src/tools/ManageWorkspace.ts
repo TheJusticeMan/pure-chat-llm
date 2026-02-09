@@ -42,6 +42,9 @@ const manageWorkspaceParameters = defineToolParameters({
 
 export type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
 
+/**
+ *
+ */
 export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
   readonly name = 'manage_workspace';
   readonly classification = 'UI';
@@ -49,10 +52,17 @@ export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
     'Controls the Obsidian workspace layout. Use this to open notes in new tabs, split panes, or change view modes.';
   readonly parameters = manageWorkspaceParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ManageWorkspaceArgs): Promise<string> {
     const { action, path, split = 'none', new_leaf = true, mode, active = true } = args;
     const app = this.chat.plugin.app;

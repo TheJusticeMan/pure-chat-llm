@@ -89,24 +89,48 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   private onMessageCallback?: (event: unknown) => void;
   private onErrorCallback?: (error: Error) => void;
 
+  /**
+   *
+   * @param toolExecutor
+   */
   constructor(private toolExecutor?: IToolExecutor) {}
 
+  /**
+   *
+   */
   getName(): string {
     return this.toolExecutor ? 'Google Gemini Live (Tools)' : 'Google Gemini Live';
   }
 
+  /**
+   *
+   * @param callback
+   */
   onRemoteTrack(callback: (stream: MediaStream) => void): void {
     this.onRemoteTrackCallback = callback;
   }
 
+  /**
+   *
+   * @param callback
+   */
   onMessage(callback: (event: unknown) => void): void {
     this.onMessageCallback = callback;
   }
 
+  /**
+   *
+   * @param callback
+   */
   onError(callback: (error: Error) => void): void {
     this.onErrorCallback = callback;
   }
 
+  /**
+   *
+   * @param localStream
+   * @param config
+   */
   async connect(localStream: MediaStream, config: VoiceCallConfig): Promise<void> {
     try {
       const endpoint = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${config.apiKey}`;
@@ -168,6 +192,9 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     }
   }
 
+  /**
+   *
+   */
   async disconnect(): Promise<void> {
     if (this.ws) {
       this.ws.close();
@@ -190,12 +217,20 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     this.isPlaying = false;
   }
 
+  /**
+   *
+   * @param event
+   */
   send(event: unknown): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(event));
     }
   }
 
+  /**
+   *
+   * @param config
+   */
   private sendSetup(config: VoiceCallConfig) {
     const setup: GeminiSetup = {
       setup: {
@@ -231,6 +266,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     this.ws?.send(JSON.stringify(setup));
   }
 
+  /**
+   *
+   * @param data
+   */
   private sendAudioChunk(data: ArrayBuffer) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
@@ -248,6 +287,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     this.ws.send(JSON.stringify(msg));
   }
 
+  /**
+   *
+   * @param event
+   */
   private handleMessage(event: MessageEvent) {
     let data: GeminiMessage;
     try {
@@ -281,6 +324,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     }
   }
 
+  /**
+   *
+   * @param data
+   */
   private queueAudio(data: ArrayBuffer) {
     this.audioQueue.push(data);
     if (!this.isPlaying) {
@@ -288,6 +335,9 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     }
   }
 
+  /**
+   *
+   */
   private async playQueue() {
     if (!this.audioContext || this.audioQueue.length === 0) {
       this.isPlaying = false;
@@ -324,6 +374,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     };
   }
 
+  /**
+   *
+   * @param toolCall
+   */
   private async handleToolCall(toolCall: NonNullable<GeminiMessage['toolCall']>) {
     if (!this.toolExecutor || !toolCall.functionCalls) return;
 
@@ -356,6 +410,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   // Helpers
+  /**
+   *
+   * @param buffer
+   */
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     let binary = '';
     const bytes = new Uint8Array(buffer);
@@ -365,6 +423,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     return btoa(binary);
   }
 
+  /**
+   *
+   * @param base64
+   */
   private base64ToArrayBuffer(base64: string): ArrayBuffer {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -374,6 +436,10 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
     return bytes.buffer;
   }
 
+  /**
+   *
+   * @param obj
+   */
   private removeAdditionalProperties(obj: unknown): JsonValue {
     if (typeof obj !== 'object' || obj === null) return obj as JsonValue;
 

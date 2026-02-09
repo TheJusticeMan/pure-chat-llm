@@ -15,6 +15,12 @@ import { ChatSession } from './ChatSession';
  * - Parse chat options from JSON/YAML frontmatter
  */
 export class ChatMarkdownAdapter {
+  /**
+   *
+   * @param roleFormatter
+   * @param useYAMLFrontMatter
+   * @param agentMode
+   */
   constructor(
     private roleFormatter: string,
     private useYAMLFrontMatter: boolean,

@@ -3,9 +3,22 @@ import { ResolutionNodeData } from '../types';
 import { TreeNode } from './graph/types';
 import { getFileIconId } from './graph/utils';
 
+/**
+ *
+ */
 export class ResolutionTreeRenderer {
+  /**
+   *
+   * @param onFileClick
+   */
   constructor(private onFileClick: (filePath: string) => void) {}
 
+  /**
+   *
+   * @param containerEl
+   * @param treeData
+   * @param rootPath
+   */
   render(
     containerEl: HTMLElement,
     treeData: Map<string, ResolutionNodeData>,
@@ -17,6 +30,12 @@ export class ResolutionTreeRenderer {
     else containerEl.createEl('p', { text: 'No resolution data available.' });
   }
 
+  /**
+   *
+   * @param path
+   * @param data
+   * @param seen
+   */
   private build(
     path: string,
     data: Map<string, ResolutionNodeData>,
@@ -42,6 +61,12 @@ export class ResolutionTreeRenderer {
     return node;
   }
 
+  /**
+   *
+   * @param parent
+   * @param node
+   * @param depth
+   */
   private renderNode(parent: HTMLElement, node: TreeNode, depth: number): void {
     const el = parent.createDiv({ cls: `resolution-node resolution-node-${node.status}` });
     const content = el.createDiv({ cls: 'resolution-node-content' });

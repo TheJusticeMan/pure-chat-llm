@@ -24,6 +24,12 @@ export const nonKeyboardCharMap: [RegExp, string][] = [
 
 export const nonSafeCharacterFilter = /[^a-zA-Z`0-9~!@#$%^&*()_+\\=[\]{}|;:'",.<>/? \n\t-]/gu;
 
+/**
+ * Replaces non-keyboard characters in the input string with their keyboard equivalents.
+ * @param plugin The PureChatLLM plugin instance.
+ * @param input The input string to process.
+ * @returns The input string with non-keyboard characters replaced.
+ */
 export function replaceNonKeyboardChars(plugin: PureChatLLM, input: string): string {
   const output = nonKeyboardCharMap.reduce(
     (acc, [regex, replacement]) => acc.replace(regex, replacement),

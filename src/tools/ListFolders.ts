@@ -21,6 +21,9 @@ const listFoldersParameters = defineToolParameters({
 
 export type ListFoldersArgs = InferArgs<typeof listFoldersParameters>;
 
+/**
+ *
+ */
 export class ListFoldersTool extends Tool<ListFoldersArgs> {
   readonly name = 'list_vault_folders';
   readonly classification = 'Vault';
@@ -28,10 +31,17 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
     'Lists folders in the vault to understand the directory structure and suggest locations for new notes.';
   readonly parameters = listFoldersParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ListFoldersArgs): Promise<string> {
     const { path = '/', recursive = false } = args;
     const app = this.chat.plugin.app;

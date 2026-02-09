@@ -26,6 +26,12 @@ export class CodeHandling extends Modal {
   plugin: PureChatLLM;
   code: CodeContent[];
 
+  /**
+   *
+   * @param app
+   * @param plugin
+   * @param code
+   */
   constructor(app: App, plugin: PureChatLLM, code: string) {
     super(app);
     this.plugin = plugin;
@@ -34,6 +40,9 @@ export class CodeHandling extends Modal {
     this.renderCodeBlocks();
   }
 
+  /**
+   *
+   */
   private renderCodeBlocks() {
     if (!this.code.length) {
       new Setting(this.contentEl).setName('No code blocks found.');
@@ -72,6 +81,10 @@ export class CodeHandling extends Modal {
     });
   }
 
+  /**
+   *
+   * @param code
+   */
   getCode(code: string): CodeContent[] {
     return PureChatLLMChat.extractAllCodeBlocks(code);
   }
@@ -87,6 +100,10 @@ export class CodeHandling extends Modal {
 export class SectionHandling extends CodeHandling {
   plugin: PureChatLLM;
   code: CodeContent[];
+  /**
+   *
+   * @param code
+   */
   getCode(code: string): CodeContent[] {
     // Extract all Headers and content from the input string
     // capture the headers and the text following them

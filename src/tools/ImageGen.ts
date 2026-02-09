@@ -42,6 +42,9 @@ const imageGenerationParameters = defineToolParameters({
 
 export type ImageGenerationArgs = InferArgs<typeof imageGenerationParameters>;
 
+/**
+ *
+ */
 export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   readonly name = 'generate_image';
   readonly classification = 'AI';
@@ -50,11 +53,18 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
     'Create high-quality, customized images from detailed Markdown prompts. Supports multiple outputs and aspect ratio customization for precise visual storytelling. Available with OpenAI and xAI endpoints; Gemini image generation is currently unavailable.';
   readonly parameters = imageGenerationParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     const { name } = this.chat.plugin.settings.endpoints[this.chat.plugin.settings.endpoint];
     return name === 'OpenAI' || name === 'xAI'; /* || name === 'Gemini'; */
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ImageGenerationArgs): Promise<string> {
     const { prompt, ratio = 'square', n = 1 } = args;
     if (prompt.length > 4000) {
@@ -89,6 +99,13 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
     }
   }
 
+  /**
+   *
+   * @param root0
+   * @param root0.prompt
+   * @param root0.ratio
+   * @param root0.n
+   */
   private async sendImageGenerationRequest({
     prompt,
     ratio = 'square',

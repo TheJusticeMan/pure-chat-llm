@@ -46,6 +46,9 @@ const templatesParameters = defineToolParameters({
 
 export type TemplatesArgs = InferArgs<typeof templatesParameters>;
 
+/**
+ *
+ */
 export class TemplatesTool extends Tool<TemplatesArgs> {
   readonly name = 'manage_templates';
   readonly classification = 'System';
@@ -53,10 +56,17 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
     'Lists available Obsidian templates and applies them to notes. Supports both core Templates and Templater plugin folders if configured.';
   readonly parameters = templatesParameters;
 
+  /**
+   *
+   */
   isAvailable(): boolean {
     return true;
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: TemplatesArgs): Promise<string> {
     const { action, template_path, target_path } = args;
 
@@ -73,6 +83,9 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
     return 'Error: Invalid action.';
   }
 
+  /**
+   *
+   */
   private async listTemplates(): Promise<string> {
     const app = this.chat.plugin.app as ObsidianAppWithPlugins;
     let templateFolder: string | null = null;
@@ -126,6 +139,11 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
     return `Available templates in "${templateFolder}":\n${templates.join('\n')}`;
   }
 
+  /**
+   *
+   * @param templatePath
+   * @param targetPath
+   */
   private async applyTemplate(templatePath: string, targetPath: string): Promise<string> {
     const app = this.chat.plugin.app;
     const normTemplatePath = normalizePath(templatePath);

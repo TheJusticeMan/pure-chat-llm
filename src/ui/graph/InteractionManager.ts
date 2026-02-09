@@ -1,6 +1,9 @@
 import { GraphNode, InteractionState, ViewTransform, GRAPH_CONSTANTS } from './types';
 import { screenToGraph } from './utils';
 
+/**
+ *
+ */
 export class InteractionManager {
   public state: InteractionState = { type: 'idle' };
   public lastMousePos: { x: number; y: number } = { x: 0, y: 0 };
@@ -11,6 +14,14 @@ export class InteractionManager {
     handler: EventListener;
   }> = [];
 
+  /**
+   *
+   * @param canvas
+   * @param transform
+   * @param onUpdate
+   * @param getNodeAtPosition
+   * @param resetNode
+   */
   constructor(
     private canvas: HTMLCanvasElement,
     private transform: ViewTransform,
@@ -19,6 +30,9 @@ export class InteractionManager {
     private resetNode: (node: GraphNode) => void,
   ) {}
 
+  /**
+   *
+   */
   public setup(): void {
     this.add(this.canvas, 'wheel', this.handleWheel, { passive: false });
     this.add(this.canvas, 'mousemove', this.handleMouseMove);
@@ -30,6 +44,13 @@ export class InteractionManager {
     this.setupKeyboard();
   }
 
+  /**
+   *
+   * @param el
+   * @param event
+   * @param handler
+   * @param opt
+   */
   private add(
     el: HTMLElement | Document | Window,
     event: string,
@@ -114,6 +135,9 @@ export class InteractionManager {
     if (node) this.resetNode(node);
   };
 
+  /**
+   *
+   */
   private setupTouch() {
     this.add(
       this.canvas,
@@ -208,6 +232,9 @@ export class InteractionManager {
     }) as EventListener);
   }
 
+  /**
+   *
+   */
   private setupKeyboard() {
     this.add(document, 'keydown', ((e: KeyboardEvent) => {
       if (!this.canvas.matches(':hover') || !(e.ctrlKey || e.metaKey)) return;
@@ -225,6 +252,10 @@ export class InteractionManager {
     }) as EventListener);
   }
 
+  /**
+   *
+   * @param factor
+   */
   public zoom(factor: number) {
     const cx = this.canvas.width / 2,
       cy = this.canvas.height / 2;
@@ -238,10 +269,18 @@ export class InteractionManager {
     this.onUpdate();
   }
 
+  /**
+   *
+   * @param t1
+   * @param t2
+   */
   private getDist(t1: Touch, t2: Touch) {
     return Math.sqrt((t2.clientX - t1.clientX) ** 2 + (t2.clientY - t1.clientY) ** 2);
   }
 
+  /**
+   *
+   */
   public destroy(): void {
     this.eventHandlers.forEach(({ element, event, handler }) =>
       element.removeEventListener(event, handler),
