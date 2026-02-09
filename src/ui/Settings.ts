@@ -229,6 +229,32 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 .setValue(settings.useImageGeneration)
                 .onChange(async value => await this.sett('useImageGeneration', value)),
             ),
+      )
+      .addSetting(
+        setting =>
+          void setting
+            .setName('Realtime system prompt file')
+            .setDesc(
+              'Path to a file containing the system prompt for voice calls. If empty or not found, defaults to built-in prompts.',
+            )
+            .addText(text =>
+              text
+                .setPlaceholder('e.g., System Prompts/Realtime.md')
+                .setValue(this.ifdefault('realtimeSystemPromptFile'))
+                .onChange(
+                  async value =>
+                    await this.sett('realtimeSystemPromptFile', value || DEFAULT_SETTINGS.realtimeSystemPromptFile),
+                )
+                .inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
+                  if (e.key === '/' || e.key === '[') {
+                    e.preventDefault();
+                    new FileSuggest(this.app, file => {
+                      text.setValue(file.path);
+                      text.onChanged();
+                    }).open();
+                  }
+                }),
+            ),
       );
     new SettingGroup(containerEl)
       .setHeading('Prompts & templates')

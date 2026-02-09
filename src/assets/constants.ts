@@ -207,4 +207,5 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   },
   blueResolutionViewMode: 'tree',
   removeEmptyMessages: true,
+  realtimeSystemPromptFile: '',
 };

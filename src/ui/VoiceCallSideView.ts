@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Setting, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Setting, Notice, TFile } from 'obsidian';
 import { VoiceCall } from '../realtime/VoiceCall';
 import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
 import { GeminiLiveProvider } from '../realtime/providers/GeminiLiveProvider';
@@ -237,6 +237,51 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Read system prompt from configured file or return default
+   */
+  private async getRealtimeSystemPrompt(): Promise<string> {
+    const filePath = this.plugin.settings.realtimeSystemPromptFile;
+    
+    // If no file path configured, use default based on agent mode
+    if (!filePath || filePath.trim() === '') {
+      return this.plugin.settings.agentMode
+        ? 'You are a helpful AI assistant with access to tools in Obsidian.'
+        : 'You are a helpful assistant.';
+    }
+
+    // Try to read the file
+    try {
+      const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
+      if (!file || !(file instanceof TFile)) {
+        // File not found - use default and notify user
+        new Notice(`Realtime prompt file not found: ${filePath}. Using default.`);
+        return this.plugin.settings.agentMode
+          ? 'You are a helpful AI assistant with access to tools in Obsidian.'
+          : 'You are a helpful assistant.';
+      }
+
+      const content = await this.plugin.app.vault.cachedRead(file);
+      
+      // If file is empty, use default
+      if (!content || content.trim() === '') {
+        new Notice(`Realtime prompt file is empty: ${filePath}. Using default.`);
+        return this.plugin.settings.agentMode
+          ? 'You are a helpful AI assistant with access to tools in Obsidian.'
+          : 'You are a helpful assistant.';
+      }
+
+      return content.trim();
+    } catch (error) {
+      // Error reading file - use default and notify user
+      const msg = error instanceof Error ? error.message : String(error);
+      new Notice(`Error reading realtime prompt file: ${msg}. Using default.`);
+      return this.plugin.settings.agentMode
+        ? 'You are a helpful AI assistant with access to tools in Obsidian.'
+        : 'You are a helpful assistant.';
+    }
+  }
+
+  /**
    *
    */
   private async startCall(): Promise<void> {
@@ -270,10 +315,8 @@ export class VoiceCallSideView extends ItemView {
         new Notice('Initializing voice call');
       }
 
-      // 3. Configure Provider
-      const instructions = this.plugin.settings.agentMode
-        ? 'You are a helpful AI assistant with access to tools in Obsidian.'
-        : 'You are a helpful assistant.';
+      // 3. Configure Provider - Read system prompt from file
+      const instructions = await this.getRealtimeSystemPrompt();
 
       let provider;
       const config: VoiceCallConfig = {
