@@ -168,7 +168,12 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Sets up context menu actions for the plugin.
    *
+   * Registers event handlers for editor and file context menus, adding custom items
+   * for creating new conversations, chats from files, and chat-related actions.
+   *
+   * @returns {void}
    */
   private setupContextMenuActions() {
     this.registerEvent(
@@ -242,7 +247,14 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Sets up all chat-related command handlers for the plugin.
    *
+   * Registers commands for completing chat responses, choosing models and providers,
+   * generating titles, editing selections, analyzing conversations, reversing roles,
+   * speaking chats, and handling custom templates. Also registers dynamic commands
+   * for user-defined chat and selection templates.
+   *
+   * @returns {void}
    */
   private setupChatCommandHandlers() {
     this.addCommand({
@@ -373,7 +385,12 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Sets up voice call and blue resolution tree command handlers.
    *
+   * Registers commands for opening the voice call panel, starting voice calls,
+   * and opening the blue resolution tree view.
+   *
+   * @returns {void}
    */
   private setupVoiceCallCommandHandlers() {
     this.addCommand({
@@ -403,8 +420,12 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Updates the status bar with the provided text.
    *
-   * @param text
+   * Displays a message in the status bar prefixed with '[Pure Chat LLM]'.
+   *
+   * @param {string} text - The message text to display in the status bar.
+   * @returns {void}
    */
   status(text: string) {
     // Display a message in the status bar
@@ -412,9 +433,14 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Generates a unique file name in the specified folder.
    *
-   * @param folder
-   * @param baseName
+   * Checks for existing files with the same name and appends a number suffix
+   * until a unique name is found.
+   *
+   * @param {TFolder} folder - The folder where the file will be created.
+   * @param {string} baseName - The base name for the file (without extension).
+   * @returns {string} A unique file name with .md extension.
    */
   generateUniqueFileName(folder: TFolder, baseName: string) {
     // Generate a unique file name in the specified folder
@@ -426,7 +452,12 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Opens the hotkeys settings tab and searches for Pure Chat LLM commands.
    *
+   * Opens the settings panel, navigates to the hotkeys tab, and filters
+   * the hotkeys to show only Pure Chat LLM related commands.
+   *
+   * @returns {Promise<void>}
    */
   async openHotkeys(): Promise<void> {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
@@ -445,7 +476,12 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Called when the user enables the plugin.
    *
+   * Activates the chat view when the plugin is first enabled by the user.
+   * This provides immediate feedback and shows the plugin is ready to use.
+   *
+   * @returns {void}
    */
   onUserEnable() {
     void this.activateChatView();
@@ -460,9 +496,15 @@ export default class PureChatLLM extends Plugin {
   activateBlueResolutView = async () => await this.activateView(BLUE_RESOLUTION_VIEW_TYPE, 'right');
 
   /**
+   * Activates a specific view in the workspace.
    *
-   * @param viewType
-   * @param position
+   * Creates or reveals a view of the specified type at the given position.
+   * If the view already exists, it will be brought to the front. Otherwise,
+   * a new leaf will be created at the specified position.
+   *
+   * @param {string} viewType - The type identifier of the view to activate (e.g., PURE_CHAT_LLM_VIEW_TYPE).
+   * @param {'right' | 'left' | ''} position - The position to place the view: 'right', 'left', or empty for default.
+   * @returns {Promise<void>}
    */
   async activateView(viewType: string, position: 'right' | 'left' | '' = ''): Promise<void> {
     const { workspace } = this.app;
@@ -491,10 +533,16 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Adds Pure Chat LLM items to the editor context menu.
    *
-   * @param menu
-   * @param editor
-   * @param view
+   * Populates the context menu with plugin-specific actions based on the current selection
+   * and editor state. Adds options for editing selections and opening code previews when
+   * the cursor is inside a code block.
+   *
+   * @param {Menu} menu - The menu to add items to.
+   * @param {Editor} editor - The current editor instance.
+   * @param {MarkdownView} view - The current markdown view.
+   * @returns {Menu} The menu with added items.
    */
   addItemsToMenu(menu: Menu, editor: Editor, view: MarkdownView) {
     const selected = editor.getSelection();
@@ -542,9 +590,16 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Opens a prompt handler to edit the selected text.
    *
-   * @param selected
-   * @param editor
+   * Creates an InstructPromptsHandler modal with available selection templates.
+   * When a template is selected, it processes the selection through the LLM and
+   * replaces the selected text with the generated response.
+   *
+   * @param {string} selected - The currently selected text in the editor.
+   * @param {Editor} editor - The editor instance for replacing the selection.
+   * @returns {void}
+   * @private
    */
   private editSelection(selected: string, editor: Editor) {
     new InstructPromptsHandler(
@@ -657,9 +712,14 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Moves the cursor to the end of the editor content.
    *
-   * @param editor
-   * @param intoview
+   * Positions the cursor at the end of the last line and optionally scrolls
+   * the view to make the cursor position visible.
+   *
+   * @param {Editor} editor - The editor instance to manipulate.
+   * @param {boolean} intoview - Whether to scroll the cursor into view after positioning.
+   * @returns {void}
    */
   setCursorEnd(editor: Editor, intoview = false) {
     editor.setCursor(editor.lastLine(), editor.getLine(editor.lastLine()).length);
@@ -671,7 +731,13 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Loads and initializes the plugin settings from persistent storage.
    *
+   * Merges default settings with saved data, performing compatibility fixes
+   * for older versions. Also handles migration of legacy settings formats
+   * and ensures all required settings fields are populated.
+   *
+   * @returns {Promise<void>}
    */
   async loadSettings() {
     const loadedData: PureChatLLMSettings = {
