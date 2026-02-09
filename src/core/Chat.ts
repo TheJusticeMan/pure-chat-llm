@@ -13,8 +13,10 @@ import { ManageWorkspaceTool } from '../tools/ManageWorkspace';
 import { PatchNoteTool } from '../tools/PatchNote';
 import { PluginSettingsTool } from '../tools/PluginSettings';
 import { ReadFileTool } from '../tools/ReadFile';
+import { ReadNoteSectionTool } from '../tools/ReadNoteSection';
 import { ReplaceInNoteTool } from '../tools/ReplaceInNote';
 import { SearchVaultTool } from '../tools/SearchVault';
+import { WriteNoteSectionTool } from '../tools/WriteNoteSection';
 import { ShowNoticeTool } from '../tools/ShowNotice';
 import { SmartConnectionsRetrievalTool } from '../tools/SmartConnectionsRetrieval';
 import { SunoTool } from '../tools/Suno';
@@ -182,6 +184,8 @@ export class PureChatLLMChat {
       .registerTool(CreateNoteTool)
       .registerTool(GlobFilesTool)
       .registerTool(ReadFileTool)
+      .registerTool(ReadNoteSectionTool)
+      .registerTool(WriteNoteSectionTool)
       .registerTool(SearchVaultTool)
       .registerTool(PatchNoteTool)
       .registerTool(BacklinksTool)

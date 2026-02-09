@@ -1,15 +1,11 @@
 {
   "inputs": {
     "package.json": {
-      "bytes": 1513,
-      "imports": []
-    },
-    "src/assets/s.json": {
-      "bytes": 9247,
+      "bytes": 1599,
       "imports": []
     },
     "src/assets/constants.ts": {
-      "bytes": 14118,
+      "bytes": 14128,
       "imports": [
         {
           "path": "src/types",
@@ -20,17 +16,12 @@
           "path": "package.json",
           "kind": "import-statement",
           "original": "../../package.json"
-        },
-        {
-          "path": "src/assets/s.json",
-          "kind": "import-statement",
-          "original": "../assets/s.json"
         }
       ],
       "format": "esm"
     },
     "src/adapters/ObsidianFileSystemAdapter.ts": {
-      "bytes": 943,
+      "bytes": 1908,
       "imports": [
         {
           "path": "obsidian",
@@ -51,12 +42,12 @@
       "format": "esm"
     },
     "src/tools.ts": {
-      "bytes": 5760,
+      "bytes": 6488,
       "imports": [],
       "format": "esm"
     },
     "src/tools/ActiveContext.ts": {
-      "bytes": 1939,
+      "bytes": 2001,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -77,7 +68,7 @@
       "format": "esm"
     },
     "src/tools/Backlinks.ts": {
-      "bytes": 3381,
+      "bytes": 3443,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -348,7 +339,7 @@
       "format": "esm"
     },
     "src/tools/EditReview.ts": {
-      "bytes": 8942,
+      "bytes": 9321,
       "imports": [
         {
           "path": "node_modules/diff/libesm/index.js",
@@ -369,7 +360,7 @@
       "format": "esm"
     },
     "src/tools/CreateNote.ts": {
-      "bytes": 2013,
+      "bytes": 2075,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -385,7 +376,7 @@
       "format": "esm"
     },
     "src/tools/DeleteNote.ts": {
-      "bytes": 4690,
+      "bytes": 4904,
       "imports": [
         {
           "path": "obsidian",
@@ -411,7 +402,7 @@
       "format": "cjs"
     },
     "src/tools/GlobFiles.ts": {
-      "bytes": 5838,
+      "bytes": 5900,
       "imports": [
         {
           "path": "node_modules/glob-to-regexp/index.js",
@@ -436,7 +427,7 @@
       "imports": []
     },
     "src/tools/ImageGen.ts": {
-      "bytes": 6439,
+      "bytes": 6605,
       "imports": [
         {
           "path": "obsidian",
@@ -457,7 +448,7 @@
       "format": "esm"
     },
     "src/tools/ListFolders.ts": {
-      "bytes": 4725,
+      "bytes": 4787,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -478,7 +469,7 @@
       "format": "esm"
     },
     "src/tools/ManageWorkspace.ts": {
-      "bytes": 4197,
+      "bytes": 4259,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -494,7 +485,7 @@
       "format": "esm"
     },
     "src/tools/PatchNote.ts": {
-      "bytes": 4349,
+      "bytes": 4411,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -520,7 +511,7 @@
       "format": "esm"
     },
     "src/tools/PluginSettings.ts": {
-      "bytes": 5014,
+      "bytes": 5234,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -536,7 +527,28 @@
       "format": "esm"
     },
     "src/tools/ReadFile.ts": {
-      "bytes": 5542,
+      "bytes": 5604,
+      "imports": [
+        {
+          "path": "src/tools.ts",
+          "kind": "import-statement",
+          "original": "../tools"
+        },
+        {
+          "path": "obsidian",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "src/tools/ToolOutputBuilder.ts",
+          "kind": "import-statement",
+          "original": "./ToolOutputBuilder"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/tools/ReadNoteSection.ts": {
+      "bytes": 8791,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -557,7 +569,7 @@
       "format": "esm"
     },
     "src/tools/ReplaceInNote.ts": {
-      "bytes": 4300,
+      "bytes": 4362,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -583,12 +595,12 @@
       "format": "esm"
     },
     "src/utils/BooleanSearchParser.ts": {
-      "bytes": 4164,
+      "bytes": 4284,
       "imports": [],
       "format": "esm"
     },
     "src/tools/SearchVault.ts": {
-      "bytes": 6612,
+      "bytes": 6674,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -608,8 +620,34 @@
       ],
       "format": "esm"
     },
+    "src/tools/WriteNoteSection.ts": {
+      "bytes": 8951,
+      "imports": [
+        {
+          "path": "src/tools.ts",
+          "kind": "import-statement",
+          "original": "../tools"
+        },
+        {
+          "path": "obsidian",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "src/tools/EditReview.ts",
+          "kind": "import-statement",
+          "original": "./EditReview"
+        },
+        {
+          "path": "src/tools/ToolOutputBuilder.ts",
+          "kind": "import-statement",
+          "original": "./ToolOutputBuilder"
+        }
+      ],
+      "format": "esm"
+    },
     "src/tools/ShowNotice.ts": {
-      "bytes": 1093,
+      "bytes": 1155,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -625,7 +663,7 @@
       "format": "esm"
     },
     "src/tools/SmartConnectionsRetrieval.ts": {
-      "bytes": 5282,
+      "bytes": 5344,
       "imports": [
         {
           "path": "obsidian",
@@ -641,7 +679,7 @@
       "format": "esm"
     },
     "src/tools/Suno.ts": {
-      "bytes": 14853,
+      "bytes": 15211,
       "imports": [
         {
           "path": "obsidian",
@@ -657,7 +695,7 @@
       "format": "esm"
     },
     "src/tools/Templates.ts": {
-      "bytes": 5772,
+      "bytes": 5916,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -678,7 +716,7 @@
       "format": "esm"
     },
     "src/core/ChatSession.ts": {
-      "bytes": 5040,
+      "bytes": 5177,
       "imports": [
         {
           "path": "obsidian",
@@ -694,7 +732,7 @@
       "format": "esm"
     },
     "src/core/ChatMarkdownAdapter.ts": {
-      "bytes": 8209,
+      "bytes": 8305,
       "imports": [
         {
           "path": "obsidian",
@@ -725,7 +763,7 @@
       "format": "esm"
     },
     "src/core/LLMService.ts": {
-      "bytes": 9911,
+      "bytes": 10172,
       "imports": [
         {
           "path": "obsidian",
@@ -746,7 +784,7 @@
       "format": "esm"
     },
     "src/core/ToolExecutor.ts": {
-      "bytes": 4429,
+      "bytes": 4582,
       "imports": [
         {
           "path": "../tools",
@@ -767,7 +805,7 @@
       "format": "esm"
     },
     "src/core/Chat.ts": {
-      "bytes": 25098,
+      "bytes": 26063,
       "imports": [
         {
           "path": "obsidian",
@@ -845,6 +883,11 @@
           "original": "../tools/ReadFile"
         },
         {
+          "path": "src/tools/ReadNoteSection.ts",
+          "kind": "import-statement",
+          "original": "../tools/ReadNoteSection"
+        },
+        {
           "path": "src/tools/ReplaceInNote.ts",
           "kind": "import-statement",
           "original": "../tools/ReplaceInNote"
@@ -853,6 +896,11 @@
           "path": "src/tools/SearchVault.ts",
           "kind": "import-statement",
           "original": "../tools/SearchVault"
+        },
+        {
+          "path": "src/tools/WriteNoteSection.ts",
+          "kind": "import-statement",
+          "original": "../tools/WriteNoteSection"
         },
         {
           "path": "src/tools/ShowNotice.ts",
@@ -939,7 +987,7 @@
       "format": "esm"
     },
     "src/core/BlueFileResolver.ts": {
-      "bytes": 37427,
+      "bytes": 38831,
       "imports": [
         {
           "path": "obsidian",
@@ -985,7 +1033,7 @@
       "format": "esm"
     },
     "src/core/Speech.ts": {
-      "bytes": 9026,
+      "bytes": 9096,
       "imports": [
         {
           "path": "src/types",
@@ -1016,7 +1064,7 @@
       "format": "esm"
     },
     "src/ui/graph/types.ts": {
-      "bytes": 2072,
+      "bytes": 2116,
       "imports": [
         {
           "path": "../../types",
@@ -1027,7 +1075,7 @@
       "format": "esm"
     },
     "src/ui/graph/utils.ts": {
-      "bytes": 1671,
+      "bytes": 1953,
       "imports": [
         {
           "path": "src/ui/graph/types.ts",
@@ -1043,7 +1091,7 @@
       "format": "esm"
     },
     "src/ui/graph/IconLoader.ts": {
-      "bytes": 1939,
+      "bytes": 2086,
       "imports": [
         {
           "path": "obsidian",
@@ -1069,7 +1117,7 @@
       "format": "esm"
     },
     "src/ui/graph/InteractionManager.ts": {
-      "bytes": 9085,
+      "bytes": 9464,
       "imports": [
         {
           "path": "src/ui/graph/types.ts",
@@ -1085,7 +1133,7 @@
       "format": "esm"
     },
     "src/ui/graph/TooltipManager.ts": {
-      "bytes": 2023,
+      "bytes": 2231,
       "imports": [
         {
           "path": "./types",
@@ -1096,7 +1144,7 @@
       "format": "esm"
     },
     "src/ui/graph/MinimapRenderer.ts": {
-      "bytes": 3546,
+      "bytes": 3831,
       "imports": [
         {
           "path": "src/ui/graph/types.ts",
@@ -1107,7 +1155,7 @@
       "format": "esm"
     },
     "src/ui/ResolutionGraphRenderer.ts": {
-      "bytes": 10592,
+      "bytes": 11117,
       "imports": [
         {
           "path": "../types",
@@ -1148,7 +1196,7 @@
       "format": "esm"
     },
     "src/ui/ResolutionTreeRenderer.ts": {
-      "bytes": 2651,
+      "bytes": 2925,
       "imports": [
         {
           "path": "obsidian",
@@ -1174,7 +1222,7 @@
       "format": "esm"
     },
     "src/ui/BlueResolutionTreeView.ts": {
-      "bytes": 20988,
+      "bytes": 21492,
       "imports": [
         {
           "path": "obsidian",
@@ -1210,7 +1258,7 @@
       "format": "esm"
     },
     "src/ui/CodePreview.ts": {
-      "bytes": 4420,
+      "bytes": 4819,
       "imports": [
         {
           "path": "@codemirror/language",
@@ -1236,7 +1284,7 @@
       "format": "esm"
     },
     "src/ui/Modals.ts": {
-      "bytes": 12376,
+      "bytes": 12712,
       "imports": [
         {
           "path": "obsidian",
@@ -1272,7 +1320,7 @@
       "format": "esm"
     },
     "src/core/ImportChatGPT.ts": {
-      "bytes": 5134,
+      "bytes": 5456,
       "imports": [
         {
           "path": "obsidian",
@@ -1293,7 +1341,7 @@
       "format": "esm"
     },
     "src/ui/Settings.ts": {
-      "bytes": 22569,
+      "bytes": 22750,
       "imports": [
         {
           "path": "obsidian",
@@ -1339,7 +1387,7 @@
       "format": "esm"
     },
     "src/ui/CodeHandling.ts": {
-      "bytes": 3539,
+      "bytes": 3693,
       "imports": [
         {
           "path": "obsidian",
@@ -1365,7 +1413,7 @@
       "format": "esm"
     },
     "src/ui/SideView.ts": {
-      "bytes": 20209,
+      "bytes": 20791,
       "imports": [
         {
           "path": "obsidian",
@@ -1421,7 +1469,7 @@
       "format": "esm"
     },
     "src/realtime/VoiceCall.ts": {
-      "bytes": 4296,
+      "bytes": 4468,
       "imports": [
         {
           "path": "obsidian",
@@ -1442,7 +1490,7 @@
       "format": "esm"
     },
     "src/realtime/providers/OpenAIRealtimeProvider.ts": {
-      "bytes": 6002,
+      "bytes": 6354,
       "imports": [
         {
           "path": "obsidian",
@@ -1458,7 +1506,7 @@
       "format": "esm"
     },
     "src/realtime/providers/GeminiLiveProvider.ts": {
-      "bytes": 10987,
+      "bytes": 11571,
       "imports": [
         {
           "path": "obsidian",
@@ -1474,7 +1522,7 @@
       "format": "esm"
     },
     "src/realtime/ChatToolExecutor.ts": {
-      "bytes": 515,
+      "bytes": 628,
       "imports": [
         {
           "path": "../core/Chat",
@@ -1495,7 +1543,7 @@
       "format": "esm"
     },
     "src/ui/VoiceCallSideView.ts": {
-      "bytes": 10293,
+      "bytes": 10801,
       "imports": [
         {
           "path": "obsidian",
@@ -1556,7 +1604,7 @@
       "format": "esm"
     },
     "src/utils/replaceNonKeyboard.ts": {
-      "bytes": 970,
+      "bytes": 1230,
       "imports": [
         {
           "path": "../main",
@@ -1567,7 +1615,7 @@
       "format": "esm"
     },
     "src/main.ts": {
-      "bytes": 43312,
+      "bytes": 50062,
       "imports": [
         {
           "path": "obsidian",
@@ -1787,6 +1835,16 @@
           "external": true
         },
         {
+          "path": "obsidian",
+          "kind": "require-call",
+          "external": true
+        },
+        {
+          "path": "obsidian",
+          "kind": "require-call",
+          "external": true
+        },
+        {
           "path": "@codemirror/language",
           "kind": "require-call",
           "external": true
@@ -1865,7 +1923,7 @@
           "bytesInOutput": 16
         },
         "src/assets/constants.ts": {
-          "bytesInOutput": 12565
+          "bytesInOutput": 12561
         },
         "src/adapters/ObsidianFileSystemAdapter.ts": {
           "bytesInOutput": 391
@@ -1880,7 +1938,7 @@
           "bytesInOutput": 709
         },
         "src/core/Chat.ts": {
-          "bytesInOutput": 7389
+          "bytesInOutput": 7423
         },
         "src/tools.ts": {
           "bytesInOutput": 1984
@@ -1936,6 +1994,9 @@
         "src/tools/ReadFile.ts": {
           "bytesInOutput": 2865
         },
+        "src/tools/ReadNoteSection.ts": {
+          "bytesInOutput": 4536
+        },
         "src/tools/ReplaceInNote.ts": {
           "bytesInOutput": 2284
         },
@@ -1944,6 +2005,9 @@
         },
         "src/tools/SearchVault.ts": {
           "bytesInOutput": 3149
+        },
+        "src/tools/WriteNoteSection.ts": {
+          "bytesInOutput": 4019
         },
         "src/tools/ShowNotice.ts": {
           "bytesInOutput": 633
@@ -2045,7 +2109,7 @@
           "bytesInOutput": 561
         }
       },
-      "bytes": 210266
+      "bytes": 218851
     }
   }
 }
