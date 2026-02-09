@@ -1543,7 +1543,7 @@
       "format": "esm"
     },
     "src/ui/VoiceCallSideView.ts": {
-      "bytes": 12554,
+      "bytes": 12340,
       "imports": [
         {
           "path": "obsidian",
@@ -2088,7 +2088,7 @@
           "bytesInOutput": 1063
         },
         "src/ui/VoiceCallSideView.ts": {
-          "bytesInOutput": 6534
+          "bytesInOutput": 6299
         },
         "src/realtime/VoiceCall.ts": {
           "bytesInOutput": 2153
@@ -2109,7 +2109,7 @@
           "bytesInOutput": 561
         }
       },
-      "bytes": 220388
+      "bytes": 220153
     }
   }
 }

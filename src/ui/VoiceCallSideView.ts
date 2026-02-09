@@ -237,6 +237,15 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Get default system prompt based on agent mode
+   */
+  private getDefaultSystemPrompt(): string {
+    return this.plugin.settings.agentMode
+      ? 'You are a helpful AI assistant with access to tools in Obsidian.'
+      : 'You are a helpful assistant.';
+  }
+
+  /**
    * Read system prompt from configured file or return default
    */
   private async getRealtimeSystemPrompt(): Promise<string> {
@@ -244,9 +253,7 @@ export class VoiceCallSideView extends ItemView {
     
     // If no file path configured, use default based on agent mode
     if (!filePath || filePath.trim() === '') {
-      return this.plugin.settings.agentMode
-        ? 'You are a helpful AI assistant with access to tools in Obsidian.'
-        : 'You are a helpful assistant.';
+      return this.getDefaultSystemPrompt();
     }
 
     // Try to read the file
@@ -255,9 +262,7 @@ export class VoiceCallSideView extends ItemView {
       if (!file || !(file instanceof TFile)) {
         // File not found - use default and notify user
         new Notice(`Realtime prompt file not found: ${filePath}. Using default.`);
-        return this.plugin.settings.agentMode
-          ? 'You are a helpful AI assistant with access to tools in Obsidian.'
-          : 'You are a helpful assistant.';
+        return this.getDefaultSystemPrompt();
       }
 
       const content = await this.plugin.app.vault.cachedRead(file);
@@ -265,9 +270,7 @@ export class VoiceCallSideView extends ItemView {
       // If file is empty, use default
       if (!content || content.trim() === '') {
         new Notice(`Realtime prompt file is empty: ${filePath}. Using default.`);
-        return this.plugin.settings.agentMode
-          ? 'You are a helpful AI assistant with access to tools in Obsidian.'
-          : 'You are a helpful assistant.';
+        return this.getDefaultSystemPrompt();
       }
 
       return content.trim();
@@ -275,9 +278,7 @@ export class VoiceCallSideView extends ItemView {
       // Error reading file - use default and notify user
       const msg = error instanceof Error ? error.message : String(error);
       new Notice(`Error reading realtime prompt file: ${msg}. Using default.`);
-      return this.plugin.settings.agentMode
-        ? 'You are a helpful AI assistant with access to tools in Obsidian.'
-        : 'You are a helpful assistant.';
+      return this.getDefaultSystemPrompt();
     }
   }
 
