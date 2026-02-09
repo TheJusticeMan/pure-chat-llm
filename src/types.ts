@@ -27,6 +27,7 @@ export interface PureChatLLMSettings {
   };
   blueResolutionViewMode?: 'tree' | 'graph';
   removeEmptyMessages: boolean;
+  realtimeSystemPromptFile: string;
 }
 
 export interface PureChatLLMAPI {
