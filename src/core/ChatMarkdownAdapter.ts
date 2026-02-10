@@ -146,8 +146,8 @@ export class ChatMarkdownAdapter {
             }
             session.options = { ...session.options, ...filteredOptions };
           }
-        } catch (e) {
-          console.error('Error parsing frontmatter YAML:', e);
+        } catch {
+          // Ignore YAML parse errors
         }
       }
     }

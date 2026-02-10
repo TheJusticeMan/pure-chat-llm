@@ -732,7 +732,7 @@
       "format": "esm"
     },
     "src/core/ChatMarkdownAdapter.ts": {
-      "bytes": 8305,
+      "bytes": 8276,
       "imports": [
         {
           "path": "obsidian",
@@ -987,7 +987,7 @@
       "format": "esm"
     },
     "src/core/BlueFileResolver.ts": {
-      "bytes": 38831,
+      "bytes": 34346,
       "imports": [
         {
           "path": "obsidian",
@@ -1222,7 +1222,7 @@
       "format": "esm"
     },
     "src/ui/BlueResolutionTreeView.ts": {
-      "bytes": 21492,
+      "bytes": 21432,
       "imports": [
         {
           "path": "obsidian",
@@ -1413,7 +1413,7 @@
       "format": "esm"
     },
     "src/ui/SideView.ts": {
-      "bytes": 20791,
+      "bytes": 20725,
       "imports": [
         {
           "path": "obsidian",
@@ -1615,7 +1615,7 @@
       "format": "esm"
     },
     "src/main.ts": {
-      "bytes": 50062,
+      "bytes": 49798,
       "imports": [
         {
           "path": "obsidian",
@@ -1917,7 +1917,7 @@
           "bytesInOutput": 791
         },
         "src/main.ts": {
-          "bytesInOutput": 20396
+          "bytesInOutput": 20187
         },
         "package.json": {
           "bytesInOutput": 16
@@ -1929,7 +1929,7 @@
           "bytesInOutput": 391
         },
         "src/core/BlueFileResolver.ts": {
-          "bytesInOutput": 13491
+          "bytesInOutput": 9978
         },
         "src/utils/BrowserConsole.ts": {
           "bytesInOutput": 390
@@ -2025,7 +2025,7 @@
           "bytesInOutput": 104
         },
         "src/core/ChatMarkdownAdapter.ts": {
-          "bytesInOutput": 2573
+          "bytesInOutput": 2523
         },
         "src/core/ChatSession.ts": {
           "bytesInOutput": 1464
@@ -2043,7 +2043,7 @@
           "bytesInOutput": 745
         },
         "src/ui/BlueResolutionTreeView.ts": {
-          "bytesInOutput": 10796
+          "bytesInOutput": 10747
         },
         "src/ui/graph/types.ts": {
           "bytesInOutput": 849
@@ -2082,7 +2082,7 @@
           "bytesInOutput": 1774
         },
         "src/ui/SideView.ts": {
-          "bytesInOutput": 10191
+          "bytesInOutput": 10130
         },
         "src/ui/CodeHandling.ts": {
           "bytesInOutput": 1063
@@ -2109,7 +2109,7 @@
           "bytesInOutput": 561
         }
       },
-      "bytes": 220153
+      "bytes": 216268
     }
   }
 }

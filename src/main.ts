@@ -136,7 +136,6 @@ export default class PureChatLLM extends Plugin {
    * @returns {void}
    */
   callOnChange() {
-    this.console.log('Code block updated, notifying listeners.');
     this.onupdate.forEach(callback => callback());
   }
 
@@ -150,7 +149,6 @@ export default class PureChatLLM extends Plugin {
    * @returns {void}
    */
   onCodeBlockUpdate(cb: () => void) {
-    this.console.log('Registered a new code block update listener.');
     this.onupdate.push(cb);
   }
 
@@ -485,8 +483,6 @@ export default class PureChatLLM extends Plugin {
    */
   onUserEnable() {
     void this.activateChatView();
-    //this.openHotkeys();
-    this.console.log('Plugin enabled');
   }
 
   activateChatView = async () => await this.activateView(PURE_CHAT_LLM_VIEW_TYPE, 'right');
@@ -569,7 +565,6 @@ export default class PureChatLLM extends Plugin {
             .setSection('selection'),
         );
     const { codeBlock } = this;
-    this.console.log('Context menu - codeBlock:', codeBlock);
     if (codeBlock)
       menu.addItem(item =>
         item

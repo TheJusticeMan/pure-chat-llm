@@ -492,7 +492,6 @@ export class PureChatLLMSideView extends ItemView {
    * @param editor
    */
   openCodePreview(code: string, language: string, editor: Editor) {
-    this.console.log('Opening code preview', { code, language });
     void this.app.workspace.getLeaf('tab').setViewState({
       type: CODE_PREVIEW_VIEW_TYPE,
       active: true,

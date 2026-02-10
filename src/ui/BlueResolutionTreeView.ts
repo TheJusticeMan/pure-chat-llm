@@ -166,8 +166,6 @@ export class BlueResolutionTreeView extends ItemView {
    * @param event
    */
   private handleResolutionEvent(event: ResolutionEvent): void {
-    this.console.log('Resolution event received:', event);
-
     // Update tree data
     const nodeData = this.treeData.get(event.filePath) || {
       filePath: event.filePath,
