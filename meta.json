@@ -1,27 +1,11 @@
 {
   "inputs": {
-    "src/adapters/ObsidianFileSystemAdapter.ts": {
-      "bytes": 1908,
-      "imports": [
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "../ports/FileSystemPort",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
     "package.json": {
       "bytes": 1599,
       "imports": []
     },
     "src/assets/constants.ts": {
-      "bytes": 14197,
+      "bytes": 14060,
       "imports": [
         {
           "path": "src/types",
@@ -34,11 +18,6 @@
           "original": "../../package.json"
         }
       ],
-      "format": "esm"
-    },
-    "src/utils/BrowserConsole.ts": {
-      "bytes": 2311,
-      "imports": [],
       "format": "esm"
     },
     "src/tools.ts": {
@@ -446,6 +425,11 @@
       ],
       "format": "esm"
     },
+    "src/utils/BrowserConsole.ts": {
+      "bytes": 2311,
+      "imports": [],
+      "format": "esm"
+    },
     "src/utils/toTitleCase.ts": {
       "bytes": 670,
       "imports": [],
@@ -541,7 +525,7 @@
       "format": "esm"
     },
     "src/core/Chat.ts": {
-      "bytes": 25033,
+      "bytes": 28956,
       "imports": [
         {
           "path": "obsidian",
@@ -609,11 +593,6 @@
           "original": "../utils/toTitleCase"
         },
         {
-          "path": "./BlueFileResolver",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
           "path": "src/core/ChatMarkdownAdapter.ts",
           "kind": "import-statement",
           "original": "./ChatMarkdownAdapter"
@@ -632,68 +611,6 @@
           "path": "src/core/ToolExecutor.ts",
           "kind": "import-statement",
           "original": "./ToolExecutor"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/utils/ChatUtils.ts": {
-      "bytes": 2887,
-      "imports": [
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/core/Chat.ts",
-          "kind": "import-statement",
-          "original": "../core/Chat"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/core/BlueFileResolver.ts": {
-      "bytes": 34346,
-      "imports": [
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "../main",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "../ports/FileSystemPort",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "../types",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/utils/BrowserConsole.ts",
-          "kind": "import-statement",
-          "original": "../utils/BrowserConsole"
-        },
-        {
-          "path": "src/utils/ChatUtils.ts",
-          "kind": "import-statement",
-          "original": "../utils/ChatUtils"
-        },
-        {
-          "path": "src/core/Chat.ts",
-          "kind": "import-statement",
-          "original": "./Chat"
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "src/tools/ToolOutputBuilder"
         }
       ],
       "format": "esm"
@@ -736,202 +653,8 @@
       "format": "esm"
     },
     "src/types.ts": {
-      "bytes": 5288,
+      "bytes": 4256,
       "imports": [],
-      "format": "esm"
-    },
-    "src/ui/graph/types.ts": {
-      "bytes": 2116,
-      "imports": [
-        {
-          "path": "../../types",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/graph/utils.ts": {
-      "bytes": 1953,
-      "imports": [
-        {
-          "path": "src/ui/graph/types.ts",
-          "kind": "import-statement",
-          "original": "./types"
-        },
-        {
-          "path": "src/types.ts",
-          "kind": "import-statement",
-          "original": "../../types"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/graph/IconLoader.ts": {
-      "bytes": 2086,
-      "imports": [
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/types.ts",
-          "kind": "import-statement",
-          "original": "../../types"
-        },
-        {
-          "path": "./types",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/ui/graph/utils.ts",
-          "kind": "import-statement",
-          "original": "./utils"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/graph/InteractionManager.ts": {
-      "bytes": 9464,
-      "imports": [
-        {
-          "path": "src/ui/graph/types.ts",
-          "kind": "import-statement",
-          "original": "./types"
-        },
-        {
-          "path": "src/ui/graph/utils.ts",
-          "kind": "import-statement",
-          "original": "./utils"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/graph/TooltipManager.ts": {
-      "bytes": 2231,
-      "imports": [
-        {
-          "path": "./types",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/graph/MinimapRenderer.ts": {
-      "bytes": 3831,
-      "imports": [
-        {
-          "path": "src/ui/graph/types.ts",
-          "kind": "import-statement",
-          "original": "./types"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/ResolutionGraphRenderer.ts": {
-      "bytes": 11117,
-      "imports": [
-        {
-          "path": "../types",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/ui/graph/types.ts",
-          "kind": "import-statement",
-          "original": "./graph/types"
-        },
-        {
-          "path": "src/ui/graph/utils.ts",
-          "kind": "import-statement",
-          "original": "./graph/utils"
-        },
-        {
-          "path": "src/ui/graph/IconLoader.ts",
-          "kind": "import-statement",
-          "original": "./graph/IconLoader"
-        },
-        {
-          "path": "src/ui/graph/InteractionManager.ts",
-          "kind": "import-statement",
-          "original": "./graph/InteractionManager"
-        },
-        {
-          "path": "src/ui/graph/TooltipManager.ts",
-          "kind": "import-statement",
-          "original": "./graph/TooltipManager"
-        },
-        {
-          "path": "src/ui/graph/MinimapRenderer.ts",
-          "kind": "import-statement",
-          "original": "./graph/MinimapRenderer"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/ResolutionTreeRenderer.ts": {
-      "bytes": 2925,
-      "imports": [
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "../types",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "./graph/types",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/ui/graph/utils.ts",
-          "kind": "import-statement",
-          "original": "./graph/utils"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/ui/BlueResolutionTreeView.ts": {
-      "bytes": 21402,
-      "imports": [
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "../main",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/types.ts",
-          "kind": "import-statement",
-          "original": "../types"
-        },
-        {
-          "path": "src/utils/BrowserConsole.ts",
-          "kind": "import-statement",
-          "original": "../utils/BrowserConsole"
-        },
-        {
-          "path": "src/ui/ResolutionGraphRenderer.ts",
-          "kind": "import-statement",
-          "original": "./ResolutionGraphRenderer"
-        },
-        {
-          "path": "src/ui/ResolutionTreeRenderer.ts",
-          "kind": "import-statement",
-          "original": "./ResolutionTreeRenderer"
-        }
-      ],
       "format": "esm"
     },
     "src/ui/CodePreview.ts": {
@@ -1018,7 +741,7 @@
       "format": "esm"
     },
     "src/ui/Settings.ts": {
-      "bytes": 31533,
+      "bytes": 29043,
       "imports": [
         {
           "path": "obsidian",
@@ -1308,7 +1031,7 @@
       "format": "esm"
     },
     "src/main.ts": {
-      "bytes": 35877,
+      "bytes": 34591,
       "imports": [
         {
           "path": "obsidian",
@@ -1316,19 +1039,9 @@
           "external": true
         },
         {
-          "path": "src/adapters/ObsidianFileSystemAdapter.ts",
-          "kind": "import-statement",
-          "original": "./adapters/ObsidianFileSystemAdapter"
-        },
-        {
           "path": "src/assets/constants.ts",
           "kind": "import-statement",
           "original": "./assets/constants"
-        },
-        {
-          "path": "src/core/BlueFileResolver.ts",
-          "kind": "import-statement",
-          "original": "./core/BlueFileResolver"
         },
         {
           "path": "src/core/Chat.ts",
@@ -1349,11 +1062,6 @@
           "path": "src/types.ts",
           "kind": "import-statement",
           "original": "./types"
-        },
-        {
-          "path": "src/ui/BlueResolutionTreeView.ts",
-          "kind": "import-statement",
-          "original": "./ui/BlueResolutionTreeView"
         },
         {
           "path": "src/ui/CodePreview.ts",
@@ -1412,36 +1120,6 @@
   "outputs": {
     "main.js": {
       "imports": [
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
         {
           "path": "obsidian",
           "kind": "require-call",
@@ -1570,34 +1248,22 @@
           "bytesInOutput": 791
         },
         "src/main.ts": {
-          "bytesInOutput": 13183
-        },
-        "src/adapters/ObsidianFileSystemAdapter.ts": {
-          "bytesInOutput": 391
+          "bytesInOutput": 12758
         },
         "package.json": {
           "bytesInOutput": 16
         },
         "src/assets/constants.ts": {
-          "bytesInOutput": 12626
-        },
-        "src/core/BlueFileResolver.ts": {
-          "bytesInOutput": 9978
-        },
-        "src/utils/BrowserConsole.ts": {
-          "bytesInOutput": 390
-        },
-        "src/utils/ChatUtils.ts": {
-          "bytesInOutput": 709
+          "bytesInOutput": 12528
         },
         "src/core/Chat.ts": {
-          "bytesInOutput": 7311
+          "bytesInOutput": 8923
         },
         "src/tools.ts": {
           "bytesInOutput": 1984
         },
         "src/tools/VaultTools.ts": {
-          "bytesInOutput": 5346
+          "bytesInOutput": 5344
         },
         "node_modules/diff/libesm/diff/base.js": {
           "bytesInOutput": 2784
@@ -1615,13 +1281,13 @@
           "bytesInOutput": 988
         },
         "src/tools/SearchTools.ts": {
-          "bytesInOutput": 4707
+          "bytesInOutput": 4702
         },
         "src/utils/BooleanSearchParser.ts": {
           "bytesInOutput": 1423
         },
         "src/tools/AITools.ts": {
-          "bytesInOutput": 5539
+          "bytesInOutput": 5541
         },
         "src/tools/ImageGen.json": {
           "bytesInOutput": 600
@@ -1632,17 +1298,20 @@
         "src/tools/SystemTools.ts": {
           "bytesInOutput": 4049
         },
+        "src/utils/BrowserConsole.ts": {
+          "bytesInOutput": 390
+        },
         "src/utils/toTitleCase.ts": {
           "bytesInOutput": 104
         },
         "src/core/ChatMarkdownAdapter.ts": {
-          "bytesInOutput": 2523
+          "bytesInOutput": 2521
         },
         "src/core/ChatSession.ts": {
           "bytesInOutput": 1464
         },
         "src/core/LLMService.ts": {
-          "bytesInOutput": 4484
+          "bytesInOutput": 4481
         },
         "src/core/ToolExecutor.ts": {
           "bytesInOutput": 1022
@@ -1654,34 +1323,7 @@
           "bytesInOutput": 1410
         },
         "src/types.ts": {
-          "bytesInOutput": 745
-        },
-        "src/ui/BlueResolutionTreeView.ts": {
-          "bytesInOutput": 10747
-        },
-        "src/ui/graph/types.ts": {
-          "bytesInOutput": 849
-        },
-        "src/ui/graph/utils.ts": {
-          "bytesInOutput": 609
-        },
-        "src/ui/graph/IconLoader.ts": {
-          "bytesInOutput": 886
-        },
-        "src/ui/graph/InteractionManager.ts": {
-          "bytesInOutput": 5190
-        },
-        "src/ui/graph/TooltipManager.ts": {
-          "bytesInOutput": 1298
-        },
-        "src/ui/graph/MinimapRenderer.ts": {
-          "bytesInOutput": 1483
-        },
-        "src/ui/ResolutionGraphRenderer.ts": {
-          "bytesInOutput": 5762
-        },
-        "src/ui/ResolutionTreeRenderer.ts": {
-          "bytesInOutput": 1408
+          "bytesInOutput": 714
         },
         "src/ui/CodePreview.ts": {
           "bytesInOutput": 2052
@@ -1690,13 +1332,13 @@
           "bytesInOutput": 3719
         },
         "src/ui/Settings.ts": {
-          "bytesInOutput": 15309
+          "bytesInOutput": 13767
         },
         "src/core/ImportChatGPT.ts": {
           "bytesInOutput": 2078
         },
         "src/ui/SideView.ts": {
-          "bytesInOutput": 9774
+          "bytesInOutput": 9772
         },
         "src/ui/CodeHandling.ts": {
           "bytesInOutput": 1005
@@ -1726,7 +1368,7 @@
           "bytesInOutput": 868
         }
       },
-      "bytes": 182559
+      "bytes": 142756
     }
   }
 }

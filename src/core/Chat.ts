@@ -1,4 +1,4 @@
-import { App, EditorRange, Notice, TFile } from 'obsidian';
+import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import PureChatLLM from '../main';
 import { ToolRegistry } from '../tools';
@@ -12,6 +12,7 @@ import {
   ChatOptions,
   ChatRequestOptions,
   ChatResponse,
+  MediaMessage,
   PureChatLLMAPI,
   RoleType,
   StreamDelta,
@@ -22,7 +23,6 @@ import {
 import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
-import { ResolutionContext } from './BlueFileResolver';
 import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
 import { ChatSession } from './ChatSession';
 import { LLMService } from './LLMService';
@@ -361,33 +361,24 @@ export class PureChatLLMChat {
    *
    * @param activeFile - The currently active file in the application, used for resolving file references.
    * @param app - The application instance, providing access to necessary utilities and context.
-   * @param context
    * @returns A promise that resolves to an object containing the resolved messages with their roles and content.
    */
   async getChatGPTinstructions(
     activeFile: TFile,
     app: App,
-    context?: ResolutionContext,
   ): Promise<ChatRequestOptions> {
     this.file = activeFile;
-
-    // Use the plugin's shared resolver instance
-    const resolver = this.plugin.blueFileResolver;
-
-    // Use provided context or create new one if blue file resolution is enabled
-    if (!context && this.plugin.settings.blueFileResolution.enabled) {
-      context = resolver.createContext(activeFile);
-    }
 
     const messages = await Promise.all(
       this.messages.map(async ({ role, content }) => ({
         role: role,
-        content: await resolver.resolveFilesWithImagesAndAudio(
+        content: await this.resolveContentRecursive(
           content,
           activeFile,
           app,
           role,
-          context,
+          new Set<string>(),
+          0
         ),
       })),
     );
@@ -417,6 +408,125 @@ export class PureChatLLMChat {
   }
 
   /**
+   * Recursively resolves [[links]], images, and audio in content
+   * 
+   * @param markdown - Content to resolve
+   * @param activeFile - Current file context
+   * @param app - Obsidian app instance
+   * @param role - Message role (user/assistant/system)
+   * @param visited - Set of visited file paths (cycle detection)
+   * @param depth - Current recursion depth
+   * @returns Resolved content as string or MediaMessage array
+   */
+  private async resolveContentRecursive(
+    markdown: string,
+    activeFile: TFile,
+    app: App,
+    role: RoleType,
+    visited: Set<string>,
+    depth: number,
+  ): Promise<MediaMessage[] | string> {
+    const maxDepth = this.plugin.settings.maxRecursionDepth || 10;
+    
+    if (depth >= maxDepth) return markdown;
+
+    const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
+    if (matches.length === 0) return markdown;
+
+    const hasText = markdown.replace(/^!?\[\[([^\]]+)\]\]$/gm, '').trim().length > 0;
+
+    const resolved: MediaMessage[] = await Promise.all(
+      matches.map(async ([originalLink, link]) => {
+        const { subpath, path } = parseLinktext(link);
+        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+        
+        if (!file) return { type: 'text', text: originalLink };
+        
+        // Cycle detection
+        if (visited.has(file.path)) {
+          return { type: 'text', text: `[Circular reference: ${file.path}]` };
+        }
+
+        // Handle subpaths (sections/blocks)
+        if (subpath) {
+          const cache = app.metadataCache.getFileCache(file);
+          const ref = cache && resolveSubpath(cache, subpath);
+          if (ref) {
+            const text = await app.vault.cachedRead(file);
+            const sectionContent = text.substring(ref.start.offset, ref.end?.offset).trim();
+            
+            visited.add(file.path);
+            const resolved = await this.resolveContentRecursive(sectionContent, file, app, role, visited, depth + 1);
+            visited.delete(file.path);
+            
+            return { type: 'text', text: typeof resolved === 'string' ? resolved : sectionContent };
+          }
+          return { type: 'text', text: originalLink };
+        }
+
+        const ext = file.extension.toLowerCase();
+        
+        // Handle images
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
+          const data = await app.vault.readBinary(file);
+          const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
+          return { type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } };
+        }
+        
+        // Handle audio
+        if (['mp3', 'wav'].includes(ext) && role === 'user') {
+          const data = await app.vault.readBinary(file);
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
+          return {
+            type: 'input_audio',
+            input_audio: { data: base64, format: ext as 'wav' | 'mp3' }
+          };
+        }
+
+        // Handle text files - recurse
+        const content = await app.vault.cachedRead(file);
+        visited.add(file.path);
+        const resolvedContent = await this.resolveContentRecursive(content, file, app, role, visited, depth + 1);
+        visited.delete(file.path);
+        
+        return { type: 'text', text: typeof resolvedContent === 'string' ? resolvedContent : '' };
+      })
+    );
+
+    // If no surrounding text and we have media, return as array
+    if (!hasText && resolved.some(r => r.type !== 'text')) {
+      return resolved;
+    }
+
+    // Combine into single string
+    const parts: string[] = [];
+    let lastIndex = 0;
+    
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      const start = match.index || 0;
+      
+      if (start > lastIndex) {
+        parts.push(markdown.slice(lastIndex, start));
+      }
+      
+      const item = resolved[i];
+      if (item.type === 'text') {
+        parts.push(item.text || '');
+      }
+      
+      lastIndex = start + match[0].length;
+    }
+    
+    if (lastIndex < markdown.length) {
+      parts.push(markdown.slice(lastIndex));
+    }
+    
+    return parts.join('');
+  }
+
+  /**
    * Processes a chat conversation using a specified template prompt.
    *
    * This method constructs a system prompt instructing the chat model to:
@@ -441,11 +551,17 @@ export class PureChatLLMChat {
     this.file = this.file || this.plugin.app.workspace.getActiveFile();
 
     if (this.plugin.settings.resolveFilesForChatAnalysis) {
-      const resolver = this.plugin.blueFileResolver;
       this.messages = await Promise.all(
         this.messages.map(async ({ role, content }) => ({
           role,
-          content: await resolver.resolveFiles(content, this.file, this.plugin.app),
+          content: await this.resolveContentRecursive(
+            content,
+            this.file,
+            this.plugin.app,
+            role,
+            new Set<string>(),
+            0
+          ) as string,
         })),
       );
     }
@@ -520,7 +636,6 @@ export class PureChatLLMChat {
    * @param file - The file object of type `TFile` that contains the context or data for the chat.
    * @param streamcallback - An optional callback function that processes text fragments as they are streamed.
    *                         The callback should return a boolean indicating whether to continue streaming.
-   * @param context
    * @returns A promise that resolves to the current instance (`this`) after processing the chat response.
    *
    * The method performs the following steps:
@@ -532,12 +647,11 @@ export class PureChatLLMChat {
   completeChatResponse(
     file: TFile,
     streamcallback?: (textFragment: { content: string }) => Promise<boolean>,
-    context?: ResolutionContext,
   ): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
       return Promise.resolve(this);
     }
-    return this.getChatGPTinstructions(file, this.plugin.app, context)
+    return this.getChatGPTinstructions(file, this.plugin.app)
       .then(options => this.sendChatRequest(options, streamcallback))
       .then(content => {
         this.appendMessage({

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed - BREAKING
+
+- **Replaced BlueFileResolver with Simple Recursive Resolution**: Removed the entire BlueFileResolver architecture (~70KB of code) in favor of a lightweight, built-in recursive file resolution system. This significantly reduces bundle size (from ~178KB to ~140KB) while maintaining core functionality:
+  - Removed files: `BlueFileResolver.ts`, `BlueResolutionTreeView.ts`, `ResolutionGraphRenderer.ts`, `ResolutionTreeRenderer.ts`, and all graph rendering utilities
+  - Removed the Blue Resolution Tree view and associated commands
+  - File resolution now happens directly in the `Chat` class via a new `resolveContentRecursive()` method
+  - Core features preserved: recursive [[link]] resolution, cycle detection, depth limiting, image/audio embedding, section references
+  - Replaced `blueFileResolution` settings with a single `maxRecursionDepth` setting (default: 10)
+  - API change: `getChatGPTinstructions()` and `completeChatResponse()` no longer accept a `context` parameter
+
 ## [1.12.1] - 2026-02-09
 
 ### Added

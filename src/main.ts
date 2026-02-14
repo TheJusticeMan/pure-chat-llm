@@ -16,14 +16,11 @@ import {
   TFolder,
 } from 'obsidian';
 
-import { ObsidianFileSystemAdapter } from './adapters/ObsidianFileSystemAdapter';
 import { DEFAULT_SETTINGS, EmptyApiKey } from './assets/constants';
-import { BlueFileResolver } from './core/BlueFileResolver';
 import { PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
 import { LowUsageTagRemover } from './LowUsageTagRemover';
 import {
-  BLUE_RESOLUTION_VIEW_TYPE,
   PURE_CHAT_LLM_ICON_NAME,
   PURE_CHAT_LLM_ICON_SVG,
   PURE_CHAT_LLM_VIEW_TYPE,
@@ -31,7 +28,6 @@ import {
   RoleType,
   VOICE_CALL_VIEW_TYPE,
 } from './types';
-import { BlueResolutionTreeView } from './ui/BlueResolutionTreeView';
 import {
   CODE_PREVIEW_VIEW_TYPE,
   CodePreview,
@@ -107,18 +103,6 @@ export default class PureChatLLM extends Plugin {
    * @type {({ from: number; to: number } | null)}
    */
   codeBlock: { from: number; to: number } | null = null;
-  /**
-   * Description placeholder
-   *
-   * @type {BlueFileResolver}
-   */
-  blueFileResolver: BlueFileResolver;
-  /**
-   * Description placeholder
-   *
-   * @type {(BlueResolutionTreeView | null)}
-   */
-  blueView: BlueResolutionTreeView | null = null;
 
   /**
    * Initializes the plugin by loading settings, registering views, commands, and setting up the UI.
@@ -139,14 +123,9 @@ export default class PureChatLLM extends Plugin {
     this.console.log('settings loaded', this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
 
-    // Initialize BlueFileResolver with FileSystemPort
-    const fileSystem = new ObsidianFileSystemAdapter(this.app);
-    this.blueFileResolver = new BlueFileResolver(this, fileSystem);
-
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, leaf => new PureChatLLMSideView(leaf, this));
     this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));
     this.registerView(VOICE_CALL_VIEW_TYPE, leaf => new VoiceCallSideView(leaf, this));
-    this.registerView(BLUE_RESOLUTION_VIEW_TYPE, leaf => new BlueResolutionTreeView(leaf, this));
 
     this.addRibbonIcon(
       PURE_CHAT_LLM_ICON_NAME,
@@ -154,7 +133,6 @@ export default class PureChatLLM extends Plugin {
       this.activateChatView,
     );
     this.addRibbonIcon('phone', 'Open voice call', this.activateVoiceCallView);
-    this.addRibbonIcon('list-tree', 'Open blue resolution tree', this.activateBlueResolutView);
 
     this.setupChatCommandHandlers();
     this.setupVoiceCallCommandHandlers();
@@ -445,14 +423,6 @@ export default class PureChatLLM extends Plugin {
       icon: 'phone-call',
       callback: this.activateVoiceCallView,
     });
-
-    // Blue Resolution Tree commands
-    this.addCommand({
-      id: 'open-blue-resolution-tree',
-      name: 'Open blue resolution tree view',
-      icon: 'list-tree',
-      callback: this.activateBlueResolutView,
-    });
   }
 
   /**
@@ -540,14 +510,6 @@ export default class PureChatLLM extends Plugin {
    * @returns {unknown}
    */
   activateVoiceCallView = async () => await this.activateView(VOICE_CALL_VIEW_TYPE, 'right');
-
-  /**
-   * Description placeholder
-   *
-   * @async
-   * @returns {unknown}
-   */
-  activateBlueResolutView = async () => await this.activateView(BLUE_RESOLUTION_VIEW_TYPE, 'right');
 
   /**
    * Activates a specific view in the workspace.

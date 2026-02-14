@@ -446,81 +446,23 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 .setValue(settings.resolveFilesForChatAnalysis)
                 .onChange(async value => await this.sett('resolveFilesForChatAnalysis', value)),
             ),
-      );
-
-    // Blue File Resolution Settings
-    new SettingGroup(containerEl)
-      .setHeading('Blue File Resolution (Dynamic Chat Execution)')
-      .addSetting(
-        setting =>
-          void setting.setDesc(
-            'Blue File Resolution enables recursive, dynamic execution of pending chat notes when they are linked. ' +
-              'When a [[note]] link is resolved and the linked file is a pending chat (ends with a user message), ' +
-              'instead of inlining its static content, the plugin executes the chat and uses the generated response.',
-          ),
       )
       .addSetting(
         setting =>
           void setting
-            .setName('Enable blue file resolution')
+            .setName('Maximum recursion depth')
             .setDesc(
-              'Turn on dynamic chat execution for [[note]] links. When enabled, linked notes that are pending chats will be executed recursively.',
-            )
-            .addToggle(toggle =>
-              toggle.setValue(settings.blueFileResolution.enabled).onChange(async value => {
-                settings.blueFileResolution.enabled = value;
-                void this.plugin.blueView?.onOpen();
-                await this.plugin.saveSettings();
-              }),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Maximum resolution depth')
-            .setDesc(
-              'Maximum depth for recursive chat execution (1-20). Prevents runaway recursion. Default is 5.',
+              'Maximum depth for recursive [[link]] resolution (1-20). Prevents infinite loops. Default is 10.',
             )
             .addText(text =>
               text
-                .setPlaceholder('5')
-                .setValue(settings.blueFileResolution.maxDepth.toString())
+                .setPlaceholder('10')
+                .setValue(settings.maxRecursionDepth.toString())
                 .onChange(async value => {
                   const num = parseInt(value);
                   if (!isNaN(num) && num >= 1 && num <= 20) {
-                    settings.blueFileResolution.maxDepth = num;
-                    await this.plugin.saveSettings();
+                    await this.sett('maxRecursionDepth', num);
                   }
-                }),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Enable caching')
-            .setDesc(
-              'Cache intermediate chat results during resolution to avoid redundant API calls for the same file within a single invocation.',
-            )
-            .addToggle(toggle =>
-              toggle.setValue(settings.blueFileResolution.enableCaching).onChange(async value => {
-                settings.blueFileResolution.enableCaching = value;
-                await this.plugin.saveSettings();
-              }),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Write intermediate results')
-            .setDesc(
-              'Save intermediate chat responses to disk. By default, only the root invocation writes results; nested executions are ephemeral.',
-            )
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.blueFileResolution.writeIntermediateResults)
-                .onChange(async value => {
-                  settings.blueFileResolution.writeIntermediateResults = value;
-                  await this.plugin.saveSettings();
                 }),
             ),
       );
