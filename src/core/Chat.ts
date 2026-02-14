@@ -470,14 +470,30 @@ export class PureChatLLMChat {
         if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
           const data = await app.vault.readBinary(file);
           const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
+          // Convert binary data to base64 in chunks to avoid stack overflow with large files
+          const uint8Array = new Uint8Array(data);
+          let binaryString = '';
+          const chunkSize = 8192;
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          const base64 = btoa(binaryString);
           return { type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } };
         }
         
         // Handle audio
         if (['mp3', 'wav'].includes(ext) && role === 'user') {
           const data = await app.vault.readBinary(file);
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
+          // Convert binary data to base64 in chunks to avoid stack overflow with large files
+          const uint8Array = new Uint8Array(data);
+          let binaryString = '';
+          const chunkSize = 8192;
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          const base64 = btoa(binaryString);
           return {
             type: 'input_audio',
             input_audio: { data: base64, format: ext as 'wav' | 'mp3' }
@@ -552,17 +568,21 @@ export class PureChatLLMChat {
 
     if (this.plugin.settings.resolveFilesForChatAnalysis) {
       this.messages = await Promise.all(
-        this.messages.map(async ({ role, content }) => ({
-          role,
-          content: await this.resolveContentRecursive(
+        this.messages.map(async ({ role, content }) => {
+          const resolved = await this.resolveContentRecursive(
             content,
             this.file,
             this.plugin.app,
             role,
             new Set<string>(),
             0
-          ) as string,
-        })),
+          );
+          // Convert to string if it's a MediaMessage array (flatten to text representation)
+          const resolvedContent = typeof resolved === 'string' 
+            ? resolved 
+            : resolved.map(m => m.type === 'text' ? m.text : `[${m.type}]`).join('');
+          return { role, content: resolvedContent };
+        }),
       );
     }
 
