@@ -408,6 +408,23 @@ export class PureChatLLMChat {
   }
 
   /**
+   * Converts an ArrayBuffer to a base64 string, processing data in chunks to avoid stack overflow
+   * 
+   * @param data - Binary data as ArrayBuffer
+   * @returns Base64-encoded string
+   */
+  private arrayBufferToBase64(data: ArrayBuffer): string {
+    const uint8Array = new Uint8Array(data);
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binaryString += String.fromCharCode.apply(null, chunk as unknown as number[]);
+    }
+    return btoa(binaryString);
+  }
+
+  /**
    * Recursively resolves [[links]], images, and audio in content
    * 
    * @param markdown - Content to resolve
@@ -430,10 +447,17 @@ export class PureChatLLMChat {
     
     if (depth >= maxDepth) return markdown;
 
-    const matches = Array.from(markdown.matchAll(/^!?\[\[([^\]]+)\]\]$/gm));
+    // Match [[link]] patterns - allow whitespace on the line (matches original BlueFileResolver behavior)
+    const regex = /^\s*!?\[\[([^\]]+)\]\]\s*$/gim;
+    const matches = Array.from(markdown.matchAll(regex));
     if (matches.length === 0) return markdown;
 
-    const hasText = markdown.replace(/^!?\[\[([^\]]+)\]\]$/gm, '').trim().length > 0;
+    // Check if there is any text outside of the matches
+    const textOutsideMatches = markdown
+      .replace(regex, '')
+      .replace(/---/g, '')
+      .trim();
+    const hasText = textOutsideMatches.length > 0;
 
     const resolved: MediaMessage[] = await Promise.all(
       matches.map(async ([originalLink, link]) => {
@@ -470,30 +494,14 @@ export class PureChatLLMChat {
         if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
           const data = await app.vault.readBinary(file);
           const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
-          // Convert binary data to base64 in chunks to avoid stack overflow with large files
-          const uint8Array = new Uint8Array(data);
-          let binaryString = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-          }
-          const base64 = btoa(binaryString);
+          const base64 = this.arrayBufferToBase64(data);
           return { type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } };
         }
         
         // Handle audio
         if (['mp3', 'wav'].includes(ext) && role === 'user') {
           const data = await app.vault.readBinary(file);
-          // Convert binary data to base64 in chunks to avoid stack overflow with large files
-          const uint8Array = new Uint8Array(data);
-          let binaryString = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-          }
-          const base64 = btoa(binaryString);
+          const base64 = this.arrayBufferToBase64(data);
           return {
             type: 'input_audio',
             input_audio: { data: base64, format: ext as 'wav' | 'mp3' }
