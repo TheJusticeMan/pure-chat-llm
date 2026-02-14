@@ -323,17 +323,17 @@
       "format": "esm"
     },
     "src/tools/VaultTools.ts": {
-      "bytes": 23182,
+      "bytes": 9974,
       "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
         {
           "path": "obsidian",
           "kind": "import-statement",
           "external": true
+        },
+        {
+          "path": "src/tools.ts",
+          "kind": "import-statement",
+          "original": "../tools"
         },
         {
           "path": "src/tools/EditReview.ts",
@@ -359,7 +359,7 @@
       "format": "esm"
     },
     "src/tools/SearchTools.ts": {
-      "bytes": 8789,
+      "bytes": 8959,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -394,7 +394,7 @@
       "imports": []
     },
     "src/tools/AITools.ts": {
-      "bytes": 15874,
+      "bytes": 16694,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -415,7 +415,7 @@
       "format": "esm"
     },
     "src/tools/UITools.ts": {
-      "bytes": 5251,
+      "bytes": 5196,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -426,17 +426,12 @@
           "path": "obsidian",
           "kind": "import-statement",
           "external": true
-        },
-        {
-          "path": "./ToolOutputBuilder",
-          "kind": "import-statement",
-          "external": true
         }
       ],
       "format": "esm"
     },
     "src/tools/SystemTools.ts": {
-      "bytes": 6735,
+      "bytes": 7442,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -546,7 +541,7 @@
       "format": "esm"
     },
     "src/core/Chat.ts": {
-      "bytes": 25320,
+      "bytes": 25033,
       "imports": [
         {
           "path": "obsidian",
@@ -1596,13 +1591,13 @@
           "bytesInOutput": 709
         },
         "src/core/Chat.ts": {
-          "bytesInOutput": 7396
+          "bytesInOutput": 7311
         },
         "src/tools.ts": {
           "bytesInOutput": 1984
         },
         "src/tools/VaultTools.ts": {
-          "bytesInOutput": 13662
+          "bytesInOutput": 5346
         },
         "node_modules/diff/libesm/diff/base.js": {
           "bytesInOutput": 2784
@@ -1614,19 +1609,19 @@
           "bytesInOutput": 2736
         },
         "src/tools/EditReview.ts": {
-          "bytesInOutput": 4539
+          "bytesInOutput": 4540
         },
         "src/tools/ToolOutputBuilder.ts": {
           "bytesInOutput": 988
         },
         "src/tools/SearchTools.ts": {
-          "bytesInOutput": 4703
+          "bytesInOutput": 4707
         },
         "src/utils/BooleanSearchParser.ts": {
           "bytesInOutput": 1423
         },
         "src/tools/AITools.ts": {
-          "bytesInOutput": 5606
+          "bytesInOutput": 5539
         },
         "src/tools/ImageGen.json": {
           "bytesInOutput": 600
@@ -1635,7 +1630,7 @@
           "bytesInOutput": 3189
         },
         "src/tools/SystemTools.ts": {
-          "bytesInOutput": 4127
+          "bytesInOutput": 4049
         },
         "src/utils/toTitleCase.ts": {
           "bytesInOutput": 104
@@ -1731,7 +1726,7 @@
           "bytesInOutput": 868
         }
       },
-      "bytes": 191100
+      "bytes": 182559
     }
   }
 }

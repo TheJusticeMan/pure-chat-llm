@@ -2,16 +2,7 @@ import { App, EditorRange, Notice, TFile } from 'obsidian';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import PureChatLLM from '../main';
 import { ToolRegistry } from '../tools';
-import {
-  BacklinksTool,
-  CreateNoteTool,
-  DeleteNoteTool,
-  PatchNoteTool,
-  ReadFileTool,
-  ReadNoteSectionTool,
-  ReplaceInNoteTool,
-  WriteNoteSectionTool,
-} from '../tools/VaultTools';
+import { BacklinksTool, ReadNoteSectionTool, WriteNoteSectionTool } from '../tools/VaultTools';
 import { GlobFilesTool, ListFoldersTool, SearchVaultTool } from '../tools/SearchTools';
 import { ImageGenerationTool, SmartConnectionsRetrievalTool } from '../tools/AITools';
 import { ActiveContextTool, ManageWorkspaceTool, ShowNoticeTool } from '../tools/UITools';
@@ -176,18 +167,13 @@ export class PureChatLLMChat {
   private registerAvailableTools() {
     this.toolregistry
       .registerTool(ImageGenerationTool)
-      .registerTool(CreateNoteTool)
       .registerTool(GlobFilesTool)
-      .registerTool(ReadFileTool)
       .registerTool(ReadNoteSectionTool)
       .registerTool(WriteNoteSectionTool)
       .registerTool(SearchVaultTool)
-      .registerTool(PatchNoteTool)
       .registerTool(BacklinksTool)
       .registerTool(ListFoldersTool)
-      .registerTool(DeleteNoteTool)
       .registerTool(TemplatesTool)
-      .registerTool(ReplaceInNoteTool)
       .registerTool(SmartConnectionsRetrievalTool)
       .registerTool(ManageWorkspaceTool)
       .registerTool(ActiveContextTool)
