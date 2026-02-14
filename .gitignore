@@ -16,7 +16,7 @@ main.js
 *.map
 
 # Build artifacts
-meta.json
+-meta.json
 
 # obsidian
 data.json

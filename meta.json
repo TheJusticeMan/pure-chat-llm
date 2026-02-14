@@ -1,25 +1,5 @@
 {
   "inputs": {
-    "package.json": {
-      "bytes": 1599,
-      "imports": []
-    },
-    "src/assets/constants.ts": {
-      "bytes": 14160,
-      "imports": [
-        {
-          "path": "src/types",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "package.json",
-          "kind": "import-statement",
-          "original": "../../package.json"
-        }
-      ],
-      "format": "esm"
-    },
     "src/adapters/ObsidianFileSystemAdapter.ts": {
       "bytes": 1908,
       "imports": [
@@ -36,6 +16,26 @@
       ],
       "format": "esm"
     },
+    "package.json": {
+      "bytes": 1599,
+      "imports": []
+    },
+    "src/assets/constants.ts": {
+      "bytes": 14197,
+      "imports": [
+        {
+          "path": "src/types",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "package.json",
+          "kind": "import-statement",
+          "original": "../../package.json"
+        }
+      ],
+      "format": "esm"
+    },
     "src/utils/BrowserConsole.ts": {
       "bytes": 2311,
       "imports": [],
@@ -44,48 +44,6 @@
     "src/tools.ts": {
       "bytes": 6488,
       "imports": [],
-      "format": "esm"
-    },
-    "src/tools/ActiveContext.ts": {
-      "bytes": 2001,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/ToolOutputBuilder.ts": {
-      "bytes": 2815,
-      "imports": [],
-      "format": "esm"
-    },
-    "src/tools/Backlinks.ts": {
-      "bytes": 3443,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
-        }
-      ],
       "format": "esm"
     },
     "node_modules/diff/libesm/diff/base.js": {
@@ -338,8 +296,13 @@
       ],
       "format": "esm"
     },
+    "src/tools/ToolOutputBuilder.ts": {
+      "bytes": 2817,
+      "imports": [],
+      "format": "esm"
+    },
     "src/tools/EditReview.ts": {
-      "bytes": 9321,
+      "bytes": 8815,
       "imports": [
         {
           "path": "node_modules/diff/libesm/index.js",
@@ -359,34 +322,23 @@
       ],
       "format": "esm"
     },
-    "src/tools/CreateNote.ts": {
-      "bytes": 2075,
+    "src/tools/VaultTools.ts": {
+      "bytes": 23182,
       "imports": [
         {
           "path": "src/tools.ts",
           "kind": "import-statement",
           "original": "../tools"
         },
-        {
-          "path": "src/tools/EditReview.ts",
-          "kind": "import-statement",
-          "original": "./EditReview"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/DeleteNote.ts": {
-      "bytes": 4904,
-      "imports": [
         {
           "path": "obsidian",
           "kind": "import-statement",
           "external": true
         },
         {
-          "path": "src/tools.ts",
+          "path": "src/tools/EditReview.ts",
           "kind": "import-statement",
-          "original": "../tools"
+          "original": "./EditReview"
         },
         {
           "path": "src/tools/ToolOutputBuilder.ts",
@@ -401,216 +353,33 @@
       "imports": [],
       "format": "cjs"
     },
-    "src/tools/GlobFiles.ts": {
-      "bytes": 5900,
+    "src/utils/BooleanSearchParser.ts": {
+      "bytes": 4284,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/tools/SearchTools.ts": {
+      "bytes": 8789,
       "imports": [
+        {
+          "path": "src/tools.ts",
+          "kind": "import-statement",
+          "original": "../tools"
+        },
+        {
+          "path": "src/tools/ToolOutputBuilder.ts",
+          "kind": "import-statement",
+          "original": "./ToolOutputBuilder"
+        },
         {
           "path": "node_modules/glob-to-regexp/index.js",
           "kind": "import-statement",
           "original": "glob-to-regexp"
         },
         {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/ImageGen.json": {
-      "bytes": 882,
-      "imports": []
-    },
-    "src/tools/ImageGen.ts": {
-      "bytes": 6605,
-      "imports": [
-        {
           "path": "obsidian",
           "kind": "import-statement",
           "external": true
-        },
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "src/tools/ImageGen.json",
-          "kind": "import-statement",
-          "original": "./ImageGen.json"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/ListFolders.ts": {
-      "bytes": 4787,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/ManageWorkspace.ts": {
-      "bytes": 4259,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/PatchNote.ts": {
-      "bytes": 4411,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/tools/EditReview.ts",
-          "kind": "import-statement",
-          "original": "./EditReview"
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/PluginSettings.ts": {
-      "bytes": 5234,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/ReadFile.ts": {
-      "bytes": 5604,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/ReadNoteSection.ts": {
-      "bytes": 8739,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/ReplaceInNote.ts": {
-      "bytes": 4362,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "src/tools/EditReview.ts",
-          "kind": "import-statement",
-          "original": "./EditReview"
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/utils/BooleanSearchParser.ts": {
-      "bytes": 4284,
-      "imports": [],
-      "format": "esm"
-    },
-    "src/tools/SearchVault.ts": {
-      "bytes": 6674,
-      "imports": [
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
         },
         {
           "path": "src/utils/BooleanSearchParser.ts",
@@ -620,8 +389,12 @@
       ],
       "format": "esm"
     },
-    "src/tools/WriteNoteSection.ts": {
-      "bytes": 8949,
+    "src/tools/ImageGen.json": {
+      "bytes": 882,
+      "imports": []
+    },
+    "src/tools/AITools.ts": {
+      "bytes": 15874,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -634,20 +407,15 @@
           "external": true
         },
         {
-          "path": "src/tools/EditReview.ts",
+          "path": "src/tools/ImageGen.json",
           "kind": "import-statement",
-          "original": "./EditReview"
-        },
-        {
-          "path": "src/tools/ToolOutputBuilder.ts",
-          "kind": "import-statement",
-          "original": "./ToolOutputBuilder"
+          "original": "./ImageGen.json"
         }
       ],
       "format": "esm"
     },
-    "src/tools/ShowNotice.ts": {
-      "bytes": 1155,
+    "src/tools/UITools.ts": {
+      "bytes": 5251,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -658,44 +426,17 @@
           "path": "obsidian",
           "kind": "import-statement",
           "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/SmartConnectionsRetrieval.ts": {
-      "bytes": 5344,
-      "imports": [
-        {
-          "path": "obsidian",
-          "kind": "import-statement",
-          "external": true
         },
         {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
-        }
-      ],
-      "format": "esm"
-    },
-    "src/tools/Suno.ts": {
-      "bytes": 15211,
-      "imports": [
-        {
-          "path": "obsidian",
+          "path": "./ToolOutputBuilder",
           "kind": "import-statement",
           "external": true
-        },
-        {
-          "path": "src/tools.ts",
-          "kind": "import-statement",
-          "original": "../tools"
         }
       ],
       "format": "esm"
     },
-    "src/tools/Templates.ts": {
-      "bytes": 5916,
+    "src/tools/SystemTools.ts": {
+      "bytes": 6735,
       "imports": [
         {
           "path": "src/tools.ts",
@@ -805,7 +546,7 @@
       "format": "esm"
     },
     "src/core/Chat.ts": {
-      "bytes": 26063,
+      "bytes": 25320,
       "imports": [
         {
           "path": "obsidian",
@@ -818,9 +559,9 @@
           "original": "src/assets/constants"
         },
         {
-          "path": "src/main.ts",
+          "path": "../main",
           "kind": "import-statement",
-          "original": "../main"
+          "external": true
         },
         {
           "path": "src/tools.ts",
@@ -828,99 +569,29 @@
           "original": "../tools"
         },
         {
-          "path": "src/tools/ActiveContext.ts",
+          "path": "src/tools/VaultTools.ts",
           "kind": "import-statement",
-          "original": "../tools/ActiveContext"
+          "original": "../tools/VaultTools"
         },
         {
-          "path": "src/tools/Backlinks.ts",
+          "path": "src/tools/SearchTools.ts",
           "kind": "import-statement",
-          "original": "../tools/Backlinks"
+          "original": "../tools/SearchTools"
         },
         {
-          "path": "src/tools/CreateNote.ts",
+          "path": "src/tools/AITools.ts",
           "kind": "import-statement",
-          "original": "../tools/CreateNote"
+          "original": "../tools/AITools"
         },
         {
-          "path": "src/tools/DeleteNote.ts",
+          "path": "src/tools/UITools.ts",
           "kind": "import-statement",
-          "original": "../tools/DeleteNote"
+          "original": "../tools/UITools"
         },
         {
-          "path": "src/tools/GlobFiles.ts",
+          "path": "src/tools/SystemTools.ts",
           "kind": "import-statement",
-          "original": "../tools/GlobFiles"
-        },
-        {
-          "path": "src/tools/ImageGen.ts",
-          "kind": "import-statement",
-          "original": "../tools/ImageGen"
-        },
-        {
-          "path": "src/tools/ListFolders.ts",
-          "kind": "import-statement",
-          "original": "../tools/ListFolders"
-        },
-        {
-          "path": "src/tools/ManageWorkspace.ts",
-          "kind": "import-statement",
-          "original": "../tools/ManageWorkspace"
-        },
-        {
-          "path": "src/tools/PatchNote.ts",
-          "kind": "import-statement",
-          "original": "../tools/PatchNote"
-        },
-        {
-          "path": "src/tools/PluginSettings.ts",
-          "kind": "import-statement",
-          "original": "../tools/PluginSettings"
-        },
-        {
-          "path": "src/tools/ReadFile.ts",
-          "kind": "import-statement",
-          "original": "../tools/ReadFile"
-        },
-        {
-          "path": "src/tools/ReadNoteSection.ts",
-          "kind": "import-statement",
-          "original": "../tools/ReadNoteSection"
-        },
-        {
-          "path": "src/tools/ReplaceInNote.ts",
-          "kind": "import-statement",
-          "original": "../tools/ReplaceInNote"
-        },
-        {
-          "path": "src/tools/SearchVault.ts",
-          "kind": "import-statement",
-          "original": "../tools/SearchVault"
-        },
-        {
-          "path": "src/tools/WriteNoteSection.ts",
-          "kind": "import-statement",
-          "original": "../tools/WriteNoteSection"
-        },
-        {
-          "path": "src/tools/ShowNotice.ts",
-          "kind": "import-statement",
-          "original": "../tools/ShowNotice"
-        },
-        {
-          "path": "src/tools/SmartConnectionsRetrieval.ts",
-          "kind": "import-statement",
-          "original": "../tools/SmartConnectionsRetrieval"
-        },
-        {
-          "path": "src/tools/Suno.ts",
-          "kind": "import-statement",
-          "original": "../tools/Suno"
-        },
-        {
-          "path": "src/tools/Templates.ts",
-          "kind": "import-statement",
-          "original": "../tools/Templates"
+          "original": "../tools/SystemTools"
         },
         {
           "path": "../types",
@@ -1052,6 +723,17 @@
         },
         {
           "path": "./Chat",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/LowUsageTagRemover.ts": {
+      "bytes": 2885,
+      "imports": [
+        {
+          "path": "obsidian",
           "kind": "import-statement",
           "external": true
         }
@@ -1222,7 +904,7 @@
       "format": "esm"
     },
     "src/ui/BlueResolutionTreeView.ts": {
-      "bytes": 21432,
+      "bytes": 21402,
       "imports": [
         {
           "path": "obsidian",
@@ -1284,7 +966,7 @@
       "format": "esm"
     },
     "src/ui/Modals.ts": {
-      "bytes": 12712,
+      "bytes": 7744,
       "imports": [
         {
           "path": "obsidian",
@@ -1320,7 +1002,7 @@
       "format": "esm"
     },
     "src/core/ImportChatGPT.ts": {
-      "bytes": 5456,
+      "bytes": 7336,
       "imports": [
         {
           "path": "obsidian",
@@ -1328,9 +1010,9 @@
           "external": true
         },
         {
-          "path": "src/main.ts",
+          "path": "../main",
           "kind": "import-statement",
-          "original": "../main"
+          "external": true
         },
         {
           "path": "src/core/Chat.ts",
@@ -1341,7 +1023,7 @@
       "format": "esm"
     },
     "src/ui/Settings.ts": {
-      "bytes": 23822,
+      "bytes": 31533,
       "imports": [
         {
           "path": "obsidian",
@@ -1364,9 +1046,9 @@
           "original": "../core/ImportChatGPT"
         },
         {
-          "path": "src/main.ts",
+          "path": "../main",
           "kind": "import-statement",
-          "original": "../main"
+          "external": true
         },
         {
           "path": "src/types.ts",
@@ -1387,7 +1069,7 @@
       "format": "esm"
     },
     "src/ui/CodeHandling.ts": {
-      "bytes": 3693,
+      "bytes": 3486,
       "imports": [
         {
           "path": "obsidian",
@@ -1413,7 +1095,7 @@
       "format": "esm"
     },
     "src/ui/SideView.ts": {
-      "bytes": 20725,
+      "bytes": 19675,
       "imports": [
         {
           "path": "obsidian",
@@ -1614,8 +1296,8 @@
       ],
       "format": "esm"
     },
-    "src/main.ts": {
-      "bytes": 49798,
+    "src/utils/write-handler.ts": {
+      "bytes": 2787,
       "imports": [
         {
           "path": "obsidian",
@@ -1623,14 +1305,30 @@
           "external": true
         },
         {
-          "path": "src/assets/constants.ts",
+          "path": "src/main",
           "kind": "import-statement",
-          "original": "./assets/constants"
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/main.ts": {
+      "bytes": 35877,
+      "imports": [
+        {
+          "path": "obsidian",
+          "kind": "import-statement",
+          "external": true
         },
         {
           "path": "src/adapters/ObsidianFileSystemAdapter.ts",
           "kind": "import-statement",
           "original": "./adapters/ObsidianFileSystemAdapter"
+        },
+        {
+          "path": "src/assets/constants.ts",
+          "kind": "import-statement",
+          "original": "./assets/constants"
         },
         {
           "path": "src/core/BlueFileResolver.ts",
@@ -1646,6 +1344,11 @@
           "path": "src/core/Speech.ts",
           "kind": "import-statement",
           "original": "./core/Speech"
+        },
+        {
+          "path": "src/LowUsageTagRemover.ts",
+          "kind": "import-statement",
+          "original": "./LowUsageTagRemover"
         },
         {
           "path": "src/types.ts",
@@ -1701,6 +1404,11 @@
           "path": "src/utils/toTitleCase.ts",
           "kind": "import-statement",
           "original": "./utils/toTitleCase"
+        },
+        {
+          "path": "src/utils/write-handler.ts",
+          "kind": "import-statement",
+          "original": "./utils/write-handler"
         }
       ],
       "format": "esm"
@@ -1709,56 +1417,6 @@
   "outputs": {
     "main.js": {
       "imports": [
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "obsidian",
-          "kind": "require-call",
-          "external": true
-        },
         {
           "path": "obsidian",
           "kind": "require-call",
@@ -1917,16 +1575,16 @@
           "bytesInOutput": 791
         },
         "src/main.ts": {
-          "bytesInOutput": 20187
+          "bytesInOutput": 13183
+        },
+        "src/adapters/ObsidianFileSystemAdapter.ts": {
+          "bytesInOutput": 391
         },
         "package.json": {
           "bytesInOutput": 16
         },
         "src/assets/constants.ts": {
-          "bytesInOutput": 12589
-        },
-        "src/adapters/ObsidianFileSystemAdapter.ts": {
-          "bytesInOutput": 391
+          "bytesInOutput": 12626
         },
         "src/core/BlueFileResolver.ts": {
           "bytesInOutput": 9978
@@ -1938,19 +1596,13 @@
           "bytesInOutput": 709
         },
         "src/core/Chat.ts": {
-          "bytesInOutput": 7423
+          "bytesInOutput": 7396
         },
         "src/tools.ts": {
           "bytesInOutput": 1984
         },
-        "src/tools/ActiveContext.ts": {
-          "bytesInOutput": 1031
-        },
-        "src/tools/Backlinks.ts": {
-          "bytesInOutput": 1739
-        },
-        "src/tools/ToolOutputBuilder.ts": {
-          "bytesInOutput": 986
+        "src/tools/VaultTools.ts": {
+          "bytesInOutput": 13662
         },
         "node_modules/diff/libesm/diff/base.js": {
           "bytesInOutput": 2784
@@ -1962,64 +1614,28 @@
           "bytesInOutput": 2736
         },
         "src/tools/EditReview.ts": {
-          "bytesInOutput": 4625
+          "bytesInOutput": 4539
         },
-        "src/tools/CreateNote.ts": {
-          "bytesInOutput": 1210
+        "src/tools/ToolOutputBuilder.ts": {
+          "bytesInOutput": 988
         },
-        "src/tools/DeleteNote.ts": {
-          "bytesInOutput": 2503
+        "src/tools/SearchTools.ts": {
+          "bytesInOutput": 4703
         },
-        "src/tools/GlobFiles.ts": {
-          "bytesInOutput": 3023
+        "src/utils/BooleanSearchParser.ts": {
+          "bytesInOutput": 1423
         },
-        "src/tools/ImageGen.ts": {
-          "bytesInOutput": 3367
+        "src/tools/AITools.ts": {
+          "bytesInOutput": 5606
         },
         "src/tools/ImageGen.json": {
           "bytesInOutput": 600
         },
-        "src/tools/ListFolders.ts": {
-          "bytesInOutput": 2325
+        "src/tools/UITools.ts": {
+          "bytesInOutput": 3189
         },
-        "src/tools/ManageWorkspace.ts": {
-          "bytesInOutput": 2539
-        },
-        "src/tools/PatchNote.ts": {
-          "bytesInOutput": 2003
-        },
-        "src/tools/PluginSettings.ts": {
-          "bytesInOutput": 2759
-        },
-        "src/tools/ReadFile.ts": {
-          "bytesInOutput": 2865
-        },
-        "src/tools/ReadNoteSection.ts": {
-          "bytesInOutput": 4510
-        },
-        "src/tools/ReplaceInNote.ts": {
-          "bytesInOutput": 2284
-        },
-        "src/utils/BooleanSearchParser.ts": {
-          "bytesInOutput": 1424
-        },
-        "src/tools/SearchVault.ts": {
-          "bytesInOutput": 3149
-        },
-        "src/tools/WriteNoteSection.ts": {
-          "bytesInOutput": 4019
-        },
-        "src/tools/ShowNotice.ts": {
-          "bytesInOutput": 633
-        },
-        "src/tools/SmartConnectionsRetrieval.ts": {
-          "bytesInOutput": 2327
-        },
-        "src/tools/Suno.ts": {
-          "bytesInOutput": 8693
-        },
-        "src/tools/Templates.ts": {
-          "bytesInOutput": 2930
+        "src/tools/SystemTools.ts": {
+          "bytesInOutput": 4127
         },
         "src/utils/toTitleCase.ts": {
           "bytesInOutput": 104
@@ -2031,13 +1647,16 @@
           "bytesInOutput": 1464
         },
         "src/core/LLMService.ts": {
-          "bytesInOutput": 4481
+          "bytesInOutput": 4484
         },
         "src/core/ToolExecutor.ts": {
           "bytesInOutput": 1022
         },
         "src/core/Speech.ts": {
           "bytesInOutput": 2150
+        },
+        "src/LowUsageTagRemover.ts": {
+          "bytesInOutput": 1410
         },
         "src/types.ts": {
           "bytesInOutput": 745
@@ -2073,25 +1692,25 @@
           "bytesInOutput": 2052
         },
         "src/ui/Modals.ts": {
-          "bytesInOutput": 5484
+          "bytesInOutput": 3719
         },
         "src/ui/Settings.ts": {
-          "bytesInOutput": 11175
+          "bytesInOutput": 15309
         },
         "src/core/ImportChatGPT.ts": {
-          "bytesInOutput": 1774
+          "bytesInOutput": 2078
         },
         "src/ui/SideView.ts": {
-          "bytesInOutput": 10130
+          "bytesInOutput": 9774
         },
         "src/ui/CodeHandling.ts": {
-          "bytesInOutput": 1063
+          "bytesInOutput": 1005
         },
         "src/ui/VoiceCallSideView.ts": {
           "bytesInOutput": 6299
         },
         "src/realtime/VoiceCall.ts": {
-          "bytesInOutput": 2153
+          "bytesInOutput": 2146
         },
         "src/realtime/providers/OpenAIRealtimeProvider.ts": {
           "bytesInOutput": 2926
@@ -2107,9 +1726,12 @@
         },
         "src/utils/replaceNonKeyboard.ts": {
           "bytesInOutput": 561
+        },
+        "src/utils/write-handler.ts": {
+          "bytesInOutput": 868
         }
       },
-      "bytes": 216268
+      "bytes": 191100
     }
   }
 }

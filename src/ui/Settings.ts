@@ -1,16 +1,20 @@
-import { App, Notice, PluginSettingTab, SettingGroup } from 'obsidian';
+import {
+  AbstractInputSuggest,
+  App,
+  Modal,
+  Notice,
+  PluginSettingTab,
+  Setting,
+  SettingGroup,
+  TFile,
+} from 'obsidian';
 import { DEFAULT_SETTINGS, PureChatLLMversion } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
 import { ImportChatGPT } from '../core/ImportChatGPT';
-import PureChatLLM, {
-  FileSuggest,
-  getMarkdownFromObject,
-  getObjectFromMarkdown,
-  SelectionPromptEditor,
-} from '../main';
+import PureChatLLM from '../main';
 import { PURE_CHAT_LLM_ICON_NAME, PureChatLLMSettings } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { AskForAPI, EditModalProviders } from './Modals';
+import { AskForAPI, CodeAreaComponent, EditModalProviders } from './Modals';
 
 /**
  * Represents the settings tab for the PureChatLLM plugin in Obsidian.
@@ -42,6 +46,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
     super(app, plugin);
     this.plugin = plugin;
   }
+
   /**
    *
    * @param key
@@ -117,33 +122,21 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         setting =>
           void setting
             .setName('Default system prompt')
-            .setDesc('System message for each new chat.  Press [ to link a file.')
+            .setDesc('System message or file for each new chat.')
             .setClass('PURE')
-            .addTextArea(text =>
-              text
-                .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
-                .setValue(this.ifdefault('SystemPrompt'))
-                .onChange(
-                  async value =>
-                    await this.sett('SystemPrompt', value || DEFAULT_SETTINGS.SystemPrompt),
-                )
-                .inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
-                  if (e.key === '/' || e.key === '[') {
-                    e.preventDefault();
-                    new FileSuggest(this.app, file => {
-                      // Insert the selected file at the cursor position
-                      const cursorPos = text.inputEl.selectionStart ?? 0;
-                      const before = text.inputEl.value.slice(0, cursorPos);
-                      const after = text.inputEl.value.slice(cursorPos);
-                      const insert = this.app.fileManager.generateMarkdownLink(file, file.path);
-                      text.setValue(before + insert + after);
-                      text.onChanged();
-                      // Move cursor after inserted text
-                      text.inputEl.selectionStart = text.inputEl.selectionEnd =
-                        before.length + insert.length;
-                    }).open();
-                  }
-                }),
+            .addText(text =>
+              new FileInputSuggest(
+                this.app,
+                text
+                  .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
+                  .setValue(this.ifdefault('SystemPrompt'))
+                  .onChange(
+                    async value =>
+                      await this.sett('SystemPrompt', value || DEFAULT_SETTINGS.SystemPrompt),
+                  ).inputEl,
+              ).onSelect((file: TFile) =>
+                text.setValue(this.plugin.app.fileManager.generateMarkdownLink(file, file.path)),
+              ),
             ),
       )
       .addSetting(
@@ -238,22 +231,19 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
               'Path to a file containing the system prompt for voice calls. If empty or not found, defaults to built-in prompts.',
             )
             .addText(text =>
-              text
-                .setPlaceholder('e.g., System Prompts/Realtime.md')
-                .setValue(this.ifdefault('realtimeSystemPromptFile'))
-                .onChange(
-                  async value =>
-                    await this.sett('realtimeSystemPromptFile', value || DEFAULT_SETTINGS.realtimeSystemPromptFile),
-                )
-                .inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
-                  if (e.key === '/' || e.key === '[') {
-                    e.preventDefault();
-                    new FileSuggest(this.app, file => {
-                      text.setValue(file.path);
-                      text.onChanged();
-                    }).open();
-                  }
-                }),
+              new FileInputSuggest(
+                this.app,
+                text
+                  .setPlaceholder('e.g., System Prompts/Realtime.md')
+                  .setValue(this.ifdefault('realtimeSystemPromptFile'))
+                  .onChange(
+                    async value =>
+                      await this.sett(
+                        'realtimeSystemPromptFile',
+                        value || DEFAULT_SETTINGS.realtimeSystemPromptFile,
+                      ),
+                  ).inputEl,
+              ).onSelect((file: TFile) => text.setValue(file.path)),
             ),
       );
     new SettingGroup(containerEl)
@@ -294,9 +284,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                     this.app,
                     this.plugin,
                     this.plugin.settings.chatTemplates,
-                    {
-                      ...DEFAULT_SETTINGS.chatTemplates,
-                    },
+                    { ...DEFAULT_SETTINGS.chatTemplates },
                     settings.CMDchatTemplates,
                   ).open(),
                 ),
@@ -312,10 +300,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
             .addButton(btn =>
               btn.setButtonText('Export').onClick(() => {
                 const { selectionTemplates, chatTemplates } = this.plugin.settings;
-                const content = getMarkdownFromObject({
-                  selectionTemplates,
-                  chatTemplates,
-                });
+                const content = getMarkdownFromObject({ selectionTemplates, chatTemplates });
                 const filePath = 'PureChatLLM-Templates.md';
                 const file = this.app.vault.getFileByPath(filePath);
                 if (file) void this.app.vault.modify(file, content);
@@ -623,4 +608,275 @@ function loadAllModels(plugin: PureChatLLM): void {
     }
   });
   plugin.settings.endpoint = currentEndpoint;
+}
+
+/**
+ * Modal dialog for editing and managing selection prompt templates within the PureChatLLM plugin.
+ *
+ * This class provides a UI for users to create, select, and edit named prompt templates
+ * that are stored in the plugin's settings. It features a dropdown for selecting existing
+ * templates, a button to add new templates, and a code editor area for editing the template content.
+ *
+ * @extends Modal
+ */
+export class SelectionPromptEditor extends Modal {
+  /**
+   * Description placeholder
+   *
+   * @type {string}
+   */
+  promptTitle: string;
+  /**
+   *
+   * @param app
+   * @param plugin
+   */
+  constructor(
+    app: App,
+    private plugin: PureChatLLM,
+    private promptTemplates: { [key: string]: string },
+    private defaultTemplates: { [key: string]: string } = {},
+    private inCMD: { [key: string]: boolean } = {},
+  ) {
+    super(app);
+    this.plugin = plugin;
+    this.update();
+  }
+  /**
+   *
+   */
+  update() {
+    this.contentEl.empty();
+    if (!this.promptTitle)
+      this.promptTitle = Object.keys(this.promptTemplates)[0] || 'New template';
+    if (this.promptTitle && !this.promptTemplates[this.promptTitle])
+      this.promptTemplates[this.promptTitle] = '';
+    Object.keys(this.promptTemplates).forEach(key => (this.inCMD[key] = Boolean(this.inCMD[key])));
+    const isAllinCMD = Object.values(this.inCMD).every(v => v);
+    new Setting(this.contentEl)
+      .setName('All templates')
+
+      .setDesc('Manage all prompt templates for the Pure Chat LLM plugin.')
+      .setHeading()
+      .addExtraButton(btn =>
+        btn
+          .setIcon(isAllinCMD ? 'minus' : 'plus')
+          .setTooltip(isAllinCMD ? 'Remove all from command palette' : 'Add all to command palette')
+          .onClick(() => {
+            Object.keys(this.inCMD).forEach(key => (this.inCMD[key] = !isAllinCMD));
+            this.update();
+          }),
+      )
+      .addExtraButton(btn =>
+        btn
+          .setIcon('trash')
+          .setTooltip('Delete all templates')
+          .onClick(() => {
+            Object.keys(this.promptTemplates).forEach(key => {
+              delete this.promptTemplates[key];
+              delete this.inCMD[key];
+            });
+            this.promptTitle = 'New template';
+            this.update();
+          }),
+      );
+    Object.keys(this.promptTemplates)
+      .sort()
+      .forEach(
+        key =>
+          void new Setting(this.contentEl)
+            .setName(key !== this.promptTitle ? key : 'Editing...')
+            .addExtraButton(btn =>
+              btn
+                .setIcon(this.inCMD[key] ? 'minus' : 'plus')
+                .setTooltip('Use this template in the command palette')
+                .onClick(() => {
+                  this.inCMD[key] = !this.inCMD[key];
+                  this.update();
+                }),
+            )
+            .addExtraButton(btn =>
+              btn
+                .setIcon('trash')
+                .setTooltip('Delete this template')
+                .onClick(() => {
+                  delete this.promptTemplates[key];
+                  this.promptTitle = Object.keys(this.promptTemplates)[0];
+                  this.update();
+                }),
+            )
+            .addButton(btn => {
+              btn
+                .setIcon('pencil')
+                .setTooltip('Edit this template')
+                .onClick(() => {
+                  this.promptTitle = key;
+                  this.update();
+                });
+              if (key === this.promptTitle) btn.setCta();
+            }),
+      );
+    new Setting(this.contentEl).setName('Add a new template').addText(text => {
+      text.setPlaceholder('New template title').setValue('');
+      text.inputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          const value = text.getValue().trim();
+          if (value) this.generateTemplateContent(value);
+        }
+      });
+      text.inputEl.addEventListener('blur', () => {
+        const value = text.getValue().trim();
+        if (value) this.generateTemplateContent(value);
+      });
+    });
+
+    new Setting(this.contentEl)
+      .setName('Template name')
+      .setHeading()
+
+      .setTooltip('Change the name of the current template.')
+      .addText(text => {
+        text
+          .setPlaceholder('Template name')
+          .setValue(this.promptTitle)
+          .onChange(value => {
+            if (value && value !== this.promptTitle) {
+              this.promptTemplates[value] = this.promptTemplates[this.promptTitle];
+              delete this.promptTemplates[this.promptTitle];
+              this.promptTitle = value;
+              this.setTitle(this.promptTitle);
+              //this.update();
+            }
+          });
+      });
+    new CodeAreaComponent(this.contentEl)
+      .setValue(this.promptTemplates[this.promptTitle])
+      .onChange(value => (this.promptTemplates[this.promptTitle] = value));
+    new Setting(this.contentEl)
+      .addButton(btn =>
+        btn
+          .setButtonText('Save')
+          .setCta()
+          .onClick(async () => this.close()),
+      )
+      .addButton(btn =>
+        btn
+          .setButtonText('Reset all')
+          .setTooltip('Reset all templates to default values.')
+          .setWarning()
+          .onClick(async () => {
+            Object.assign(this.promptTemplates, this.defaultTemplates);
+            this.promptTitle = Object.keys(this.promptTemplates)[0] || 'New template';
+            this.update();
+          }),
+      );
+    this.setTitle(this.promptTitle);
+  }
+
+  /**
+   *
+   * @param value
+   */
+  private generateTemplateContent(value: string) {
+    this.promptTitle = value;
+    if (!this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = '';
+    const promptTemplatesSummary = Object.entries(this.promptTemplates)
+      .map(([k, v]) => `## template: ${k} \n\n ${v}`)
+      .join('\n');
+    void new PureChatLLMChat(this.plugin)
+      .appendMessage(
+        {
+          role: 'system',
+          content: `You are editing templates for the PureChatLLM plugin.\n\n# Here are the templates:\n\n${promptTemplatesSummary}`,
+        },
+        {
+          role: 'user',
+          content: `You are creating a new template called: \`"${this.promptTitle}"\`.  Please predict the content for this prompt template.`,
+        },
+      )
+      .completeChatResponse(([] as TFile[])[0])
+      .then(chat => {
+        if (!this.promptTemplates[this.promptTitle]) {
+          this.promptTemplates[this.promptTitle] =
+            chat.messages[chat.messages.length - 2]?.content.trim() || '';
+          this.update();
+        }
+      });
+    this.update();
+  }
+
+  /**
+   *
+   */
+  onClose(): void {
+    void this.plugin.saveSettings();
+  }
+}
+export class FileInputSuggest extends AbstractInputSuggest<TFile> {
+  files: TFile[];
+  constructor(app: App, inputEl: HTMLInputElement) {
+    super(app, inputEl);
+    this.files = app.vault.getMarkdownFiles();
+  }
+
+  protected getSuggestions(query: string): TFile[] | Promise<TFile[]> {
+    if (!query) return [];
+    return this.files.filter(file => file.path.toLowerCase().includes(query.toLowerCase()));
+  }
+
+  renderSuggestion(value: TFile, el: HTMLElement): void {
+    el.setText(value.path);
+  }
+}
+/**
+ *
+ * @param rawMarkdown
+ * @param level
+ * @param maxlevel
+ */
+export function getObjectFromMarkdown(
+  rawMarkdown: string,
+  level = 1,
+  maxlevel = 6,
+): Record<string, string | Record<string, object | string>> {
+  return Object.fromEntries(
+    rawMarkdown
+      .trim()
+      .split(new RegExp(`^${'#'.repeat(level)} `, 'gm'))
+      .slice(1)
+      .map((s): [string, string | Record<string, object | string>] => {
+        const [title, ...content] = s.split('\n');
+        const joinedContent = content.join('\n');
+        if (level < maxlevel && joinedContent.includes('\n' + '#'.repeat(level + 1) + ' ')) {
+          return [title.trim(), getObjectFromMarkdown(joinedContent, level + 1, maxlevel)];
+        }
+        return [title.trim(), joinedContent.trim()];
+      }),
+  );
+} /**
+ *
+ * @param obj
+ * @param level
+ */
+
+export function getMarkdownFromObject(
+  obj: Record<string, string | Record<string, string | object>>,
+  level = 1,
+): string {
+  return Object.entries(obj)
+    .map(([key, value]) => {
+      const prefix = '#'.repeat(level);
+      if (typeof value === 'string') {
+        return `${prefix} ${key}\n\n${value}\n`;
+      } else if (typeof value === 'object' && value !== null) {
+        // Cast value to the expected type for recursion
+        return `${prefix} ${key}\n\n${getMarkdownFromObject(
+          value as Record<string, string | Record<string, string | object>>,
+          level + 1,
+        )}`;
+      } else {
+        return `${prefix} ${key}\n\n${String(value)}\n`;
+      }
+    })
+    .join('\n');
 }

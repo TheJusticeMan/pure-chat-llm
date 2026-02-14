@@ -1,7 +1,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import { PureChatLLMChat } from '../core/Chat';
 import PureChatLLM from '../main';
-import { CodeAreaComponent, EditWand } from './Modals';
+import { CodeAreaComponent, editWand } from './Modals';
 
 /**
  * Modal dialog for displaying and handling code blocks extracted from a given string.
@@ -51,7 +51,7 @@ export class CodeHandling extends Modal {
     this.code.forEach((c, idx) => {
       new Setting(this.contentEl).setName(c.language || `Code block ${idx + 1}`).setHeading();
 
-      const textArea = new CodeAreaComponent(this.contentEl).setValue(c.code).onChange(value => {
+      new CodeAreaComponent(this.contentEl).setValue(c.code).onChange(value => {
         c.code = value;
       });
 
@@ -69,20 +69,12 @@ export class CodeHandling extends Modal {
           btn
             .setIcon('pencil')
             .setTooltip('Edit with prompt')
-            .onClick(() =>
-              new EditWand(
-                this.app,
-                this.plugin,
-                c.code,
-                newCode => void textArea.setValue((c.code = newCode)),
-              ).open(),
-            ),
+            .onClick(() => editWand(this.plugin, c.code)),
         );
     });
   }
 
   /**
-   *
    * @param code
    */
   getCode(code: string): CodeContent[] {

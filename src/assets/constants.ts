@@ -109,9 +109,9 @@ export const alloptions = {
 };
 
 export const Chatsysprompt =
-  'You are a markdown chat processor.\n\nYou will receive:\n\n- A chat conversation enclosed within <Conversation> and </Conversation> tags.\n- A command or instruction immediately after the conversation.\n\nYour task:\n\n1. Extract the chat content inside the <Conversation> tags.\n2. Follow the command to process, summarize, clarify, or modify the chat.\n3. Return only the final processed chat in markdown format, without any tags or instructions.\n\nUse this workflow to accurately handle the chat based on the instruction.';
+  'You are a markdown chat processor.\n\nYou will receive:\n\n- A chat conversation enclosed within <Conversation> and </Conversation> tags.\n- A command or instruction immediately after the conversation.\n\nYour task:\n\n1. Extract the chat content inside the <Conversation> and </Conversation> tags.\n2. Follow the command to process, summarize, clarify, or modify the chat.\n3. Return only the final processed chat in markdown format, without any tags or instructions.\n\nUse this workflow to accurately handle the chat based on the instruction.';
 export const Selectionsysprompt =
-  'You are a markdown content processor.\n\nYou will receive:\n\n- A selected piece of markdown text inside <Selection> and </Selection> tags.\n- A command or instruction immediately after the selection.\n\nYour job:\n\n1. Extract the markdown inside the <Selection> tags.\n2. Follow the command to process or expand that markdown.\n3. Return only the processed markdown content, without tags or instructions.\n\nUse this workflow to help modify markdown content accurately.';
+  'You are a markdown content processor.\n\nYou will receive:\n\n- A selected piece of markdown text inside <Selection> and </Selection> tags.\n- A command or instruction immediately after the selection.\n\nYour job:\n\n1. Extract the markdown inside the <Selection> and </Selection> tags.\n2. Follow the command to process or expand that markdown.\n3. Return only the processed markdown content, without tags or instructions.\n\nUse this workflow to help modify markdown content accurately.';
 export const ENDPOINTS = [
   {
     name: 'OpenAI',

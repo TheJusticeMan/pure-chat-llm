@@ -23,7 +23,7 @@ export class ToolOutputBuilder {
    * @param value - The value
    */
   addKeyValue(label: string, value: string): this {
-    this.sections.push(`${label}: ${value}`);
+    this.sections.push(`- ${label}: ${value}`);
     return this;
   }
 

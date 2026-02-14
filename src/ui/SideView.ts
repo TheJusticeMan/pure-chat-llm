@@ -15,7 +15,7 @@ import {
 import { alloptions, EmptyApiKey } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
 import PureChatLLM from '../main';
-import { PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '../types';
+import { ChatMessage, PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { toTitleCase } from '../utils/toTitleCase';
 import { CodeHandling, SectionHandling } from './CodeHandling';
@@ -348,118 +348,91 @@ export class PureChatLLMSideView extends ItemView {
       const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
-      container.createDiv({ text: '' }, contain => {
-        contain.addClass('PURE', 'messageContainer', message.role);
-        contain.createEl('h1', { text: toTitleCase(message.role) }, el => {
-          el.onClickEvent(() => this.goToPostion(editor, chat.clines[index]));
-          el.addClass('PURE', 'messageHeader', message.role);
-        });
-        // Preview of message content with copy button
-        contain.createEl('div', '', div => {
-          div.addClass('PURE', 'preview', message.role);
-          if (preview)
-            div.createDiv({ text: '' }, el => {
-              el.onClickEvent(() => this.goToPostion(editor, chat.clines[index], true));
-              el.addClass('PURE', 'messageMarkdown', message.role);
-              void MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
-            });
-          if (preview)
-            new ExtraButtonComponent(div)
-              .setIcon('copy')
-              .setTooltip('Copy message to clipboard')
-              .onClick(() => {
-                void navigator.clipboard.writeText(message.content);
-                new Notice('Copied message to clipboard');
-              });
-          if (preview)
-            new ExtraButtonComponent(div)
-              .setIcon('save')
-              .setTooltip('Save message to a new note')
-              .onClick(() => {
-                const title = (
-                  message.content.match(/^#+? (.+)$/m)?.[0] ||
-                  view.file?.basename ||
-                  'Untitled'
-                )
-                  .replace(/^#+ /, '')
-                  .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
-                  .trim();
-                void this.app.fileManager
-                  .getAvailablePathForAttachment(`Message ${title}.md`, view.file?.path)
-                  .then(path =>
-                    this.app.vault
-                      .create(path, message.content)
-                      .then(() => this.app.workspace.openLinkText(path, '', true)),
-                  );
-              });
-          new ExtraButtonComponent(div)
-            .setIcon('message-square-x')
-            .setTooltip('Delete message')
-            .onClick(() => {
-              editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).markdown);
-            });
-          if (/> \[!assistant\]/gim.test(message.content))
-            new ExtraButtonComponent(div)
-              .setIcon('brain-cog')
-              .setTooltip('Remove the thinking process from this message')
-              .onClick(() => {
-                editor.setValue(
-                  chat.thencb(
-                    c =>
-                      (c.messages[index].content = c.messages[index].content.replace(
-                        /[\W\w]+?> \[!assistant\]\n*/i,
-                        '',
-                      )),
-                  ).markdown,
-                );
-              });
-          if (/# \w+/gm.test(message.content))
-            new ExtraButtonComponent(div)
-              .setIcon('table-of-contents')
-              .setTooltip('View and edit sections')
-              .onClick(() => {
-                new SectionHandling(this.app, this.plugin, message.content).open();
-              });
-          if (/```[\w\W]*?```/gm.test(message.content))
-            new ExtraButtonComponent(div)
-              .setIcon('code')
-              .setTooltip('View and edit code')
-              .onClick(() => {
-                new CodeHandling(this.app, this.plugin, message.content).open();
-              });
-          if (/```[\w\W]*?```/gm.test(message.content))
-            new ExtraButtonComponent(div)
-              .setIcon('scan-eye')
-              .setTooltip('Preview code')
-              .onClick(() => {
-                this.openCodePreview(
-                  message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
-                  message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
-                  editor,
-                );
-              });
+      container.createDiv(
+        { text: '', cls: ['PURE', 'messageContainer', message.role] },
+        contain => {
+          this.renderMessageContainer(contain, message, editor, chat, index, preview, view);
+        },
+      );
+    });
+  }
 
-          if (
-            Number(/```html\n([\s\S]*?)```/i.test(message.content)) +
-              Number(/```css\n([\s\S]*?)```/i.test(message.content)) +
-              Number(/```(?:js|javascript)\n([\s\S]*?)```/i.test(message.content)) >
-            1
-          )
-            new ExtraButtonComponent(div)
-              .setTooltip('Copy unified HTML code block')
-              .setIcon('file-code-2')
-              .onClick(() => {
-                copyUnifiedHTMLCodeblock(message.content);
-                new Notice('Unified HTML code block copied to clipboard');
-              });
-          new ExtraButtonComponent(div)
-            .setIcon('refresh-cw')
-            .setTooltip('Regenerate response')
-            .onClick(() => {
-              editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).markdown);
-              this.plugin.completeChatResponse(editor, view);
-            });
+  private renderMessageContainer(
+    contain: HTMLDivElement,
+    message: ChatMessage,
+    editor: Editor,
+    chat: PureChatLLMChat,
+    index: number,
+    preview: string,
+    view: MarkdownView,
+  ) {
+    contain.createEl(
+      'h1',
+      { text: toTitleCase(message.role), cls: ['PURE', 'messageHeader', message.role] },
+      el => el.onClickEvent(() => this.goToPostion(editor, chat.clines[index])),
+    );
+    // Preview of message content with copy button
+    contain.createEl('div', { text: '', cls: ['PURE', 'preview', message.role] }, div => {
+      const extr = (icon: string, tip: string, onClick: () => void) =>
+        new ExtraButtonComponent(div).setIcon(icon).setTooltip(tip).onClick(onClick);
+      if (preview) {
+        div.createDiv({ text: '' }, el => {
+          el.onClickEvent(() => this.goToPostion(editor, chat.clines[index], true));
+          el.addClass('PURE', 'messageMarkdown', message.role);
+          void MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
         });
+        extr('copy', 'Copy message to clipboard', () => {
+          void navigator.clipboard.writeText(message.content);
+          new Notice('Copied message to clipboard');
+        });
+        extr('save', 'Save message to a new note', () => void this.app.fileManager
+          .getAvailablePathForAttachment(`Message ${(
+            message.content.match(/^#+? (.+)$/m)?.[0] ||
+            view.file?.basename ||
+            'Untitled'
+          )
+            .replace(/^#+ /, '')
+            .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
+            .trim()}.md`, view.file?.path)
+          .then(path => this.app.vault
+            .create(path, message.content)
+            .then(() => this.app.workspace.openLinkText(path, '', true))
+          ));
+      }
+      extr('message-square-x', 'Delete message', () => editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).markdown));
+      if (/> \[!assistant\]/gim.test(message.content))
+        extr('brain-cog', 'Remove thinking process from this message', () => editor.setValue(
+          chat.thencb(
+            c => (c.messages[index].content = c.messages[index].content.replace(
+              /[\W\w]+?> \[!assistant\]\n*/i,
+              ''
+            ))
+          ).markdown
+        ));
+      if (/# \w+/gm.test(message.content))
+        extr('table-of-contents', 'View and edit sections', () => new SectionHandling(this.app, this.plugin, message.content).open());
+      if (/```[\w\W]*?```/gm.test(message.content))
+        extr('code', 'View and edit code', () => new CodeHandling(this.app, this.plugin, message.content).open());
+      if (/```[\w\W]*?```/gm.test(message.content))
+        extr('scan-eye', 'Preview code', () => this.openCodePreview(
+          message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
+          message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
+          editor
+        ));
+
+      if (
+        Number(/```html\n([\s\S]*?)```/i.test(message.content)) +
+          Number(/```css\n([\s\S]*?)```/i.test(message.content)) +
+          Number(/```(?:js|javascript)\n([\s\S]*?)```/i.test(message.content)) >
+        1
+      )
+        extr('file-code-2', 'Copy unified HTML code block', () => {
+          copyUnifiedHTMLCodeblock(message.content);
+          new Notice('Unified HTML code block copied to clipboard');
+        });
+      extr('refresh-cw', 'Regenerate response from this message onward', () => {
+        editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).markdown);
+        void this.plugin.completeChatResponse(editor, view);
       });
     });
   }

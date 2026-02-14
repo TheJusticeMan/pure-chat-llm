@@ -1,26 +1,21 @@
 import { App, EditorRange, Notice, TFile } from 'obsidian';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
-import PureChatLLM, { StreamNotice } from '../main';
+import PureChatLLM from '../main';
 import { ToolRegistry } from '../tools';
-import { ActiveContextTool } from '../tools/ActiveContext';
-import { BacklinksTool } from '../tools/Backlinks';
-import { CreateNoteTool } from '../tools/CreateNote';
-import { DeleteNoteTool } from '../tools/DeleteNote';
-import { GlobFilesTool } from '../tools/GlobFiles';
-import { ImageGenerationTool } from '../tools/ImageGen';
-import { ListFoldersTool } from '../tools/ListFolders';
-import { ManageWorkspaceTool } from '../tools/ManageWorkspace';
-import { PatchNoteTool } from '../tools/PatchNote';
-import { PluginSettingsTool } from '../tools/PluginSettings';
-import { ReadFileTool } from '../tools/ReadFile';
-import { ReadNoteSectionTool } from '../tools/ReadNoteSection';
-import { ReplaceInNoteTool } from '../tools/ReplaceInNote';
-import { SearchVaultTool } from '../tools/SearchVault';
-import { WriteNoteSectionTool } from '../tools/WriteNoteSection';
-import { ShowNoticeTool } from '../tools/ShowNotice';
-import { SmartConnectionsRetrievalTool } from '../tools/SmartConnectionsRetrieval';
-import { SunoTool } from '../tools/Suno';
-import { TemplatesTool } from '../tools/Templates';
+import {
+  BacklinksTool,
+  CreateNoteTool,
+  DeleteNoteTool,
+  PatchNoteTool,
+  ReadFileTool,
+  ReadNoteSectionTool,
+  ReplaceInNoteTool,
+  WriteNoteSectionTool,
+} from '../tools/VaultTools';
+import { GlobFilesTool, ListFoldersTool, SearchVaultTool } from '../tools/SearchTools';
+import { ImageGenerationTool, SmartConnectionsRetrievalTool } from '../tools/AITools';
+import { ActiveContextTool, ManageWorkspaceTool, ShowNoticeTool } from '../tools/UITools';
+import { PluginSettingsTool, TemplatesTool } from '../tools/SystemTools';
 import {
   ChatMessage,
   ChatOptions,
@@ -197,8 +192,8 @@ export class PureChatLLMChat {
       .registerTool(ManageWorkspaceTool)
       .registerTool(ActiveContextTool)
       .registerTool(ShowNoticeTool)
-      .registerTool(PluginSettingsTool)
-      .registerTool(SunoTool);
+      .registerTool(PluginSettingsTool);
+    /* .registerTool(SunoTool) */
     if (!this.plugin.settings.useImageGeneration)
       this.toolregistry.disable(ImageGenerationTool._name);
   }
@@ -472,19 +467,13 @@ export class PureChatLLMChat {
     new Notice('Generating chat response from template...');
     const messages: { role: RoleType; content: string }[] = [
       { role: 'system', content: Chatsysprompt },
-      {
-        role: 'user',
-        content: `<Conversation>\n${this.chatText}\n\n</Conversation>`,
-      },
+      { role: 'user', content: `<Conversation>\n${this.chatText}\n\n</Conversation>` },
       { role: 'user', content: templatePrompt },
     ];
 
     const options = { ...this.options, messages };
     delete options.tools;
-    return this.sendChatRequest(
-      options as ChatRequestOptions,
-      new StreamNotice(this.plugin.app, 'Processing chat with template.').change,
-    ).then(r => ({
+    return this.sendChatRequest(options as ChatRequestOptions).then(r => ({
       role: 'assistant',
       content: (r.content || '').replace(/^<Conversation>|<\/Conversation>$/gi, '').trim(),
     }));
@@ -510,34 +499,33 @@ export class PureChatLLMChat {
       this.plugin.askForApiKey();
       return Promise.resolve({ role: 'assistant', content: selectedText });
     }
-    //const systemprompt = `You are a ${templatePrompt.name}.`;
-    const messages: { role: RoleType; content: string }[] = [
-      ...((fileText
-        ? [
-            {
-              role: 'system',
-              content: `Here's the whole file that's being edited:\n<Markdown>\n${fileText}\n</Markdown>`,
-            },
-          ]
-        : []) as { role: RoleType; content: string }[]),
-      { role: 'system', content: Selectionsysprompt },
-      {
-        role: 'user',
-        content: `<Selection>${selectedText}</Selection>`,
-      },
-      { role: 'user', content: templatePrompt },
-    ];
+    this.initSelectionResponse(templatePrompt, selectedText, fileText);
 
-    const options = { ...this.options, messages };
+    const options = { ...this.options, messages: this.messages };
     delete options.tools;
 
-    return this.sendChatRequest(
-      options as ChatRequestOptions,
-      new StreamNotice(this.plugin.app, 'Editing selection.').change,
-    ).then(r => ({
+    return this.sendChatRequest(options as ChatRequestOptions).then(r => ({
       role: 'assistant',
       content: (r.content || '').replace(/^<Selection>|<\/Selection>$/gi, '').trim(),
     }));
+  }
+
+  initSelectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
+    this.messages = [
+      {
+        role: 'system',
+        content: `${Selectionsysprompt}${
+          fileText
+            ? `\n\n---\n\nHere's the whole file that's being edited:\n<Markdown>\n${fileText}\n</Markdown>`
+            : ''
+        }`,
+      },
+      { role: 'user', content: `<Selection>${selectedText}</Selection>` },
+      { role: 'user', content: templatePrompt },
+    ];
+
+    this.options.tools = [];
+    return this;
   }
 
   /**

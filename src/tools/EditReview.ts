@@ -30,7 +30,7 @@ export class EditReview {
     newContent: string,
     properties: Record<string, unknown> | undefined,
     overwrite: boolean,
-    instruction?: string,
+    instruction: string,
   ): Promise<string> {
     return new Promise(resolve => {
       new EditReviewModal(app, path, newContent, properties, overwrite, instruction, result =>
@@ -44,12 +44,6 @@ export class EditReview {
  *
  */
 class EditReviewModal extends Modal {
-  path: string;
-  newContent: string;
-  properties?: Record<string, unknown>;
-  overwrite: boolean;
-  instruction?: string;
-  onResolve: (result: string) => void;
   originalContent: string | null = null;
   resolved = false;
 
@@ -64,21 +58,16 @@ class EditReviewModal extends Modal {
    * @param onResolve
    */
   constructor(
-    app: App,
-    path: string,
-    newContent: string,
-    properties: Record<string, unknown> | undefined,
-    overwrite: boolean,
-    instruction: string | undefined,
-    onResolve: (result: string) => void,
+    public app: App,
+    public path: string,
+    public newContent: string,
+    public properties: Record<string, unknown> | undefined,
+    public overwrite: boolean,
+    public instruction: string,
+    public onResolve: (result: string) => void,
   ) {
     super(app);
     this.path = normalizePath(path);
-    this.newContent = newContent;
-    this.properties = properties;
-    this.overwrite = overwrite;
-    this.instruction = instruction;
-    this.onResolve = onResolve;
   }
 
   /**
@@ -93,13 +82,12 @@ class EditReviewModal extends Modal {
       this.originalContent = await this.app.vault.cachedRead(file);
     }
 
-    contentEl.createEl('h2', { text: 'Review proposed edit' });
+    this.setTitle('Review proposed edit');
 
-    if (this.instruction) {
-      contentEl.createEl('p', { text: `Goal: ${this.instruction}`, cls: 'edit-instruction' });
-    }
-
-    contentEl.createEl('h4', { text: `File: ${this.path}` });
+    new Setting(contentEl)
+      .setName(`File: ${this.path}`)
+      .setDesc(`Goal: ${this.instruction}`)
+      .setHeading();
 
     // Display Properties if present
     if (this.properties && Object.keys(this.properties).length > 0) {
@@ -107,8 +95,9 @@ class EditReviewModal extends Modal {
         .setName('Frontmatter properties')
         .setDesc('These properties will be added or updated.')
         .setHeading();
-      const propPre = contentEl.createEl('pre');
-      propPre.createEl('code', { text: JSON.stringify(this.properties, null, 2) });
+      contentEl
+        .createEl('pre')
+        .createEl('code', { text: JSON.stringify(this.properties, null, 2) });
     }
 
     // Diff
@@ -122,15 +111,14 @@ class EditReviewModal extends Modal {
       const lines = patch.split('\n');
       for (const line of lines) {
         const div = diffContainer.createEl('div');
-        if (line.startsWith('+')) {
-          div.addClass('diff-added');
-        } else if (line.startsWith('-')) {
-          div.addClass('diff-removed');
-        } else if (line.startsWith('@@')) {
-          div.addClass('diff-hunk');
-        } else {
-          div.addClass('diff-equal');
-        }
+        const type = line.startsWith('+')
+          ? 'added'
+          : line.startsWith('-')
+          ? 'removed'
+          : line.startsWith('@@')
+          ? 'hunk'
+          : 'equal';
+        div.addClass(`diff-${type}`);
         div.setText(line);
       }
     } else {
@@ -260,9 +248,7 @@ class EditReviewModal extends Modal {
       builder.addHeader(isNewFile ? 'NOTE CREATED' : 'PATCH OPERATION APPROVED');
       builder.addKeyValue('Target', this.path);
 
-      if (this.instruction) {
-        builder.addKeyValue('Action', this.instruction);
-      }
+      builder.addKeyValue('Action', this.instruction);
 
       // Calculate changes
       const originalLines = originalContent.split('\n').length;

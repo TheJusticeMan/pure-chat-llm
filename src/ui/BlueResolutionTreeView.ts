@@ -336,9 +336,7 @@ export class BlueResolutionTreeView extends ItemView {
             btn
               .setIcon('send')
               .setTooltip('Send chat message to linked chats')
-              .onClick(() => {
-                this.plugin.completeChatResponse(editor, view);
-              }),
+              .onClick(() => void this.plugin.completeChatResponse(editor, view)),
           );
         if (this.currentRootFile) {
           setting
