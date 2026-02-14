@@ -419,6 +419,8 @@ export class PureChatLLMChat {
     const chunkSize = 8192;
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      // TypeScript doesn't recognize Uint8Array as array-like for String.fromCharCode.apply()
+      // Cast is safe because Uint8Array elements are valid charCodes (0-255)
       binaryString += String.fromCharCode.apply(null, chunk as unknown as number[]);
     }
     return btoa(binaryString);
@@ -483,6 +485,8 @@ export class PureChatLLMChat {
             const resolved = await this.resolveContentRecursive(sectionContent, file, app, role, visited, depth + 1);
             visited.delete(file.path);
             
+            // If section resolves to media array, fall back to original text
+            // (section refs are typically used in text context, not for pure media embedding)
             return { type: 'text', text: typeof resolved === 'string' ? resolved : sectionContent };
           }
           return { type: 'text', text: originalLink };
@@ -514,6 +518,8 @@ export class PureChatLLMChat {
         const resolvedContent = await this.resolveContentRecursive(content, file, app, role, visited, depth + 1);
         visited.delete(file.path);
         
+        // If file resolves to media array, treat as empty text in this context
+        // (inline file refs are typically used for text content, not pure media)
         return { type: 'text', text: typeof resolvedContent === 'string' ? resolvedContent : '' };
       })
     );
