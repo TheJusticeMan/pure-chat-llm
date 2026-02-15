@@ -164,12 +164,6 @@ export class PureChatLLMSideView extends ItemView {
           .setIcon('phone')
           .setTooltip('Open voice call view')
           .onClick(() => this.plugin.activateVoiceCallView()),
-      )
-      .addExtraButton(btn =>
-        btn
-          .setIcon('list-tree')
-          .setTooltip('Open resolution tree view')
-          .onClick(() => this.plugin.activateBlueResolutView()),
       );
     new Setting(this.contentEl).setName(
       'The current editor does not contain a valid conversation.',
@@ -205,14 +199,14 @@ export class PureChatLLMSideView extends ItemView {
     //resolveSubpath
     const editorValue = editor.getValue();
     const chat = new PureChatLLMChat(this.plugin);
-    chat.markdown = editorValue;
+    chat.setMarkdown(editorValue);
     const allshown: boolean = Object.keys(alloptions).every(k =>
-      Object.prototype.hasOwnProperty.call(chat.options, k),
+      Object.prototype.hasOwnProperty.call(chat.session.options, k),
     );
-    this.ischat = chat.validChat;
+    this.ischat = chat.session.validChat;
     const container = this.contentEl;
     container.empty();
-    if (!chat.validChat || !editorValue) {
+    if (!chat.session.validChat || !editorValue) {
       this.defaultContent();
       return;
     }
@@ -223,13 +217,13 @@ export class PureChatLLMSideView extends ItemView {
     /* this. */
 
     new Setting(container)
-      .setDesc(`${chat.endpoint.name} (${chat.options.model})`)
+      .setDesc(`${chat.endpoint.name} (${chat.session.options.model})`)
       .setHeading()
       .setClass('PUREfloattop')
       .addExtraButton(btn =>
         btn
           .setIcon('cpu')
-          .setTooltip(`${chat.endpoint.name} (${chat.options.model})`)
+          .setTooltip(`${chat.endpoint.name} (${chat.session.options.model})`)
           .onClick(() => new ModelAndProviderChooser(this.app, this.plugin, editor)),
       )
       .addExtraButton(btn =>
@@ -249,29 +243,39 @@ export class PureChatLLMSideView extends ItemView {
           .onClick(() =>
             //new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat => )
             editor.setValue(
-              new PureChatLLMChat(this.plugin).setMarkdown(editor.getValue()).thencb(chat =>
-                allshown
-                  ? (chat.options = {
-                      model: chat.options.model,
-                      max_completion_tokens: chat.options.max_completion_tokens,
-                      stream: chat.options.stream,
-                    } as typeof chat.options)
-                  : Object.assign(chat.options, { ...alloptions }, { ...chat.options }),
-              ).markdown,
+              new PureChatLLMChat(this.plugin)
+                .setMarkdown(editor.getValue())
+                .thencb(chat =>
+                  allshown
+                    ? (chat.session.options = {
+                        model: chat.session.options.model,
+                        max_completion_tokens: chat.session.options.max_completion_tokens,
+                        stream: chat.session.options.stream,
+                      } as typeof chat.session.options)
+                    : Object.assign(
+                        chat.session.options,
+                        { ...alloptions },
+                        { ...chat.session.options },
+                      ),
+                )
+                .getMarkdown(),
             ),
           ),
       )
       .then(
         b =>
-          chat.messages.some(m => m.role === 'tool') &&
+          chat.session.messages.some(m => m.role === 'tool') &&
           b.addExtraButton(btn =>
             btn
               .setIcon('remove-formatting')
               .setTooltip('Remove tool messages')
               .onClick(() =>
                 editor.setValue(
-                  chat.thencb(c => (c.messages = c.messages.filter(m => m.role !== 'tool')))
-                    .markdown,
+                  chat
+                    .thencb(
+                      c => (c.session.messages = c.session.messages.filter(m => m.role !== 'tool')),
+                    )
+                    .getMarkdown(),
                 ),
               ),
           ),
@@ -281,12 +285,6 @@ export class PureChatLLMSideView extends ItemView {
           .setIcon('phone')
           .setTooltip('Open voice call view')
           .onClick(() => this.plugin.activateVoiceCallView()),
-      )
-      .addExtraButton(btn =>
-        btn
-          .setIcon('list-tree')
-          .setTooltip('Open resolution tree view')
-          .onClick(() => this.plugin.activateBlueResolutView()),
       );
     //});
     if (this.isExpanded) {
@@ -300,18 +298,18 @@ export class PureChatLLMSideView extends ItemView {
               .setTooltip(`${en ? 'Disable' : 'Enable'} ${classification} tools`)
               .onClick(() => {
                 if (en) {
-                  chat.options.tools = chat.options.tools?.filter(
+                  chat.session.options.tools = chat.session.options.tools?.filter(
                     t => chat.toolregistry.classificationForTool(t) !== classification,
                   );
                 } else {
-                  chat.options.tools = Array.from(
+                  chat.session.options.tools = Array.from(
                     new Set([
-                      ...(chat.options.tools || []),
+                      ...(chat.session.options.tools || []),
                       ...chat.toolregistry.getToolNamesByClassification(classification),
                     ]),
                   );
                 }
-                editor.setValue(chat.markdown);
+                editor.setValue(chat.getMarkdown());
               });
           });
         });
@@ -344,7 +342,7 @@ export class PureChatLLMSideView extends ItemView {
     editor: Editor,
     view: MarkdownView,
   ) {
-    chat.messages.forEach((message, index) => {
+    chat.session.messages.forEach((message, index) => {
       const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
@@ -369,7 +367,7 @@ export class PureChatLLMSideView extends ItemView {
     contain.createEl(
       'h1',
       { text: toTitleCase(message.role), cls: ['PURE', 'messageHeader', message.role] },
-      el => el.onClickEvent(() => this.goToPostion(editor, chat.clines[index])),
+      el => el.onClickEvent(() => this.goToPostion(editor, chat.session.clines[index])),
     );
     // Preview of message content with copy button
     contain.createEl('div', { text: '', cls: ['PURE', 'preview', message.role] }, div => {
@@ -377,7 +375,7 @@ export class PureChatLLMSideView extends ItemView {
         new ExtraButtonComponent(div).setIcon(icon).setTooltip(tip).onClick(onClick);
       if (preview) {
         div.createDiv({ text: '' }, el => {
-          el.onClickEvent(() => this.goToPostion(editor, chat.clines[index], true));
+          el.onClickEvent(() => this.goToPostion(editor, chat.session.clines[index], true));
           el.addClass('PURE', 'messageMarkdown', message.role);
           void MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
         });
@@ -385,40 +383,62 @@ export class PureChatLLMSideView extends ItemView {
           void navigator.clipboard.writeText(message.content);
           new Notice('Copied message to clipboard');
         });
-        extr('save', 'Save message to a new note', () => void this.app.fileManager
-          .getAvailablePathForAttachment(`Message ${(
-            message.content.match(/^#+? (.+)$/m)?.[0] ||
-            view.file?.basename ||
-            'Untitled'
-          )
-            .replace(/^#+ /, '')
-            .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
-            .trim()}.md`, view.file?.path)
-          .then(path => this.app.vault
-            .create(path, message.content)
-            .then(() => this.app.workspace.openLinkText(path, '', true))
-          ));
+        extr(
+          'save',
+          'Save message to a new note',
+          () =>
+            void this.app.fileManager
+              .getAvailablePathForAttachment(
+                `Message ${(
+                  message.content.match(/^#+? (.+)$/m)?.[0] ||
+                  view.file?.basename ||
+                  'Untitled'
+                )
+                  .replace(/^#+ /, '')
+                  .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
+                  .trim()}.md`,
+                view.file?.path,
+              )
+              .then(path =>
+                this.app.vault
+                  .create(path, message.content)
+                  .then(() => this.app.workspace.openLinkText(path, '', true)),
+              ),
+        );
       }
-      extr('message-square-x', 'Delete message', () => editor.setValue(chat.thencb(c => c.messages.splice(index, 1)).markdown));
+      extr('message-square-x', 'Delete message', () =>
+        editor.setValue(chat.thencb(c => c.session.messages.splice(index, 1)).getMarkdown()),
+      );
       if (/> \[!assistant\]/gim.test(message.content))
-        extr('brain-cog', 'Remove thinking process from this message', () => editor.setValue(
-          chat.thencb(
-            c => (c.messages[index].content = c.messages[index].content.replace(
-              /[\W\w]+?> \[!assistant\]\n*/i,
-              ''
-            ))
-          ).markdown
-        ));
+        extr('brain-cog', 'Remove thinking process from this message', () =>
+          editor.setValue(
+            chat
+              .thencb(
+                c =>
+                  (c.session.messages[index].content = c.session.messages[index].content.replace(
+                    /[\W\w]+?> \[!assistant\]\n*/i,
+                    '',
+                  )),
+              )
+              .getMarkdown(),
+          ),
+        );
       if (/# \w+/gm.test(message.content))
-        extr('table-of-contents', 'View and edit sections', () => new SectionHandling(this.app, this.plugin, message.content).open());
+        extr('table-of-contents', 'View and edit sections', () =>
+          new SectionHandling(this.app, this.plugin, message.content).open(),
+        );
       if (/```[\w\W]*?```/gm.test(message.content))
-        extr('code', 'View and edit code', () => new CodeHandling(this.app, this.plugin, message.content).open());
+        extr('code', 'View and edit code', () =>
+          new CodeHandling(this.app, this.plugin, message.content).open(),
+        );
       if (/```[\w\W]*?```/gm.test(message.content))
-        extr('scan-eye', 'Preview code', () => this.openCodePreview(
-          message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
-          message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
-          editor
-        ));
+        extr('scan-eye', 'Preview code', () =>
+          this.openCodePreview(
+            message.content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
+            message.content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
+            editor,
+          ),
+        );
 
       if (
         Number(/```html\n([\s\S]*?)```/i.test(message.content)) +
@@ -431,7 +451,7 @@ export class PureChatLLMSideView extends ItemView {
           new Notice('Unified HTML code block copied to clipboard');
         });
       extr('refresh-cw', 'Regenerate response from this message onward', () => {
-        editor.setValue(chat.thencb(c => c.messages.splice(index + 1)).markdown);
+        editor.setValue(chat.thencb(c => c.session.messages.splice(index + 1)).getMarkdown());
         void this.plugin.completeChatResponse(editor, view);
       });
     });
@@ -540,13 +560,16 @@ export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
       this.editor.setValue(
         new PureChatLLMChat(this.plugin)
           .setMarkdown(this.editor.getValue())
-          .setModel(this.plugin.settings.endpoints[endpointnum].defaultmodel).markdown,
+          .setModel(this.plugin.settings.endpoints[endpointnum].defaultmodel)
+          .getMarkdown(),
       );
       this.updatemodelist(endpointnum);
     } else
       this.editor.setValue(
-        new PureChatLLMChat(this.plugin).setMarkdown(this.editor.getValue()).setModel(item.name)
-          .markdown,
+        new PureChatLLMChat(this.plugin)
+          .setMarkdown(this.editor.getValue())
+          .setModel(item.name)
+          .getMarkdown(),
       );
   }
 

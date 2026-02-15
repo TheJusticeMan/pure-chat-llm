@@ -127,7 +127,7 @@ export async function editWand(plugin: PureChatLLM, selection: string) {
     .openFile(
       await plugin.app.vault.create(
         await plugin.app.fileManager.getAvailablePathForAttachment('PUREselection.md'),
-        new PureChatLLMChat(plugin).initSelectionResponse('', selection, '').markdown,
+        new PureChatLLMChat(plugin).initSelectionResponse('', selection, '').getMarkdown(),
       ),
     );
 }

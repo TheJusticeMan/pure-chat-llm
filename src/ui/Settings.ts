@@ -740,7 +740,7 @@ export class SelectionPromptEditor extends Modal {
       .then(chat => {
         if (!this.promptTemplates[this.promptTitle]) {
           this.promptTemplates[this.promptTitle] =
-            chat.messages[chat.messages.length - 2]?.content.trim() || '';
+            chat.session.messages[chat.session.messages.length - 2]?.content.trim() || '';
           this.update();
         }
       });

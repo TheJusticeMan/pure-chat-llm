@@ -219,7 +219,7 @@ export default class PureChatLLM extends Plugin {
                 await leaf.openFile(
                   await this.app.vault.create(
                     `${file.path}/${this.generateUniqueFileName(file, 'Untitled Conversation')}.md`,
-                    new PureChatLLMChat(this).setMarkdown('Type your message...').markdown,
+                    new PureChatLLMChat(this).setMarkdown('Type your message...').getMarkdown(),
                   ),
                 );
                 void this.activateChatView();
@@ -240,7 +240,7 @@ export default class PureChatLLM extends Plugin {
                   .openFile(
                     await this.app.vault.create(
                       `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
-                      new PureChatLLMChat(this).setMarkdown(link).markdown,
+                      new PureChatLLMChat(this).setMarkdown(link).getMarkdown(),
                     ),
                   );
                 void this.activateChatView();
@@ -259,9 +259,9 @@ export default class PureChatLLM extends Plugin {
                   .openFile(
                     await this.app.vault.create(
                       `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
-                      new PureChatLLMChat(this).setMarkdown(
-                        `# role: System\n${link}\n# role: User\n`,
-                      ).markdown,
+                      new PureChatLLMChat(this)
+                        .setMarkdown(`# role: System\n${link}\n# role: User\n`)
+                        .getMarkdown(),
                     ),
                   );
                 void this.activateChatView();
@@ -343,7 +343,7 @@ export default class PureChatLLM extends Plugin {
       icon: 'arrow-left-right',
       editorCallback: (editor: Editor) =>
         editor.setValue(
-          new PureChatLLMChat(this).setMarkdown(editor.getValue()).reverseRoles().markdown,
+          new PureChatLLMChat(this).setMarkdown(editor.getValue()).reverseRoles().getMarkdown(),
         ),
     });
     this.addCommand({
@@ -354,7 +354,7 @@ export default class PureChatLLM extends Plugin {
         void new PureChatLLMSpeech(
           this,
           new PureChatLLMChat(this).setMarkdown(editor.getValue()).thencb(chat => {
-            chat.messages = chat.messages.filter(
+            chat.session.messages = chat.session.messages.filter(
               message => message.role === 'user' || message.role === 'assistant',
             );
           }),
@@ -684,19 +684,19 @@ export default class PureChatLLM extends Plugin {
 
     const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
     if (
-      chat.messages[chat.messages.length - 1].content === '' &&
-      chat.validChat &&
+      chat.session.messages[chat.session.messages.length - 1].content === '' &&
+      chat.session.validChat &&
       this.settings.AutoReverseRoles
     ) {
-      if (chat.messages.pop()?.role == 'user') chat.reverseRoles();
+      if (chat.session.messages.pop()?.role == 'user') chat.reverseRoles();
     }
-    await writeHandler.write(chat.markdown);
+    await writeHandler.write(chat.getMarkdown());
 
-    if (!chat.validChat) return;
+    if (!chat.session.validChat) return;
 
     this.isresponding = true;
 
-    await writeHandler.appendContent(`\n${chat.parseRole('assistant...' as RoleType)}\n`);
+    await writeHandler.appendContent(`\n${chat.adapter.parseRole('assistant...' as RoleType)}\n`);
     chat
       .completeChatResponse(activeFile, async e => {
         await writeHandler.appendContent(e.content);
@@ -706,13 +706,13 @@ export default class PureChatLLM extends Plugin {
         this.isresponding = false;
         if (
           this.settings.AutogenerateTitle > 0 &&
-          chat.messages.length >= this.settings.AutogenerateTitle &&
+          chat.session.messages.length >= this.settings.AutogenerateTitle &&
           (activeFile?.name.includes('Untitled') || / \d+\.md$/.test(activeFile?.name)) &&
           view
         ) {
           this.generateTitle(editor, view);
         }
-        await writeHandler.write(chat.markdown);
+        await writeHandler.write(chat.getMarkdown());
       })
       .catch(error => this.console.error(error))
       .finally(() => {
@@ -1034,7 +1034,7 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
         break;
       case 'role':
         editor.replaceRange(
-          `${new PureChatLLMChat(this.plugin).parseRole(value as RoleType)}\n`,
+          `${new PureChatLLMChat(this.plugin).adapter.parseRole(value as RoleType)}\n`,
           start,
           end,
         );

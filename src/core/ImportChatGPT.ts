@@ -186,7 +186,7 @@ export class ImportChatGPT {
 
     await this.app.vault.create(
       `${folderPath}/${this.plugin.generateUniqueFileName(folder, title)}.md`,
-      result.cleanUpChat().markdown,
+      result.cleanUpChat().getMarkdown(),
     );
   }
 

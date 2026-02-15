@@ -3,6 +3,7 @@ import { alloptions } from '../assets/constants';
 import { ChatOptions, RoleType } from '../types';
 import { CodeContent } from '../ui/CodeHandling';
 import { ChatSession } from './ChatSession';
+import { toTitleCase } from 'src/utils/toTitleCase';
 
 /**
  * ChatMarkdownAdapter handles serialization and deserialization of chat sessions
@@ -28,21 +29,12 @@ export class ChatMarkdownAdapter {
   ) {}
 
   /**
-   * Generates a regex pattern for matching role headers in markdown.
-   * @returns RegExp for matching role headers
-   */
-  get regexForRoles(): RegExp {
-    const formatter = this.roleFormatter.replace('{role}', '(\\w+)');
-    return new RegExp(`^${formatter}$`, 'gm');
-  }
-
-  /**
    * Parses a role string using the formatter template.
    * @param role - The role to format
    * @returns Formatted role string
    */
   parseRole(role: RoleType): string {
-    return this.roleFormatter.replace('{role}', role);
+    return this.roleFormatter.replace('{role}', toTitleCase(role));
   }
 
   /**
@@ -55,7 +47,9 @@ export class ChatMarkdownAdapter {
    */
   parse(markdown: string, defaultOptions: ChatOptions, systemPrompt: string): ChatSession {
     markdown = '\n' + markdown.trim() + '\n'; // ensure newlines at start and end
-    const matches = Array.from(markdown.matchAll(this.regexForRoles));
+    const matches = Array.from(
+      markdown.matchAll(new RegExp(`^${this.roleFormatter.replace('{role}', '(\\w+)')}$`, 'gm')),
+    );
 
     const session = new ChatSession(defaultOptions);
     session.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;

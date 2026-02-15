@@ -101,12 +101,6 @@ export class VoiceCallSideView extends ItemView {
           .setTooltip('Open conversation view')
           .onClick(() => this.plugin.activateChatView()),
       )
-      .addExtraButton(btn =>
-        btn
-          .setIcon('list-tree')
-          .setTooltip('Open resolution tree view')
-          .onClick(() => this.plugin.activateBlueResolutView()),
-      );
   }
 
   /**

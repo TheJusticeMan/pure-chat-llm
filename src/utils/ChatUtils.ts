@@ -17,9 +17,9 @@ export class ChatUtils {
    */
   static isChatFile(chat: PureChatLLMChat): boolean {
     return (
-      chat.validChat &&
-      chat.messages.length > 0 &&
-      chat.messages[chat.messages.length - 1].role === 'user'
+      chat.session.validChat &&
+      chat.session.messages.length > 0 &&
+      chat.session.messages[chat.session.messages.length - 1].role === 'user'
     );
   }
 
@@ -36,7 +36,7 @@ export class ChatUtils {
    */
   static async hasChildChats(chat: PureChatLLMChat, file: TFile, app: App): Promise<boolean> {
     try {
-      for (const message of chat.messages) {
+      for (const message of chat.session.messages) {
         const linkRegex = /\[\[([^\]]+)\]\]/g;
         const matches = Array.from(message.content.matchAll(linkRegex));
         for (const match of matches) {

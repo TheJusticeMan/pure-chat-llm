@@ -176,7 +176,7 @@ export class PureChatLLMSpeech {
    */
   async speak() {
     // Generate all speech segments upfront
-    for (const message of this.chat.messages) {
+    for (const message of this.chat.session.messages) {
       if (!message || !message.content) continue;
       const messageChunks = this.splitMessage(message.content, 4096);
 
@@ -200,14 +200,14 @@ export class PureChatLLMSpeech {
    * @returns {Promise<void>} A promise that resolves when all speech playback has finished.
    */
   async startStreaming(): Promise<void> {
-    if (!this.chat.messages || this.chat.messages.length === 0) return;
+    if (!this.chat.session.messages || this.chat.session.messages.length === 0) return;
 
     // Reset queue and state
     this.speechQueue = [];
     this.isPlaying = false;
 
     // Generate and enqueue first message
-    const firstMessage = this.chat.messages[0];
+    const firstMessage = this.chat.session.messages[0];
     const firstChunks = this.splitMessage(firstMessage.content, 4096);
     for (const chunk of firstChunks) {
       await this.enqueueSpeech({ role: firstMessage.role, content: chunk });
@@ -217,7 +217,7 @@ export class PureChatLLMSpeech {
     const playbackPromise = this.playQueue();
 
     // While playing, generate speech for remaining messages
-    const remainingMessages = this.chat.messages.slice(1);
+    const remainingMessages = this.chat.session.messages.slice(1);
     for (const message of remainingMessages) {
       const messageChunks = this.splitMessage(message.content, 4096);
       for (const chunk of messageChunks) {

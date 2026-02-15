@@ -2,13 +2,12 @@ import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from '
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import PureChatLLM from '../main';
 import { ToolRegistry } from '../tools';
-import { BacklinksTool, ReadNoteSectionTool, WriteNoteSectionTool } from '../tools/VaultTools';
-import { GlobFilesTool, ListFoldersTool, SearchVaultTool } from '../tools/SearchTools';
 import { ImageGenerationTool, SmartConnectionsRetrievalTool } from '../tools/AITools';
-import { ActiveContextTool, ManageWorkspaceTool, ShowNoticeTool } from '../tools/UITools';
+import { GlobFilesTool, ListFoldersTool, SearchVaultTool } from '../tools/SearchTools';
 import { PluginSettingsTool, TemplatesTool } from '../tools/SystemTools';
+import { ActiveContextTool, ManageWorkspaceTool, ShowNoticeTool } from '../tools/UITools';
+import { BacklinksTool, ReadNoteSectionTool, WriteNoteSectionTool } from '../tools/VaultTools';
 import {
-  ChatMessage,
   ChatOptions,
   ChatRequestOptions,
   ChatResponse,
@@ -22,7 +21,6 @@ import {
 } from '../types';
 import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { toTitleCase } from '../utils/toTitleCase';
 import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
 import { ChatSession } from './ChatSession';
 import { LLMService } from './LLMService';
@@ -51,8 +49,8 @@ import { ToolExecutor } from './ToolExecutor';
  */
 export class PureChatLLMChat {
   // Internal domain objects
-  private session: ChatSession;
-  private adapter: ChatMarkdownAdapter;
+  session: ChatSession;
+  adapter: ChatMarkdownAdapter;
   private toolExecutor: ToolExecutor;
 
   // Keep existing public properties for compatibility
@@ -95,72 +93,6 @@ export class PureChatLLMChat {
     this.toolExecutor = new ToolExecutor(this.toolregistry);
   }
 
-  // Delegate to session for backward compatibility
-  /**
-   *
-   */
-  get options(): ChatOptions {
-    return this.session.options;
-  }
-  /**
-   *
-   */
-  set options(value: ChatOptions) {
-    this.session.options = value;
-  }
-
-  /**
-   *
-   */
-  get messages(): ChatMessage[] {
-    return this.session.messages;
-  }
-  /**
-   *
-   */
-  set messages(value: ChatMessage[]) {
-    this.session.messages = value;
-  }
-
-  /**
-   *
-   */
-  get clines(): EditorRange[] {
-    return this.session.clines;
-  }
-  /**
-   *
-   */
-  set clines(value: EditorRange[]) {
-    this.session.clines = value;
-  }
-
-  /**
-   *
-   */
-  get pretext(): string {
-    return this.session.pretext;
-  }
-  /**
-   *
-   */
-  set pretext(value: string) {
-    this.session.pretext = value;
-  }
-
-  /**
-   *
-   */
-  get validChat(): boolean {
-    return this.session.validChat;
-  }
-  /**
-   *
-   */
-  set validChat(value: boolean) {
-    this.session.validChat = value;
-  }
-
   /**
    *
    */
@@ -193,8 +125,44 @@ export class PureChatLLMChat {
    * @returns {string} A Markdown-formatted string containing the JSON representation
    * of the chat options and the chat text.
    */
-  get markdown(): string {
+  getMarkdown(): string {
     return this.adapter.serialize(this.session);
+  }
+
+  /**
+   *
+   */
+  updateEndpointFromModel() {
+    const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
+    const endpointName = Object.keys(ModelsOnEndpoint).find(name =>
+      ModelsOnEndpoint[name].includes(this.session.options.model),
+    );
+    if (endpointName) {
+      this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
+    }
+    return this;
+  }
+
+  /**
+   *
+   * @param classification
+   */
+  isEnabled(classification: string): boolean {
+    if (!this.session.options.tools) return false;
+    if (Array.isArray(this.session.options.tools)) {
+      return this.session.options.tools.some(
+        (t: string) => this.toolregistry.classificationForTool(t) === classification,
+      );
+    }
+    return this.toolregistry.isClassificationEnabled(classification as ToolClassification);
+  }
+
+  /**
+   *
+   */
+  cleanUpChat() {
+    this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
+    return this;
   }
 
   /**
@@ -216,7 +184,8 @@ export class PureChatLLMChat {
    *   corresponding to the message content.
    * - The `options` property is updated if valid JSON is found in the prechat section.
    */
-  set markdown(markdown: string) {
+  setMarkdown(markdown: string) {
+    // make this chainable
     const defaultOptions: ChatOptions = {
       model: this.endpoint.defaultmodel,
       max_completion_tokens: this.plugin.settings.defaultmaxTokens,
@@ -230,53 +199,6 @@ export class PureChatLLMChat {
 
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.updateEndpointFromModel();
-  }
-
-  /**
-   *
-   */
-  updateEndpointFromModel() {
-    const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
-    const endpointName = Object.keys(ModelsOnEndpoint).find(name =>
-      ModelsOnEndpoint[name].includes(this.options.model),
-    );
-    if (endpointName) {
-      this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
-    }
-    return this;
-  }
-
-  /**
-   *
-   * @param classification
-   */
-  isEnabled(classification: string): boolean {
-    if (!this.options.tools) return false;
-    if (Array.isArray(this.options.tools)) {
-      return this.options.tools.some(
-        (t: string) => this.toolregistry.classificationForTool(t) === classification,
-      );
-    }
-    return this.toolregistry.isClassificationEnabled(classification as ToolClassification);
-  }
-
-  /**
-   *
-   */
-  cleanUpChat() {
-    this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
-    return this;
-  }
-
-  /**
-   * Sets the markdown content for the current instance.
-   *
-   * @param markdown - The markdown string to set.
-   * @returns The current instance to allow method chaining.
-   */
-  setMarkdown(markdown: string) {
-    // make this chainable
-    this.markdown = markdown;
     return this;
   }
 
@@ -287,7 +209,7 @@ export class PureChatLLMChat {
    * @returns The current instance of the class for method chaining.
    */
   setModel(modal: string) {
-    this.options.model = modal;
+    this.session.options.model = modal;
     this.updateEndpointFromModel();
     return this;
   }
@@ -340,14 +262,11 @@ export class PureChatLLMChat {
     messages.forEach(message => {
       if (
         this.plugin.settings.autoConcatMessagesFromSameRole &&
-        this.messages[this.messages.length - 1]?.role === message.role
+        this.session.messages[this.session.messages.length - 1]?.role === message.role
       ) {
-        this.messages[this.messages.length - 1].content += message.content;
+        this.session.messages[this.session.messages.length - 1].content += message.content;
       } else {
-        this.session.appendMessage({
-          role: message.role,
-          content: message.content.trim(),
-        });
+        this.session.appendMessage({ role: message.role, content: message.content.trim() });
       }
     });
     return this;
@@ -363,14 +282,11 @@ export class PureChatLLMChat {
    * @param app - The application instance, providing access to necessary utilities and context.
    * @returns A promise that resolves to an object containing the resolved messages with their roles and content.
    */
-  async getChatGPTinstructions(
-    activeFile: TFile,
-    app: App,
-  ): Promise<ChatRequestOptions> {
+  async getChatGPTinstructions(activeFile: TFile, app: App): Promise<ChatRequestOptions> {
     this.file = activeFile;
 
     const messages = await Promise.all(
-      this.messages.map(async ({ role, content }) => ({
+      this.session.messages.map(async ({ role, content }) => ({
         role: role,
         content: await this.resolveContentRecursive(
           content,
@@ -378,7 +294,7 @@ export class PureChatLLMChat {
           app,
           role,
           new Set<string>(),
-          0
+          0,
         ),
       })),
     );
@@ -395,13 +311,13 @@ export class PureChatLLMChat {
       });
     }
 
-    const tools: ToolDefinition[] | undefined = this.options.tools
+    const tools: ToolDefinition[] | undefined = this.session.options.tools
       ?.map(t => this.toolregistry.getTool(t)?.getDefinition())
       .filter(t => t !== undefined);
 
     // return the whole object sent to the API
     return {
-      ...this.options,
+      ...this.session.options,
       messages,
       tools,
     };
@@ -409,7 +325,7 @@ export class PureChatLLMChat {
 
   /**
    * Converts an ArrayBuffer to a base64 string, processing data in chunks to avoid stack overflow
-   * 
+   *
    * @param data - Binary data as ArrayBuffer
    * @returns Base64-encoded string
    */
@@ -428,7 +344,7 @@ export class PureChatLLMChat {
 
   /**
    * Recursively resolves [[links]], images, and audio in content
-   * 
+   *
    * @param markdown - Content to resolve
    * @param activeFile - Current file context
    * @param app - Obsidian app instance
@@ -446,7 +362,7 @@ export class PureChatLLMChat {
     depth: number,
   ): Promise<MediaMessage[] | string> {
     const maxDepth = this.plugin.settings.maxRecursionDepth || 10;
-    
+
     if (depth >= maxDepth) return markdown;
 
     // Match [[link]] patterns - allow whitespace on the line (matches original BlueFileResolver behavior)
@@ -455,19 +371,16 @@ export class PureChatLLMChat {
     if (matches.length === 0) return markdown;
 
     // Check if there is any text outside of the matches
-    const textOutsideMatches = markdown
-      .replace(regex, '')
-      .replace(/---/g, '')
-      .trim();
+    const textOutsideMatches = markdown.replace(regex, '').replace(/---/g, '').trim();
     const hasText = textOutsideMatches.length > 0;
 
     const resolved: MediaMessage[] = await Promise.all(
       matches.map(async ([originalLink, link]) => {
         const { subpath, path } = parseLinktext(link);
         const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
-        
+
         if (!file) return { type: 'text', text: originalLink };
-        
+
         // Cycle detection
         if (visited.has(file.path)) {
           return { type: 'text', text: `[Circular reference: ${file.path}]` };
@@ -480,11 +393,18 @@ export class PureChatLLMChat {
           if (ref) {
             const text = await app.vault.cachedRead(file);
             const sectionContent = text.substring(ref.start.offset, ref.end?.offset).trim();
-            
+
             visited.add(file.path);
-            const resolved = await this.resolveContentRecursive(sectionContent, file, app, role, visited, depth + 1);
+            const resolved = await this.resolveContentRecursive(
+              sectionContent,
+              file,
+              app,
+              role,
+              visited,
+              depth + 1,
+            );
             visited.delete(file.path);
-            
+
             // If section resolves to media array, fall back to original text
             // (section refs are typically used in text context, not for pure media embedding)
             return { type: 'text', text: typeof resolved === 'string' ? resolved : sectionContent };
@@ -493,7 +413,7 @@ export class PureChatLLMChat {
         }
 
         const ext = file.extension.toLowerCase();
-        
+
         // Handle images
         if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
           const data = await app.vault.readBinary(file);
@@ -501,27 +421,34 @@ export class PureChatLLMChat {
           const base64 = this.arrayBufferToBase64(data);
           return { type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } };
         }
-        
+
         // Handle audio
         if (['mp3', 'wav'].includes(ext) && role === 'user') {
           const data = await app.vault.readBinary(file);
           const base64 = this.arrayBufferToBase64(data);
           return {
             type: 'input_audio',
-            input_audio: { data: base64, format: ext as 'wav' | 'mp3' }
+            input_audio: { data: base64, format: ext as 'wav' | 'mp3' },
           };
         }
 
         // Handle text files - recurse
         const content = await app.vault.cachedRead(file);
         visited.add(file.path);
-        const resolvedContent = await this.resolveContentRecursive(content, file, app, role, visited, depth + 1);
+        const resolvedContent = await this.resolveContentRecursive(
+          content,
+          file,
+          app,
+          role,
+          visited,
+          depth + 1,
+        );
         visited.delete(file.path);
-        
+
         // If file resolves to media array, treat as empty text in this context
         // (inline file refs are typically used for text content, not pure media)
         return { type: 'text', text: typeof resolvedContent === 'string' ? resolvedContent : '' };
-      })
+      }),
     );
 
     // If no surrounding text and we have media, return as array
@@ -532,27 +459,27 @@ export class PureChatLLMChat {
     // Combine into single string
     const parts: string[] = [];
     let lastIndex = 0;
-    
+
     for (let i = 0; i < matches.length; i++) {
       const match = matches[i];
       const start = match.index || 0;
-      
+
       if (start > lastIndex) {
         parts.push(markdown.slice(lastIndex, start));
       }
-      
+
       const item = resolved[i];
       if (item.type === 'text') {
         parts.push(item.text || '');
       }
-      
+
       lastIndex = start + match[0].length;
     }
-    
+
     if (lastIndex < markdown.length) {
       parts.push(markdown.slice(lastIndex));
     }
-    
+
     return parts.join('');
   }
 
@@ -575,26 +502,27 @@ export class PureChatLLMChat {
       return Promise.resolve({ role: 'assistant', content: '' });
     }
     // Remove trailing empty message if present
-    if (!this.messages[this.messages.length - 1]?.content.trim()) {
-      this.messages.pop();
+    if (!this.session.messages[this.session.messages.length - 1]?.content.trim()) {
+      this.session.messages.pop();
     }
     this.file = this.file || this.plugin.app.workspace.getActiveFile();
 
     if (this.plugin.settings.resolveFilesForChatAnalysis) {
-      this.messages = await Promise.all(
-        this.messages.map(async ({ role, content }) => {
+      this.session.messages = await Promise.all(
+        this.session.messages.map(async ({ role, content }) => {
           const resolved = await this.resolveContentRecursive(
             content,
             this.file,
             this.plugin.app,
             role,
             new Set<string>(),
-            0
+            0,
           );
           // Convert to string if it's a MediaMessage array (flatten to text representation)
-          const resolvedContent = typeof resolved === 'string' 
-            ? resolved 
-            : resolved.map(m => m.type === 'text' ? m.text : `[${m.type}]`).join('');
+          const resolvedContent =
+            typeof resolved === 'string'
+              ? resolved
+              : resolved.map(m => (m.type === 'text' ? m.text : `[${m.type}]`)).join('');
           return { role, content: resolvedContent };
         }),
       );
@@ -607,7 +535,7 @@ export class PureChatLLMChat {
       { role: 'user', content: templatePrompt },
     ];
 
-    const options = { ...this.options, messages };
+    const options = { ...this.session.options, messages };
     delete options.tools;
     return this.sendChatRequest(options as ChatRequestOptions).then(r => ({
       role: 'assistant',
@@ -637,7 +565,7 @@ export class PureChatLLMChat {
     }
     this.initSelectionResponse(templatePrompt, selectedText, fileText);
 
-    const options = { ...this.options, messages: this.messages };
+    const options = { ...this.session.options, messages: this.session.messages };
     delete options.tools;
 
     return this.sendChatRequest(options as ChatRequestOptions).then(r => ({
@@ -647,7 +575,7 @@ export class PureChatLLMChat {
   }
 
   initSelectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
-    this.messages = [
+    this.session.messages = [
       {
         role: 'system',
         content: `${Selectionsysprompt}${
@@ -660,7 +588,7 @@ export class PureChatLLMChat {
       { role: 'user', content: templatePrompt },
     ];
 
-    this.options.tools = [];
+    this.session.options.tools = [];
     return this;
   }
 
@@ -697,8 +625,8 @@ export class PureChatLLMChat {
         });
         // Add the model to the endpoint's model list if not already present
         const models = (this.plugin.settings.ModelsOnEndpoint[this.endpoint.name] ??= []);
-        if (!models.includes(this.options.model)) {
-          models.push(this.options.model);
+        if (!models.includes(this.session.options.model)) {
+          models.push(this.session.options.model);
           void this.plugin.saveSettings();
         }
         return this;
@@ -860,22 +788,7 @@ export class PureChatLLMChat {
    * @returns {string} A formatted string containing all chat messages.
    */
   get chatText(): string {
-    return this.session.getChatText(role => this.parseRole(role));
-  }
-
-  /**
-   *
-   * @param role
-   */
-  parseRole(role: RoleType): string {
-    return (JSON.parse(`"${this.parser}"`) as string).replace(/{role}/g, toTitleCase(role));
-  }
-
-  /**
-   *
-   */
-  get regexForRoles() {
-    return this.adapter.regexForRoles;
+    return this.session.getChatText(role => this.adapter.parseRole(role));
   }
 
   /**
