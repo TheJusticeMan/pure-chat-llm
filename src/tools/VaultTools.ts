@@ -29,15 +29,25 @@ const readNoteSectionParameters = defineToolParameters({
 
 type ReadNoteSectionArgs = InferArgs<typeof readNoteSectionParameters>;
 
+/**
+ *
+ */
 export class ReadNoteSectionTool extends Tool<ReadNoteSectionArgs> {
   readonly name = 'read_note_section';
   readonly classification = 'Vault';
   readonly description =
     'Reads content from an Obsidian note using wiki link format with support for sections, headers, and block references. Can return outline structure with headings_only mode.';
   readonly parameters = readNoteSectionParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: ReadNoteSectionArgs): Promise<string> {
     const { link, headings_only = false, depth = 6 } = args;
     const app = this.chat.plugin.app;
@@ -121,15 +131,25 @@ const writeNoteSectionParameters = defineToolParameters({
 
 type WriteNoteSectionArgs = InferArgs<typeof writeNoteSectionParameters>;
 
+/**
+ *
+ */
 export class WriteNoteSectionTool extends Tool<WriteNoteSectionArgs> {
   readonly name = 'write_note_section';
   readonly classification = 'Vault';
   readonly description =
     'Writes content to a note or a specific section using WikiLink syntax. Can create new notes or modify existing ones.';
   readonly parameters = writeNoteSectionParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: WriteNoteSectionArgs): Promise<string> {
     const { link, content, mode, properties } = args;
     const app = this.chat.plugin.app;
@@ -229,14 +249,24 @@ const backlinksParameters = defineToolParameters({
 
 type BacklinksArgs = InferArgs<typeof backlinksParameters>;
 
+/**
+ *
+ */
 export class BacklinksTool extends Tool<BacklinksArgs> {
   readonly name = 'get_backlinks';
   readonly classification = 'Vault';
   readonly description = 'Finds all notes that link to a specific note (backlinks).';
   readonly parameters = backlinksParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: BacklinksArgs): Promise<string> {
     const app = this.chat.plugin.app;
     const normalizedPath = normalizePath(args.path);

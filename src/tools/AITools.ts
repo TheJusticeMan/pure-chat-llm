@@ -28,6 +28,9 @@ const imageGenerationParameters = defineToolParameters({
 
 type ImageGenerationArgs = InferArgs<typeof imageGenerationParameters>;
 
+/**
+ *
+ */
 export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   readonly name = 'generate_image';
   readonly classification = 'AI';
@@ -35,11 +38,18 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   readonly description = 'Create high-quality, customized images from detailed Markdown prompts.';
   readonly parameters = imageGenerationParameters;
 
+  /**
+   *
+   */
   isAvailable() {
     const { name } = this.chat.plugin.settings.endpoints[this.chat.plugin.settings.endpoint];
     return name === 'OpenAI' || name === 'xAI';
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: ImageGenerationArgs): Promise<string> {
     const { prompt, ratio = 'square', n = 1 } = args;
     if (prompt.length > 4000) return 'Error: prompt exceeds 4,000 character limit.';
@@ -69,6 +79,13 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
     }
   }
 
+  /**
+   *
+   * @param root0
+   * @param root0.prompt
+   * @param root0.ratio
+   * @param root0.n
+   */
   private async sendRequest({
     prompt,
     ratio = 'square',
@@ -154,12 +171,18 @@ const smartConnParameters = defineToolParameters({
 
 type SmartConnectionsArgs = InferArgs<typeof smartConnParameters>;
 
+/**
+ *
+ */
 export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
   readonly name = 'smart_connections_rag';
   readonly classification = 'AI';
   readonly description = 'Performs a semantic search across the vault using Smart Connections.';
   readonly parameters = smartConnParameters;
 
+  /**
+   *
+   */
   isAvailable() {
     const plugin = this.chat.plugin.app.plugins.getPlugin(
       'smart-connections',
@@ -167,6 +190,10 @@ export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
     return !!plugin && (!!plugin.env || !!plugin.smart_env);
   }
 
+  /**
+   *
+   * @param args
+   */
   async execute(args: SmartConnectionsArgs): Promise<string> {
     const { query, limit = 5, type = 'blocks' } = args;
     const plugin = this.chat.plugin.app.plugins.getPlugin(

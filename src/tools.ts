@@ -283,6 +283,16 @@ export class ToolRegistry {
     }
   }
 
+  /**
+   *
+   * @param toolCalls
+   * @param session
+   * @param options
+   * @param assistantMessage
+   * @param assistantMessage.role
+   * @param assistantMessage.content
+   * @param assistantMessage.tool_calls
+   */
   async executeToolCalls(
     toolCalls: ToolCall[],
     session: ChatSession,
@@ -327,6 +337,10 @@ export class ToolRegistry {
     return hasExecutedAnyTool;
   }
 
+  /**
+   *
+   * @param msgs
+   */
   filterOutUncalledToolCalls(
     msgs: {
       role: RoleType;
@@ -349,6 +363,10 @@ export class ToolRegistry {
     return [agent, ...responses];
   }
 
+  /**
+   *
+   * @param args
+   */
   private fixDuplicatedArguments(args: string): string {
     try {
       JSON.parse(args);

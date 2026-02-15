@@ -32,14 +32,24 @@ const globFilesParameters = defineToolParameters({
 
 type GlobFilesArgs = InferArgs<typeof globFilesParameters>;
 
+/**
+ *
+ */
 export class GlobFilesTool extends Tool<GlobFilesArgs> {
   readonly name = 'glob_vault_files';
   readonly classification = 'Vault';
   readonly description = 'Searches the vault for file paths matching a specific glob pattern.';
   readonly parameters = globFilesParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: GlobFilesArgs): Promise<string> {
     const { pattern, include_fields = ['path'], limit = 100 } = args;
     const app = this.chat.plugin.app;
@@ -102,14 +112,24 @@ const listFoldersParameters = defineToolParameters({
 
 type ListFoldersArgs = InferArgs<typeof listFoldersParameters>;
 
+/**
+ *
+ */
 export class ListFoldersTool extends Tool<ListFoldersArgs> {
   readonly name = 'list_vault_folders';
   readonly classification = 'Vault';
   readonly description = 'Lists folders in the vault to understand the directory structure.';
   readonly parameters = listFoldersParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: ListFoldersArgs): Promise<string> {
     const { path = '/', recursive = false } = args;
     const app = this.chat.plugin.app;
@@ -171,14 +191,24 @@ const searchVaultParameters = defineToolParameters({
 
 type SearchVaultArgs = InferArgs<typeof searchVaultParameters>;
 
+/**
+ *
+ */
 export class SearchVaultTool extends Tool<SearchVaultArgs> {
   readonly name = 'search_vault';
   readonly classification = 'Vault';
   readonly description = 'Performs a content search with boolean logic across all markdown notes.';
   readonly parameters = searchVaultParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: SearchVaultArgs): Promise<string> {
     const { query, regex = false, limit = 20, context_lines = 1 } = args;
     const app = this.chat.plugin.app;

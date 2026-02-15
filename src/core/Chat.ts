@@ -539,6 +539,12 @@ export class PureChatLLMChat {
     }));
   }
 
+  /**
+   *
+   * @param templatePrompt
+   * @param selectedText
+   * @param fileText
+   */
   initSelectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
     this.session.messages = [
       {
@@ -725,6 +731,11 @@ export class PureChatLLMChat {
   }
 }
 
+/**
+ *
+ * @param plugin
+ * @param writeHandler
+ */
 export async function completeChatResponse(plugin: PureChatLLM, writeHandler: WriteHandler) {
   const editorcontent = await writeHandler.getValue();
 
@@ -773,6 +784,11 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
   return chat;
 }
 
+/**
+ *
+ * @param plugin
+ * @param writeHandler
+ */
 export async function generateTitle(plugin: PureChatLLM, writeHandler: WriteHandler) {
   const activeFile = writeHandler.file;
   if (activeFile)

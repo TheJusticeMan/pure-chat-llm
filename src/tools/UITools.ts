@@ -16,14 +16,24 @@ const activeContextParameters = defineToolParameters({
 
 type ActiveContextArgs = InferArgs<typeof activeContextParameters>;
 
+/**
+ *
+ */
 export class ActiveContextTool extends Tool<ActiveContextArgs> {
   readonly name = 'get_active_context';
   readonly classification = 'UI';
   readonly description = 'Retrieves info about the active note (path, selection, cursor).';
   readonly parameters = activeContextParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: ActiveContextArgs): Promise<string> {
     const view = this.chat.plugin.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view || !view.file) return 'No active Markdown note found.';
@@ -58,14 +68,24 @@ const manageWorkspaceParameters = defineToolParameters({
 
 type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
 
+/**
+ *
+ */
 export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
   readonly name = 'manage_workspace';
   readonly classification = 'UI';
   readonly description = 'Controls the Obsidian workspace (open/close tabs, split panes).';
   readonly parameters = manageWorkspaceParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: ManageWorkspaceArgs): Promise<string> {
     const { action, path, split = 'none', new_leaf = true, mode, active = true } = args;
     const app = this.chat.plugin.app;
@@ -127,14 +147,24 @@ const showNoticeParameters = defineToolParameters({
 
 type ShowNoticeArgs = InferArgs<typeof showNoticeParameters>;
 
+/**
+ *
+ */
 export class ShowNoticeTool extends Tool<ShowNoticeArgs> {
   readonly name = 'show_obsidian_notice';
   readonly classification = 'UI';
   readonly description = 'Displays a toast notification.';
   readonly parameters = showNoticeParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: ShowNoticeArgs): Promise<string> {
     new Notice(args.message, args.duration ?? 5000);
     return `Displayed notice: "${args.message}"`;

@@ -43,6 +43,10 @@ export class CodePreview extends ItemView {
     return 'Code preview';
   }
 
+  /**
+   *
+   * @param state
+   */
   setEphemeralState(state: CodeSnippetState) {
     this.renderCodePreview(state);
     this.state = state;

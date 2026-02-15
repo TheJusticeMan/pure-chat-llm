@@ -343,6 +343,16 @@ export class PureChatLLMSideView extends ItemView {
     });
   }
 
+  /**
+   *
+   * @param contain
+   * @param message
+   * @param editor
+   * @param chat
+   * @param index
+   * @param preview
+   * @param view
+   */
   private renderMessageContainer(
     contain: HTMLDivElement,
     message: ChatMessage,

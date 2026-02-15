@@ -42,14 +42,24 @@ const pluginSettingsParameters = defineToolParameters({
 
 type PluginSettingsArgs = InferArgs<typeof pluginSettingsParameters>;
 
+/**
+ *
+ */
 export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   readonly name = 'manage_plugin_settings';
   readonly classification = 'System';
   readonly description = 'Reads or updates plugin settings. Updates require confirmation.';
   readonly parameters = pluginSettingsParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: PluginSettingsArgs): Promise<string> {
     const { action, key, value } = args;
     const settings = this.chat.plugin.settings as unknown as Record<string, unknown>;
@@ -98,7 +108,18 @@ export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   }
 }
 
+/**
+ *
+ */
 class SettingsConfirmationModal extends Modal {
+  /**
+   *
+   * @param app
+   * @param key
+   * @param oldVal
+   * @param newVal
+   * @param onResolve
+   */
   constructor(
     app: App,
     public key: string,
@@ -108,6 +129,9 @@ class SettingsConfirmationModal extends Modal {
   ) {
     super(app);
   }
+  /**
+   *
+   */
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
@@ -134,6 +158,9 @@ class SettingsConfirmationModal extends Modal {
         }),
       );
   }
+  /**
+   *
+   */
   onClose() {
     /* handled */
   }
@@ -152,14 +179,24 @@ const templatesParameters = defineToolParameters({
 
 type TemplatesArgs = InferArgs<typeof templatesParameters>;
 
+/**
+ *
+ */
 export class TemplatesTool extends Tool<TemplatesArgs> {
   readonly name = 'manage_templates';
   readonly classification = 'System';
   readonly description = 'Lists and applies Obsidian templates.';
   readonly parameters = templatesParameters;
+  /**
+   *
+   */
   isAvailable() {
     return true;
   }
+  /**
+   *
+   * @param args
+   */
   async execute(args: TemplatesArgs): Promise<string> {
     const { action, template_path, target_path } = args;
     if (action === 'list') return await this.listTemplates();
@@ -170,6 +207,9 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
     return 'Invalid action';
   }
 
+  /**
+   *
+   */
   private async listTemplates(): Promise<string> {
     const app = this.chat.plugin.app;
     let folderPath = app.internalPlugins.getPluginById('templates')?.instance.options.folder;
@@ -204,6 +244,11 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
       : `No templates in "${folderPath}".`;
   }
 
+  /**
+   *
+   * @param templatePath
+   * @param targetPath
+   */
   private async applyTemplate(templatePath: string, targetPath: string): Promise<string> {
     const app = this.chat.plugin.app;
     const tPath = normalizePath(templatePath);

@@ -121,6 +121,11 @@ export class CodeAreaComponent extends TextAreaComponent {
   }
 }
 
+/**
+ *
+ * @param plugin
+ * @param selection
+ */
 export async function editWand(plugin: PureChatLLM, selection: string) {
   await plugin.app.workspace
     .getLeaf('split')

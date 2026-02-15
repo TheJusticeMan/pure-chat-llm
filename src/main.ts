@@ -489,6 +489,10 @@ export default class PureChatLLM extends Plugin {
     if (leaf) await workspace.revealLeaf(leaf);
   }
 
+  /**
+   *
+   * @param state
+   */
   async openCodePreview(state: CodeSnippetState) {
     const leaves = this.app.workspace.getLeavesOfType(CODE_PREVIEW_VIEW_TYPE);
     if (leaves.length === 0) {
@@ -504,6 +508,10 @@ export default class PureChatLLM extends Plugin {
     this.updateCodePreview(state);
   }
 
+  /**
+   *
+   * @param state
+   */
   updateCodePreview(state: CodeSnippetState) {
     this.codeBlock = state;
     this.app.workspace.getLeavesOfType(CODE_PREVIEW_VIEW_TYPE)[0]?.setEphemeralState(state);

@@ -754,18 +754,35 @@ class SelectionPromptEditor extends Modal {
     void this.plugin.saveSettings();
   }
 }
+/**
+ *
+ */
 class FileInputSuggest extends AbstractInputSuggest<TFile> {
   files: TFile[];
+  /**
+   *
+   * @param app
+   * @param inputEl
+   */
   constructor(app: App, inputEl: HTMLInputElement) {
     super(app, inputEl);
     this.files = app.vault.getMarkdownFiles();
   }
 
+  /**
+   *
+   * @param query
+   */
   protected getSuggestions(query: string): TFile[] | Promise<TFile[]> {
     if (!query) return [];
     return this.files.filter(file => file.path.toLowerCase().includes(query.toLowerCase()));
   }
 
+  /**
+   *
+   * @param value
+   * @param el
+   */
   renderSuggestion(value: TFile, el: HTMLElement): void {
     el.setText(value.path);
   }
@@ -801,6 +818,11 @@ function getObjectFromMarkdown(
  * @param level
  */
 
+/**
+ *
+ * @param obj
+ * @param level
+ */
 function getMarkdownFromObject(
   obj: Record<string, string | Record<string, string | object>>,
   level = 1,
