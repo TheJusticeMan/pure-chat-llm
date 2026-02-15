@@ -43,7 +43,7 @@ const pluginSettingsParameters = defineToolParameters({
 type PluginSettingsArgs = InferArgs<typeof pluginSettingsParameters>;
 
 /**
- *
+ * Tool to read or update plugin settings with user confirmation
  */
 export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   readonly name = 'manage_plugin_settings';
@@ -51,14 +51,16 @@ export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   readonly description = 'Reads or updates plugin settings. Updates require confirmation.';
   readonly parameters = pluginSettingsParameters;
   /**
-   *
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
    */
   isAvailable() {
     return true;
   }
   /**
-   *
-   * @param args
+   * Reads or updates plugin settings with confirmation modal for updates
+   * @param args - The arguments containing action (read/update), key, and optional value
+   * @returns A formatted string with current settings or update confirmation
    */
   async execute(args: PluginSettingsArgs): Promise<string> {
     const { action, key, value } = args;
@@ -113,12 +115,12 @@ export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
  */
 class SettingsConfirmationModal extends Modal {
   /**
-   *
-   * @param app
-   * @param key
-   * @param oldVal
-   * @param newVal
-   * @param onResolve
+   * Creates a settings confirmation modal
+   * @param app - The Obsidian App instance
+   * @param key - The setting key being changed
+   * @param oldVal - The current value of the setting
+   * @param newVal - The proposed new value for the setting
+   * @param onResolve - Callback function to handle user's confirmation decision
    */
   constructor(
     app: App,
@@ -130,7 +132,7 @@ class SettingsConfirmationModal extends Modal {
     super(app);
   }
   /**
-   *
+   * Opens the modal and displays the setting change confirmation UI
    */
   onOpen() {
     const { contentEl } = this;
@@ -159,7 +161,7 @@ class SettingsConfirmationModal extends Modal {
       );
   }
   /**
-   *
+   * Closes the modal when it's being dismissed
    */
   onClose() {
     /* handled */
@@ -180,7 +182,7 @@ const templatesParameters = defineToolParameters({
 type TemplatesArgs = InferArgs<typeof templatesParameters>;
 
 /**
- *
+ * Tool to list and apply Obsidian templates
  */
 export class TemplatesTool extends Tool<TemplatesArgs> {
   readonly name = 'manage_templates';
@@ -188,14 +190,16 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
   readonly description = 'Lists and applies Obsidian templates.';
   readonly parameters = templatesParameters;
   /**
-   *
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
    */
   isAvailable() {
     return true;
   }
   /**
-   *
-   * @param args
+   * Lists available templates or applies a template to a target file
+   * @param args - The arguments containing action (list/apply), template_path, and target_path
+   * @returns A formatted string with template list or application result
    */
   async execute(args: TemplatesArgs): Promise<string> {
     const { action, template_path, target_path } = args;
@@ -208,7 +212,8 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
   }
 
   /**
-   *
+   * Lists all available templates from the templates folder
+   * @returns A formatted string with available template paths
    */
   private async listTemplates(): Promise<string> {
     const app = this.chat.plugin.app;
@@ -245,9 +250,10 @@ export class TemplatesTool extends Tool<TemplatesArgs> {
   }
 
   /**
-   *
-   * @param templatePath
-   * @param targetPath
+   * Applies a template to a target file by replacing placeholders
+   * @param templatePath - Path to the template file
+   * @param targetPath - Path to the target file where template will be applied
+   * @returns A confirmation message or error if template not found
    */
   private async applyTemplate(templatePath: string, targetPath: string): Promise<string> {
     const app = this.chat.plugin.app;
