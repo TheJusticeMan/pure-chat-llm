@@ -40,7 +40,7 @@ const pluginSettingsParameters = defineToolParameters({
   required: ['action'],
 } as const);
 
- type PluginSettingsArgs = InferArgs<typeof pluginSettingsParameters>;
+type PluginSettingsArgs = InferArgs<typeof pluginSettingsParameters>;
 
 export class PluginSettingsTool extends Tool<PluginSettingsArgs> {
   readonly name = 'manage_plugin_settings';
@@ -150,7 +150,7 @@ const templatesParameters = defineToolParameters({
   required: ['action'],
 } as const);
 
- type TemplatesArgs = InferArgs<typeof templatesParameters>;
+type TemplatesArgs = InferArgs<typeof templatesParameters>;
 
 export class TemplatesTool extends Tool<TemplatesArgs> {
   readonly name = 'manage_templates';
