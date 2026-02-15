@@ -51,14 +51,14 @@ Pure Chat LLM includes **13 sophisticated tools** that enable AI to work with yo
 - **Manage settings** with confirmation modals for safety
 - **Apply templates** programmatically with placeholder replacement
 
-#### [CONTROLS] Workspace Management
+#### [@] Workspace Management
 - **Get active context**: Current file, cursor position, selection
 - **Manage workspace**: Open/close tabs with split pane options
 - **Show notices**: Display toast notifications
 
 > **Agent Mode** must be enabled in settings to allow AI autonomous tool access during conversations.
 
-### [CHAT] Chat Features
+### :) Chat Features
 
 - **Inline conversations**: Transform any note into a chat interface
 - **Multiple AI providers**: Switch between OpenAI, Gemini, xAI, Anthropic, and more
@@ -78,7 +78,7 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 - **High-quality audio**: Echo cancellation, noise suppression, auto-gain control
 - **Provider extensibility**: Designed to support multiple voice providers
 
-### [LOCK] Safety & Privacy
+### [#] Safety & Privacy
 
 - **Explicit approval**: All file writes and settings changes require user confirmation
 - **Visual diff modals**: See exactly what will change before accepting
@@ -213,7 +213,7 @@ For voice call support:
 
 ---
 
-## [BOOK] Usage Examples
+## [=] Usage Examples
 
 ### Example 1: Research Assistant
 
@@ -333,13 +333,13 @@ Real-time voice conversations with optional tool access:
 |  Status: Connected                   |
 |  Agent Mode: Enabled                 |
 |                                      |
-|  [[MUTE] Mute]  [[PHONE] End Call]           |
+|  [[~] Mute]  [[@] End Call]           |
 +-------------------------------------+
 ```
 
 ---
 
-## [WRENCH] Troubleshooting
+## [+] Troubleshooting
 
 ### Chat Issues
 
@@ -379,7 +379,7 @@ Real-time voice conversations with optional tool access:
 
 ---
 
-## [BUILD] Architecture
+## [^] Architecture
 
 ### v2.0.0 Improvements
 
@@ -401,7 +401,7 @@ Pure Chat LLM v2.0.0 represents a major architectural refactoring:
 
 ---
 
-## [HANDSHAKE] Contributing
+## [&] Contributing
 
 Contributions are welcome! Please:
 
@@ -446,13 +446,13 @@ npm run knip
 
 ---
 
-## [PAGE] License
+## [=] License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## [CLAP] Credits
+## (*) Credits
 
 **Author**: Justice Vellacott  
 **Website**: [thejusticeman.github.io](https://thejusticeman.github.io/)
@@ -478,6 +478,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 **Star (*) this repository if you find it helpful!**
 
-Made with [HEART] for the Obsidian community
+Made with <3 for the Obsidian community
 
 </div>
