@@ -27,7 +27,7 @@ const readNoteSectionParameters = defineToolParameters({
   required: ['link'],
 } as const);
 
-export type ReadNoteSectionArgs = InferArgs<typeof readNoteSectionParameters>;
+type ReadNoteSectionArgs = InferArgs<typeof readNoteSectionParameters>;
 
 export class ReadNoteSectionTool extends Tool<ReadNoteSectionArgs> {
   readonly name = 'read_note_section';
@@ -119,7 +119,7 @@ const writeNoteSectionParameters = defineToolParameters({
   required: ['link', 'content'],
 } as const);
 
-export type WriteNoteSectionArgs = InferArgs<typeof writeNoteSectionParameters>;
+type WriteNoteSectionArgs = InferArgs<typeof writeNoteSectionParameters>;
 
 export class WriteNoteSectionTool extends Tool<WriteNoteSectionArgs> {
   readonly name = 'write_note_section';
@@ -227,7 +227,7 @@ const backlinksParameters = defineToolParameters({
   required: ['path'],
 } as const);
 
-export type BacklinksArgs = InferArgs<typeof backlinksParameters>;
+type BacklinksArgs = InferArgs<typeof backlinksParameters>;
 
 export class BacklinksTool extends Tool<BacklinksArgs> {
   readonly name = 'get_backlinks';

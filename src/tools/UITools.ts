@@ -14,7 +14,7 @@ const activeContextParameters = defineToolParameters({
   required: [],
 } as const);
 
-export type ActiveContextArgs = InferArgs<typeof activeContextParameters>;
+ type ActiveContextArgs = InferArgs<typeof activeContextParameters>;
 
 export class ActiveContextTool extends Tool<ActiveContextArgs> {
   readonly name = 'get_active_context';
@@ -56,7 +56,7 @@ const manageWorkspaceParameters = defineToolParameters({
   required: ['action'],
 } as const);
 
-export type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
+ type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
 
 export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
   readonly name = 'manage_workspace';
@@ -125,7 +125,7 @@ const showNoticeParameters = defineToolParameters({
   required: ['message'],
 } as const);
 
-export type ShowNoticeArgs = InferArgs<typeof showNoticeParameters>;
+ type ShowNoticeArgs = InferArgs<typeof showNoticeParameters>;
 
 export class ShowNoticeTool extends Tool<ShowNoticeArgs> {
   readonly name = 'show_obsidian_notice';

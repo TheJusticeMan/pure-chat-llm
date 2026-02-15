@@ -561,7 +561,7 @@ function loadAllModels(plugin: PureChatLLM): void {
  *
  * @extends Modal
  */
-export class SelectionPromptEditor extends Modal {
+class SelectionPromptEditor extends Modal {
   /**
    * Description placeholder
    *
@@ -754,7 +754,7 @@ export class SelectionPromptEditor extends Modal {
     void this.plugin.saveSettings();
   }
 }
-export class FileInputSuggest extends AbstractInputSuggest<TFile> {
+class FileInputSuggest extends AbstractInputSuggest<TFile> {
   files: TFile[];
   constructor(app: App, inputEl: HTMLInputElement) {
     super(app, inputEl);
@@ -776,7 +776,7 @@ export class FileInputSuggest extends AbstractInputSuggest<TFile> {
  * @param level
  * @param maxlevel
  */
-export function getObjectFromMarkdown(
+function getObjectFromMarkdown(
   rawMarkdown: string,
   level = 1,
   maxlevel = 6,
@@ -801,7 +801,7 @@ export function getObjectFromMarkdown(
  * @param level
  */
 
-export function getMarkdownFromObject(
+function getMarkdownFromObject(
   obj: Record<string, string | Record<string, string | object>>,
   level = 1,
 ): string {

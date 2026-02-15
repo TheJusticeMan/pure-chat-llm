@@ -30,7 +30,7 @@ const globFilesParameters = defineToolParameters({
   required: ['pattern'],
 } as const);
 
-export type GlobFilesArgs = InferArgs<typeof globFilesParameters>;
+ type GlobFilesArgs = InferArgs<typeof globFilesParameters>;
 
 export class GlobFilesTool extends Tool<GlobFilesArgs> {
   readonly name = 'glob_vault_files';
@@ -100,7 +100,7 @@ const listFoldersParameters = defineToolParameters({
   required: [],
 } as const);
 
-export type ListFoldersArgs = InferArgs<typeof listFoldersParameters>;
+ type ListFoldersArgs = InferArgs<typeof listFoldersParameters>;
 
 export class ListFoldersTool extends Tool<ListFoldersArgs> {
   readonly name = 'list_vault_folders';
@@ -169,7 +169,7 @@ const searchVaultParameters = defineToolParameters({
   required: ['query'],
 } as const);
 
-export type SearchVaultArgs = InferArgs<typeof searchVaultParameters>;
+ type SearchVaultArgs = InferArgs<typeof searchVaultParameters>;
 
 export class SearchVaultTool extends Tool<SearchVaultArgs> {
   readonly name = 'search_vault';

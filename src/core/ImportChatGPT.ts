@@ -240,7 +240,7 @@ export class ImportChatGPT {
  * @param onSubmit - Callback invoked when a folder is selected.
  * @param prompt - Optional placeholder text for the search input.
  */
-export class FolderSuggest extends FuzzySuggestModal<TFolder> {
+class FolderSuggest extends FuzzySuggestModal<TFolder> {
   /**
    * Description placeholder
    *

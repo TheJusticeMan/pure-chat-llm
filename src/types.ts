@@ -32,14 +32,6 @@ export interface PureChatLLMAPI {
   getapiKey: string;
 }
 
-export interface ChatParser {
-  name: string;
-  SplitMessages: RegExp;
-  getRole: RegExp;
-  rolePlacement: string;
-  isChat: RegExp;
-}
-
 export const PURE_CHAT_LLM_VIEW_TYPE = 'pure-chat-llm-left-pane';
 export const VOICE_CALL_VIEW_TYPE = 'voice-call-side-view';
 
