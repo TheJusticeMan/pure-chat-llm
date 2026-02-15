@@ -8,7 +8,7 @@
 
 **Transform your Obsidian notes into powerful AI conversations with built-in agent capabilities.**
 
-[Installation](#Installation v) | [Quick Start](#Quick Start >) | [Features](#Features +) | [Documentation](#Documentation i)
+[Installation](#installation-v) | [Quick Start](#quick-start) | [Features](#features) | [Documentation](#documentation-i)
 
 </div>
 
@@ -98,7 +98,7 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 1. Open **Settings** -> **Community Plugins**
 2. Click **Browse** and search for **Pure Chat LLM**
 3. Click **Install**, then **Enable**
-4. Configure your API key (see [Configuration](#Configuration @))
+4. Configure your API key (see [Configuration](#configuration))
 
 ### Manual Installation
 
