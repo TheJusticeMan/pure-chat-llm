@@ -49,10 +49,11 @@ export class PureChatLLMSideView extends ItemView {
   navigation: boolean = false;
 
   /**
+   * Creates a new side view instance.
    *
-   * @param leaf
-   * @param plugin
-   * @param viewText
+   * @param leaf - The workspace leaf to render in
+   * @param plugin - The PureChatLLM plugin instance
+   * @param viewText - The display text for the view
    */
   constructor(
     leaf: WorkspaceLeaf,
@@ -63,21 +64,27 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   /**
+   * Gets the view type identifier.
    *
+   * @returns The view type string
    */
   getViewType() {
     return PURE_CHAT_LLM_VIEW_TYPE;
   }
 
   /**
+   * Gets the display text for the view.
    *
+   * @returns The view display text
    */
   getDisplayText() {
     return this.viewText;
   }
 
   /**
+   * Called when the view is opened. Registers event listeners for editor changes and file operations.
    *
+   * @returns A promise that resolves when initialization is complete
    */
   async onOpen() {
     // when a file is loaded or changed, update the view
@@ -135,7 +142,7 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   /**
-   *
+   * Renders default content when no valid conversation is detected.
    */
   defaultContent() {
     this.contentEl.empty();
@@ -187,9 +194,10 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   /**
+   * Updates the view content based on the current editor and chat state.
    *
-   * @param editor
-   * @param view
+   * @param editor - The active editor instance
+   * @param view - The active markdown view
    */
   update(editor: Editor, view: MarkdownView) {
     //MetadataCache
@@ -321,11 +329,12 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   /**
+   * Renders all chat messages in the conversation view.
    *
-   * @param chat
-   * @param container
-   * @param editor
-   * @param view
+   * @param chat - The chat session to render
+   * @param container - The container element to render into
+   * @param editor - The active editor instance
+   * @param view - The active markdown view
    */
   private renderChatMessages(
     chat: PureChatLLMChat,
@@ -344,14 +353,15 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   /**
+   * Renders a single message container with interactive controls.
    *
-   * @param contain
-   * @param message
-   * @param editor
-   * @param chat
-   * @param index
-   * @param preview
-   * @param view
+   * @param contain - The container div element
+   * @param message - The chat message to render
+   * @param editor - The active editor instance
+   * @param chat - The chat session
+   * @param index - The message index in the conversation
+   * @param preview - The preview text for the message
+   * @param view - The active markdown view
    */
   private renderMessageContainer(
     contain: HTMLDivElement,
@@ -409,10 +419,11 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   /**
+   * Navigates to and optionally selects a position in the editor.
    *
-   * @param editor
-   * @param position
-   * @param select
+   * @param editor - The editor instance to navigate in
+   * @param position - The position range to navigate to
+   * @param select - Whether to select the range (default: false)
    */
   private goToPostion(editor: Editor, position: EditorRange, select = false) {
     if (select) {
@@ -430,7 +441,9 @@ export class PureChatLLMSideView extends ItemView {
   }
 
   /**
+   * Called when the view is closed.
    *
+   * @returns A promise that resolves when cleanup is complete
    */
   async onClose() {
     // Nothing to clean up.
@@ -440,7 +453,7 @@ export class PureChatLLMSideView extends ItemView {
 type ModelAndProvider = { name: string; ismodel: boolean };
 
 /**
- *
+ * Modal for choosing LLM model and provider configurations.
  */
 export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider> {
   items: ModelAndProvider[];
@@ -449,10 +462,11 @@ export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
   firstrun = true;
 
   /**
+   * Creates a new model and provider chooser modal.
    *
-   * @param app
-   * @param plugin
-   * @param editor
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
+   * @param editor - The active editor instance
    */
   constructor(
     app: App,
@@ -471,24 +485,29 @@ export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
   }
 
   /**
+   * Gets the list of available items (providers and models).
    *
+   * @returns Array of model and provider options
    */
   getItems(): ModelAndProvider[] {
     return [...this.items, ...this.modellist];
   }
 
   /**
+   * Gets the display text for a list item.
    *
-   * @param item
+   * @param item - The item to get text for
+   * @returns The display text for the item
    */
   getItemText(item: ModelAndProvider): string {
     return item.name + (item.ismodel ? '' : '       (provider)');
   }
 
   /**
+   * Called when an item is selected from the list.
    *
-   * @param item
-   * @param evt
+   * @param item - The selected item
+   * @param evt - The mouse or keyboard event that triggered the selection
    */
   onChooseItem(item: ModelAndProvider, evt: MouseEvent | KeyboardEvent): void {
     // see if it's a provider or a model
@@ -511,8 +530,10 @@ export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
   }
 
   /**
+   * Updates the model list for a specific endpoint.
    *
-   * @param endpointIndex
+   * @param endpointIndex - The index of the endpoint to load models for
+   * @returns void
    */
   updatemodelist(endpointIndex: number): void {
     this.currentmodel = this.plugin.settings.endpoints[endpointIndex].name;

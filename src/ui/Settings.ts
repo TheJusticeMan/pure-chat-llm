@@ -38,9 +38,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   icon: string = PURE_CHAT_LLM_ICON_NAME;
 
   /**
+   * Creates a new settings tab instance.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(app: App, plugin: PureChatLLM) {
     super(app, plugin);
@@ -48,9 +49,11 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   /**
+   * Updates a specific setting value and saves to storage.
    *
-   * @param key
-   * @param value
+   * @param key - The setting key to update
+   * @param value - The new value for the setting
+   * @returns A promise that resolves when the setting is saved
    */
   async sett<S extends keyof PureChatLLMSettings>(key: S, value: PureChatLLMSettings[S]) {
     this.plugin.settings[key] = value;
@@ -58,8 +61,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   /**
+   * Checks if a setting differs from its default value and returns it as a string.
    *
-   * @param key
+   * @param key - The setting key to check
+   * @returns The setting value as a string if it differs from default, otherwise empty string
    */
   ifdefault<S extends keyof PureChatLLMSettings>(key: S): string {
     const { settings } = this.plugin;
@@ -68,7 +73,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   /**
+   * Displays the settings tab user interface.
    *
+   * Generates all setting controls including model selection, prompts, agent mode,
+   * templates, chat behavior, and utility functions.
    */
   display(): void {
     const {
@@ -532,8 +540,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 }
 
 /**
+ * Loads all available models for all configured endpoints.
  *
- * @param plugin
+ * @param plugin - The PureChatLLM plugin instance
  */
 function loadAllModels(plugin: PureChatLLM): void {
   const currentEndpoint = plugin.settings.endpoint;
@@ -569,9 +578,13 @@ class SelectionPromptEditor extends Modal {
    */
   promptTitle: string;
   /**
+   * Creates a modal for editing prompt templates.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
+   * @param promptTemplates - The prompt templates object to edit
+   * @param defaultTemplates - Default template values for reset functionality
+   * @param inCMD - Object tracking which templates are available in command palette
    */
   constructor(
     app: App,
@@ -585,7 +598,7 @@ class SelectionPromptEditor extends Modal {
     this.update();
   }
   /**
-   *
+   * Updates the modal UI with current template list and editor.
    */
   update() {
     this.contentEl.empty();
@@ -716,8 +729,9 @@ class SelectionPromptEditor extends Modal {
   }
 
   /**
+   * Generates content for a new template using AI assistance.
    *
-   * @param value
+   * @param value - The name of the new template to generate
    */
   private generateTemplateContent(value: string) {
     this.promptTitle = value;
@@ -748,21 +762,22 @@ class SelectionPromptEditor extends Modal {
   }
 
   /**
-   *
+   * Called when the modal is closed. Saves all template changes to settings.
    */
   onClose(): void {
     void this.plugin.saveSettings();
   }
 }
 /**
- *
+ * Input suggest component for file path autocomplete.
  */
 class FileInputSuggest extends AbstractInputSuggest<TFile> {
   files: TFile[];
   /**
+   * Creates a new file input suggest component.
    *
-   * @param app
-   * @param inputEl
+   * @param app - The Obsidian application instance
+   * @param inputEl - The input element to attach suggestions to
    */
   constructor(app: App, inputEl: HTMLInputElement) {
     super(app, inputEl);
@@ -770,8 +785,10 @@ class FileInputSuggest extends AbstractInputSuggest<TFile> {
   }
 
   /**
+   * Filters and returns file suggestions based on the query.
    *
-   * @param query
+   * @param query - The search query string
+   * @returns Array of matching files
    */
   protected getSuggestions(query: string): TFile[] | Promise<TFile[]> {
     if (!query) return [];
@@ -779,19 +796,22 @@ class FileInputSuggest extends AbstractInputSuggest<TFile> {
   }
 
   /**
+   * Renders a single suggestion item in the suggestion list.
    *
-   * @param value
-   * @param el
+   * @param value - The file to render
+   * @param el - The HTML element to render into
    */
   renderSuggestion(value: TFile, el: HTMLElement): void {
     el.setText(value.path);
   }
 }
 /**
+ * Converts a markdown string into a nested object structure based on heading levels.
  *
- * @param rawMarkdown
- * @param level
- * @param maxlevel
+ * @param rawMarkdown - The raw markdown text to parse
+ * @param level - The current heading level to parse
+ * @param maxlevel - The maximum heading level to parse
+ * @returns An object representing the markdown structure
  */
 function getObjectFromMarkdown(
   rawMarkdown: string,
@@ -812,16 +832,14 @@ function getObjectFromMarkdown(
         return [title.trim(), joinedContent.trim()];
       }),
   );
-} /**
- *
- * @param obj
- * @param level
- */
+}
 
 /**
+ * Converts a nested object structure into a markdown string with headings.
  *
- * @param obj
- * @param level
+ * @param obj - The object to convert to markdown
+ * @param level - The current heading level
+ * @returns The markdown representation of the object
  */
 function getMarkdownFromObject(
   obj: Record<string, string | Record<string, string | object>>,

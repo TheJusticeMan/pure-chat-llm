@@ -442,18 +442,16 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
-   * Description placeholder
+   * Activates the chat view in the workspace.
    *
-   * @async
-   * @returns {unknown}
+   * @returns A promise that resolves when the view is activated
    */
   activateChatView = async () => await this.activateView(PURE_CHAT_LLM_VIEW_TYPE, 'right');
 
   /**
-   * Description placeholder
+   * Activates the voice call view in the workspace.
    *
-   * @async
-   * @returns {unknown}
+   * @returns A promise that resolves when the view is activated
    */
   activateVoiceCallView = async () => await this.activateView(VOICE_CALL_VIEW_TYPE, 'right');
 
@@ -490,8 +488,10 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Opens a code preview view with the provided state.
    *
-   * @param state
+   * @param state - The code snippet state to preview
+   * @returns A promise that resolves when the preview is opened
    */
   async openCodePreview(state: CodeSnippetState) {
     const leaves = this.app.workspace.getLeavesOfType(CODE_PREVIEW_VIEW_TYPE);
@@ -509,8 +509,9 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
+   * Updates the code preview view with new state.
    *
-   * @param state
+   * @param state - The code snippet state to update with
    */
   updateCodePreview(state: CodeSnippetState) {
     this.codeBlock = state;
@@ -757,6 +758,9 @@ export default class PureChatLLM extends Plugin {
  * const handler = new InstructPromptsHandler(app, (prompt) => { ... }, templates);
  * handler.open();
  */
+/**
+ * Modal for selecting instruction prompts from predefined templates.
+ */
 class InstructPromptsHandler extends FuzzySuggestModal<string> {
   /**
    * Description placeholder
@@ -771,9 +775,11 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
    */
   templates: { [key: string]: string };
   /**
+   * Creates a new instruction prompts handler modal.
    *
-   * @param app
-   * @param onSubmit
+   * @param app - The Obsidian application instance
+   * @param onSubmit - Callback function to handle selected prompt
+   * @param templates - Object containing template key-value pairs
    */
   constructor(app: App, onSubmit: (result: string) => void, templates: { [key: string]: string }) {
     super(app);
@@ -783,28 +789,29 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
   }
 
   /**
-   * Description placeholder
+   * Gets the list of available template keys.
    *
-   * @returns {string[]}
+   * @returns Array of template keys
    */
   getItems(): string[] {
     return Object.keys(this.templates);
   }
 
   /**
-   * Description placeholder
+   * Gets the display text for a template item.
    *
-   * @param {string} templateKey
-   * @returns {string}
+   * @param templateKey - The template key
+   * @returns The display text for the template
    */
   getItemText(templateKey: string): string {
     return templateKey;
   }
 
   /**
+   * Called when a template is selected from the list.
    *
-   * @param templateKey
-   * @param evt
+   * @param templateKey - The selected template key
+   * @param evt - The mouse or keyboard event that triggered the selection
    */
   onChooseItem(templateKey: string, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(this.templates[templateKey]);
@@ -812,7 +819,10 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
 }
 
 /**
+ * Editor suggest component for auto-completing chat-related syntax.
  *
+ * Provides suggestions for model names, roles, code languages, and the send command
+ * based on the current editor context.
  */
 class PureChatEditorSuggest extends EditorSuggest<string> {
   /**
@@ -828,9 +838,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
    */
   plugin: PureChatLLM;
   /**
+   * Creates a new editor suggest instance.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(app: App, plugin: PureChatLLM) {
     super(app);
@@ -838,11 +849,12 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
+   * Determines if suggestions should be triggered at the current cursor position.
    *
-   * @param cursor
-   * @param editor
-   * @param file
-   * @returns {EditorSuggestTriggerInfo | null}
+   * @param cursor - The current cursor position
+   * @param editor - The editor instance
+   * @param file - The current file (if any)
+   * @returns Trigger info if suggestions should be shown, null otherwise
    */
   onTrigger(
     cursor: EditorPosition,
@@ -861,11 +873,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
-   *
-   * @param context
-   * @returns {string[] | Promise<string[]>}
-   * @description
    * Provides suggestions based on the current query context in the editor.
+   *
+   * @param context - The editor suggest context containing the query
+   * @returns Array of suggestion strings or a promise resolving to suggestions
    */
   getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
     if (context.query === 'send') {
@@ -901,9 +912,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
+   * Renders a suggestion item in the suggestion list.
    *
-   * @param value
-   * @param el
+   * @param value - The suggestion value to render
+   * @param el - The HTML element to render into
    */
   renderSuggestion(value: string, el: HTMLElement): void {
     switch (this.type) {
@@ -923,9 +935,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
+   * Called when a suggestion is selected.
    *
-   * @param value
-   * @param evt
+   * @param value - The selected suggestion value
+   * @param evt - The mouse or keyboard event that triggered the selection
    */
   selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
     if (!this.context) return;

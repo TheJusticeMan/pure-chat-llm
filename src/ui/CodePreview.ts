@@ -12,14 +12,18 @@ export interface CodeSnippetState {
 export const CODE_PREVIEW_VIEW_TYPE = 'pure-chat-llm-code-preview';
 
 /**
+ * View component for displaying code previews in the Obsidian workspace.
  *
+ * Renders code snippets in a preview pane with syntax highlighting or HTML rendering.
+ * For HTML code blocks, renders content in an iframe with restricted permissions.
  */
 export class CodePreview extends ItemView {
   state?: CodeSnippetState;
   /**
+   * Creates a new code preview view instance.
    *
-   * @param leaf
-   * @param plugin
+   * @param leaf - The workspace leaf to render the view in
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(
     leaf: WorkspaceLeaf,
@@ -30,22 +34,27 @@ export class CodePreview extends ItemView {
   }
 
   /**
+   * Gets the unique identifier for this view type.
    *
+   * @returns The view type identifier
    */
   getViewType(): string {
     return CODE_PREVIEW_VIEW_TYPE;
   }
 
   /**
+   * Gets the display text shown in the view header.
    *
+   * @returns The display text for this view
    */
   getDisplayText(): string {
     return 'Code preview';
   }
 
   /**
+   * Sets ephemeral state for the view and renders the code preview.
    *
-   * @param state
+   * @param state - The code snippet state containing code and language
    */
   setEphemeralState(state: CodeSnippetState) {
     this.renderCodePreview(state);
@@ -53,15 +62,18 @@ export class CodePreview extends ItemView {
   }
 
   /**
+   * Called when the view is opened.
    *
+   * @returns A promise that resolves when the view is ready
    */
   async onOpen() {
     //this.renderCodePreview();
   }
 
   /**
+   * Renders the code preview based on the provided state.
    *
-   * @param state
+   * @param state - The code snippet state containing code and language
    */
   private renderCodePreview(state: CodeSnippetState) {
     this.contentEl.empty();
@@ -82,7 +94,9 @@ export class CodePreview extends ItemView {
   }
 
   /**
+   * Called when the view is closed.
    *
+   * @returns A promise that resolves when cleanup is complete
    */
   async onClose() {
     this.contentEl.empty();
@@ -107,8 +121,9 @@ export function createCodeblockExtension(app: App, plugin: PureChatLLM) {
       app: App;
       plugin: PureChatLLM;
       /**
+       * Constructs the ViewPlugin class instance.
        *
-       * @param view
+       * @param view - The CodeMirror EditorView instance
        */
       constructor(private view: EditorView) {
         this.decorations = Decoration.none;
@@ -116,8 +131,9 @@ export function createCodeblockExtension(app: App, plugin: PureChatLLM) {
         this.plugin = plugin;
       }
       /**
+       * Updates the code block detection when the view changes.
        *
-       * @param update
+       * @param update - The view update containing state changes
        */
       update(update: ViewUpdate) {
         syntaxTree(update.view.state).iterate({
