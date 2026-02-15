@@ -24,7 +24,7 @@
 - 📝 **Note-as-Chat**: Transform any note into a conversation—no separate chat windows
 - 🔗 **Deep Integration**: Leverages Obsidian's API for vault operations, workspace management, and more
 - 🛡️ **Safety First**: All destructive operations require explicit user approval via visual diff modals
-- 🚀 **26% Smaller**: Optimized architecture (131KB bundle, down from 178KB in v1.x)
+- 🚀 **38% Smaller**: Optimized architecture (131KB bundle, down from 211KB in v1.x)
 - 🎙️ **Voice Calls**: Real-time voice conversations with tool access via OpenAI Realtime API
 - 🔄 **Multi-Provider**: OpenAI, Gemini, xAI, Anthropic, Cohere, Mistral AI, DeepSeek
 
@@ -385,7 +385,7 @@ Real-time voice conversations with optional tool access:
 
 Pure Chat LLM v2.0.0 represents a major architectural refactoring:
 
-- **26% bundle size reduction** (178KB → 131KB)
+- **38% bundle size reduction** (211KB → 131KB main.js, plus 84% styles.css reduction)
 - **Simplified file resolution**: Removed complex BlueFileResolver system (~70KB) in favor of lightweight recursive resolution
 - **100% JSDoc coverage**: All 26 TypeScript files fully documented
 - **Enhanced type safety**: Improved error handling and type definitions

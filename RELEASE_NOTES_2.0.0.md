@@ -8,7 +8,7 @@ Version 2.0.0 is a major release focused on dramatically improving performance t
 
 ## 📊 Key Metrics
 
-- **Bundle Size**: 26% smaller (178KB → 131KB)
+- **Bundle Size**: 38% smaller (main.js: 211KB → 131KB, styles.css: 14KB → 2.2KB)
 - **Code Reduction**: 3,851 lines removed, 179 lines added
 - **Files Removed**: 13 files (~70KB of complex infrastructure)
 - **Performance**: Faster load times and reduced memory footprint
