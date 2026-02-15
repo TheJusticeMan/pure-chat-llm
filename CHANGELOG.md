@@ -5,17 +5,89 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-02-15
+
+This is a **major release** with breaking changes focused on simplification, performance optimization, and code quality improvements.
+
+### 🎯 Highlights
+
+- **26% Bundle Size Reduction**: From 178KB → 131KB through architectural simplification
+- **Removed Complex Dependencies**: Eliminated ~70KB of BlueFileResolver infrastructure
+- **Added Code Quality Tools**: Integrated Knip for detecting unused code
+- **Improved Type Safety**: Added @typescript-eslint/parser for better linting
 
 ### Changed - BREAKING
 
-- **Replaced BlueFileResolver with Simple Recursive Resolution**: Removed the entire BlueFileResolver architecture (~70KB of code) in favor of a lightweight, built-in recursive file resolution system. This significantly reduces bundle size (from ~178KB to ~140KB) while maintaining core functionality:
-  - Removed files: `BlueFileResolver.ts`, `BlueResolutionTreeView.ts`, `ResolutionGraphRenderer.ts`, `ResolutionTreeRenderer.ts`, and all graph rendering utilities
-  - Removed the Blue Resolution Tree view and associated commands
-  - File resolution now happens directly in the `Chat` class via a new `resolveContentRecursive()` method
-  - Core features preserved: recursive [[link]] resolution, cycle detection, depth limiting, image/audio embedding, section references
-  - Replaced `blueFileResolution` settings with a single `maxRecursionDepth` setting (default: 10)
-  - API change: `getChatGPTinstructions()` and `completeChatResponse()` no longer accept a `context` parameter
+- **Replaced BlueFileResolver with Simple Recursive Resolution**: Removed the entire BlueFileResolver architecture (~70KB of code) in favor of a lightweight, built-in recursive file resolution system. This significantly reduces bundle size while maintaining core functionality:
+  - **Removed files** (13 files total):
+    - `src/core/BlueFileResolver.ts` (34KB)
+    - `src/ui/BlueResolutionTreeView.ts` (21KB)
+    - `src/ui/ResolutionGraphRenderer.ts` (11KB)
+    - `src/ui/ResolutionTreeRenderer.ts` (3KB)
+    - All graph rendering utilities in `src/ui/graph/`
+    - Port and adapter files (`src/ports/`, `src/adapters/`)
+    - `AGENTS/BLUE_FILE_RESOLUTION.md` documentation
+  - **Removed UI components**:
+    - Blue Resolution Tree view
+    - Blue Resolution Graph view
+    - Associated ribbon icon and commands
+  - **New implementation**: File resolution now happens directly in the `Chat` class via a new `resolveContentRecursive()` method with:
+    - Chunked binary encoding for images/audio (prevents stack overflow on large files)
+    - Proper cycle detection using visited Set
+    - Configurable depth limiting (default: 10)
+    - Preserved features: recursive [[link]] resolution, image/audio embedding, section references
+  - **Settings simplified**: Replaced complex `blueFileResolution` object with a single `maxRecursionDepth` number setting
+  - **API changes**:
+    - `getChatGPTinstructions()` no longer accepts a `context` parameter
+    - `completeChatResponse()` no longer accepts a `context` parameter
+  - **Type removals**:
+    - `ResolutionEvent` interface
+    - `ResolutionNodeData` interface
+    - `ResolutionTreeData` interface
+    - `ResolutionStatus` type
+    - `BLUE_RESOLUTION_VIEW_TYPE` constant
+
+### Added
+
+- **Knip Integration**: Added Knip (v5.83.1) for detecting unused files, dependencies, and exports
+  - New `knip` script in package.json: `npm run knip`
+  - Configuration file: `knip.json` with schema reference
+  - Initial analysis identifies potential cleanup opportunities (3 unused files, 1 unlisted dependency, 26 unused exports/types)
+- **Helper Function**: New `arrayBufferToBase64()` method in Chat class for safe chunked binary-to-base64 conversion
+  - Processes data in 8KB chunks to prevent stack overflow
+  - Reusable for both image and audio file handling
+
+### Changed
+
+- **Dependencies Updated**:
+  - Added `@typescript-eslint/parser` v8.55.0 for improved ESLint configuration
+  - Updated `@types/node` from v25.0.2 → v25.2.3
+  - Updated `knip` to v5.83.1
+- **Type Safety Improvements**:
+  - Removed unsafe type assertions in `processChatWithTemplate()`
+  - Added proper MediaMessage array handling with explicit type checks
+  - Improved error handling for edge cases in recursive resolution
+
+### Fixed
+
+- **Stack Overflow Prevention**: Binary data (images/audio) now converted to base64 in 8KB chunks instead of spreading entire arrays
+  - Fixes potential crashes with large media files (multi-megabyte images/audio)
+- **Build Artifacts**: Fixed `.gitignore` to properly exclude `meta.json` build artifact
+
+### Developer Experience
+
+- **Code Quality**: Reduced codebase by 3,851 lines (-3,851 lines, +179 lines for new implementation)
+- **Maintainability**: Simplified architecture makes the codebase easier to understand and maintain
+- **Performance**: Faster load times due to smaller bundle size
+- **Security**: No vulnerabilities found in CodeQL security scan
+
+### Migration Guide
+
+If you were using the Blue Resolution features:
+
+1. **Settings**: The `blueFileResolution` setting is replaced by `maxRecursionDepth` (default: 10)
+2. **Views**: The Blue Resolution Tree view is no longer available - file resolution happens automatically
+3. **API**: If you have custom code calling `getChatGPTinstructions()` or `completeChatResponse()`, remove the `context` parameter
 
 ## [1.12.1] - 2026-02-09
 
