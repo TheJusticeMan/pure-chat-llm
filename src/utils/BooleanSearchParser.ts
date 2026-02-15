@@ -12,12 +12,13 @@ export interface ParsedQuery {
 }
 
 /**
- *
+ * Boolean search query parser with support for AND, OR, NOT operators
  */
 export class BooleanSearchParser {
   /**
    * Parse a boolean search query into an AST
-   * @param query
+   * @param query - The search query string to parse
+   * @returns Parsed query tree structure
    */
   static parse(query: string): ParsedQuery {
     // Simple approach: split by OR first, then handle AND/NOT
@@ -74,8 +75,9 @@ export class BooleanSearchParser {
 
   /**
    * Split string by operator but only at top level (outside quotes)
-   * @param query
-   * @param operator
+   * @param query - The query string to split
+   * @param operator - The operator to split by (AND, OR, NOT)
+   * @returns Array of query parts split by the operator
    */
   private static splitTopLevel(query: string, operator: string): string[] {
     const parts: string[] = [];
@@ -126,8 +128,9 @@ export class BooleanSearchParser {
 
   /**
    * Evaluate parsed query against text
-   * @param node
-   * @param text
+   * @param node - The parsed query node to evaluate
+   * @param text - The text to search in
+   * @returns True if the query matches the text, false otherwise
    */
   static evaluate(node: ParsedQuery, text: string): boolean {
     if (!node) return false;
@@ -156,7 +159,8 @@ export class BooleanSearchParser {
 
   /**
    * Check if query contains boolean operators
-   * @param query
+   * @param query - The query string to check
+   * @returns True if the query contains AND, OR, or NOT operators
    */
   static isBooleanQuery(query: string): boolean {
     const upperQuery = query.toUpperCase();
