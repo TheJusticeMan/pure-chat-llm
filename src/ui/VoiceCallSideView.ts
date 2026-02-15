@@ -28,9 +28,10 @@ export class VoiceCallSideView extends ItemView {
   private remoteAudioElement: HTMLAudioElement | null = null;
 
   /**
+   * Creates a new voice call side view instance.
    *
-   * @param leaf
-   * @param plugin
+   * @param leaf - The workspace leaf to render in
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(
     leaf: WorkspaceLeaf,
@@ -42,28 +43,34 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Gets the view type identifier.
    *
+   * @returns The view type string
    */
   getViewType(): string {
     return VOICE_CALL_VIEW_TYPE;
   }
 
   /**
+   * Gets the display text for the view.
    *
+   * @returns The view display text
    */
   getDisplayText(): string {
     return 'Voice call';
   }
 
   /**
+   * Called when the view is opened.
    *
+   * @returns A promise that resolves when initialization is complete
    */
   async onOpen(): Promise<void> {
     this.renderView();
   }
 
   /**
-   *
+   * Renders the main view interface including header, controls, and instructions.
    */
   private renderView(): void {
     const { contentEl } = this;
@@ -71,7 +78,6 @@ export class VoiceCallSideView extends ItemView {
     contentEl.addClass('voice-call-view');
 
     this.renderHeader(contentEl);
-    this.renderStatus(contentEl);
     this.renderControls(contentEl);
     this.createRemoteAudioElement(contentEl);
 
@@ -81,13 +87,14 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Renders the view header with navigation buttons.
    *
-   * @param container
+   * @param container - The container element to render into
    */
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Voice call')
-      .setClass('PUREfloattop')
+      .setClass('headerfloattop')
       .setHeading()
       .addExtraButton(btn =>
         btn
@@ -100,53 +107,20 @@ export class VoiceCallSideView extends ItemView {
           .setIcon(PURE_CHAT_LLM_ICON_NAME)
           .setTooltip('Open conversation view')
           .onClick(() => this.plugin.activateChatView()),
-      )
-      .addExtraButton(btn =>
-        btn
-          .setIcon('list-tree')
-          .setTooltip('Open resolution tree view')
-          .onClick(() => this.plugin.activateBlueResolutView()),
       );
   }
 
   /**
+   * Renders the call control buttons based on current call state.
    *
-   * @param container
-   */
-  private renderStatus(container: HTMLElement): void {
-    const statusContainer = container.createDiv({ cls: 'voice-call-status' });
-    const statusText = this.getStatusText(this.callState.status);
-
-    statusContainer.createEl('div', { cls: 'status-indicator' }, el => {
-      const statusIndicator = el.createEl('span', {
-        cls: `status-icon status-icon-${this.callState.status}`,
-      });
-
-      // Add spinner for connecting state
-      if (this.callState.status === 'connecting') {
-        statusIndicator.addClass('status-spinner');
-      }
-
-      el.createEl('span', { cls: 'status-text', text: statusText });
-    });
-
-    if (this.callState.error) {
-      statusContainer.createEl('div', {
-        cls: 'status-error',
-        text: `Error: ${this.callState.error}`,
-      });
-    }
-  }
-
-  /**
-   *
-   * @param container
+   * @param container - The container element to render into
    */
   private renderControls(container: HTMLElement): void {
     const controlsContainer = container.createDiv({ cls: 'voice-call-controls' });
 
     if (this.callState.status === 'idle' || this.callState.status === 'disconnected') {
       new Setting(controlsContainer)
+        .setName(this.getStatusText(this.callState.status))
         .addDropdown(dropdown =>
           dropdown
             .addOption('openai', 'OpenAI realtime')
@@ -167,19 +141,22 @@ export class VoiceCallSideView extends ItemView {
     }
 
     if (this.callState.status === 'error') {
-      new Setting(controlsContainer).addButton(btn =>
-        btn
-          .setButtonText('Try again')
-          .setCta()
-          .setIcon('refresh-cw')
-          .onClick(() => {
-            this.resetCallState();
-          }),
-      );
+      new Setting(controlsContainer)
+        .setName(this.getStatusText(this.callState.status))
+        .addButton(btn =>
+          btn
+            .setButtonText('Try again')
+            .setCta()
+            .setIcon('refresh-cw')
+            .onClick(() => {
+              this.resetCallState();
+            }),
+        );
     }
 
     if (this.callState.status === 'connected' || this.callState.status === 'connecting') {
       new Setting(controlsContainer)
+        .setName(this.getStatusText(this.callState.status))
         .addButton(btn =>
           btn
             .setButtonText(this.callState.isMuted ? 'Unmute' : 'Mute')
@@ -199,8 +176,9 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Renders usage instructions for the voice call feature.
    *
-   * @param container
+   * @param container - The container element to render into
    */
   private renderInstructions(container: HTMLElement): void {
     const instructionsEl = container.createDiv({ cls: 'voice-call-instructions' });
@@ -218,8 +196,9 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Creates and initializes the audio element for remote audio playback.
    *
-   * @param container
+   * @param container - The container element to append the audio element to
    */
   private createRemoteAudioElement(container: HTMLElement): void {
     if (!this.remoteAudioElement) {
@@ -237,7 +216,9 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
-   * Get default system prompt based on agent mode
+   * Get default system prompt based on agent mode.
+   *
+   * @returns The default system prompt string
    */
   private getDefaultSystemPrompt(): string {
     return this.plugin.settings.agentMode
@@ -246,11 +227,13 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
-   * Read system prompt from configured file or return default
+   * Read system prompt from configured file or return default.
+   *
+   * @returns A promise that resolves to the system prompt string
    */
   private async getRealtimeSystemPrompt(): Promise<string> {
     const filePath = this.plugin.settings.realtimeSystemPromptFile;
-    
+
     // If no file path configured, use default based on agent mode
     if (!filePath || filePath.trim() === '') {
       return this.getDefaultSystemPrompt();
@@ -266,7 +249,7 @@ export class VoiceCallSideView extends ItemView {
       }
 
       const content = await this.plugin.app.vault.cachedRead(file);
-      
+
       // If file is empty, use default
       if (!content || content.trim() === '') {
         new Notice(`Realtime prompt file is empty: ${filePath}. Using default.`);
@@ -283,7 +266,9 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Starts a new voice call with the selected provider and configuration.
    *
+   * @returns A promise that resolves when the call is started
    */
   private async startCall(): Promise<void> {
     try {
@@ -356,8 +341,9 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Handles incoming remote audio stream from the call.
    *
-   * @param stream
+   * @param stream - The media stream to play
    */
   private handleRemoteStream(stream: MediaStream): void {
     if (this.remoteAudioElement) {
@@ -370,14 +356,16 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
-   *
+   * Toggles the microphone mute state for the active call.
    */
   private toggleMute(): void {
     this.voiceCall?.toggleMute();
   }
 
   /**
+   * Ends the active voice call and cleans up resources.
    *
+   * @returns A promise that resolves when the call is ended
    */
   private async endCall(): Promise<void> {
     if (this.voiceCall) {
@@ -387,8 +375,9 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Called when the call state changes. Updates the UI accordingly.
    *
-   * @param state
+   * @param state - The new call state
    */
   private onCallStateChange(state: CallState): void {
     this.callState = state;
@@ -396,7 +385,7 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
-   *
+   * Resets the call state to idle and cleans up resources.
    */
   private resetCallState(): void {
     if (this.voiceCall) {
@@ -413,7 +402,9 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Called when the view is closed. Cleans up active calls and resources.
    *
+   * @returns A promise that resolves when cleanup is complete
    */
   async onClose(): Promise<void> {
     await this.endCall();
@@ -424,8 +415,10 @@ export class VoiceCallSideView extends ItemView {
   }
 
   /**
+   * Gets the display text for a call status.
    *
-   * @param status
+   * @param status - The call status
+   * @returns The human-readable status text
    */
   private getStatusText(status: CallState['status']): string {
     switch (status) {

@@ -21,7 +21,7 @@ export class WriteHandler {
    */
   constructor(
     private plugin: PureChatLLM,
-    private file: TFile,
+    readonly file: TFile,
     private view?: MarkdownView,
     private editor?: Editor,
     private followCursor = false,

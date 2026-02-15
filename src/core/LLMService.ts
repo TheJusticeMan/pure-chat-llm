@@ -10,22 +10,23 @@ import {
 import { BrowserConsole } from '../utils/BrowserConsole';
 
 /**
- *
+ * Service class for handling LLM API communication
  */
 export class LLMService {
   console: BrowserConsole;
 
   /**
-   *
-   * @param debug
+   * Creates a new LLMService instance
+   * @param debug - Whether to enable debug logging
    */
   constructor(debug: boolean) {
     this.console = new BrowserConsole(debug, 'LLMService');
   }
 
   /**
-   *
-   * @param endpoint
+   * Gets the appropriate HTTP headers for the given endpoint
+   * @param endpoint - The API endpoint configuration
+   * @returns An object containing the required HTTP headers
    */
   getHeaders(endpoint: PureChatLLMAPI): Record<string, string> {
     if (endpoint.endpoint.includes('api.anthropic.com')) {
@@ -42,11 +43,12 @@ export class LLMService {
   }
 
   /**
-   *
-   * @param endpoint
-   * @param options
-   * @param statusCallback
-   * @param streamCallback
+   * Sends a chat request to the LLM API and handles the response
+   * @param endpoint - The API endpoint configuration
+   * @param options - The chat request options
+   * @param statusCallback - Optional callback for status updates
+   * @param streamCallback - Optional callback for streaming responses
+   * @returns Promise resolving to the chat response
    */
   async fetchResponse(
     endpoint: PureChatLLMAPI,
@@ -177,9 +179,10 @@ export class LLMService {
   }
 
   /**
-   *
-   * @param response
-   * @param streamCallback
+   * Handles streaming response from the LLM API
+   * @param response - The fetch Response object with streaming body
+   * @param streamCallback - Callback function to process each text fragment
+   * @returns Promise resolving to the complete chat response with full text and tool calls
    */
   async handleStreamingResponse(
     response: Response,

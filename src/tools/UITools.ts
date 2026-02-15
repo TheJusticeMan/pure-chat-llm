@@ -14,16 +14,28 @@ const activeContextParameters = defineToolParameters({
   required: [],
 } as const);
 
-export type ActiveContextArgs = InferArgs<typeof activeContextParameters>;
+type ActiveContextArgs = InferArgs<typeof activeContextParameters>;
 
+/**
+ * Tool to retrieve information about the currently active note in Obsidian
+ */
 export class ActiveContextTool extends Tool<ActiveContextArgs> {
   readonly name = 'get_active_context';
   readonly classification = 'UI';
   readonly description = 'Retrieves info about the active note (path, selection, cursor).';
   readonly parameters = activeContextParameters;
+  /**
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
+   */
   isAvailable() {
     return true;
   }
+  /**
+   * Executes the tool to get active note context information
+   * @param args - The arguments containing options like include_content
+   * @returns A formatted string with active file path, cursor position, selection, and optionally content
+   */
   async execute(args: ActiveContextArgs): Promise<string> {
     const view = this.chat.plugin.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view || !view.file) return 'No active Markdown note found.';
@@ -56,16 +68,28 @@ const manageWorkspaceParameters = defineToolParameters({
   required: ['action'],
 } as const);
 
-export type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
+type ManageWorkspaceArgs = InferArgs<typeof manageWorkspaceParameters>;
 
+/**
+ * Tool to manage Obsidian workspace operations like opening and closing tabs
+ */
 export class ManageWorkspaceTool extends Tool<ManageWorkspaceArgs> {
   readonly name = 'manage_workspace';
   readonly classification = 'UI';
   readonly description = 'Controls the Obsidian workspace (open/close tabs, split panes).';
   readonly parameters = manageWorkspaceParameters;
+  /**
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
+   */
   isAvailable() {
     return true;
   }
+  /**
+   * Executes workspace management actions
+   * @param args - The arguments containing action (open/close), path, split direction, and other options
+   * @returns A status message indicating the result of the operation
+   */
   async execute(args: ManageWorkspaceArgs): Promise<string> {
     const { action, path, split = 'none', new_leaf = true, mode, active = true } = args;
     const app = this.chat.plugin.app;
@@ -125,16 +149,28 @@ const showNoticeParameters = defineToolParameters({
   required: ['message'],
 } as const);
 
-export type ShowNoticeArgs = InferArgs<typeof showNoticeParameters>;
+type ShowNoticeArgs = InferArgs<typeof showNoticeParameters>;
 
+/**
+ * Tool to display toast notifications in Obsidian
+ */
 export class ShowNoticeTool extends Tool<ShowNoticeArgs> {
   readonly name = 'show_obsidian_notice';
   readonly classification = 'UI';
   readonly description = 'Displays a toast notification.';
   readonly parameters = showNoticeParameters;
+  /**
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
+   */
   isAvailable() {
     return true;
   }
+  /**
+   * Displays a toast notification to the user
+   * @param args - The arguments containing the message and optional duration
+   * @returns A confirmation message indicating the notice was displayed
+   */
   async execute(args: ShowNoticeArgs): Promise<string> {
     new Notice(args.message, args.duration ?? 5000);
     return `Displayed notice: "${args.message}"`;

@@ -9,6 +9,7 @@ export class ToolOutputBuilder {
    * Add a header with optional status indicator
    * @param title - Title of the operation
    * @param status - Optional status (e.g., "Recoverable", "Success")
+   * @returns This builder instance for method chaining
    */
   addHeader(title: string, status?: string): this {
     const statusPart = status ? ` (${status})` : '';
@@ -21,6 +22,7 @@ export class ToolOutputBuilder {
    * Add a key-value pair
    * @param label - The label/key
    * @param value - The value
+   * @returns This builder instance for method chaining
    */
   addKeyValue(label: string, value: string): this {
     this.sections.push(`- ${label}: ${value}`);
@@ -29,6 +31,7 @@ export class ToolOutputBuilder {
 
   /**
    * Add a visual separator line
+   * @returns This builder instance for method chaining
    */
   addSeparator(): this {
     this.sections.push('\n---');
@@ -39,6 +42,7 @@ export class ToolOutputBuilder {
    * Add a titled section with content
    * @param title - Section title
    * @param content - Section content
+   * @returns This builder instance for method chaining
    */
   addSection(title: string, content: string): this {
     this.sections.push(`\n${title}:\n---\n${content}\n---`);
@@ -49,6 +53,7 @@ export class ToolOutputBuilder {
    * Add a formatted markdown table
    * @param headers - Column headers
    * @param rows - Data rows
+   * @returns This builder instance for method chaining
    */
   addTable(headers: string[], rows: string[][]): this {
     const colWidths = headers.map((h, i) =>
@@ -68,6 +73,7 @@ export class ToolOutputBuilder {
   /**
    * Add suggested actions for the LLM to consider
    * @param actions - Array of suggested actions
+   * @returns This builder instance for method chaining
    */
   addSuggestions(...actions: string[]): this {
     this.sections.push('\nSUGGESTED ACTIONS:');
@@ -82,6 +88,7 @@ export class ToolOutputBuilder {
    * @param type - Error type (e.g., "FileNotFoundError")
    * @param message - Detailed error message
    * @param recovery - Array of recovery suggestions
+   * @returns This builder instance for method chaining
    */
   addError(type: string, message: string, recovery: string[]): this {
     this.addHeader(`ERROR: ${type}`, 'Recoverable');
@@ -93,6 +100,7 @@ export class ToolOutputBuilder {
 
   /**
    * Build and return the final formatted string
+   * @returns The complete formatted output string
    */
   build(): string {
     return this.sections.join('\n');

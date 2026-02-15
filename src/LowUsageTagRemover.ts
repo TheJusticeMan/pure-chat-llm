@@ -1,18 +1,18 @@
 import { Modal, App, Setting, TFile, Notice } from 'obsidian';
 
 /**
- *
+ * Modal dialog for cleaning up low-usage tags in the vault
+ * Removes tags that appear in fewer than a specified number of files
  */
 export class LowUsageTagRemover extends Modal {
   /**
-   * Description placeholder
-   *
+   * Minimum number of uses for a tag to be kept
    * @type {number}
    */
   numUses = 3;
   /**
-   *
-   * @param app
+   * Creates a new LowUsageTagRemover modal
+   * @param app - The Obsidian app instance
    */
   constructor(app: App) {
     super(app);
@@ -43,8 +43,8 @@ export class LowUsageTagRemover extends Modal {
   }
 
   /**
-   *
-   * @param numUses
+   * Cleans up tags that are used less than the specified number of times
+   * @param numUses - Minimum number of uses required to keep a tag
    */
   private cleanupLowUsageTags(numUses: number) {
     // Get the frequency of all tags in the vault

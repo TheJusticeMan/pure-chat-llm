@@ -2,7 +2,7 @@
 
 ## Project overview
 
-- Target: Obsidian Community Plugin (TypeScript → bundled JavaScript).
+- Target: Obsidian Community Plugin (TypeScript -> bundled JavaScript).
 - Entry point: `main.ts` compiled to `main.js` and loaded by Obsidian.
 - Required release artifacts: `main.js`, `manifest.json`, and optional `styles.css`.
 
@@ -84,7 +84,7 @@ npm run build
   ```
   <Vault>/.obsidian/plugins/<plugin-id>/
   ```
-- Reload Obsidian and enable the plugin in **Settings → Community plugins**.
+- Reload Obsidian and enable the plugin in **Settings -> Community plugins**.
 
 ## Commands & settings
 
@@ -95,7 +95,7 @@ npm run build
 
 ## Versioning & releases
 
-- Bump `version` in `manifest.json` (SemVer) and update `versions.json` to map plugin version → minimum app version.
+- Bump `version` in `manifest.json` (SemVer) and update `versions.json` to map plugin version -> minimum app version.
 - Create a GitHub release whose tag exactly matches `manifest.json`'s `version`. Do not use a leading `v`.
 - Attach `manifest.json`, `main.js`, and `styles.css` (if present) to the release as individual assets.
 - After the initial release, follow the process to add/update your plugin in the community catalog as required.
@@ -118,7 +118,7 @@ Follow Obsidian's **Developer Policies** and **Plugin Guidelines**. In particula
 - Prefer sentence case for headings, buttons, and titles.
 - Use clear, action-oriented imperatives in step-by-step copy.
 - Use **bold** to indicate literal UI labels. Prefer "select" for interactions.
-- Use arrow notation for navigation: **Settings → Community plugins**.
+- Use arrow notation for navigation: **Settings -> Community plugins**.
 - Keep in-app strings short, consistent, and free of jargon.
 
 ## Performance

@@ -24,46 +24,48 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   private onErrorCallback?: (error: Error) => void;
 
   /**
-   *
-   * @param toolExecutor
+   * Creates a new OpenAIRealtimeProvider
+   * @param toolExecutor - Optional tool executor for function calling
    */
   constructor(private toolExecutor?: IToolExecutor) {}
 
   /**
-   *
+   * Gets the provider name
+   * @returns The display name of the provider
    */
   getName(): string {
     return this.toolExecutor ? 'OpenAI Realtime API (Tools)' : 'OpenAI Realtime API';
   }
 
   /**
-   *
-   * @param callback
+   * Registers callback for remote audio tracks
+   * @param callback - Function to call when remote audio is received
    */
   onRemoteTrack(callback: (stream: MediaStream) => void): void {
     this.onRemoteTrackCallback = callback;
   }
 
   /**
-   *
-   * @param callback
+   * Registers callback for server messages
+   * @param callback - Function to call when server sends a message
    */
   onMessage(callback: (event: unknown) => void): void {
     this.onMessageCallback = callback;
   }
 
   /**
-   *
-   * @param callback
+   * Registers callback for errors
+   * @param callback - Function to call when an error occurs
    */
   onError(callback: (error: Error) => void): void {
     this.onErrorCallback = callback;
   }
 
   /**
-   *
-   * @param localStream
-   * @param config
+   * Connects to OpenAI Realtime API via WebRTC
+   * @param localStream - The local audio stream from the microphone
+   * @param config - Configuration including API key and model settings
+   * @returns Promise that resolves when connection is established
    */
   async connect(localStream: MediaStream, config: VoiceCallConfig): Promise<void> {
     try {
@@ -140,7 +142,8 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
+   * Disconnects from OpenAI Realtime API and cleans up resources
+   * @returns Promise that resolves when disconnection is complete
    */
   disconnect(): Promise<void> {
     if (this.dataChannel) {
@@ -155,8 +158,8 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param event
+   * Sends an event to the OpenAI API
+   * @param event - The event to send
    */
   send(event: unknown): void {
     if (this.dataChannel && this.dataChannel.readyState === 'open') {
@@ -165,8 +168,8 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param dc
+   * Sets up the WebRTC data channel for events
+   * @param dc - The RTCDataChannel to configure
    */
   private setupDataChannel(dc: RTCDataChannel): void {
     dc.addEventListener('open', () => {
@@ -193,8 +196,9 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param event
+   * Handles tool/function calls from OpenAI
+   * @param event - The function call event from OpenAI
+   * @returns Promise that resolves when tool execution completes
    */
   private async handleToolCall(event: OpenAIEvent): Promise<void> {
     if (!this.toolExecutor) return;

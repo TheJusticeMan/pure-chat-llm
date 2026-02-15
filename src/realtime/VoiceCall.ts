@@ -16,12 +16,12 @@ export class VoiceCall {
   };
 
   /**
-   *
-   * @param provider
-   * @param config
-   * @param onStateChange
-   * @param onServerEvent
-   * @param onRemoteTrack
+   * Creates a new VoiceCall manager
+   * @param provider - The voice call provider implementation
+   * @param config - Configuration for the voice call
+   * @param onStateChange - Callback invoked when call state changes
+   * @param onServerEvent - Optional callback for server events
+   * @param onRemoteTrack - Optional callback for remote audio tracks
    */
   constructor(
     private provider: IVoiceCallProvider,
@@ -94,7 +94,7 @@ export class VoiceCall {
 
   /**
    * Sends a client event to the provider
-   * @param event
+   * @param event - The event to send to the provider
    */
   sendEvent(event: unknown): void {
     if (this.state.status === 'connected') {
@@ -148,6 +148,7 @@ export class VoiceCall {
 
   /**
    * Gets the current call state
+   * @returns The current call state object
    */
   getState(): CallState {
     return { ...this.state };
@@ -155,7 +156,7 @@ export class VoiceCall {
 
   /**
    * Updates the call state and notifies listeners
-   * @param update
+   * @param update - Partial state to merge with current state
    */
   private updateState(update: Partial<CallState>): void {
     this.state = { ...this.state, ...update };

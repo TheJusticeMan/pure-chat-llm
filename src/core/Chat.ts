@@ -1,17 +1,17 @@
-import { App, EditorRange, Notice, TFile } from 'obsidian';
+import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
 import PureChatLLM from '../main';
 import { ToolRegistry } from '../tools';
-import { BacklinksTool, ReadNoteSectionTool, WriteNoteSectionTool } from '../tools/VaultTools';
-import { GlobFilesTool, ListFoldersTool, SearchVaultTool } from '../tools/SearchTools';
 import { ImageGenerationTool, SmartConnectionsRetrievalTool } from '../tools/AITools';
-import { ActiveContextTool, ManageWorkspaceTool, ShowNoticeTool } from '../tools/UITools';
+import { GlobFilesTool, ListFoldersTool, SearchVaultTool } from '../tools/SearchTools';
 import { PluginSettingsTool, TemplatesTool } from '../tools/SystemTools';
+import { ActiveContextTool, ManageWorkspaceTool, ShowNoticeTool } from '../tools/UITools';
+import { BacklinksTool, ReadNoteSectionTool, WriteNoteSectionTool } from '../tools/VaultTools';
 import {
-  ChatMessage,
   ChatOptions,
   ChatRequestOptions,
   ChatResponse,
+  MediaMessage,
   PureChatLLMAPI,
   RoleType,
   StreamDelta,
@@ -19,19 +19,17 @@ import {
   ToolClassification,
   ToolDefinition,
 } from '../types';
-import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
-import { toTitleCase } from '../utils/toTitleCase';
-import { ResolutionContext } from './BlueFileResolver';
 import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
 import { ChatSession } from './ChatSession';
 import { LLMService } from './LLMService';
-import { ToolExecutor } from './ToolExecutor';
+import { WriteHandler } from 'src/utils/write-handler';
+import { AskForAPI } from 'src/ui/Modals';
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
  *
- * This class now acts as a facade over the new domain classes (ChatSession, ChatMarkdownAdapter, ToolExecutor).
+ * This class now acts as a facade over the new domain classes (ChatSession, ChatMarkdownAdapter, ToolRegistry).
  * It maintains backward compatibility while delegating to the new architecture.
  *
  * @remarks
@@ -51,9 +49,8 @@ import { ToolExecutor } from './ToolExecutor';
  */
 export class PureChatLLMChat {
   // Internal domain objects
-  private session: ChatSession;
-  private adapter: ChatMarkdownAdapter;
-  private toolExecutor: ToolExecutor;
+  session: ChatSession;
+  adapter: ChatMarkdownAdapter;
 
   // Keep existing public properties for compatibility
   plugin: PureChatLLM;
@@ -65,8 +62,8 @@ export class PureChatLLMChat {
   llmService: LLMService;
 
   /**
-   *
-   * @param plugin
+   * Creates a new PureChatLLMChat instance
+   * @param plugin - The Pure Chat LLM plugin instance
    */
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
@@ -92,77 +89,11 @@ export class PureChatLLMChat {
       this.plugin.settings.useYAMLFrontMatter,
       this.plugin.settings.agentMode,
     );
-    this.toolExecutor = new ToolExecutor(this.toolregistry);
-  }
-
-  // Delegate to session for backward compatibility
-  /**
-   *
-   */
-  get options(): ChatOptions {
-    return this.session.options;
-  }
-  /**
-   *
-   */
-  set options(value: ChatOptions) {
-    this.session.options = value;
   }
 
   /**
-   *
-   */
-  get messages(): ChatMessage[] {
-    return this.session.messages;
-  }
-  /**
-   *
-   */
-  set messages(value: ChatMessage[]) {
-    this.session.messages = value;
-  }
-
-  /**
-   *
-   */
-  get clines(): EditorRange[] {
-    return this.session.clines;
-  }
-  /**
-   *
-   */
-  set clines(value: EditorRange[]) {
-    this.session.clines = value;
-  }
-
-  /**
-   *
-   */
-  get pretext(): string {
-    return this.session.pretext;
-  }
-  /**
-   *
-   */
-  set pretext(value: string) {
-    this.session.pretext = value;
-  }
-
-  /**
-   *
-   */
-  get validChat(): boolean {
-    return this.session.validChat;
-  }
-  /**
-   *
-   */
-  set validChat(value: boolean) {
-    this.session.validChat = value;
-  }
-
-  /**
-   *
+   * Registers all available tools with the tool registry
+   * @returns void
    */
   private registerAvailableTools() {
     this.toolregistry
@@ -193,8 +124,47 @@ export class PureChatLLMChat {
    * @returns {string} A Markdown-formatted string containing the JSON representation
    * of the chat options and the chat text.
    */
-  get markdown(): string {
+  getMarkdown(): string {
     return this.adapter.serialize(this.session);
+  }
+
+  /**
+   * Updates the endpoint based on the current model setting
+   * @returns The current instance for chaining
+   */
+  updateEndpointFromModel() {
+    const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
+    const endpointName = Object.keys(ModelsOnEndpoint).find(name =>
+      ModelsOnEndpoint[name].includes(this.session.options.model),
+    );
+    if (endpointName) {
+      this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
+    }
+    return this;
+  }
+
+  /**
+   * Checks if a specific tool classification is enabled
+   * @param classification - The tool classification to check
+   * @returns True if the classification is enabled, false otherwise
+   */
+  isEnabled(classification: string): boolean {
+    if (!this.session.options.tools) return false;
+    if (Array.isArray(this.session.options.tools)) {
+      return this.session.options.tools.some(
+        (t: string) => this.toolregistry.classificationForTool(t) === classification,
+      );
+    }
+    return this.toolregistry.isClassificationEnabled(classification as ToolClassification);
+  }
+
+  /**
+   * Cleans up the chat by removing empty messages and ensuring proper structure
+   * @returns The current instance for chaining
+   */
+  cleanUpChat() {
+    this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
+    return this;
   }
 
   /**
@@ -215,8 +185,10 @@ export class PureChatLLMChat {
    * - The `cline` property in each message represents the range of lines in the editor
    *   corresponding to the message content.
    * - The `options` property is updated if valid JSON is found in the prechat section.
+   * @returns The current instance for chaining
    */
-  set markdown(markdown: string) {
+  setMarkdown(markdown: string) {
+    // make this chainable
     const defaultOptions: ChatOptions = {
       model: this.endpoint.defaultmodel,
       max_completion_tokens: this.plugin.settings.defaultmaxTokens,
@@ -230,53 +202,6 @@ export class PureChatLLMChat {
 
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.updateEndpointFromModel();
-  }
-
-  /**
-   *
-   */
-  updateEndpointFromModel() {
-    const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
-    const endpointName = Object.keys(ModelsOnEndpoint).find(name =>
-      ModelsOnEndpoint[name].includes(this.options.model),
-    );
-    if (endpointName) {
-      this.endpoint = endpoints.find(e => e.name === endpointName) ?? this.endpoint;
-    }
-    return this;
-  }
-
-  /**
-   *
-   * @param classification
-   */
-  isEnabled(classification: string): boolean {
-    if (!this.options.tools) return false;
-    if (Array.isArray(this.options.tools)) {
-      return this.options.tools.some(
-        (t: string) => this.toolregistry.classificationForTool(t) === classification,
-      );
-    }
-    return this.toolregistry.isClassificationEnabled(classification as ToolClassification);
-  }
-
-  /**
-   *
-   */
-  cleanUpChat() {
-    this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
-    return this;
-  }
-
-  /**
-   * Sets the markdown content for the current instance.
-   *
-   * @param markdown - The markdown string to set.
-   * @returns The current instance to allow method chaining.
-   */
-  setMarkdown(markdown: string) {
-    // make this chainable
-    this.markdown = markdown;
     return this;
   }
 
@@ -287,67 +212,31 @@ export class PureChatLLMChat {
    * @returns The current instance of the class for method chaining.
    */
   setModel(modal: string) {
-    this.options.model = modal;
+    this.session.options.model = modal;
     this.updateEndpointFromModel();
     return this;
   }
 
   /**
-   * Extracts the content of a code block from a given markdown string based on the specified programming language.
+   * Appends one or more new messages to the list of messages.
    *
-   * @param markdown - The markdown string containing the code block.
-   * @param language - The programming language of the code block to extract.
-   * @returns The content of the code block as a string if found, otherwise `null`.
-   */
-  static extractCodeBlockMD(markdown: string, language: string): string | null {
-    return ChatMarkdownAdapter.extractCodeBlockMD(markdown, language);
-  }
-
-  /**
-   * Extracts all code blocks from a given markdown string.
-   *
-   * @param markdown - The markdown string to extract code blocks from.
-   * @returns An array of objects, where each object contains language and code.
-   */
-  static extractAllCodeBlocks(markdown: string): CodeContent[] {
-    return ChatMarkdownAdapter.extractAllCodeBlocks(markdown);
-  }
-
-  /**
-   * Replaces the content of a code block in a markdown string with new text.
-   *
-   * @param text - The original markdown string containing the code block.
-   * @param language - The programming language of the code block to replace.
-   * @param newText - The new text to insert into the code block.
-   * @returns The modified markdown string with the updated code block content.
-   */
-  static changeCodeBlockMD(text: string, language: string, newText: string) {
-    return ChatMarkdownAdapter.changeCodeBlockMD(text, language, newText);
-  }
-
-  /**
-   * Appends a new message to the list of messages.
-   *
-   * @param message - An object containing the role and content of the message.
+   * @param messages - One or more message objects containing the role and content of the message.
    *   - `role`: The role of the message sender (e.g., "user", "assistant").
    *   - `content`: The textual content of the message.
    *
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
-   * @param {...any} messages
+   * @returns The current instance for chaining
    */
   appendMessage(...messages: { role: RoleType; content: string; cline?: EditorRange }[]) {
     messages.forEach(message => {
       if (
         this.plugin.settings.autoConcatMessagesFromSameRole &&
-        this.messages[this.messages.length - 1]?.role === message.role
+        this.session.messages[this.session.messages.length - 1]?.role === message.role
       ) {
-        this.messages[this.messages.length - 1].content += message.content;
+        this.session.messages[this.session.messages.length - 1].content += message.content;
       } else {
-        this.session.appendMessage({
-          role: message.role,
-          content: message.content.trim(),
-        });
+        this.session.appendMessage({ role: message.role, content: message.content.trim() });
       }
     });
     return this;
@@ -361,33 +250,21 @@ export class PureChatLLMChat {
    *
    * @param activeFile - The currently active file in the application, used for resolving file references.
    * @param app - The application instance, providing access to necessary utilities and context.
-   * @param context
    * @returns A promise that resolves to an object containing the resolved messages with their roles and content.
    */
-  async getChatGPTinstructions(
-    activeFile: TFile,
-    app: App,
-    context?: ResolutionContext,
-  ): Promise<ChatRequestOptions> {
+  async getChatGPTinstructions(activeFile: TFile, app: App): Promise<ChatRequestOptions> {
     this.file = activeFile;
 
-    // Use the plugin's shared resolver instance
-    const resolver = this.plugin.blueFileResolver;
-
-    // Use provided context or create new one if blue file resolution is enabled
-    if (!context && this.plugin.settings.blueFileResolution.enabled) {
-      context = resolver.createContext(activeFile);
-    }
-
     const messages = await Promise.all(
-      this.messages.map(async ({ role, content }) => ({
+      this.session.messages.map(async ({ role, content }) => ({
         role: role,
-        content: await resolver.resolveFilesWithImagesAndAudio(
+        content: await this.resolveContentRecursive(
           content,
           activeFile,
           app,
           role,
-          context,
+          new Set<string>(),
+          0,
         ),
       })),
     );
@@ -404,16 +281,176 @@ export class PureChatLLMChat {
       });
     }
 
-    const tools: ToolDefinition[] | undefined = this.options.tools
+    const tools: ToolDefinition[] | undefined = this.session.options.tools
       ?.map(t => this.toolregistry.getTool(t)?.getDefinition())
       .filter(t => t !== undefined);
 
     // return the whole object sent to the API
     return {
-      ...this.options,
+      ...this.session.options,
       messages,
       tools,
     };
+  }
+
+  /**
+   * Converts an ArrayBuffer to a base64 string, processing data in chunks to avoid stack overflow
+   *
+   * @param data - Binary data as ArrayBuffer
+   * @returns Base64-encoded string
+   */
+  private arrayBufferToBase64(data: ArrayBuffer): string {
+    const uint8Array = new Uint8Array(data);
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      // TypeScript doesn't recognize Uint8Array as array-like for String.fromCharCode.apply()
+      // Cast is safe because Uint8Array elements are valid charCodes (0-255)
+      binaryString += String.fromCharCode.apply(null, chunk as unknown as number[]);
+    }
+    return btoa(binaryString);
+  }
+
+  /**
+   * Recursively resolves [[links]], images, and audio in content
+   *
+   * @param markdown - Content to resolve
+   * @param activeFile - Current file context
+   * @param app - Obsidian app instance
+   * @param role - Message role (user/assistant/system)
+   * @param visited - Set of visited file paths (cycle detection)
+   * @param depth - Current recursion depth
+   * @returns Resolved content as string or MediaMessage array
+   */
+  private async resolveContentRecursive(
+    markdown: string,
+    activeFile: TFile,
+    app: App,
+    role: RoleType,
+    visited: Set<string>,
+    depth: number,
+  ): Promise<MediaMessage[] | string> {
+    const maxDepth = this.plugin.settings.maxRecursionDepth || 10;
+
+    if (depth >= maxDepth) return markdown;
+
+    // Match [[link]] patterns - allow whitespace on the line (matches original BlueFileResolver behavior)
+    const regex = /^\s*!?\[\[([^\]]+)\]\]\s*$/gim;
+    const matches = Array.from(markdown.matchAll(regex));
+    if (matches.length === 0) return markdown;
+
+    // Check if there is any text outside of the matches
+    const textOutsideMatches = markdown.replace(regex, '').replace(/---/g, '').trim();
+    const hasText = textOutsideMatches.length > 0;
+
+    const resolved: MediaMessage[] = await Promise.all(
+      matches.map(async ([originalLink, link]) => {
+        const { subpath, path } = parseLinktext(link);
+        const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+
+        if (!file) return { type: 'text', text: originalLink };
+
+        // Cycle detection
+        if (visited.has(file.path)) {
+          return { type: 'text', text: `[Circular reference: ${file.path}]` };
+        }
+
+        // Handle subpaths (sections/blocks)
+        if (subpath) {
+          const cache = app.metadataCache.getFileCache(file);
+          const ref = cache && resolveSubpath(cache, subpath);
+          if (ref) {
+            const text = await app.vault.cachedRead(file);
+            const sectionContent = text.substring(ref.start.offset, ref.end?.offset).trim();
+
+            visited.add(file.path);
+            const resolved = await this.resolveContentRecursive(
+              sectionContent,
+              file,
+              app,
+              role,
+              visited,
+              depth + 1,
+            );
+            visited.delete(file.path);
+
+            // If section resolves to media array, fall back to original text
+            // (section refs are typically used in text context, not for pure media embedding)
+            return { type: 'text', text: typeof resolved === 'string' ? resolved : sectionContent };
+          }
+          return { type: 'text', text: originalLink };
+        }
+
+        const ext = file.extension.toLowerCase();
+
+        // Handle images
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) && role === 'user') {
+          const data = await app.vault.readBinary(file);
+          const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+          const base64 = this.arrayBufferToBase64(data);
+          return { type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } };
+        }
+
+        // Handle audio
+        if (['mp3', 'wav'].includes(ext) && role === 'user') {
+          const data = await app.vault.readBinary(file);
+          const base64 = this.arrayBufferToBase64(data);
+          return {
+            type: 'input_audio',
+            input_audio: { data: base64, format: ext as 'wav' | 'mp3' },
+          };
+        }
+
+        // Handle text files - recurse
+        const content = await app.vault.cachedRead(file);
+        visited.add(file.path);
+        const resolvedContent = await this.resolveContentRecursive(
+          content,
+          file,
+          app,
+          role,
+          visited,
+          depth + 1,
+        );
+        visited.delete(file.path);
+
+        // If file resolves to media array, treat as empty text in this context
+        // (inline file refs are typically used for text content, not pure media)
+        return { type: 'text', text: typeof resolvedContent === 'string' ? resolvedContent : '' };
+      }),
+    );
+
+    // If no surrounding text and we have media, return as array
+    if (!hasText && resolved.some(r => r.type !== 'text')) {
+      return resolved;
+    }
+
+    // Combine into single string
+    const parts: string[] = [];
+    let lastIndex = 0;
+
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      const start = match.index || 0;
+
+      if (start > lastIndex) {
+        parts.push(markdown.slice(lastIndex, start));
+      }
+
+      const item = resolved[i];
+      if (item.type === 'text') {
+        parts.push(item.text || '');
+      }
+
+      lastIndex = start + match[0].length;
+    }
+
+    if (lastIndex < markdown.length) {
+      parts.push(markdown.slice(lastIndex));
+    }
+
+    return parts.join('');
   }
 
   /**
@@ -435,18 +472,29 @@ export class PureChatLLMChat {
       return Promise.resolve({ role: 'assistant', content: '' });
     }
     // Remove trailing empty message if present
-    if (!this.messages[this.messages.length - 1]?.content.trim()) {
-      this.messages.pop();
+    if (!this.session.messages[this.session.messages.length - 1]?.content.trim()) {
+      this.session.messages.pop();
     }
     this.file = this.file || this.plugin.app.workspace.getActiveFile();
 
     if (this.plugin.settings.resolveFilesForChatAnalysis) {
-      const resolver = this.plugin.blueFileResolver;
-      this.messages = await Promise.all(
-        this.messages.map(async ({ role, content }) => ({
-          role,
-          content: await resolver.resolveFiles(content, this.file, this.plugin.app),
-        })),
+      this.session.messages = await Promise.all(
+        this.session.messages.map(async ({ role, content }) => {
+          const resolved = await this.resolveContentRecursive(
+            content,
+            this.file,
+            this.plugin.app,
+            role,
+            new Set<string>(),
+            0,
+          );
+          // Convert to string if it's a MediaMessage array (flatten to text representation)
+          const resolvedContent =
+            typeof resolved === 'string'
+              ? resolved
+              : resolved.map(m => (m.type === 'text' ? m.text : `[${m.type}]`)).join('');
+          return { role, content: resolvedContent };
+        }),
       );
     }
 
@@ -457,7 +505,7 @@ export class PureChatLLMChat {
       { role: 'user', content: templatePrompt },
     ];
 
-    const options = { ...this.options, messages };
+    const options = { ...this.session.options, messages };
     delete options.tools;
     return this.sendChatRequest(options as ChatRequestOptions).then(r => ({
       role: 'assistant',
@@ -475,7 +523,7 @@ export class PureChatLLMChat {
    *
    * @param templatePrompt - The instruction prompt containing the name and template for processing.
    * @param selectedText - The markdown text selected by the user to be processed.
-   * @param fileText
+   * @param fileText - Optional full file text to provide as context to the LLM
    * @returns A Promise resolving to the LLM's response containing the processed markdown,
    *          or an empty response if no text is selected.
    */
@@ -487,7 +535,7 @@ export class PureChatLLMChat {
     }
     this.initSelectionResponse(templatePrompt, selectedText, fileText);
 
-    const options = { ...this.options, messages: this.messages };
+    const options = { ...this.session.options, messages: this.session.messages };
     delete options.tools;
 
     return this.sendChatRequest(options as ChatRequestOptions).then(r => ({
@@ -496,8 +544,15 @@ export class PureChatLLMChat {
     }));
   }
 
+  /**
+   * Initializes the chat session for a selection response
+   * @param templatePrompt - The instruction prompt for processing
+   * @param selectedText - The selected text to process
+   * @param fileText - Optional full file text for context
+   * @returns The current instance for chaining
+   */
   initSelectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
-    this.messages = [
+    this.session.messages = [
       {
         role: 'system',
         content: `${Selectionsysprompt}${
@@ -510,7 +565,7 @@ export class PureChatLLMChat {
       { role: 'user', content: templatePrompt },
     ];
 
-    this.options.tools = [];
+    this.session.options.tools = [];
     return this;
   }
 
@@ -520,7 +575,6 @@ export class PureChatLLMChat {
    * @param file - The file object of type `TFile` that contains the context or data for the chat.
    * @param streamcallback - An optional callback function that processes text fragments as they are streamed.
    *                         The callback should return a boolean indicating whether to continue streaming.
-   * @param context
    * @returns A promise that resolves to the current instance (`this`) after processing the chat response.
    *
    * The method performs the following steps:
@@ -532,12 +586,11 @@ export class PureChatLLMChat {
   completeChatResponse(
     file: TFile,
     streamcallback?: (textFragment: { content: string }) => Promise<boolean>,
-    context?: ResolutionContext,
   ): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
       return Promise.resolve(this);
     }
-    return this.getChatGPTinstructions(file, this.plugin.app, context)
+    return this.getChatGPTinstructions(file, this.plugin.app)
       .then(options => this.sendChatRequest(options, streamcallback))
       .then(content => {
         this.appendMessage({
@@ -549,8 +602,8 @@ export class PureChatLLMChat {
         });
         // Add the model to the endpoint's model list if not already present
         const models = (this.plugin.settings.ModelsOnEndpoint[this.endpoint.name] ??= []);
-        if (!models.includes(this.options.model)) {
-          models.push(this.options.model);
+        if (!models.includes(this.session.options.model)) {
+          models.push(this.session.options.model);
           void this.plugin.saveSettings();
         }
         return this;
@@ -596,7 +649,8 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
+   * Reverses the roles of user and assistant messages
+   * @returns The current instance for chaining
    */
   reverseRoles() {
     this.session.reverseRoles();
@@ -604,34 +658,15 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
-   * @param msgs
-   */
-  filterOutUncalledToolCalls(
-    msgs: {
-      role: RoleType;
-      content?: string;
-      tool_call_id?: string;
-      tool_calls?: ToolCall[];
-    }[],
-  ): {
-    role: RoleType;
-    content?: string;
-    tool_call_id?: string;
-    tool_calls?: ToolCall[];
-  }[] {
-    return this.toolExecutor.filterOutUncalledToolCalls(msgs);
-  }
-
-  /**
-   *
-   * @param toolCalls
-   * @param options
-   * @param streamcallback
-   * @param assistantMessage
-   * @param assistantMessage.role
-   * @param assistantMessage.content
-   * @param assistantMessage.tool_calls
+   * Handles tool calls from the LLM by executing them through the tool registry
+   * @param toolCalls - Array of tool calls from the LLM response
+   * @param options - The chat request options
+   * @param streamcallback - Optional callback for streaming responses
+   * @param assistantMessage - The assistant message containing tool calls
+   * @param assistantMessage.role - The role of the message (assistant)
+   * @param assistantMessage.content - The content of the message
+   * @param assistantMessage.tool_calls - Array of tool calls in the message
+   * @returns Promise resolving to true if tool calls were executed successfully, false otherwise
    */
   async handleToolCalls(
     toolCalls: ToolCall[],
@@ -639,29 +674,8 @@ export class PureChatLLMChat {
     streamcallback?: (textFragment: StreamDelta) => Promise<boolean>,
     assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
   ): Promise<boolean> {
-    this.toolExecutor.setStreamCallback(streamcallback);
-    return this.toolExecutor.executeToolCalls(toolCalls, this.session, options, assistantMessage);
-  }
-
-  /**
-   * Attempts to parse a JSON string and return the resulting object.
-   * If the parsing fails due to invalid JSON, it returns `null`.
-   *
-   * @param str - The JSON string to parse.
-   * @returns The parsed object if successful, or `null` if parsing fails.
-   */
-  static tryJSONParse(str: string): unknown {
-    return ChatMarkdownAdapter.tryJSONParse(str);
-  }
-
-  /**
-   * Parses a JSON string into ChatOptions.
-   *
-   * @param str - The JSON string to parse.
-   * @returns Partial ChatOptions object or null if parsing fails.
-   */
-  static parseChatOptions(str: string): Partial<ChatOptions> | null {
-    return ChatMarkdownAdapter.parseChatOptions(str);
+    this.toolregistry.setCallBack(streamcallback);
+    return this.toolregistry.executeToolCalls(toolCalls, this.session, options, assistantMessage);
   }
 
   /**
@@ -712,30 +726,93 @@ export class PureChatLLMChat {
    * @returns {string} A formatted string containing all chat messages.
    */
   get chatText(): string {
-    return this.session.getChatText(role => this.parseRole(role));
+    return this.session.getChatText(role => this.adapter.parseRole(role));
   }
 
   /**
-   *
-   * @param role
-   */
-  parseRole(role: RoleType): string {
-    return (JSON.parse(`"${this.parser}"`) as string).replace(/{role}/g, toTitleCase(role));
-  }
-
-  /**
-   *
-   */
-  get regexForRoles() {
-    return this.adapter.regexForRoles;
-  }
-
-  /**
-   *
-   * @param cb
+   * Executes a callback with the current chat instance and returns the instance for chaining
+   * @param cb - Callback function to execute with the chat instance
+   * @returns The current instance for chaining
    */
   thencb(cb: (chat: this) => unknown): this {
     cb(this);
     return this;
   }
+}
+
+/**
+ * Completes a chat response by reading from the editor, processing with LLM, and writing back
+ * @param plugin - The Pure Chat LLM plugin instance
+ * @param writeHandler - The write handler for managing editor content
+ * @returns Promise resolving to the chat instance or undefined
+ */
+export async function completeChatResponse(plugin: PureChatLLM, writeHandler: WriteHandler) {
+  const editorcontent = await writeHandler.getValue();
+
+  const chat = new PureChatLLMChat(plugin).setMarkdown(editorcontent);
+  const endpoint = plugin.settings.endpoints[plugin.settings.endpoint];
+  if (endpoint.apiKey == EmptyApiKey) {
+    new AskForAPI(plugin.app, plugin).open();
+    return;
+  }
+
+  if (
+    chat.session.messages[chat.session.messages.length - 1].content === '' &&
+    chat.session.validChat &&
+    plugin.settings.AutoReverseRoles
+  ) {
+    if (chat.session.messages.pop()?.role == 'user') chat.reverseRoles();
+  }
+  await writeHandler.write(chat.getMarkdown());
+
+  if (!chat.session.validChat) return;
+
+  plugin.isresponding = true;
+
+  await writeHandler.appendContent(`\n${chat.adapter.parseRole('assistant...' as RoleType)}\n`);
+  chat
+    .completeChatResponse(writeHandler.file, async e => {
+      await writeHandler.appendContent(e.content);
+      return true;
+    })
+    .then(async chat => {
+      plugin.isresponding = false;
+      if (
+        plugin.settings.AutogenerateTitle > 0 &&
+        chat.session.messages.length >= plugin.settings.AutogenerateTitle &&
+        (writeHandler.file?.name.includes('Untitled') || / \d+\.md$/.test(writeHandler.file?.name))
+      ) {
+        await generateTitle(plugin, writeHandler);
+      }
+      await writeHandler.write(chat.getMarkdown());
+    })
+    .catch(error => plugin.console.error(error))
+    .finally(() => {
+      plugin.isresponding = false;
+      return;
+    });
+  return chat;
+}
+
+/**
+ * Generates a title for the current chat file using the conversation titler template
+ * @param plugin - The Pure Chat LLM plugin instance
+ * @param writeHandler - The write handler for managing editor content
+ * @returns Promise resolving when the title is generated and file is renamed
+ */
+export async function generateTitle(plugin: PureChatLLM, writeHandler: WriteHandler) {
+  const activeFile = writeHandler.file;
+  if (activeFile)
+    void new PureChatLLMChat(plugin)
+      .setMarkdown(await writeHandler.getValue())
+      .processChatWithTemplate(plugin.settings.chatTemplates['Conversation titler'])
+      .then(title => {
+        const sanitizedTitle = `${activeFile.parent?.path}/${title.content
+          .replace(/^<think>[\s\S]+?<\/think>/gm, '') // Remove <think> tags for ollama
+          .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
+          .trim()}.${activeFile.extension}`;
+        void plugin.app.fileManager.renameFile(activeFile, sanitizedTitle);
+        new Notice(`File renamed to: ${sanitizedTitle}`);
+      });
+  else new Notice('No active file to rename.');
 }

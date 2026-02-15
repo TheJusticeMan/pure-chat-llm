@@ -38,9 +38,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   icon: string = PURE_CHAT_LLM_ICON_NAME;
 
   /**
+   * Creates a new settings tab instance.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(app: App, plugin: PureChatLLM) {
     super(app, plugin);
@@ -48,9 +49,11 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   /**
+   * Updates a specific setting value and saves to storage.
    *
-   * @param key
-   * @param value
+   * @param key - The setting key to update
+   * @param value - The new value for the setting
+   * @returns A promise that resolves when the setting is saved
    */
   async sett<S extends keyof PureChatLLMSettings>(key: S, value: PureChatLLMSettings[S]) {
     this.plugin.settings[key] = value;
@@ -58,8 +61,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   /**
+   * Checks if a setting differs from its default value and returns it as a string.
    *
-   * @param key
+   * @param key - The setting key to check
+   * @returns The setting value as a string if it differs from default, otherwise empty string
    */
   ifdefault<S extends keyof PureChatLLMSettings>(key: S): string {
     const { settings } = this.plugin;
@@ -68,7 +73,10 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   /**
+   * Displays the settings tab user interface.
    *
+   * Generates all setting controls including model selection, prompts, agent mode,
+   * templates, chat behavior, and utility functions.
    */
   display(): void {
     const {
@@ -446,81 +454,23 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 .setValue(settings.resolveFilesForChatAnalysis)
                 .onChange(async value => await this.sett('resolveFilesForChatAnalysis', value)),
             ),
-      );
-
-    // Blue File Resolution Settings
-    new SettingGroup(containerEl)
-      .setHeading('Blue File Resolution (Dynamic Chat Execution)')
-      .addSetting(
-        setting =>
-          void setting.setDesc(
-            'Blue File Resolution enables recursive, dynamic execution of pending chat notes when they are linked. ' +
-              'When a [[note]] link is resolved and the linked file is a pending chat (ends with a user message), ' +
-              'instead of inlining its static content, the plugin executes the chat and uses the generated response.',
-          ),
       )
       .addSetting(
         setting =>
           void setting
-            .setName('Enable blue file resolution')
+            .setName('Maximum recursion depth')
             .setDesc(
-              'Turn on dynamic chat execution for [[note]] links. When enabled, linked notes that are pending chats will be executed recursively.',
-            )
-            .addToggle(toggle =>
-              toggle.setValue(settings.blueFileResolution.enabled).onChange(async value => {
-                settings.blueFileResolution.enabled = value;
-                void this.plugin.blueView?.onOpen();
-                await this.plugin.saveSettings();
-              }),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Maximum resolution depth')
-            .setDesc(
-              'Maximum depth for recursive chat execution (1-20). Prevents runaway recursion. Default is 5.',
+              'Maximum depth for recursive [[link]] resolution (1-20). Prevents infinite loops. Default is 10.',
             )
             .addText(text =>
               text
-                .setPlaceholder('5')
-                .setValue(settings.blueFileResolution.maxDepth.toString())
+                .setPlaceholder('10')
+                .setValue(settings.maxRecursionDepth.toString())
                 .onChange(async value => {
                   const num = parseInt(value);
                   if (!isNaN(num) && num >= 1 && num <= 20) {
-                    settings.blueFileResolution.maxDepth = num;
-                    await this.plugin.saveSettings();
+                    await this.sett('maxRecursionDepth', num);
                   }
-                }),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Enable caching')
-            .setDesc(
-              'Cache intermediate chat results during resolution to avoid redundant API calls for the same file within a single invocation.',
-            )
-            .addToggle(toggle =>
-              toggle.setValue(settings.blueFileResolution.enableCaching).onChange(async value => {
-                settings.blueFileResolution.enableCaching = value;
-                await this.plugin.saveSettings();
-              }),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Write intermediate results')
-            .setDesc(
-              'Save intermediate chat responses to disk. By default, only the root invocation writes results; nested executions are ephemeral.',
-            )
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.blueFileResolution.writeIntermediateResults)
-                .onChange(async value => {
-                  settings.blueFileResolution.writeIntermediateResults = value;
-                  await this.plugin.saveSettings();
                 }),
             ),
       );
@@ -590,8 +540,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
 }
 
 /**
+ * Loads all available models for all configured endpoints.
  *
- * @param plugin
+ * @param plugin - The PureChatLLM plugin instance
  */
 function loadAllModels(plugin: PureChatLLM): void {
   const currentEndpoint = plugin.settings.endpoint;
@@ -619,7 +570,7 @@ function loadAllModels(plugin: PureChatLLM): void {
  *
  * @extends Modal
  */
-export class SelectionPromptEditor extends Modal {
+class SelectionPromptEditor extends Modal {
   /**
    * Description placeholder
    *
@@ -627,9 +578,13 @@ export class SelectionPromptEditor extends Modal {
    */
   promptTitle: string;
   /**
+   * Creates a modal for editing prompt templates.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
+   * @param promptTemplates - The prompt templates object to edit
+   * @param defaultTemplates - Default template values for reset functionality
+   * @param inCMD - Object tracking which templates are available in command palette
    */
   constructor(
     app: App,
@@ -643,7 +598,7 @@ export class SelectionPromptEditor extends Modal {
     this.update();
   }
   /**
-   *
+   * Updates the modal UI with current template list and editor.
    */
   update() {
     this.contentEl.empty();
@@ -774,8 +729,9 @@ export class SelectionPromptEditor extends Modal {
   }
 
   /**
+   * Generates content for a new template using AI assistance.
    *
-   * @param value
+   * @param value - The name of the new template to generate
    */
   private generateTemplateContent(value: string) {
     this.promptTitle = value;
@@ -798,7 +754,7 @@ export class SelectionPromptEditor extends Modal {
       .then(chat => {
         if (!this.promptTemplates[this.promptTitle]) {
           this.promptTemplates[this.promptTitle] =
-            chat.messages[chat.messages.length - 2]?.content.trim() || '';
+            chat.session.messages[chat.session.messages.length - 2]?.content.trim() || '';
           this.update();
         }
       });
@@ -806,35 +762,58 @@ export class SelectionPromptEditor extends Modal {
   }
 
   /**
-   *
+   * Called when the modal is closed. Saves all template changes to settings.
    */
   onClose(): void {
     void this.plugin.saveSettings();
   }
 }
-export class FileInputSuggest extends AbstractInputSuggest<TFile> {
+/**
+ * Input suggest component for file path autocomplete.
+ */
+class FileInputSuggest extends AbstractInputSuggest<TFile> {
   files: TFile[];
+  /**
+   * Creates a new file input suggest component.
+   *
+   * @param app - The Obsidian application instance
+   * @param inputEl - The input element to attach suggestions to
+   */
   constructor(app: App, inputEl: HTMLInputElement) {
     super(app, inputEl);
     this.files = app.vault.getMarkdownFiles();
   }
 
+  /**
+   * Filters and returns file suggestions based on the query.
+   *
+   * @param query - The search query string
+   * @returns Array of matching files
+   */
   protected getSuggestions(query: string): TFile[] | Promise<TFile[]> {
     if (!query) return [];
     return this.files.filter(file => file.path.toLowerCase().includes(query.toLowerCase()));
   }
 
+  /**
+   * Renders a single suggestion item in the suggestion list.
+   *
+   * @param value - The file to render
+   * @param el - The HTML element to render into
+   */
   renderSuggestion(value: TFile, el: HTMLElement): void {
     el.setText(value.path);
   }
 }
 /**
+ * Converts a markdown string into a nested object structure based on heading levels.
  *
- * @param rawMarkdown
- * @param level
- * @param maxlevel
+ * @param rawMarkdown - The raw markdown text to parse
+ * @param level - The current heading level to parse
+ * @param maxlevel - The maximum heading level to parse
+ * @returns An object representing the markdown structure
  */
-export function getObjectFromMarkdown(
+function getObjectFromMarkdown(
   rawMarkdown: string,
   level = 1,
   maxlevel = 6,
@@ -853,13 +832,16 @@ export function getObjectFromMarkdown(
         return [title.trim(), joinedContent.trim()];
       }),
   );
-} /**
- *
- * @param obj
- * @param level
- */
+}
 
-export function getMarkdownFromObject(
+/**
+ * Converts a nested object structure into a markdown string with headings.
+ *
+ * @param obj - The object to convert to markdown
+ * @param level - The current heading level
+ * @returns The markdown representation of the object
+ */
+function getMarkdownFromObject(
   obj: Record<string, string | Record<string, string | object>>,
   level = 1,
 ): string {

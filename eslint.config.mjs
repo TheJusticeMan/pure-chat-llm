@@ -46,7 +46,7 @@ export default defineConfig([
           enforceCamelCaseLower: true,
         },
       ],
-      /*       'jsdoc/require-jsdoc': [
+      'jsdoc/require-jsdoc': [
         'error',
         {
           require: {
@@ -63,7 +63,7 @@ export default defineConfig([
       'jsdoc/check-param-names': 'error',
       'jsdoc/require-param': 'error',
       'jsdoc/require-returns': 'error',
- */ 'prefer-const': 'error',
+      'prefer-const': 'error',
     },
   },
 ]);

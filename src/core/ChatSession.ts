@@ -20,8 +20,8 @@ export class ChatSession {
   validChat: boolean = true;
 
   /**
-   *
-   * @param options
+   * Creates a new ChatSession instance
+   * @param options - The chat options for this session
    */
   constructor(options: ChatOptions) {
     this.options = options;
@@ -37,17 +37,30 @@ export class ChatSession {
    */
   appendMessage(message: ChatMessage): this;
   /**
+   * Appends one or more messages to the chat session.
+   * Optionally associates editor ranges (line positions) with each message.
    *
+   * @param messages - The messages to append (single message or array)
+   * @param clines - Optional editor ranges for the messages
+   * @returns The session instance for chaining
    */
   appendMessage(messages: ChatMessage[]): this;
   /**
+   * Appends one or more messages to the chat session.
+   * Optionally associates editor ranges (line positions) with each message.
    *
+   * @param messages - The messages to append (single message or array)
+   * @param clines - Optional editor ranges for the messages
+   * @returns The session instance for chaining
    */
   appendMessage(messages: ChatMessage[], clines: EditorRange[]): this;
   /**
+   * Appends one or more messages to the chat session.
+   * Optionally associates editor ranges (line positions) with each message.
    *
-   * @param messageOrMessages
-   * @param clines
+   * @param messageOrMessages - The message or array of messages to append
+   * @param clines - Optional editor ranges for the messages
+   * @returns The session instance for chaining
    */
   appendMessage(messageOrMessages: ChatMessage | ChatMessage[], clines?: EditorRange[]): this {
     // Handle single message
@@ -87,26 +100,9 @@ export class ChatSession {
    */
   cleanUpChat(systemPrompt: string): this {
     // Remove any empty messages except system
-    const indicesToKeep: number[] = [];
-    this.messages = this.messages.filter((msg, index) => {
-      const keep = msg.role === 'system' || msg.content.trim() !== '';
-      if (keep) indicesToKeep.push(index);
-      return keep;
-    });
-    this.clines = indicesToKeep.map(i => this.clines[i]);
+    this.messages = this.messages.filter(msg => msg.content.trim() !== '');
 
-    // Ensure first message is system
-    if (this.messages[0]?.role !== 'system') {
-      this.messages.unshift({
-        role: 'system',
-        content: systemPrompt,
-      });
-      this.clines.unshift({ from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } });
-    } else {
-      this.messages[0].content ||= systemPrompt;
-    }
-
-    // Ensure last message is user and empty
+    // Ensure last message is user
     if (this.messages.length === 0 || this.messages[this.messages.length - 1].role !== 'user') {
       this.appendMessage({ role: 'user', content: '' });
     }
@@ -121,14 +117,12 @@ export class ChatSession {
    * @returns The session instance for chaining
    */
   reverseRoles(): this {
-    this.messages = this.messages.map(msg => {
-      if (msg.role === 'user') {
-        return { ...msg, role: 'assistant' as RoleType };
-      } else if (msg.role === 'assistant') {
-        return { ...msg, role: 'user' as RoleType };
-      }
-      return msg;
-    });
+    this.messages = this.messages.map(
+      msg =>
+        (msg.role === 'user' && { ...msg, role: 'assistant' }) ||
+        (msg.role === 'assistant' && { ...msg, role: 'user' }) ||
+        msg,
+    );
     return this;
   }
 

@@ -9,21 +9,15 @@ import {
   FuzzySuggestModal,
   MarkdownView,
   Menu,
-  Notice,
   Plugin,
   setIcon,
   TFile,
   TFolder,
 } from 'obsidian';
-
-import { ObsidianFileSystemAdapter } from './adapters/ObsidianFileSystemAdapter';
-import { DEFAULT_SETTINGS, EmptyApiKey } from './assets/constants';
-import { BlueFileResolver } from './core/BlueFileResolver';
-import { PureChatLLMChat } from './core/Chat';
+import { DEFAULT_SETTINGS } from './assets/constants';
+import { completeChatResponse, generateTitle, PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
-import { LowUsageTagRemover } from './LowUsageTagRemover';
 import {
-  BLUE_RESOLUTION_VIEW_TYPE,
   PURE_CHAT_LLM_ICON_NAME,
   PURE_CHAT_LLM_ICON_SVG,
   PURE_CHAT_LLM_VIEW_TYPE,
@@ -31,12 +25,11 @@ import {
   RoleType,
   VOICE_CALL_VIEW_TYPE,
 } from './types';
-import { BlueResolutionTreeView } from './ui/BlueResolutionTreeView';
 import {
   CODE_PREVIEW_VIEW_TYPE,
   CodePreview,
+  CodeSnippetState,
   createCodeblockExtension,
-  openCodePreview,
 } from './ui/CodePreview';
 import { AskForAPI, editWand } from './ui/Modals';
 import { PureChatLLMSettingTab } from './ui/Settings';
@@ -106,19 +99,7 @@ export default class PureChatLLM extends Plugin {
    *
    * @type {({ from: number; to: number } | null)}
    */
-  codeBlock: { from: number; to: number } | null = null;
-  /**
-   * Description placeholder
-   *
-   * @type {BlueFileResolver}
-   */
-  blueFileResolver: BlueFileResolver;
-  /**
-   * Description placeholder
-   *
-   * @type {(BlueResolutionTreeView | null)}
-   */
-  blueView: BlueResolutionTreeView | null = null;
+  codeBlock: CodeSnippetState | null = null;
 
   /**
    * Initializes the plugin by loading settings, registering views, commands, and setting up the UI.
@@ -139,14 +120,9 @@ export default class PureChatLLM extends Plugin {
     this.console.log('settings loaded', this.settings);
     //runTest(this.settings.endpoints[0].apiKey); // Run the test function to check if the plugin is working
 
-    // Initialize BlueFileResolver with FileSystemPort
-    const fileSystem = new ObsidianFileSystemAdapter(this.app);
-    this.blueFileResolver = new BlueFileResolver(this, fileSystem);
-
     this.registerView(PURE_CHAT_LLM_VIEW_TYPE, leaf => new PureChatLLMSideView(leaf, this));
     this.registerView(CODE_PREVIEW_VIEW_TYPE, leaf => new CodePreview(leaf, this));
     this.registerView(VOICE_CALL_VIEW_TYPE, leaf => new VoiceCallSideView(leaf, this));
-    this.registerView(BLUE_RESOLUTION_VIEW_TYPE, leaf => new BlueResolutionTreeView(leaf, this));
 
     this.addRibbonIcon(
       PURE_CHAT_LLM_ICON_NAME,
@@ -154,7 +130,6 @@ export default class PureChatLLM extends Plugin {
       this.activateChatView,
     );
     this.addRibbonIcon('phone', 'Open voice call', this.activateVoiceCallView);
-    this.addRibbonIcon('list-tree', 'Open blue resolution tree', this.activateBlueResolutView);
 
     this.setupChatCommandHandlers();
     this.setupVoiceCallCommandHandlers();
@@ -166,51 +141,6 @@ export default class PureChatLLM extends Plugin {
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
     void this.status('');
-  }
-
-  /**
-   * Description placeholder
-   *
-   * @private
-   * @type {Array<() => void>}
-   */
-  private onupdate: Array<() => void> = [];
-
-  /**
-   * Notifies all registered listeners that the code block has been updated.
-   *
-   * Iterates through all registered callbacks in the onupdate array and invokes each one.
-   *
-   * @returns {void}
-   */
-  callOnChange() {
-    this.onupdate.forEach(callback => callback());
-  }
-
-  /**
-   * Registers a callback to be invoked when the code block is updated.
-   *
-   * Adds the provided callback function to the list of listeners that will be notified
-   * whenever the code block changes.
-   *
-   * @param {() => void} cb - The callback function to register.
-   * @returns {void}
-   */
-  onCodeBlockUpdate(cb: () => void) {
-    this.onupdate.push(cb);
-  }
-
-  /**
-   * Unregisters a previously registered code block update callback.
-   *
-   * Removes the specified callback from the list of listeners so it will no longer
-   * be invoked when the code block updates.
-   *
-   * @param {() => void} cb - The callback function to unregister.
-   * @returns {void}
-   */
-  offCodeBlockUpdate(cb: () => void) {
-    this.onupdate = this.onupdate.filter(c => c !== cb);
   }
 
   /**
@@ -241,7 +171,7 @@ export default class PureChatLLM extends Plugin {
                 await leaf.openFile(
                   await this.app.vault.create(
                     `${file.path}/${this.generateUniqueFileName(file, 'Untitled Conversation')}.md`,
-                    new PureChatLLMChat(this).setMarkdown('Type your message...').markdown,
+                    new PureChatLLMChat(this).setMarkdown('Type your message...').getMarkdown(),
                   ),
                 );
                 void this.activateChatView();
@@ -262,7 +192,7 @@ export default class PureChatLLM extends Plugin {
                   .openFile(
                     await this.app.vault.create(
                       `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
-                      new PureChatLLMChat(this).setMarkdown(link).markdown,
+                      new PureChatLLMChat(this).setMarkdown(link).getMarkdown(),
                     ),
                   );
                 void this.activateChatView();
@@ -281,9 +211,9 @@ export default class PureChatLLM extends Plugin {
                   .openFile(
                     await this.app.vault.create(
                       `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
-                      new PureChatLLMChat(this).setMarkdown(
-                        `# role: System\n${link}\n# role: User\n`,
-                      ).markdown,
+                      new PureChatLLMChat(this)
+                        .setMarkdown(`# role: System\n${link}\n# role: User\n`)
+                        .getMarkdown(),
                     ),
                   );
                 void this.activateChatView();
@@ -336,12 +266,6 @@ export default class PureChatLLM extends Plugin {
         this.editSelection(selected, e);
       },
     });
-    this.addCommand({
-      id: 'clean-up-tags-in-vault',
-      name: 'Clean up tags in vault',
-      icon: 'tags',
-      callback: async () => new LowUsageTagRemover(this.app).open(),
-    });
 
     this.addCommand({
       id: 'analyze-conversation',
@@ -365,7 +289,7 @@ export default class PureChatLLM extends Plugin {
       icon: 'arrow-left-right',
       editorCallback: (editor: Editor) =>
         editor.setValue(
-          new PureChatLLMChat(this).setMarkdown(editor.getValue()).reverseRoles().markdown,
+          new PureChatLLMChat(this).setMarkdown(editor.getValue()).reverseRoles().getMarkdown(),
         ),
     });
     this.addCommand({
@@ -376,7 +300,7 @@ export default class PureChatLLM extends Plugin {
         void new PureChatLLMSpeech(
           this,
           new PureChatLLMChat(this).setMarkdown(editor.getValue()).thencb(chat => {
-            chat.messages = chat.messages.filter(
+            chat.session.messages = chat.session.messages.filter(
               message => message.role === 'user' || message.role === 'assistant',
             );
           }),
@@ -444,14 +368,6 @@ export default class PureChatLLM extends Plugin {
       name: 'Start voice call',
       icon: 'phone-call',
       callback: this.activateVoiceCallView,
-    });
-
-    // Blue Resolution Tree commands
-    this.addCommand({
-      id: 'open-blue-resolution-tree',
-      name: 'Open blue resolution tree view',
-      icon: 'list-tree',
-      callback: this.activateBlueResolutView,
     });
   }
 
@@ -526,28 +442,18 @@ export default class PureChatLLM extends Plugin {
   }
 
   /**
-   * Description placeholder
+   * Activates the chat view in the workspace.
    *
-   * @async
-   * @returns {unknown}
+   * @returns A promise that resolves when the view is activated
    */
   activateChatView = async () => await this.activateView(PURE_CHAT_LLM_VIEW_TYPE, 'right');
 
   /**
-   * Description placeholder
+   * Activates the voice call view in the workspace.
    *
-   * @async
-   * @returns {unknown}
+   * @returns A promise that resolves when the view is activated
    */
   activateVoiceCallView = async () => await this.activateView(VOICE_CALL_VIEW_TYPE, 'right');
-
-  /**
-   * Description placeholder
-   *
-   * @async
-   * @returns {unknown}
-   */
-  activateBlueResolutView = async () => await this.activateView(BLUE_RESOLUTION_VIEW_TYPE, 'right');
 
   /**
    * Activates a specific view in the workspace.
@@ -579,6 +485,37 @@ export default class PureChatLLM extends Plugin {
     }
 
     if (leaf) await workspace.revealLeaf(leaf);
+  }
+
+  /**
+   * Opens a code preview view with the provided state.
+   *
+   * @param state - The code snippet state to preview
+   * @returns A promise that resolves when the preview is opened
+   */
+  async openCodePreview(state: CodeSnippetState) {
+    const leaves = this.app.workspace.getLeavesOfType(CODE_PREVIEW_VIEW_TYPE);
+    if (leaves.length === 0) {
+      const leaf = this.app.workspace.getLeaf('split');
+      await leaf.setViewState({ type: CODE_PREVIEW_VIEW_TYPE, active: true });
+    }
+    if (
+      state.code === this.codeBlock?.code &&
+      state.language === this.codeBlock?.language &&
+      leaves.length > 0
+    )
+      return;
+    this.updateCodePreview(state);
+  }
+
+  /**
+   * Updates the code preview view with new state.
+   *
+   * @param state - The code snippet state to update with
+   */
+  updateCodePreview(state: CodeSnippetState) {
+    this.codeBlock = state;
+    this.app.workspace.getLeavesOfType(CODE_PREVIEW_VIEW_TYPE)[0]?.setEphemeralState(state);
   }
 
   /**
@@ -619,15 +556,7 @@ export default class PureChatLLM extends Plugin {
         item
           .setTitle('Open code preview')
           .setIcon('code')
-          .onClick(() => {
-            const content = editor.getValue().slice(codeBlock.from, codeBlock.to);
-            openCodePreview(
-              this.app,
-              content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
-              content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
-              editor,
-            );
-          }),
+          .onClick(() => this.openCodePreview(codeBlock)),
       );
 
     return menu;
@@ -678,21 +607,12 @@ export default class PureChatLLM extends Plugin {
    * @param editor - The editor instance containing the file's content.
    * @param view - The Markdown view associated with the editor.
    */
-  generateTitle(editor: Editor, view: MarkdownView): void {
+  async generateTitle(editor: Editor, view: MarkdownView): Promise<void> {
     const activeFile = view.file;
-    if (activeFile)
-      void new PureChatLLMChat(this)
-        .setMarkdown(editor.getValue())
-        .processChatWithTemplate(this.settings.chatTemplates['Conversation titler'])
-        .then(title => {
-          const sanitizedTitle = `${activeFile.parent?.path}/${title.content
-            .replace(/^<think>[\s\S]+?<\/think>/gm, '') // Remove <think> tags for ollama
-            .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
-            .trim()}.${activeFile.extension}`;
-          void this.app.fileManager.renameFile(activeFile, sanitizedTitle);
-          new Notice(`File renamed to: ${sanitizedTitle}`);
-        });
-    else new Notice('No active file to rename.');
+    if (!activeFile) return;
+
+    const writeHandler = new WriteHandler(this, activeFile, view, editor, true);
+    await generateTitle(this, writeHandler);
   }
 
   /**
@@ -711,52 +631,8 @@ export default class PureChatLLM extends Plugin {
     const activeFile = view.file;
     if (!activeFile) return;
 
-    const endpoint = this.settings.endpoints[this.settings.endpoint];
-    if (endpoint.apiKey == EmptyApiKey) {
-      new AskForAPI(this.app, this).open();
-      return;
-    }
     const writeHandler = new WriteHandler(this, activeFile, view, editor, true);
-
-    const editorcontent = await writeHandler.getValue();
-
-    const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
-    if (
-      chat.messages[chat.messages.length - 1].content === '' &&
-      chat.validChat &&
-      this.settings.AutoReverseRoles
-    ) {
-      if (chat.messages.pop()?.role == 'user') chat.reverseRoles();
-    }
-    await writeHandler.write(chat.markdown);
-
-    if (!chat.validChat) return;
-
-    this.isresponding = true;
-
-    await writeHandler.appendContent(`\n${chat.parseRole('assistant...' as RoleType)}\n`);
-    chat
-      .completeChatResponse(activeFile, async e => {
-        await writeHandler.appendContent(e.content);
-        return true;
-      })
-      .then(async chat => {
-        this.isresponding = false;
-        if (
-          this.settings.AutogenerateTitle > 0 &&
-          chat.messages.length >= this.settings.AutogenerateTitle &&
-          (activeFile?.name.includes('Untitled') || / \d+\.md$/.test(activeFile?.name)) &&
-          view
-        ) {
-          this.generateTitle(editor, view);
-        }
-        await writeHandler.write(chat.markdown);
-      })
-      .catch(error => this.console.error(error))
-      .finally(() => {
-        this.isresponding = false;
-        return;
-      });
+    await completeChatResponse(this, writeHandler);
   }
 
   /**
@@ -882,6 +758,9 @@ export default class PureChatLLM extends Plugin {
  * const handler = new InstructPromptsHandler(app, (prompt) => { ... }, templates);
  * handler.open();
  */
+/**
+ * Modal for selecting instruction prompts from predefined templates.
+ */
 class InstructPromptsHandler extends FuzzySuggestModal<string> {
   /**
    * Description placeholder
@@ -896,9 +775,11 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
    */
   templates: { [key: string]: string };
   /**
+   * Creates a new instruction prompts handler modal.
    *
-   * @param app
-   * @param onSubmit
+   * @param app - The Obsidian application instance
+   * @param onSubmit - Callback function to handle selected prompt
+   * @param templates - Object containing template key-value pairs
    */
   constructor(app: App, onSubmit: (result: string) => void, templates: { [key: string]: string }) {
     super(app);
@@ -908,28 +789,29 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
   }
 
   /**
-   * Description placeholder
+   * Gets the list of available template keys.
    *
-   * @returns {string[]}
+   * @returns Array of template keys
    */
   getItems(): string[] {
     return Object.keys(this.templates);
   }
 
   /**
-   * Description placeholder
+   * Gets the display text for a template item.
    *
-   * @param {string} templateKey
-   * @returns {string}
+   * @param templateKey - The template key
+   * @returns The display text for the template
    */
   getItemText(templateKey: string): string {
     return templateKey;
   }
 
   /**
+   * Called when a template is selected from the list.
    *
-   * @param templateKey
-   * @param evt
+   * @param templateKey - The selected template key
+   * @param evt - The mouse or keyboard event that triggered the selection
    */
   onChooseItem(templateKey: string, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(this.templates[templateKey]);
@@ -937,7 +819,10 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
 }
 
 /**
+ * Editor suggest component for auto-completing chat-related syntax.
  *
+ * Provides suggestions for model names, roles, code languages, and the send command
+ * based on the current editor context.
  */
 class PureChatEditorSuggest extends EditorSuggest<string> {
   /**
@@ -953,9 +838,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
    */
   plugin: PureChatLLM;
   /**
+   * Creates a new editor suggest instance.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(app: App, plugin: PureChatLLM) {
     super(app);
@@ -963,11 +849,12 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
+   * Determines if suggestions should be triggered at the current cursor position.
    *
-   * @param cursor
-   * @param editor
-   * @param file
-   * @returns {EditorSuggestTriggerInfo | null}
+   * @param cursor - The current cursor position
+   * @param editor - The editor instance
+   * @param file - The current file (if any)
+   * @returns Trigger info if suggestions should be shown, null otherwise
    */
   onTrigger(
     cursor: EditorPosition,
@@ -986,11 +873,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
-   *
-   * @param context
-   * @returns {string[] | Promise<string[]>}
-   * @description
    * Provides suggestions based on the current query context in the editor.
+   *
+   * @param context - The editor suggest context containing the query
+   * @returns Array of suggestion strings or a promise resolving to suggestions
    */
   getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
     if (context.query === 'send') {
@@ -1026,9 +912,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
+   * Renders a suggestion item in the suggestion list.
    *
-   * @param value
-   * @param el
+   * @param value - The suggestion value to render
+   * @param el - The HTML element to render into
    */
   renderSuggestion(value: string, el: HTMLElement): void {
     switch (this.type) {
@@ -1048,9 +935,10 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
   }
 
   /**
+   * Called when a suggestion is selected.
    *
-   * @param value
-   * @param evt
+   * @param value - The selected suggestion value
+   * @param evt - The mouse or keyboard event that triggered the selection
    */
   selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
     if (!this.context) return;
@@ -1072,7 +960,7 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
         break;
       case 'role':
         editor.replaceRange(
-          `${new PureChatLLMChat(this.plugin).parseRole(value as RoleType)}\n`,
+          `${new PureChatLLMChat(this.plugin).adapter.parseRole(value as RoleType)}\n`,
           start,
           end,
         );

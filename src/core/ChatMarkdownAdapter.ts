@@ -1,7 +1,7 @@
 import { parseYaml, stringifyYaml } from 'obsidian';
+import { toTitleCase } from 'src/utils/toTitleCase';
 import { alloptions } from '../assets/constants';
 import { ChatOptions, RoleType } from '../types';
-import { CodeContent } from '../ui/CodeHandling';
 import { ChatSession } from './ChatSession';
 
 /**
@@ -16,10 +16,10 @@ import { ChatSession } from './ChatSession';
  */
 export class ChatMarkdownAdapter {
   /**
-   *
-   * @param roleFormatter
-   * @param useYAMLFrontMatter
-   * @param agentMode
+   * Creates a new ChatMarkdownAdapter instance
+   * @param roleFormatter - The role formatter template (e.g., "# role: {role}")
+   * @param useYAMLFrontMatter - Whether to use YAML frontmatter for options
+   * @param agentMode - Whether agent mode is enabled
    */
   constructor(
     private roleFormatter: string,
@@ -28,21 +28,12 @@ export class ChatMarkdownAdapter {
   ) {}
 
   /**
-   * Generates a regex pattern for matching role headers in markdown.
-   * @returns RegExp for matching role headers
-   */
-  get regexForRoles(): RegExp {
-    const formatter = this.roleFormatter.replace('{role}', '(\\w+)');
-    return new RegExp(`^${formatter}$`, 'gm');
-  }
-
-  /**
    * Parses a role string using the formatter template.
    * @param role - The role to format
    * @returns Formatted role string
    */
   parseRole(role: RoleType): string {
-    return this.roleFormatter.replace('{role}', role);
+    return this.roleFormatter.replace('{role}', toTitleCase(role));
   }
 
   /**
@@ -55,7 +46,9 @@ export class ChatMarkdownAdapter {
    */
   parse(markdown: string, defaultOptions: ChatOptions, systemPrompt: string): ChatSession {
     markdown = '\n' + markdown.trim() + '\n'; // ensure newlines at start and end
-    const matches = Array.from(markdown.matchAll(this.regexForRoles));
+    const matches = Array.from(
+      markdown.matchAll(new RegExp(`^${this.roleFormatter.replace('{role}', '(\\w+)')}$`, 'gm')),
+    );
 
     const session = new ChatSession(defaultOptions);
     session.pretext = matches[0] ? markdown.substring(0, matches[0].index).trim() : markdown;
@@ -164,27 +157,6 @@ export class ChatMarkdownAdapter {
     const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, 'im');
     const match = markdown.match(regex);
     return match ? match[1] : null;
-  }
-
-  /**
-   * Extracts all code blocks from a given markdown string.
-   *
-   * @param markdown - The markdown string to extract code blocks from
-   * @returns An array of objects containing language and code
-   */
-  static extractAllCodeBlocks(markdown: string): CodeContent[] {
-    const regex = /^```(\w*)\n([\s\S]*?)\n```/gm;
-    const matches: { language: string; code: string }[] = [];
-    let match;
-    while ((match = regex.exec(markdown)) !== null) {
-      const [, language, code] = match;
-      const lang = (language || 'plaintext').trim() || 'plaintext';
-      matches.push({
-        language: lang,
-        code: code.trim(),
-      });
-    }
-    return matches;
   }
 
   /**
