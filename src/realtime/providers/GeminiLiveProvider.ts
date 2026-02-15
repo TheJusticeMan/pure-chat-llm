@@ -90,46 +90,48 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   private onErrorCallback?: (error: Error) => void;
 
   /**
-   *
-   * @param toolExecutor
+   * Creates a new GeminiLiveProvider
+   * @param toolExecutor - Optional tool executor for function calling
    */
   constructor(private toolExecutor?: IToolExecutor) {}
 
   /**
-   *
+   * Gets the provider name
+   * @returns The display name of the provider
    */
   getName(): string {
     return this.toolExecutor ? 'Google Gemini Live (Tools)' : 'Google Gemini Live';
   }
 
   /**
-   *
-   * @param callback
+   * Registers callback for remote audio tracks
+   * @param callback - Function to call when remote audio is received
    */
   onRemoteTrack(callback: (stream: MediaStream) => void): void {
     this.onRemoteTrackCallback = callback;
   }
 
   /**
-   *
-   * @param callback
+   * Registers callback for server messages
+   * @param callback - Function to call when server sends a message
    */
   onMessage(callback: (event: unknown) => void): void {
     this.onMessageCallback = callback;
   }
 
   /**
-   *
-   * @param callback
+   * Registers callback for errors
+   * @param callback - Function to call when an error occurs
    */
   onError(callback: (error: Error) => void): void {
     this.onErrorCallback = callback;
   }
 
   /**
-   *
-   * @param localStream
-   * @param config
+   * Connects to Gemini Live API
+   * @param localStream - The local audio stream from the microphone
+   * @param config - Configuration including API key and model settings
+   * @returns Promise that resolves when connection is established
    */
   async connect(localStream: MediaStream, config: VoiceCallConfig): Promise<void> {
     try {
@@ -193,7 +195,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
+   * Disconnects from Gemini Live API and cleans up resources
+   * @returns Promise that resolves when disconnection is complete
    */
   async disconnect(): Promise<void> {
     if (this.ws) {
@@ -218,8 +221,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param event
+   * Sends an event to the Gemini API
+   * @param event - The event to send
    */
   send(event: unknown): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -228,8 +231,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param config
+   * Sends setup configuration to initialize the Gemini session
+   * @param config - Voice call configuration including model and instructions
    */
   private sendSetup(config: VoiceCallConfig) {
     const setup: GeminiSetup = {
@@ -267,8 +270,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param data
+   * Sends an audio chunk to Gemini
+   * @param data - PCM audio data as ArrayBuffer
    */
   private sendAudioChunk(data: ArrayBuffer) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
@@ -288,8 +291,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param event
+   * Handles incoming WebSocket messages from Gemini
+   * @param event - The WebSocket message event
    */
   private handleMessage(event: MessageEvent) {
     let data: GeminiMessage;
@@ -325,8 +328,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param data
+   * Queues audio data for playback
+   * @param data - PCM audio data to queue
    */
   private queueAudio(data: ArrayBuffer) {
     this.audioQueue.push(data);
@@ -336,7 +339,8 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
+   * Plays queued audio chunks
+   * @returns Promise that resolves when playback completes or queue is empty
    */
   private async playQueue() {
     if (!this.audioContext || this.audioQueue.length === 0) {
@@ -375,8 +379,9 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param toolCall
+   * Handles tool/function calls from Gemini
+   * @param toolCall - The tool call request from Gemini
+   * @returns Promise that resolves when tool execution completes
    */
   private async handleToolCall(toolCall: NonNullable<GeminiMessage['toolCall']>) {
     if (!this.toolExecutor || !toolCall.functionCalls) return;
@@ -411,8 +416,9 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
 
   // Helpers
   /**
-   *
-   * @param buffer
+   * Converts an ArrayBuffer to base64 string
+   * @param buffer - The buffer to convert
+   * @returns Base64 encoded string
    */
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     let binary = '';
@@ -424,8 +430,9 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param base64
+   * Converts a base64 string to ArrayBuffer
+   * @param base64 - The base64 string to decode
+   * @returns Decoded ArrayBuffer
    */
   private base64ToArrayBuffer(base64: string): ArrayBuffer {
     const binary = atob(base64);
@@ -437,8 +444,9 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
   }
 
   /**
-   *
-   * @param obj
+   * Recursively removes additionalProperties from an object
+   * @param obj - The object to process
+   * @returns The processed object without additionalProperties
    */
   private removeAdditionalProperties(obj: unknown): JsonValue {
     if (typeof obj !== 'object' || obj === null) return obj as JsonValue;
