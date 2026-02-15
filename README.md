@@ -8,7 +8,7 @@
 
 **Transform your Obsidian notes into powerful AI conversations with built-in agent capabilities.**
 
-[Installation](#installation-v) | [Quick Start](#quick-start->) | [Features](#features-+) | [Documentation](#documentation-i)
+[Installation](#installation-v) | [Quick Start](#quick-start-) | [Features](#features-+) | [Documentation](#documentation-i)
 
 </div>
 
