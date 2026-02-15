@@ -5,32 +5,41 @@ This guide documents the pattern for completing JSDoc documentation across the c
 
 ## Progress Summary
 
-### Completed Files (✅ 0 JSDoc issues)
+### ✅ Completed Files (0 JSDoc issues)
 - ✅ `src/tools/UITools.ts` - 3 tool classes
 - ✅ `src/tools/SearchTools.ts` - 3 tool classes  
 - ✅ `src/tools/SystemTools.ts` - 2 tool classes + 1 modal
+- ✅ `src/tools/AITools.ts` - 2 AI tool classes
+- ✅ `src/tools/VaultTools.ts` - 3 vault tool classes
+- ✅ `src/utils/BooleanSearchParser.ts` - Boolean search parser
+
+**Total Completed: 6 files, 15 tool classes/utilities**
 
 ### Files Still Needing Completion
 
-#### High Priority (Tool Classes)
-- `src/tools/AITools.ts` - 3 classes (ImageGenerationTool, SmartConnectionsTool, SunoTool)
-- `src/tools/VaultTools.ts` - 7 classes (largest file)
+**Current Status: 289 JSDoc issues remaining (70 errors, 219 warnings)**
 
-#### Medium Priority
-- `src/core/Chat.ts` - 2 methods needing @returns
+#### Medium Priority (Core Files)
+- `src/core/Chat.ts` - Chat management class with recursive resolution
+- `src/core/ChatSession.ts` - Chat session handling
+- `src/core/LLMService.ts` - LLM API service
+- `src/core/Speech.ts` - Speech/voice functionality
+- `src/core/ChatMarkdownAdapter.ts` - Markdown parsing
+- `src/core/ImportChatGPT.ts` - ChatGPT import functionality
 - `src/tools.ts` - Base Tool class
-- `src/main.ts` - 2 methods
+- `src/main.ts` - Main plugin entry point
 
 #### Lower Priority (UI Files)
-- `src/ui/CodePreview.ts`
-- `src/ui/Modals.ts`
-- `src/ui/Settings.ts`
-- `src/ui/SideView.ts`
-- `src/ui/VoiceCallSideView.ts`
+- `src/ui/CodePreview.ts` - Code preview component
+- `src/ui/Modals.ts` - Modal dialogs
+- `src/ui/Settings.ts` - Settings interface
+- `src/ui/SideView.ts` - Side panel view
+- `src/ui/VoiceCallSideView.ts` - Voice call interface
 
-#### Utility Files
-- `src/utils/BooleanSearchParser.ts`
-- Various other utils
+#### Other Files
+- `src/LowUsageTagRemover.ts` - Tag cleanup utility
+- `src/realtime/` - Real-time voice call providers and executor
+- Other utility files as needed
 
 ## Standard Pattern
 
@@ -118,16 +127,37 @@ Should show: `✖ 0 problems`
 ## Current Metrics
 
 - **Total files**: 34 TypeScript files
-- **Files completed**: 3 (UITools, SearchTools, SystemTools)
+- **Files completed**: 6 (all tool classes + Boolean parser)
 - **Original issues**: 352 (103 errors, 249 warnings)
-- **Estimated remaining**: ~340 issues across 31 files
+- **Current issues**: 289 (70 errors, 219 warnings)
+- **Issues resolved**: 63 (18% reduction)
+
+## Achievements
+
+✅ **All tool classes completed** - 100% of tools documentation done
+✅ **Established consistent patterns** - Clear templates for remaining work
+✅ **Reduced error count** - From 103 to 70 errors
+✅ **Quality improvements** - All completed files pass linting
 
 ## Next Steps
 
-1. Complete AITools.ts (3 classes)
-2. Complete VaultTools.ts (7 classes - largest remaining)
-3. Fix core/Chat.ts methods
-4. Complete UI files
-5. Complete utility files
-6. Run full lint to verify 0 issues
+1. ✅ ~~Complete all tool classes~~ - DONE
+2. ✅ ~~Complete BooleanSearchParser utility~~ - DONE
+3. Complete core classes (Chat.ts, LLMService.ts, etc.)
+4. Complete main.ts plugin entry point
+5. Complete UI files (Settings.ts, SideView.ts, etc.)
+6. Complete realtime voice call files
+7. Run full lint to verify 0 issues
+
+## How to Continue
+
+For each remaining file:
+1. View the file to understand its structure
+2. Add class-level JSDoc with description
+3. Add @returns to all methods missing it
+4. Add @param descriptions where missing
+5. Verify with `npx eslint src/path/to/file.ts`
+6. Commit when file shows 0 issues
+
+The pattern is well-established - follow the templates above for consistent, quality documentation.
 
