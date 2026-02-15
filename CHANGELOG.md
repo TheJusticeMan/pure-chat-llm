@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is a **major release** with breaking changes focused on simplification, performance optimization, and code quality improvements.
 
-### 🎯 Highlights
+### [TARGET] Highlights
 
-- **38% Bundle Size Reduction**: main.js reduced from 211KB → 131KB (80KB savings) through architectural simplification
+- **38% Bundle Size Reduction**: main.js reduced from 211KB -> 131KB (80KB savings) through architectural simplification
 - **100% JSDoc Documentation Coverage**: All 26 TypeScript files fully documented (352 issues resolved)
 - **Comprehensive Tool Documentation**: 1,662 lines of LLM-friendly documentation for all 13 tools
 - **Repository Cleanup**: Removed 6 unnecessary files and organized scripts into dedicated folder
@@ -88,7 +88,7 @@ This is a **major release** with breaking changes focused on simplification, per
 
 - **Dependencies Updated**:
   - Added `@typescript-eslint/parser` v8.55.0 for improved ESLint configuration
-  - Updated `@types/node` from v25.0.2 → v25.2.3
+  - Updated `@types/node` from v25.0.2 -> v25.2.3
   - Updated `knip` to v5.83.1
 - **Type Safety Improvements**:
   - Removed unsafe type assertions in `processChatWithTemplate()`

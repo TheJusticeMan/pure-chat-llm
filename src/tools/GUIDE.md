@@ -94,7 +94,7 @@ Action: Appended to section "## Tasks"
 Lines changed: +3 (67 -> 70)
 Total characters: 1,234
 
-File Status: ✓ Saved successfully
+File Status: [x] Saved successfully
 ---
 SUGGESTED ACTIONS:
 1. manage_workspace() to open the updated file
@@ -1097,9 +1097,9 @@ Displays a toast-style notification in Obsidian. These appear in the upper-right
    - Use past tense for completed actions
    - Include essential details only
    - Examples:
-     - ✅ "Note saved successfully"
-     - ✅ "Searching 1,247 notes..."
-     - ❌ "The operation that you requested has been completed"
+     - [x] "Note saved successfully"
+     - [x] "Searching 1,247 notes..."
+     - [ ] "The operation that you requested has been completed"
 
 2. **Duration Guidelines**:
    - Quick confirmations: 3000ms
@@ -1470,7 +1470,7 @@ Action: Created new note
 Lines changed: +8 (0 -> 8)
 Total characters: 156
 
-File Status: ✓ Saved successfully
+File Status: [x] Saved successfully
 ---
 SUGGESTED ACTIONS:
 1. manage_workspace(action="open", path="Projects/AI Ethics.md")
@@ -1624,7 +1624,7 @@ Error: File not found at "Concepts/Missing.md"
 2. **Read Before Writing**: Always read content before modifications
 3. **Confirm Destructive Operations**: Write operations show confirmation modals
 4. **Use Semantic Search Wisely**: `smart_connections_rag` for conceptual queries
-5. **Chain Tools Logically**: Search → Read → Analyze → Write
+5. **Chain Tools Logically**: Search -> Read -> Analyze -> Write
 
 ### Error Recovery
 

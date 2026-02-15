@@ -8,57 +8,57 @@
 
 **Transform your Obsidian notes into powerful AI conversations with built-in agent capabilities**
 
-[Installation](#-installation) • [Quick Start](#-quick-start) • [Features](#-features) • [Documentation](#-documentation)
+[Installation](#-installation) * [Quick Start](#-quick-start) * [Features](#-features) * [Documentation](#-documentation)
 
 </div>
 
 ---
 
-## 🎯 Overview
+## [TARGET] Overview
 
-**Pure Chat LLM** turns Obsidian notes into interactive AI chat interfaces with unprecedented integration into your knowledge base. Unlike typical AI plugins, Pure Chat LLM provides **13 intelligent tools** that allow AI models to autonomously read, write, search, and manage your vault—with your explicit approval.
+**Pure Chat LLM** turns Obsidian notes into interactive AI chat interfaces with unprecedented integration into your knowledge base. Unlike typical AI plugins, Pure Chat LLM provides **13 intelligent tools** that allow AI models to autonomously read, write, search, and manage your vault--with your explicit approval.
 
 ### What Makes It Different?
 
-- 🤖 **Agentic AI**: AI can autonomously use tools to interact with your vault (with your permission)
-- 📝 **Note-as-Chat**: Transform any note into a conversation—no separate chat windows
-- 🔗 **Deep Integration**: Leverages Obsidian's API for vault operations, workspace management, and more
-- 🛡️ **Safety First**: All destructive operations require explicit user approval via visual diff modals
-- 🚀 **38% Smaller**: Optimized architecture (131KB bundle, down from 211KB in v1.x)
-- 🎙️ **Voice Calls**: Real-time voice conversations with tool access via OpenAI Realtime API
-- 🔄 **Multi-Provider**: OpenAI, Gemini, xAI, Anthropic, Cohere, Mistral AI, DeepSeek
+- [AI] **Agentic AI**: AI can autonomously use tools to interact with your vault (with your permission)
+- [NOTE] **Note-as-Chat**: Transform any note into a conversation--no separate chat windows
+- [LINK] **Deep Integration**: Leverages Obsidian's API for vault operations, workspace management, and more
+- [SHIELD] **Safety First**: All destructive operations require explicit user approval via visual diff modals
+- [ROCKET] **38% Smaller**: Optimized architecture (131KB bundle, down from 211KB in v1.x)
+- [MIC] **Voice Calls**: Real-time voice conversations with tool access via OpenAI Realtime API
+- [SYNC] **Multi-Provider**: OpenAI, Gemini, xAI, Anthropic, Cohere, Mistral AI, DeepSeek
 
 ---
 
-## ✨ Features
+## [STAR] Features
 
-### 🤖 Intelligent Tool System (Agent Mode)
+### [AI] Intelligent Tool System (Agent Mode)
 
 Pure Chat LLM includes **13 sophisticated tools** that enable AI to work with your vault:
 
-#### 📚 Vault Operations
+#### [BOOKS] Vault Operations
 - **Read notes** with section/heading/block support (`[[Note#Header]]`, `[[Note#^block]]`)
 - **Write notes** with create/append/prepend modes + user approval modal
 - **Search content** with boolean logic (AND/OR/NOT), regex, and context windows
 - **Discover files** using glob patterns (`**/*.md`, `src/**/*.ts`)
 - **Analyze backlinks** to explore your knowledge graph
 
-#### 🎨 AI Capabilities  
+#### [ART] AI Capabilities  
 - **Generate images** (OpenAI, xAI, Gemini) with aspect ratio control
 - **Semantic search** via Smart Connections plugin integration (RAG)
 
-#### ⚙️ System Control
+#### [GEAR] System Control
 - **Manage settings** with confirmation modals for safety
 - **Apply templates** programmatically with placeholder replacement
 
-#### 🎛️ Workspace Management
+#### [CONTROLS] Workspace Management
 - **Get active context**: Current file, cursor position, selection
 - **Manage workspace**: Open/close tabs with split pane options
 - **Show notices**: Display toast notifications
 
 > **Agent Mode** must be enabled in settings to allow AI autonomous tool access during conversations.
 
-### 💬 Chat Features
+### [CHAT] Chat Features
 
 - **Inline conversations**: Transform any note into a chat interface
 - **Multiple AI providers**: Switch between OpenAI, Gemini, xAI, Anthropic, and more
@@ -68,7 +68,7 @@ Pure Chat LLM includes **13 sophisticated tools** that enable AI to work with yo
 - **Markdown rendering**: Full formatting support (lists, code blocks, tables)
 - **Streaming responses**: Real-time token streaming for supported models
 
-### 🎙️ Voice Call Feature
+### [MIC] Voice Call Feature
 
 Real-time voice conversations using OpenAI Realtime API with optional tool access:
 
@@ -78,7 +78,7 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 - **High-quality audio**: Echo cancellation, noise suppression, auto-gain control
 - **Provider extensibility**: Designed to support multiple voice providers
 
-### 🔒 Safety & Privacy
+### [LOCK] Safety & Privacy
 
 - **Explicit approval**: All file writes and settings changes require user confirmation
 - **Visual diff modals**: See exactly what will change before accepting
@@ -87,11 +87,11 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 
 ---
 
-## 📦 Installation
+## [PACKAGE] Installation
 
 ### From Obsidian Community Plugins (Recommended)
 
-1. Open **Settings** → **Community Plugins**
+1. Open **Settings** -> **Community Plugins**
 2. Click **Browse** and search for **Pure Chat LLM**
 3. Click **Install**, then **Enable**
 4. Configure your API key (see [Configuration](#-configuration))
@@ -104,11 +104,11 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
    <vault>/.obsidian/plugins/pure-chat-llm/
    ```
 3. Reload Obsidian
-4. Enable the plugin in Settings → Community Plugins
+4. Enable the plugin in Settings -> Community Plugins
 
 ---
 
-## 🚀 Quick Start
+## [ROCKET] Quick Start
 
 ### Basic Chat
 
@@ -119,7 +119,7 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
    
    What is the meaning of life?
    ```
-3. **Initiate chat** with **Shift + Enter** or command palette → "Complete chat response"
+3. **Initiate chat** with **Shift + Enter** or command palette -> "Complete chat response"
 4. The AI will respond, and you can continue the conversation
 
 ### Using Note Context
@@ -173,11 +173,11 @@ The AI will:
 
 ---
 
-## ⚙️ Configuration
+## [GEAR] Configuration
 
 ### API Keys
 
-1. Navigate to **Settings** → **Pure Chat LLM**
+1. Navigate to **Settings** -> **Pure Chat LLM**
 2. Enter your API key for your chosen provider:
    - **OpenAI**: [Get API Key](https://platform.openai.com/account/api-keys)
    - **Gemini**: [Google AI Studio](https://makersuite.google.com/app/apikey)
@@ -198,7 +198,7 @@ Configure multiple endpoints for different providers:
 
 Enable autonomous tool usage:
 
-1. Go to **Settings** → **Pure Chat LLM**
+1. Go to **Settings** -> **Pure Chat LLM**
 2. Toggle **Agent Mode** on
 3. Select which tools to make available
 4. Configure tool-specific settings (e.g., max recursion depth)
@@ -209,11 +209,11 @@ For voice call support:
 
 1. Configure OpenAI API key with Realtime API access
 2. Grant microphone permissions
-3. Click phone icon in ribbon or use command palette → "Open voice call panel"
+3. Click phone icon in ribbon or use command palette -> "Open voice call panel"
 
 ---
 
-## 📖 Usage Examples
+## [BOOK] Usage Examples
 
 ### Example 1: Research Assistant
 
@@ -274,7 +274,7 @@ Review this draft and suggest improvements for clarity and flow.
 
 ---
 
-## 🛠️ Available Tools
+## [TOOLS] Available Tools
 
 See the complete [Tool Documentation](src/tools/GUIDE.md) for detailed information on all 13 tools.
 
@@ -296,7 +296,7 @@ See the complete [Tool Documentation](src/tools/GUIDE.md) for detailed informati
 
 ---
 
-## 🎨 Screenshots
+## [ART] Screenshots
 
 ### Chat Interface
 Transform any note into an interactive conversation:
@@ -313,33 +313,33 @@ I'll search your vault for literature review notes and analyze the themes...
 All destructive operations require explicit approval with diff visualization:
 
 ```
-┌─────────────────────────────────────┐
-│  Review Changes                      │
-├─────────────────────────────────────┤
-│  - Old content                       │
-│  + New content                       │
-│                                      │
-│  [Accept]  [Reject]                  │
-└─────────────────────────────────────┘
++-------------------------------------+
+|  Review Changes                      |
++-------------------------------------+
+|  - Old content                       |
+|  + New content                       |
+|                                      |
+|  [Accept]  [Reject]                  |
++-------------------------------------+
 ```
 
 ### Voice Call Panel
 Real-time voice conversations with optional tool access:
 
 ```
-┌─────────────────────────────────────┐
-│  🎙️ Voice Call                      │
-├─────────────────────────────────────┤
-│  Status: Connected                   │
-│  Agent Mode: Enabled                 │
-│                                      │
-│  [🔇 Mute]  [📞 End Call]           │
-└─────────────────────────────────────┘
++-------------------------------------+
+|  [MIC] Voice Call                      |
++-------------------------------------+
+|  Status: Connected                   |
+|  Agent Mode: Enabled                 |
+|                                      |
+|  [[MUTE] Mute]  [[PHONE] End Call]           |
++-------------------------------------+
 ```
 
 ---
 
-## 🔧 Troubleshooting
+## [WRENCH] Troubleshooting
 
 ### Chat Issues
 
@@ -379,13 +379,13 @@ Real-time voice conversations with optional tool access:
 
 ---
 
-## 🏗️ Architecture
+## [BUILD] Architecture
 
 ### v2.0.0 Improvements
 
 Pure Chat LLM v2.0.0 represents a major architectural refactoring:
 
-- **38% bundle size reduction** (211KB → 131KB main.js, plus 84% styles.css reduction)
+- **38% bundle size reduction** (211KB -> 131KB main.js, plus 84% styles.css reduction)
 - **Simplified file resolution**: Removed complex BlueFileResolver system (~70KB) in favor of lightweight recursive resolution
 - **100% JSDoc coverage**: All 26 TypeScript files fully documented
 - **Enhanced type safety**: Improved error handling and type definitions
@@ -401,7 +401,7 @@ Pure Chat LLM v2.0.0 represents a major architectural refactoring:
 
 ---
 
-## 🤝 Contributing
+## [HANDSHAKE] Contributing
 
 Contributions are welcome! Please:
 
@@ -436,7 +436,7 @@ npm run knip
 
 ---
 
-## 📚 Documentation
+## [BOOKS] Documentation
 
 - **[Tool Guide](src/tools/GUIDE.md)**: Comprehensive tool documentation (1,662 lines)
 - **[Changelog](CHANGELOG.md)**: Version history and breaking changes
@@ -446,13 +446,13 @@ npm run knip
 
 ---
 
-## 📄 License
+## [PAGE] License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## 👏 Credits
+## [CLAP] Credits
 
 **Author**: Justice Vellacott  
 **Website**: [thejusticeman.github.io](https://thejusticeman.github.io/)
@@ -465,7 +465,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🔗 Links
+## [LINK] Links
 
 - [GitHub Repository](https://github.com/TheJusticeMan/pure-chat-llm)
 - [Obsidian Community Plugins](https://obsidian.md/plugins)
@@ -476,8 +476,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**Star ⭐ this repository if you find it helpful!**
+**Star [STAR] this repository if you find it helpful!**
 
-Made with ❤️ for the Obsidian community
+Made with [HEART] for the Obsidian community
 
 </div>
