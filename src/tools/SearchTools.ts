@@ -33,7 +33,7 @@ const globFilesParameters = defineToolParameters({
 type GlobFilesArgs = InferArgs<typeof globFilesParameters>;
 
 /**
- *
+ * Tool to search for files in the vault using glob patterns
  */
 export class GlobFilesTool extends Tool<GlobFilesArgs> {
   readonly name = 'glob_vault_files';
@@ -41,14 +41,16 @@ export class GlobFilesTool extends Tool<GlobFilesArgs> {
   readonly description = 'Searches the vault for file paths matching a specific glob pattern.';
   readonly parameters = globFilesParameters;
   /**
-   *
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
    */
   isAvailable() {
     return true;
   }
   /**
-   *
-   * @param args
+   * Executes a glob search to find files matching the pattern
+   * @param args - The arguments containing pattern, include_fields, and limit
+   * @returns A formatted string with matched files and their metadata
    */
   async execute(args: GlobFilesArgs): Promise<string> {
     const { pattern, include_fields = ['path'], limit = 100 } = args;
@@ -113,7 +115,7 @@ const listFoldersParameters = defineToolParameters({
 type ListFoldersArgs = InferArgs<typeof listFoldersParameters>;
 
 /**
- *
+ * Tool to list folders in the vault to understand directory structure
  */
 export class ListFoldersTool extends Tool<ListFoldersArgs> {
   readonly name = 'list_vault_folders';
@@ -121,14 +123,16 @@ export class ListFoldersTool extends Tool<ListFoldersArgs> {
   readonly description = 'Lists folders in the vault to understand the directory structure.';
   readonly parameters = listFoldersParameters;
   /**
-   *
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
    */
   isAvailable() {
     return true;
   }
   /**
-   *
-   * @param args
+   * Lists folders in the vault with their file counts
+   * @param args - The arguments containing path and recursive option
+   * @returns A formatted string with folder paths and file counts
    */
   async execute(args: ListFoldersArgs): Promise<string> {
     const { path = '/', recursive = false } = args;
@@ -192,7 +196,7 @@ const searchVaultParameters = defineToolParameters({
 type SearchVaultArgs = InferArgs<typeof searchVaultParameters>;
 
 /**
- *
+ * Tool to search vault content using boolean logic and regex
  */
 export class SearchVaultTool extends Tool<SearchVaultArgs> {
   readonly name = 'search_vault';
@@ -200,14 +204,16 @@ export class SearchVaultTool extends Tool<SearchVaultArgs> {
   readonly description = 'Performs a content search with boolean logic across all markdown notes.';
   readonly parameters = searchVaultParameters;
   /**
-   *
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
    */
   isAvailable() {
     return true;
   }
   /**
-   *
-   * @param args
+   * Searches vault content using text, boolean expressions, or regex
+   * @param args - The arguments containing query, regex flag, limit, and context_lines
+   * @returns A formatted string with search results showing matches and context
    */
   async execute(args: SearchVaultArgs): Promise<string> {
     const { query, regex = false, limit = 20, context_lines = 1 } = args;
