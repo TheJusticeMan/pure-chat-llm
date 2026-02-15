@@ -29,7 +29,7 @@ const imageGenerationParameters = defineToolParameters({
 type ImageGenerationArgs = InferArgs<typeof imageGenerationParameters>;
 
 /**
- *
+ * Tool for generating AI images from text prompts using OpenAI or xAI models
  */
 export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   readonly name = 'generate_image';
@@ -39,7 +39,8 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   readonly parameters = imageGenerationParameters;
 
   /**
-   *
+   * Checks if image generation is available for the current endpoint
+   * @returns True if endpoint is OpenAI or xAI, false otherwise
    */
   isAvailable() {
     const { name } = this.chat.plugin.settings.endpoints[this.chat.plugin.settings.endpoint];
@@ -47,8 +48,9 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   }
 
   /**
-   *
-   * @param args
+   * Generates images based on the provided prompt and parameters
+   * @param args - The arguments containing prompt, aspect ratio, and number of images
+   * @returns Markdown links to generated images or error message
    */
   async execute(args: ImageGenerationArgs): Promise<string> {
     const { prompt, ratio = 'square', n = 1 } = args;
@@ -80,11 +82,12 @@ export class ImageGenerationTool extends Tool<ImageGenerationArgs> {
   }
 
   /**
-   *
-   * @param root0
-   * @param root0.prompt
-   * @param root0.ratio
-   * @param root0.n
+   * Sends the image generation request to the AI endpoint
+   * @param options - Object containing prompt, ratio, and number of images
+   * @param options.prompt - The image description prompt
+   * @param options.ratio - Aspect ratio for the generated image
+   * @param options.n - Number of images to generate
+   * @returns Array of generated image results with file references
    */
   private async sendRequest({
     prompt,
@@ -172,7 +175,7 @@ const smartConnParameters = defineToolParameters({
 type SmartConnectionsArgs = InferArgs<typeof smartConnParameters>;
 
 /**
- *
+ * Tool for performing semantic search using the Smart Connections plugin
  */
 export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
   readonly name = 'smart_connections_rag';
@@ -181,7 +184,8 @@ export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
   readonly parameters = smartConnParameters;
 
   /**
-   *
+   * Checks if Smart Connections plugin is installed and ready
+   * @returns True if Smart Connections plugin is available with initialized environment
    */
   isAvailable() {
     const plugin = this.chat.plugin.app.plugins.getPlugin(
@@ -191,8 +195,9 @@ export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
   }
 
   /**
-   *
-   * @param args
+   * Performs semantic search for relevant blocks or sources
+   * @param args - The arguments containing query, limit, and retrieval type
+   * @returns Formatted string with search results or error message
    */
   async execute(args: SmartConnectionsArgs): Promise<string> {
     const { query, limit = 5, type = 'blocks' } = args;
