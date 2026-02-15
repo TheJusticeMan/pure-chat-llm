@@ -24,12 +24,11 @@ import { BrowserConsole } from '../utils/BrowserConsole';
 import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
 import { ChatSession } from './ChatSession';
 import { LLMService } from './LLMService';
-import { ToolExecutor } from './ToolExecutor';
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
  *
- * This class now acts as a facade over the new domain classes (ChatSession, ChatMarkdownAdapter, ToolExecutor).
+ * This class now acts as a facade over the new domain classes (ChatSession, ChatMarkdownAdapter, ToolRegistry).
  * It maintains backward compatibility while delegating to the new architecture.
  *
  * @remarks
@@ -51,7 +50,6 @@ export class PureChatLLMChat {
   // Internal domain objects
   session: ChatSession;
   adapter: ChatMarkdownAdapter;
-  private toolExecutor: ToolExecutor;
 
   // Keep existing public properties for compatibility
   plugin: PureChatLLM;
@@ -90,7 +88,6 @@ export class PureChatLLMChat {
       this.plugin.settings.useYAMLFrontMatter,
       this.plugin.settings.agentMode,
     );
-    this.toolExecutor = new ToolExecutor(this.toolregistry);
   }
 
   /**
@@ -696,7 +693,7 @@ export class PureChatLLMChat {
     tool_call_id?: string;
     tool_calls?: ToolCall[];
   }[] {
-    return this.toolExecutor.filterOutUncalledToolCalls(msgs);
+    return this.toolregistry.filterOutUncalledToolCalls(msgs);
   }
 
   /**
@@ -715,8 +712,8 @@ export class PureChatLLMChat {
     streamcallback?: (textFragment: StreamDelta) => Promise<boolean>,
     assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
   ): Promise<boolean> {
-    this.toolExecutor.setStreamCallback(streamcallback);
-    return this.toolExecutor.executeToolCalls(toolCalls, this.session, options, assistantMessage);
+    this.toolregistry.setCallBack(streamcallback);
+    return this.toolregistry.executeToolCalls(toolCalls, this.session, options, assistantMessage);
   }
 
   /**

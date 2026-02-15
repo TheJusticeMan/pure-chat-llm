@@ -1,6 +1,10 @@
 import type { PureChatLLMChat } from './core/Chat';
+import type { ChatSession } from './core/ChatSession';
 import type {
+  ChatRequestOptions,
+  RoleType,
   StreamDelta,
+  ToolCall,
   ToolClassification,
   ToolDefinition,
   ToolParameter,
@@ -276,6 +280,87 @@ export class ToolRegistry {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       return `Error: ${message}`;
+    }
+  }
+
+  async executeToolCalls(
+    toolCalls: ToolCall[],
+    session: ChatSession,
+    options: ChatRequestOptions,
+    assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
+  ): Promise<boolean> {
+    let hasExecutedAnyTool = false;
+    const executedTools: { call: ToolCall; output: string }[] = [];
+
+    for (const call of toolCalls) {
+      const toolName = call.function.name;
+      if (this.getTool(toolName)) {
+        const fixedArguments = this.fixDuplicatedArguments(call.function.arguments);
+        const args = JSON.parse(fixedArguments) as Record<string, unknown>;
+        const output = await this.executeTool(toolName, args);
+
+        executedTools.push({ call, output });
+        hasExecutedAnyTool = true;
+      }
+    }
+
+    if (hasExecutedAnyTool) {
+      const messageToAdd = assistantMessage || {
+        role: 'assistant' as RoleType,
+        content: null,
+        tool_calls: toolCalls,
+      };
+
+      session.appendMessage({
+        role: messageToAdd.role,
+        content: messageToAdd.content ?? '',
+      });
+
+      options.messages.push(messageToAdd);
+
+      for (const { call, output } of executedTools) {
+        session.appendMessage({ role: 'tool', content: output ?? '' });
+        options.messages.push({ role: 'tool', content: output, tool_call_id: call.id });
+      }
+    }
+
+    return hasExecutedAnyTool;
+  }
+
+  filterOutUncalledToolCalls(
+    msgs: {
+      role: RoleType;
+      content?: string;
+      tool_call_id?: string;
+      tool_calls?: ToolCall[];
+    }[],
+  ): {
+    role: RoleType;
+    content?: string;
+    tool_call_id?: string;
+    tool_calls?: ToolCall[];
+  }[] {
+    const [agent, ...responses] = msgs;
+    if (agent.tool_calls) {
+      agent.tool_calls = agent.tool_calls.filter(call =>
+        responses.some(i => i.tool_call_id === call.id),
+      );
+    }
+    return [agent, ...responses];
+  }
+
+  private fixDuplicatedArguments(args: string): string {
+    try {
+      JSON.parse(args);
+      return args;
+    } catch {
+      const halfLength = Math.floor(args.length / 2);
+      const firstHalf = args.slice(0, halfLength);
+      const secondHalf = args.slice(halfLength);
+      if (firstHalf === secondHalf) {
+        return firstHalf;
+      }
+      return args;
     }
   }
 }

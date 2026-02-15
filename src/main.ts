@@ -19,7 +19,6 @@ import {
 import { DEFAULT_SETTINGS, EmptyApiKey } from './assets/constants';
 import { PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
-import { LowUsageTagRemover } from './LowUsageTagRemover';
 import {
   PURE_CHAT_LLM_ICON_NAME,
   PURE_CHAT_LLM_ICON_SVG,
@@ -313,12 +312,6 @@ export default class PureChatLLM extends Plugin {
         if (checking) return !!selected;
         this.editSelection(selected, e);
       },
-    });
-    this.addCommand({
-      id: 'clean-up-tags-in-vault',
-      name: 'Clean up tags in vault',
-      icon: 'tags',
-      callback: async () => new LowUsageTagRemover(this.app).open(),
     });
 
     this.addCommand({
