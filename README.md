@@ -87,7 +87,7 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 
 ---
 
-## [PACKAGE] Installation
+## [+] Installation
 
 ### From Obsidian Community Plugins (Recommended)
 
