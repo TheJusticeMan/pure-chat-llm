@@ -79,13 +79,13 @@ type ChatMappingEntry = {
 }
  */
 /**
- *
+ * Handles importing ChatGPT conversation exports into Obsidian
  */
 export class ImportChatGPT {
   /**
-   *
-   * @param app
-   * @param plugin
+   * Creates a new ImportChatGPT instance and initiates the import process
+   * @param app - The Obsidian app instance
+   * @param plugin - The Pure Chat LLM plugin instance
    */
   constructor(
     public app: App,
@@ -108,9 +108,9 @@ export class ImportChatGPT {
     }
   }
 
-  // Prompts user to select a folder; returns a Promise
   /**
-   *
+   * Prompts user to select a folder for importing the ChatGPT conversations
+   * @returns Promise resolving to the selected folder
    */
   private getFolderPath(): Promise<TFolder> {
     return new Promise(resolve => {
@@ -118,9 +118,9 @@ export class ImportChatGPT {
     });
   }
 
-  // Prompts user to select a file; returns a Promise<File>
   /**
-   *
+   * Prompts user to select a JSON file containing ChatGPT conversations
+   * @returns Promise resolving to the selected file or null if cancelled
    */
   private getFileFromUser(): Promise<File | null> {
     return new Promise(resolve => {
@@ -139,9 +139,10 @@ export class ImportChatGPT {
   }
 
   /**
-   *
-   * @param file
-   * @param folderPath
+   * Processes a ChatGPT export JSON file and imports all conversations
+   * @param file - The JSON file containing ChatGPT conversations
+   * @param folderPath - The destination folder path in the vault
+   * @returns Promise resolving when all conversations are imported
    */
   private async processChatFile(file: File, folderPath: string) {
     const text = await file.text();
@@ -167,10 +168,11 @@ export class ImportChatGPT {
   }
 
   /**
-   *
-   * @param chat
-   * @param folder
-   * @param folderPath
+   * Saves a single ChatGPT conversation as a markdown file
+   * @param chat - The chat mapping entry from the export
+   * @param folder - The destination folder
+   * @param folderPath - The destination folder path
+   * @returns Promise resolving when the conversation is saved
    */
   private async saveChatConversation(chat: ChatMappingEntry, folder: TFolder, folderPath: string) {
     const title = chat.title;
@@ -191,10 +193,11 @@ export class ImportChatGPT {
   }
 
   /**
-   *
-   * @param mapping
-   * @param rootId
-   * @param result
+   * Recursively collects conversation messages from the mapping tree
+   * @param mapping - The chat mapping object
+   * @param rootId - The ID of the root message node
+   * @param result - The PureChatLLMChat instance to populate with messages
+   * @returns void
    */
   private collectConversation(mapping: ChatMapping, rootId: string, result: PureChatLLMChat) {
     let currentId = rootId;
@@ -254,10 +257,10 @@ class FolderSuggest extends FuzzySuggestModal<TFolder> {
    */
   folders: TFolder[];
   /**
-   *
-   * @param app
-   * @param onSubmit
-   * @param prompt
+   * Creates a new FolderSuggest modal
+   * @param app - The Obsidian app instance
+   * @param onSubmit - Callback invoked when a folder is selected
+   * @param prompt - Optional placeholder text for the search input
    */
   constructor(app: App, onSubmit: (result: TFolder) => void, prompt?: string) {
     super(app);
@@ -266,24 +269,25 @@ class FolderSuggest extends FuzzySuggestModal<TFolder> {
     this.setPlaceholder(prompt || 'Search for a folder...');
   }
   /**
-   *
-   * @returns {TFolder[]}
+   * Gets the list of folders to display in the suggestion modal
+   * @returns Array of TFolder objects from the vault
    */
   getItems(): TFolder[] {
     return this.folders;
   }
   /**
-   *
-   * @param folder
-   * @returns {string}
+   * Gets the display text for a folder in the suggestion modal
+   * @param folder - The folder to get the text for
+   * @returns The folder path
    */
   getItemText(folder: TFolder): string {
     return folder.path;
   }
   /**
-   *
-   * @param folder
-   * @param evt
+   * Handles the folder selection event
+   * @param folder - The selected folder
+   * @param evt - The mouse or keyboard event that triggered the selection
+   * @returns void
    */
   onChooseItem(folder: TFolder, evt: MouseEvent | KeyboardEvent) {
     this.onSubmit(folder);

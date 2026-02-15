@@ -34,9 +34,9 @@ export class PureChatLLMSpeech {
   isPlaying = false; // To prevent multiple concurrent plays
 
   /**
-   *
-   * @param plugin
-   * @param chat
+   * Creates a new PureChatLLMSpeech instance
+   * @param plugin - The Pure Chat LLM plugin instance
+   * @param chat - The chat instance to provide speech for
    */
   constructor(plugin: PureChatLLM, chat: PureChatLLMChat) {
     this.plugin = plugin;
@@ -231,7 +231,8 @@ export class PureChatLLMSpeech {
   }
 
   /**
-   *
+   * Gets the list of available OpenAI TTS voices
+   * @returns Array of voice objects with name property
    */
   getVoices(): { name: string }[] {
     // OpenAI supported voices as of 2024

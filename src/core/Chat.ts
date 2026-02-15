@@ -62,8 +62,8 @@ export class PureChatLLMChat {
   llmService: LLMService;
 
   /**
-   *
-   * @param plugin
+   * Creates a new PureChatLLMChat instance
+   * @param plugin - The Pure Chat LLM plugin instance
    */
   constructor(plugin: PureChatLLM) {
     this.plugin = plugin;
@@ -92,7 +92,8 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
+   * Registers all available tools with the tool registry
+   * @returns void
    */
   private registerAvailableTools() {
     this.toolregistry
@@ -128,7 +129,8 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
+   * Updates the endpoint based on the current model setting
+   * @returns The current instance for chaining
    */
   updateEndpointFromModel() {
     const { ModelsOnEndpoint, endpoints } = this.plugin.settings;
@@ -142,8 +144,9 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
-   * @param classification
+   * Checks if a specific tool classification is enabled
+   * @param classification - The tool classification to check
+   * @returns True if the classification is enabled, false otherwise
    */
   isEnabled(classification: string): boolean {
     if (!this.session.options.tools) return false;
@@ -156,7 +159,8 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
+   * Cleans up the chat by removing empty messages and ensuring proper structure
+   * @returns The current instance for chaining
    */
   cleanUpChat() {
     this.session.cleanUpChat(this.plugin.settings.SystemPrompt);
@@ -181,6 +185,7 @@ export class PureChatLLMChat {
    * - The `cline` property in each message represents the range of lines in the editor
    *   corresponding to the message content.
    * - The `options` property is updated if valid JSON is found in the prechat section.
+   * @returns The current instance for chaining
    */
   setMarkdown(markdown: string) {
     // make this chainable
@@ -213,15 +218,15 @@ export class PureChatLLMChat {
   }
 
   /**
-   * Appends a new message to the list of messages.
+   * Appends one or more new messages to the list of messages.
    *
-   * @param message - An object containing the role and content of the message.
+   * @param messages - One or more message objects containing the role and content of the message.
    *   - `role`: The role of the message sender (e.g., "user", "assistant").
    *   - `content`: The textual content of the message.
    *
    * The appended message will also include a default `cline` property
    * with `from` and `to` positions initialized to `{ line: 0, ch: 0 }`.
-   * @param {...any} messages
+   * @returns The current instance for chaining
    */
   appendMessage(...messages: { role: RoleType; content: string; cline?: EditorRange }[]) {
     messages.forEach(message => {
@@ -518,7 +523,7 @@ export class PureChatLLMChat {
    *
    * @param templatePrompt - The instruction prompt containing the name and template for processing.
    * @param selectedText - The markdown text selected by the user to be processed.
-   * @param fileText
+   * @param fileText - Optional full file text to provide as context to the LLM
    * @returns A Promise resolving to the LLM's response containing the processed markdown,
    *          or an empty response if no text is selected.
    */
@@ -540,10 +545,11 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
-   * @param templatePrompt
-   * @param selectedText
-   * @param fileText
+   * Initializes the chat session for a selection response
+   * @param templatePrompt - The instruction prompt for processing
+   * @param selectedText - The selected text to process
+   * @param fileText - Optional full file text for context
+   * @returns The current instance for chaining
    */
   initSelectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
     this.session.messages = [
@@ -643,7 +649,8 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
+   * Reverses the roles of user and assistant messages
+   * @returns The current instance for chaining
    */
   reverseRoles() {
     this.session.reverseRoles();
@@ -651,14 +658,15 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
-   * @param toolCalls
-   * @param options
-   * @param streamcallback
-   * @param assistantMessage
-   * @param assistantMessage.role
-   * @param assistantMessage.content
-   * @param assistantMessage.tool_calls
+   * Handles tool calls from the LLM by executing them through the tool registry
+   * @param toolCalls - Array of tool calls from the LLM response
+   * @param options - The chat request options
+   * @param streamcallback - Optional callback for streaming responses
+   * @param assistantMessage - The assistant message containing tool calls
+   * @param assistantMessage.role - The role of the message (assistant)
+   * @param assistantMessage.content - The content of the message
+   * @param assistantMessage.tool_calls - Array of tool calls in the message
+   * @returns Promise resolving to true if tool calls were executed successfully, false otherwise
    */
   async handleToolCalls(
     toolCalls: ToolCall[],
@@ -722,8 +730,9 @@ export class PureChatLLMChat {
   }
 
   /**
-   *
-   * @param cb
+   * Executes a callback with the current chat instance and returns the instance for chaining
+   * @param cb - Callback function to execute with the chat instance
+   * @returns The current instance for chaining
    */
   thencb(cb: (chat: this) => unknown): this {
     cb(this);
@@ -732,9 +741,10 @@ export class PureChatLLMChat {
 }
 
 /**
- *
- * @param plugin
- * @param writeHandler
+ * Completes a chat response by reading from the editor, processing with LLM, and writing back
+ * @param plugin - The Pure Chat LLM plugin instance
+ * @param writeHandler - The write handler for managing editor content
+ * @returns Promise resolving to the chat instance or undefined
  */
 export async function completeChatResponse(plugin: PureChatLLM, writeHandler: WriteHandler) {
   const editorcontent = await writeHandler.getValue();
@@ -785,9 +795,10 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
 }
 
 /**
- *
- * @param plugin
- * @param writeHandler
+ * Generates a title for the current chat file using the conversation titler template
+ * @param plugin - The Pure Chat LLM plugin instance
+ * @param writeHandler - The write handler for managing editor content
+ * @returns Promise resolving when the title is generated and file is renamed
  */
 export async function generateTitle(plugin: PureChatLLM, writeHandler: WriteHandler) {
   const activeFile = writeHandler.file;

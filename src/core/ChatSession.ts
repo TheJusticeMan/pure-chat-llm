@@ -20,8 +20,8 @@ export class ChatSession {
   validChat: boolean = true;
 
   /**
-   *
-   * @param options
+   * Creates a new ChatSession instance
+   * @param options - The chat options for this session
    */
   constructor(options: ChatOptions) {
     this.options = options;
@@ -37,17 +37,30 @@ export class ChatSession {
    */
   appendMessage(message: ChatMessage): this;
   /**
+   * Appends one or more messages to the chat session.
+   * Optionally associates editor ranges (line positions) with each message.
    *
+   * @param messages - The messages to append (single message or array)
+   * @param clines - Optional editor ranges for the messages
+   * @returns The session instance for chaining
    */
   appendMessage(messages: ChatMessage[]): this;
   /**
+   * Appends one or more messages to the chat session.
+   * Optionally associates editor ranges (line positions) with each message.
    *
+   * @param messages - The messages to append (single message or array)
+   * @param clines - Optional editor ranges for the messages
+   * @returns The session instance for chaining
    */
   appendMessage(messages: ChatMessage[], clines: EditorRange[]): this;
   /**
+   * Appends one or more messages to the chat session.
+   * Optionally associates editor ranges (line positions) with each message.
    *
-   * @param messageOrMessages
-   * @param clines
+   * @param messageOrMessages - The message or array of messages to append
+   * @param clines - Optional editor ranges for the messages
+   * @returns The session instance for chaining
    */
   appendMessage(messageOrMessages: ChatMessage | ChatMessage[], clines?: EditorRange[]): this {
     // Handle single message

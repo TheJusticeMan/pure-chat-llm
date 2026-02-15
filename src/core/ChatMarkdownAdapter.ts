@@ -16,10 +16,10 @@ import { ChatSession } from './ChatSession';
  */
 export class ChatMarkdownAdapter {
   /**
-   *
-   * @param roleFormatter
-   * @param useYAMLFrontMatter
-   * @param agentMode
+   * Creates a new ChatMarkdownAdapter instance
+   * @param roleFormatter - The role formatter template (e.g., "# role: {role}")
+   * @param useYAMLFrontMatter - Whether to use YAML frontmatter for options
+   * @param agentMode - Whether agent mode is enabled
    */
   constructor(
     private roleFormatter: string,
