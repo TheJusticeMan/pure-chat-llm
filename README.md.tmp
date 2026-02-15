@@ -14,40 +14,40 @@
 
 ---
 
-## (*) Overview
+## [TARGET] Overview
 
 **Pure Chat LLM** turns Obsidian notes into interactive AI chat interfaces with unprecedented integration into your knowledge base. Unlike typical AI plugins, Pure Chat LLM provides **13 intelligent tools** that allow AI models to autonomously read, write, search, and manage your vault--with your explicit approval.
 
 ### What Makes It Different?
 
-- :) **Agentic AI**: AI can autonomously use tools to interact with your vault (with your permission)
-- [=] **Note-as-Chat**: Transform any note into a conversation--no separate chat windows
-- [&] **Deep Integration**: Leverages Obsidian's API for vault operations, workspace management, and more
-- [#] **Safety First**: All destructive operations require explicit user approval via visual diff modals
-- :D **38% Smaller**: Optimized architecture (131KB bundle, down from 211KB in v1.x)
-- [@] **Voice Calls**: Real-time voice conversations with tool access via OpenAI Realtime API
-- [&] **Multi-Provider**: OpenAI, Gemini, xAI, Anthropic, Cohere, Mistral AI, DeepSeek
+- [AI] **Agentic AI**: AI can autonomously use tools to interact with your vault (with your permission)
+- [NOTE] **Note-as-Chat**: Transform any note into a conversation--no separate chat windows
+- [LINK] **Deep Integration**: Leverages Obsidian's API for vault operations, workspace management, and more
+- [SHIELD] **Safety First**: All destructive operations require explicit user approval via visual diff modals
+- [ROCKET] **38% Smaller**: Optimized architecture (131KB bundle, down from 211KB in v1.x)
+- [MIC] **Voice Calls**: Real-time voice conversations with tool access via OpenAI Realtime API
+- [SYNC] **Multi-Provider**: OpenAI, Gemini, xAI, Anthropic, Cohere, Mistral AI, DeepSeek
 
 ---
 
-## (*) Features
+## [STAR] Features
 
-### :) Intelligent Tool System (Agent Mode)
+### [AI] Intelligent Tool System (Agent Mode)
 
 Pure Chat LLM includes **13 sophisticated tools** that enable AI to work with your vault:
 
-#### [=] Vault Operations
+#### [BOOKS] Vault Operations
 - **Read notes** with section/heading/block support (`[[Note#Header]]`, `[[Note#^block]]`)
 - **Write notes** with create/append/prepend modes + user approval modal
 - **Search content** with boolean logic (AND/OR/NOT), regex, and context windows
 - **Discover files** using glob patterns (`**/*.md`, `src/**/*.ts`)
 - **Analyze backlinks** to explore your knowledge graph
 
-#### :*) AI Capabilities  
+#### [ART] AI Capabilities  
 - **Generate images** (OpenAI, xAI, Gemini) with aspect ratio control
 - **Semantic search** via Smart Connections plugin integration (RAG)
 
-#### [@] System Control
+#### [GEAR] System Control
 - **Manage settings** with confirmation modals for safety
 - **Apply templates** programmatically with placeholder replacement
 
@@ -68,7 +68,7 @@ Pure Chat LLM includes **13 sophisticated tools** that enable AI to work with yo
 - **Markdown rendering**: Full formatting support (lists, code blocks, tables)
 - **Streaming responses**: Real-time token streaming for supported models
 
-### [@] Voice Call Feature
+### [MIC] Voice Call Feature
 
 Real-time voice conversations using OpenAI Realtime API with optional tool access:
 
@@ -108,7 +108,7 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 
 ---
 
-## :D Quick Start
+## [ROCKET] Quick Start
 
 ### Basic Chat
 
@@ -173,7 +173,7 @@ The AI will:
 
 ---
 
-## [@] Configuration
+## [GEAR] Configuration
 
 ### API Keys
 
@@ -274,7 +274,7 @@ Review this draft and suggest improvements for clarity and flow.
 
 ---
 
-## [+] Available Tools
+## [TOOLS] Available Tools
 
 See the complete [Tool Documentation](src/tools/GUIDE.md) for detailed information on all 13 tools.
 
@@ -296,7 +296,7 @@ See the complete [Tool Documentation](src/tools/GUIDE.md) for detailed informati
 
 ---
 
-## :*) Screenshots
+## [ART] Screenshots
 
 ### Chat Interface
 Transform any note into an interactive conversation:
@@ -328,7 +328,7 @@ Real-time voice conversations with optional tool access:
 
 ```
 +-------------------------------------+
-|  [@] Voice Call                      |
+|  [MIC] Voice Call                      |
 +-------------------------------------+
 |  Status: Connected                   |
 |  Agent Mode: Enabled                 |
@@ -436,7 +436,7 @@ npm run knip
 
 ---
 
-## [=] Documentation
+## [BOOKS] Documentation
 
 - **[Tool Guide](src/tools/GUIDE.md)**: Comprehensive tool documentation (1,662 lines)
 - **[Changelog](CHANGELOG.md)**: Version history and breaking changes
@@ -465,7 +465,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## [&] Links
+## [LINK] Links
 
 - [GitHub Repository](https://github.com/TheJusticeMan/pure-chat-llm)
 - [Obsidian Community Plugins](https://obsidian.md/plugins)
@@ -476,7 +476,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**Star (*) this repository if you find it helpful!**
+**Star [STAR] this repository if you find it helpful!**
 
 Made with [HEART] for the Obsidian community
 

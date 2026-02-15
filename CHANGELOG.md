@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is a **major release** with breaking changes focused on simplification, performance optimization, and code quality improvements.
 
-### [TARGET] Highlights
+### (*) Highlights
 
 - **38% Bundle Size Reduction**: main.js reduced from 211KB -> 131KB (80KB savings) through architectural simplification
 - **100% JSDoc Documentation Coverage**: All 26 TypeScript files fully documented (352 issues resolved)
