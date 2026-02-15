@@ -103,7 +103,7 @@ export class AskForAPI extends Modal {
 /**
  * A custom text area component that extends the base `TextAreaComponent`.
  *
- * This component adds the "PUREcodePreview" CSS class to its input element,
+ * This component adds the "codePreview" CSS class to its input element,
  * allowing for specialized styling or behavior in the UI.
  *
  * @extends TextAreaComponent
@@ -117,7 +117,7 @@ export class CodeAreaComponent extends TextAreaComponent {
    */
   constructor(containerEl: HTMLElement) {
     super(containerEl);
-    this.inputEl.addClass('PUREcodePreview');
+    this.inputEl.addClass('codePreview');
   }
 }
 

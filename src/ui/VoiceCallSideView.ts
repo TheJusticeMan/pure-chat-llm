@@ -71,7 +71,6 @@ export class VoiceCallSideView extends ItemView {
     contentEl.addClass('voice-call-view');
 
     this.renderHeader(contentEl);
-    this.renderStatus(contentEl);
     this.renderControls(contentEl);
     this.createRemoteAudioElement(contentEl);
 
@@ -87,7 +86,7 @@ export class VoiceCallSideView extends ItemView {
   private renderHeader(container: HTMLElement): void {
     new Setting(container)
       .setName('Voice call')
-      .setClass('PUREfloattop')
+      .setClass('headerfloattop')
       .setHeading()
       .addExtraButton(btn =>
         btn
@@ -100,36 +99,7 @@ export class VoiceCallSideView extends ItemView {
           .setIcon(PURE_CHAT_LLM_ICON_NAME)
           .setTooltip('Open conversation view')
           .onClick(() => this.plugin.activateChatView()),
-      )
-  }
-
-  /**
-   *
-   * @param container
-   */
-  private renderStatus(container: HTMLElement): void {
-    const statusContainer = container.createDiv({ cls: 'voice-call-status' });
-    const statusText = this.getStatusText(this.callState.status);
-
-    statusContainer.createEl('div', { cls: 'status-indicator' }, el => {
-      const statusIndicator = el.createEl('span', {
-        cls: `status-icon status-icon-${this.callState.status}`,
-      });
-
-      // Add spinner for connecting state
-      if (this.callState.status === 'connecting') {
-        statusIndicator.addClass('status-spinner');
-      }
-
-      el.createEl('span', { cls: 'status-text', text: statusText });
-    });
-
-    if (this.callState.error) {
-      statusContainer.createEl('div', {
-        cls: 'status-error',
-        text: `Error: ${this.callState.error}`,
-      });
-    }
+      );
   }
 
   /**
@@ -141,6 +111,7 @@ export class VoiceCallSideView extends ItemView {
 
     if (this.callState.status === 'idle' || this.callState.status === 'disconnected') {
       new Setting(controlsContainer)
+        .setName(this.getStatusText(this.callState.status))
         .addDropdown(dropdown =>
           dropdown
             .addOption('openai', 'OpenAI realtime')
@@ -161,19 +132,22 @@ export class VoiceCallSideView extends ItemView {
     }
 
     if (this.callState.status === 'error') {
-      new Setting(controlsContainer).addButton(btn =>
-        btn
-          .setButtonText('Try again')
-          .setCta()
-          .setIcon('refresh-cw')
-          .onClick(() => {
-            this.resetCallState();
-          }),
-      );
+      new Setting(controlsContainer)
+        .setName(this.getStatusText(this.callState.status))
+        .addButton(btn =>
+          btn
+            .setButtonText('Try again')
+            .setCta()
+            .setIcon('refresh-cw')
+            .onClick(() => {
+              this.resetCallState();
+            }),
+        );
     }
 
     if (this.callState.status === 'connected' || this.callState.status === 'connecting') {
       new Setting(controlsContainer)
+        .setName(this.getStatusText(this.callState.status))
         .addButton(btn =>
           btn
             .setButtonText(this.callState.isMuted ? 'Unmute' : 'Mute')
@@ -244,7 +218,7 @@ export class VoiceCallSideView extends ItemView {
    */
   private async getRealtimeSystemPrompt(): Promise<string> {
     const filePath = this.plugin.settings.realtimeSystemPromptFile;
-    
+
     // If no file path configured, use default based on agent mode
     if (!filePath || filePath.trim() === '') {
       return this.getDefaultSystemPrompt();
@@ -260,7 +234,7 @@ export class VoiceCallSideView extends ItemView {
       }
 
       const content = await this.plugin.app.vault.cachedRead(file);
-      
+
       // If file is empty, use default
       if (!content || content.trim() === '') {
         new Notice(`Realtime prompt file is empty: ${filePath}. Using default.`);

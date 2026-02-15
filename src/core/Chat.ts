@@ -19,11 +19,12 @@ import {
   ToolClassification,
   ToolDefinition,
 } from '../types';
-import { CodeContent } from '../ui/CodeHandling';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
 import { ChatSession } from './ChatSession';
 import { LLMService } from './LLMService';
+import { WriteHandler } from 'src/utils/write-handler';
+import { AskForAPI } from 'src/ui/Modals';
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -209,39 +210,6 @@ export class PureChatLLMChat {
     this.session.options.model = modal;
     this.updateEndpointFromModel();
     return this;
-  }
-
-  /**
-   * Extracts the content of a code block from a given markdown string based on the specified programming language.
-   *
-   * @param markdown - The markdown string containing the code block.
-   * @param language - The programming language of the code block to extract.
-   * @returns The content of the code block as a string if found, otherwise `null`.
-   */
-  static extractCodeBlockMD(markdown: string, language: string): string | null {
-    return ChatMarkdownAdapter.extractCodeBlockMD(markdown, language);
-  }
-
-  /**
-   * Extracts all code blocks from a given markdown string.
-   *
-   * @param markdown - The markdown string to extract code blocks from.
-   * @returns An array of objects, where each object contains language and code.
-   */
-  static extractAllCodeBlocks(markdown: string): CodeContent[] {
-    return ChatMarkdownAdapter.extractAllCodeBlocks(markdown);
-  }
-
-  /**
-   * Replaces the content of a code block in a markdown string with new text.
-   *
-   * @param text - The original markdown string containing the code block.
-   * @param language - The programming language of the code block to replace.
-   * @param newText - The new text to insert into the code block.
-   * @returns The modified markdown string with the updated code block content.
-   */
-  static changeCodeBlockMD(text: string, language: string, newText: string) {
-    return ChatMarkdownAdapter.changeCodeBlockMD(text, language, newText);
   }
 
   /**
@@ -678,26 +646,6 @@ export class PureChatLLMChat {
 
   /**
    *
-   * @param msgs
-   */
-  filterOutUncalledToolCalls(
-    msgs: {
-      role: RoleType;
-      content?: string;
-      tool_call_id?: string;
-      tool_calls?: ToolCall[];
-    }[],
-  ): {
-    role: RoleType;
-    content?: string;
-    tool_call_id?: string;
-    tool_calls?: ToolCall[];
-  }[] {
-    return this.toolregistry.filterOutUncalledToolCalls(msgs);
-  }
-
-  /**
-   *
    * @param toolCalls
    * @param options
    * @param streamcallback
@@ -714,27 +662,6 @@ export class PureChatLLMChat {
   ): Promise<boolean> {
     this.toolregistry.setCallBack(streamcallback);
     return this.toolregistry.executeToolCalls(toolCalls, this.session, options, assistantMessage);
-  }
-
-  /**
-   * Attempts to parse a JSON string and return the resulting object.
-   * If the parsing fails due to invalid JSON, it returns `null`.
-   *
-   * @param str - The JSON string to parse.
-   * @returns The parsed object if successful, or `null` if parsing fails.
-   */
-  static tryJSONParse(str: string): unknown {
-    return ChatMarkdownAdapter.tryJSONParse(str);
-  }
-
-  /**
-   * Parses a JSON string into ChatOptions.
-   *
-   * @param str - The JSON string to parse.
-   * @returns Partial ChatOptions object or null if parsing fails.
-   */
-  static parseChatOptions(str: string): Partial<ChatOptions> | null {
-    return ChatMarkdownAdapter.parseChatOptions(str);
   }
 
   /**
@@ -796,4 +723,69 @@ export class PureChatLLMChat {
     cb(this);
     return this;
   }
+}
+
+export async function completeChatResponse(plugin: PureChatLLM, writeHandler: WriteHandler) {
+  const editorcontent = await writeHandler.getValue();
+
+  const chat = new PureChatLLMChat(plugin).setMarkdown(editorcontent);
+  const endpoint = plugin.settings.endpoints[plugin.settings.endpoint];
+  if (endpoint.apiKey == EmptyApiKey) {
+    new AskForAPI(plugin.app, plugin).open();
+    return;
+  }
+
+  if (
+    chat.session.messages[chat.session.messages.length - 1].content === '' &&
+    chat.session.validChat &&
+    plugin.settings.AutoReverseRoles
+  ) {
+    if (chat.session.messages.pop()?.role == 'user') chat.reverseRoles();
+  }
+  await writeHandler.write(chat.getMarkdown());
+
+  if (!chat.session.validChat) return;
+
+  plugin.isresponding = true;
+
+  await writeHandler.appendContent(`\n${chat.adapter.parseRole('assistant...' as RoleType)}\n`);
+  chat
+    .completeChatResponse(writeHandler.file, async e => {
+      await writeHandler.appendContent(e.content);
+      return true;
+    })
+    .then(async chat => {
+      plugin.isresponding = false;
+      if (
+        plugin.settings.AutogenerateTitle > 0 &&
+        chat.session.messages.length >= plugin.settings.AutogenerateTitle &&
+        (writeHandler.file?.name.includes('Untitled') || / \d+\.md$/.test(writeHandler.file?.name))
+      ) {
+        await generateTitle(plugin, writeHandler);
+      }
+      await writeHandler.write(chat.getMarkdown());
+    })
+    .catch(error => plugin.console.error(error))
+    .finally(() => {
+      plugin.isresponding = false;
+      return;
+    });
+  return chat;
+}
+
+export async function generateTitle(plugin: PureChatLLM, writeHandler: WriteHandler) {
+  const activeFile = writeHandler.file;
+  if (activeFile)
+    void new PureChatLLMChat(plugin)
+      .setMarkdown(await writeHandler.getValue())
+      .processChatWithTemplate(plugin.settings.chatTemplates['Conversation titler'])
+      .then(title => {
+        const sanitizedTitle = `${activeFile.parent?.path}/${title.content
+          .replace(/^<think>[\s\S]+?<\/think>/gm, '') // Remove <think> tags for ollama
+          .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
+          .trim()}.${activeFile.extension}`;
+        void plugin.app.fileManager.renameFile(activeFile, sanitizedTitle);
+        new Notice(`File renamed to: ${sanitizedTitle}`);
+      });
+  else new Notice('No active file to rename.');
 }

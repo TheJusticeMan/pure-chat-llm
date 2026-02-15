@@ -1,9 +1,8 @@
 import { parseYaml, stringifyYaml } from 'obsidian';
+import { toTitleCase } from 'src/utils/toTitleCase';
 import { alloptions } from '../assets/constants';
 import { ChatOptions, RoleType } from '../types';
-import { CodeContent } from '../ui/CodeHandling';
 import { ChatSession } from './ChatSession';
-import { toTitleCase } from 'src/utils/toTitleCase';
 
 /**
  * ChatMarkdownAdapter handles serialization and deserialization of chat sessions
@@ -158,27 +157,6 @@ export class ChatMarkdownAdapter {
     const regex = new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, 'im');
     const match = markdown.match(regex);
     return match ? match[1] : null;
-  }
-
-  /**
-   * Extracts all code blocks from a given markdown string.
-   *
-   * @param markdown - The markdown string to extract code blocks from
-   * @returns An array of objects containing language and code
-   */
-  static extractAllCodeBlocks(markdown: string): CodeContent[] {
-    const regex = /^```(\w*)\n([\s\S]*?)\n```/gm;
-    const matches: { language: string; code: string }[] = [];
-    let match;
-    while ((match = regex.exec(markdown)) !== null) {
-      const [, language, code] = match;
-      const lang = (language || 'plaintext').trim() || 'plaintext';
-      matches.push({
-        language: lang,
-        code: code.trim(),
-      });
-    }
-    return matches;
   }
 
   /**

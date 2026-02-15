@@ -1,14 +1,6 @@
 import { createPatch } from 'diff';
-import {
-  App,
-  Modal,
-  normalizePath,
-  Notice,
-  Setting,
-  TextAreaComponent,
-  TFile,
-  TFolder,
-} from 'obsidian';
+import { App, Modal, normalizePath, Notice, Setting, TFile, TFolder } from 'obsidian';
+import { CodeAreaComponent } from 'src/ui/Modals';
 import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 /**
@@ -114,10 +106,10 @@ class EditReviewModal extends Modal {
         const type = line.startsWith('+')
           ? 'added'
           : line.startsWith('-')
-          ? 'removed'
-          : line.startsWith('@@')
-          ? 'hunk'
-          : 'equal';
+            ? 'removed'
+            : line.startsWith('@@')
+              ? 'hunk'
+              : 'equal';
         div.addClass(`diff-${type}`);
         div.setText(line);
       }
@@ -128,9 +120,9 @@ class EditReviewModal extends Modal {
     // New Content
     new Setting(contentEl).setName('Proposed content').setHeading();
 
-    const newArea = new TextAreaComponent(contentEl);
+    const newArea = new CodeAreaComponent(contentEl);
     newArea.setValue(this.newContent);
-    newArea.inputEl.addClass('PUREcodePreview');
+
     newArea.onChange(val => {
       this.newContent = val;
     });

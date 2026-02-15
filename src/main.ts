@@ -9,15 +9,13 @@ import {
   FuzzySuggestModal,
   MarkdownView,
   Menu,
-  Notice,
   Plugin,
   setIcon,
   TFile,
   TFolder,
 } from 'obsidian';
-
-import { DEFAULT_SETTINGS, EmptyApiKey } from './assets/constants';
-import { PureChatLLMChat } from './core/Chat';
+import { DEFAULT_SETTINGS } from './assets/constants';
+import { completeChatResponse, generateTitle, PureChatLLMChat } from './core/Chat';
 import { PureChatLLMSpeech } from './core/Speech';
 import {
   PURE_CHAT_LLM_ICON_NAME,
@@ -30,8 +28,8 @@ import {
 import {
   CODE_PREVIEW_VIEW_TYPE,
   CodePreview,
+  CodeSnippetState,
   createCodeblockExtension,
-  openCodePreview,
 } from './ui/CodePreview';
 import { AskForAPI, editWand } from './ui/Modals';
 import { PureChatLLMSettingTab } from './ui/Settings';
@@ -101,7 +99,7 @@ export default class PureChatLLM extends Plugin {
    *
    * @type {({ from: number; to: number } | null)}
    */
-  codeBlock: { from: number; to: number } | null = null;
+  codeBlock: CodeSnippetState | null = null;
 
   /**
    * Initializes the plugin by loading settings, registering views, commands, and setting up the UI.
@@ -143,51 +141,6 @@ export default class PureChatLLM extends Plugin {
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
     void this.status('');
-  }
-
-  /**
-   * Description placeholder
-   *
-   * @private
-   * @type {Array<() => void>}
-   */
-  private onupdate: Array<() => void> = [];
-
-  /**
-   * Notifies all registered listeners that the code block has been updated.
-   *
-   * Iterates through all registered callbacks in the onupdate array and invokes each one.
-   *
-   * @returns {void}
-   */
-  callOnChange() {
-    this.onupdate.forEach(callback => callback());
-  }
-
-  /**
-   * Registers a callback to be invoked when the code block is updated.
-   *
-   * Adds the provided callback function to the list of listeners that will be notified
-   * whenever the code block changes.
-   *
-   * @param {() => void} cb - The callback function to register.
-   * @returns {void}
-   */
-  onCodeBlockUpdate(cb: () => void) {
-    this.onupdate.push(cb);
-  }
-
-  /**
-   * Unregisters a previously registered code block update callback.
-   *
-   * Removes the specified callback from the list of listeners so it will no longer
-   * be invoked when the code block updates.
-   *
-   * @param {() => void} cb - The callback function to unregister.
-   * @returns {void}
-   */
-  offCodeBlockUpdate(cb: () => void) {
-    this.onupdate = this.onupdate.filter(c => c !== cb);
   }
 
   /**
@@ -536,6 +489,26 @@ export default class PureChatLLM extends Plugin {
     if (leaf) await workspace.revealLeaf(leaf);
   }
 
+  async openCodePreview(state: CodeSnippetState) {
+    const leaves = this.app.workspace.getLeavesOfType(CODE_PREVIEW_VIEW_TYPE);
+    if (leaves.length === 0) {
+      const leaf = this.app.workspace.getLeaf('split');
+      await leaf.setViewState({ type: CODE_PREVIEW_VIEW_TYPE, active: true });
+    }
+    if (
+      state.code === this.codeBlock?.code &&
+      state.language === this.codeBlock?.language &&
+      leaves.length > 0
+    )
+      return;
+    this.updateCodePreview(state);
+  }
+
+  updateCodePreview(state: CodeSnippetState) {
+    this.codeBlock = state;
+    this.app.workspace.getLeavesOfType(CODE_PREVIEW_VIEW_TYPE)[0]?.setEphemeralState(state);
+  }
+
   /**
    * Adds Pure Chat LLM items to the editor context menu.
    *
@@ -574,15 +547,7 @@ export default class PureChatLLM extends Plugin {
         item
           .setTitle('Open code preview')
           .setIcon('code')
-          .onClick(() => {
-            const content = editor.getValue().slice(codeBlock.from, codeBlock.to);
-            openCodePreview(
-              this.app,
-              content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
-              content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
-              editor,
-            );
-          }),
+          .onClick(() => this.openCodePreview(codeBlock)),
       );
 
     return menu;
@@ -633,21 +598,12 @@ export default class PureChatLLM extends Plugin {
    * @param editor - The editor instance containing the file's content.
    * @param view - The Markdown view associated with the editor.
    */
-  generateTitle(editor: Editor, view: MarkdownView): void {
+  async generateTitle(editor: Editor, view: MarkdownView): Promise<void> {
     const activeFile = view.file;
-    if (activeFile)
-      void new PureChatLLMChat(this)
-        .setMarkdown(editor.getValue())
-        .processChatWithTemplate(this.settings.chatTemplates['Conversation titler'])
-        .then(title => {
-          const sanitizedTitle = `${activeFile.parent?.path}/${title.content
-            .replace(/^<think>[\s\S]+?<\/think>/gm, '') // Remove <think> tags for ollama
-            .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
-            .trim()}.${activeFile.extension}`;
-          void this.app.fileManager.renameFile(activeFile, sanitizedTitle);
-          new Notice(`File renamed to: ${sanitizedTitle}`);
-        });
-    else new Notice('No active file to rename.');
+    if (!activeFile) return;
+
+    const writeHandler = new WriteHandler(this, activeFile, view, editor, true);
+    await generateTitle(this, writeHandler);
   }
 
   /**
@@ -666,52 +622,8 @@ export default class PureChatLLM extends Plugin {
     const activeFile = view.file;
     if (!activeFile) return;
 
-    const endpoint = this.settings.endpoints[this.settings.endpoint];
-    if (endpoint.apiKey == EmptyApiKey) {
-      new AskForAPI(this.app, this).open();
-      return;
-    }
     const writeHandler = new WriteHandler(this, activeFile, view, editor, true);
-
-    const editorcontent = await writeHandler.getValue();
-
-    const chat = new PureChatLLMChat(this).setMarkdown(editorcontent);
-    if (
-      chat.session.messages[chat.session.messages.length - 1].content === '' &&
-      chat.session.validChat &&
-      this.settings.AutoReverseRoles
-    ) {
-      if (chat.session.messages.pop()?.role == 'user') chat.reverseRoles();
-    }
-    await writeHandler.write(chat.getMarkdown());
-
-    if (!chat.session.validChat) return;
-
-    this.isresponding = true;
-
-    await writeHandler.appendContent(`\n${chat.adapter.parseRole('assistant...' as RoleType)}\n`);
-    chat
-      .completeChatResponse(activeFile, async e => {
-        await writeHandler.appendContent(e.content);
-        return true;
-      })
-      .then(async chat => {
-        this.isresponding = false;
-        if (
-          this.settings.AutogenerateTitle > 0 &&
-          chat.session.messages.length >= this.settings.AutogenerateTitle &&
-          (activeFile?.name.includes('Untitled') || / \d+\.md$/.test(activeFile?.name)) &&
-          view
-        ) {
-          this.generateTitle(editor, view);
-        }
-        await writeHandler.write(chat.getMarkdown());
-      })
-      .catch(error => this.console.error(error))
-      .finally(() => {
-        this.isresponding = false;
-        return;
-      });
+    await completeChatResponse(this, writeHandler);
   }
 
   /**
