@@ -12,12 +12,15 @@ This guide documents the pattern for completing JSDoc documentation across the c
 - ✅ `src/tools/AITools.ts` - 2 AI tool classes
 - ✅ `src/tools/VaultTools.ts` - 3 vault tool classes
 - ✅ `src/utils/BooleanSearchParser.ts` - Boolean search parser
+- ✅ `src/tools.ts` - Base Tool class & ToolRegistry
+- ✅ `src/tools/ToolOutputBuilder.ts` - Output formatting utility
 
-**Total Completed: 6 files, 15 tool classes/utilities**
+**Total Completed: 8 files, all tool infrastructure complete**
 
 ### Files Still Needing Completion
 
-**Current Status: 289 JSDoc issues remaining (70 errors, 219 warnings)**
+**Current Status: 235 JSDoc issues remaining (43 errors, 192 warnings)**
+**Progress: 117 issues resolved (33% reduction from original 352)**
 
 #### Medium Priority (Core Files)
 - `src/core/Chat.ts` - Chat management class with recursive resolution
@@ -127,27 +130,31 @@ Should show: `✖ 0 problems`
 ## Current Metrics
 
 - **Total files**: 34 TypeScript files
-- **Files completed**: 6 (all tool classes + Boolean parser)
+- **Files completed**: 8 (all tool infrastructure + parser)
 - **Original issues**: 352 (103 errors, 249 warnings)
-- **Current issues**: 289 (70 errors, 219 warnings)
-- **Issues resolved**: 63 (18% reduction)
+- **Current issues**: 235 (43 errors, 192 warnings)
+- **Issues resolved**: 117 (33% reduction)
 
 ## Achievements
 
-✅ **All tool classes completed** - 100% of tools documentation done
+✅ **All tool infrastructure completed** - 100% of tools and support classes documented
 ✅ **Established consistent patterns** - Clear templates for remaining work
-✅ **Reduced error count** - From 103 to 70 errors
+✅ **Significant error reduction** - From 103 to 43 errors (58% reduction)
 ✅ **Quality improvements** - All completed files pass linting
+✅ **Base classes complete** - Tool, ToolRegistry, ToolOutputBuilder all done
 
 ## Next Steps
 
 1. ✅ ~~Complete all tool classes~~ - DONE
 2. ✅ ~~Complete BooleanSearchParser utility~~ - DONE
-3. Complete core classes (Chat.ts, LLMService.ts, etc.)
-4. Complete main.ts plugin entry point
-5. Complete UI files (Settings.ts, SideView.ts, etc.)
-6. Complete realtime voice call files
-7. Run full lint to verify 0 issues
+3. ✅ ~~Complete base Tool and ToolRegistry classes~~ - DONE
+4. ✅ ~~Complete ToolOutputBuilder~~ - DONE
+5. Complete EditReview.ts
+6. Complete core classes (Chat.ts, LLMService.ts, etc.)
+7. Complete main.ts plugin entry point
+8. Complete UI files (Settings.ts, SideView.ts, etc.)
+9. Complete realtime voice call files
+10. Run full lint to verify 0 issues
 
 ## How to Continue
 
