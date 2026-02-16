@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is a **major release** with breaking changes focused on simplification, performance optimization, and code quality improvements.
 
-### (*) Highlights
+### (\*) Highlights
 
 - **38% Bundle Size Reduction**: main.js reduced from 211KB -> 131KB (80KB savings) through architectural simplification
 - **100% JSDoc Documentation Coverage**: All 26 TypeScript files fully documented (352 issues resolved)
@@ -97,11 +97,10 @@ This is a **major release** with breaking changes focused on simplification, per
   - Standardized type definitions across all tool files
   - Enhanced code formatting consistency
 - **Documentation Format Standardization**: All markdown documentation converted to 100% ASCII-only (0x00-0x7F)
-  - Replaced Unicode emojis with ASCII emoticons: :), :D, (*), [+], [@], [=], [&], [#], (!), :*), [^], (i), [x], [~], <3
-  - Replaced special characters: box drawing -> ASCII equivalents, bullets -> *, em-dashes -> --, arrows -> ->
-  - Files converted: README.md (483 lines), CHANGELOG.md (690 lines), RELEASE_NOTES_2.0.0.md (136 lines), AGENTS.md (266 lines), src/tools/GUIDE.md (1,662 lines)
+  - Replaced Unicode emojis with ASCII emoticons: :), :D, (\*), [+], [@], [=], [&], [#], (!), :\*), [^], (i), [x], [~], <3
+  - Replaced special characters: box drawing -> ASCII equivalents, bullets -> \*, em-dashes -> --, arrows -> ->
+  - Files converted: README.md (483 lines), CHANGELOG.md (690 lines), AGENTS.md (266 lines), src/tools/GUIDE.md (1,662 lines)
   - Benefits: Universal compatibility (terminals, editors, CI/CD, all platforms), no encoding issues, no font dependencies
-- **RELEASE_NOTES Auto-Generation**: RELEASE_NOTES_2.0.0.md now automatically generated from CHANGELOG.md
   - Follows same approach as `.github/workflows/release.yml` using sed extraction
   - No longer manually maintained, ensuring consistency with CHANGELOG
 - **README.md Complete Rewrite**: Modernized main documentation (510 lines, up from 188)

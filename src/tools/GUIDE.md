@@ -15,6 +15,7 @@ Tools are organized into five categories:
 - **Vault Tools**: Note reading, writing, and relationship management
 
 All tools follow a consistent interface:
+
 - Structured JSON parameters with type validation
 - Standardized output format for easy parsing
 - Error handling with recovery suggestions
@@ -111,15 +112,16 @@ SUGGESTED ACTIONS:
 **Availability**: OpenAI and xAI endpoints only
 
 #### Overview
+
 Creates high-quality AI-generated images from text prompts. Supports multiple aspect ratios and can generate multiple images in a single call. Generated images are automatically saved to the vault's attachment folder and embedded in the note using Obsidian's wiki-link format.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `prompt` | string | Yes | - | Detailed description of the image to generate (max 4,000 characters) |
-| `ratio` | string | No | `"square"` | Aspect ratio: `"landscape"`, `"portrait"`, or `"square"` |
-| `n` | integer | No | `1` | Number of images to generate (1-10 depending on provider) |
+| Parameter | Type    | Required | Default    | Description                                                          |
+| --------- | ------- | -------- | ---------- | -------------------------------------------------------------------- |
+| `prompt`  | string  | Yes      | -          | Detailed description of the image to generate (max 4,000 characters) |
+| `ratio`   | string  | No       | `"square"` | Aspect ratio: `"landscape"`, `"portrait"`, or `"square"`             |
+| `n`       | integer | No       | `1`        | Number of images to generate (1-10 depending on provider)            |
 
 #### When to Use
 
@@ -129,6 +131,7 @@ Creates high-quality AI-generated images from text prompts. Supports multiple as
 - **Multiple Variations**: When user wants several versions of the same concept (`n` > 1)
 
 **Strategic Heuristics**:
+
 - Use landscape for wide scenes, banners, or horizontal compositions
 - Use portrait for people, vertical objects, or mobile-friendly images
 - Use square for icons, profile pictures, or balanced compositions
@@ -165,6 +168,7 @@ Creates high-quality AI-generated images from text prompts. Supports multiple as
 ```
 
 **Output**:
+
 ```
 ![[generated-image-1737984123-0.png]]
 Revised prompt: A warm and inviting library scene...
@@ -188,15 +192,16 @@ Revised prompt: A cozy library interior with extensive bookshelves...
 **Availability**: Requires Smart Connections plugin to be installed and initialized
 
 #### Overview
+
 Performs semantic search across the vault using embeddings-based retrieval. Unlike text-based search, this finds notes and blocks based on conceptual similarity, making it ideal for discovering related content even when exact keywords don't match.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | string | Yes | - | The search query or concept to find semantically similar content |
-| `limit` | integer | No | `5` | Maximum number of results to return (1-50) |
-| `type` | string | No | `"blocks"` | Retrieval granularity: `"blocks"` (sections) or `"sources"` (entire files) |
+| Parameter | Type    | Required | Default    | Description                                                                |
+| --------- | ------- | -------- | ---------- | -------------------------------------------------------------------------- |
+| `query`   | string  | Yes      | -          | The search query or concept to find semantically similar content           |
+| `limit`   | integer | No       | `5`        | Maximum number of results to return (1-50)                                 |
+| `type`    | string  | No       | `"blocks"` | Retrieval granularity: `"blocks"` (sections) or `"sources"` (entire files) |
 
 #### When to Use
 
@@ -206,6 +211,7 @@ Performs semantic search across the vault using embeddings-based retrieval. Unli
 - **Knowledge Exploration**: Discovering connections the user may not be aware of
 
 **Strategic Heuristics**:
+
 - Use `"blocks"` for precise, section-level retrieval (default, most common)
 - Use `"sources"` when you need file-level context or want to identify whole documents
 - Increase `limit` when casting a wider net (research phases)
@@ -248,6 +254,7 @@ Performs semantic search across the vault using embeddings-based retrieval. Unli
 ```
 
 **Output**:
+
 ```
 Found 5 relevant blocks:
 
@@ -285,15 +292,16 @@ When processing fleeting notes, transform them into permanent notes...
 **Availability**: Always available
 
 #### Overview
+
 Searches for files using glob pattern matching. Ideal for finding files by name patterns, extensions, or folder structure. Supports wildcards and recursive directory traversal.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `pattern` | string | Yes | - | Glob pattern (e.g., `"**/*.md"`, `"Attachments/*.png"`) |
-| `include_fields` | array | No | `["path"]` | Metadata fields: `"path"`, `"name"`, `"extension"`, `"size"`, `"mtime"` |
-| `limit` | integer | No | `100` | Maximum number of results to return |
+| Parameter        | Type    | Required | Default    | Description                                                             |
+| ---------------- | ------- | -------- | ---------- | ----------------------------------------------------------------------- |
+| `pattern`        | string  | Yes      | -          | Glob pattern (e.g., `"**/*.md"`, `"Attachments/*.png"`)                 |
+| `include_fields` | array   | No       | `["path"]` | Metadata fields: `"path"`, `"name"`, `"extension"`, `"size"`, `"mtime"` |
+| `limit`          | integer | No       | `100`      | Maximum number of results to return                                     |
 
 #### When to Use
 
@@ -303,6 +311,7 @@ Searches for files using glob pattern matching. Ideal for finding files by name 
 - **Pattern Matching**: Finding files with specific naming conventions
 
 **Strategic Heuristics**:
+
 - Use `**/*.md` for all Markdown files (recursive)
 - Use `FolderName/*.md` for files in a specific folder only
 - Use `**/*daily*.md` to find files containing "daily" in the name
@@ -325,6 +334,7 @@ Searches for files using glob pattern matching. Ideal for finding files by name 
    - Request only needed fields in `include_fields`
 
 3. **Common Patterns**:
+
    ```
    "**/*.md"                    # All Markdown files
    "Daily Notes/*.md"           # Files in specific folder
@@ -351,6 +361,7 @@ Searches for files using glob pattern matching. Ideal for finding files by name 
 ```
 
 **Output**:
+
 ```
 GLOB RESULTS: "Projects/**/*.md"
 ---
@@ -379,14 +390,15 @@ Found: 12 matches
 **Availability**: Always available
 
 #### Overview
+
 Lists folders in the vault to help understand directory structure. Can list folders recursively or just immediate children. Each folder includes a count of files it contains.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `path` | string | No | `"/"` | Root path to start listing from |
-| `recursive` | boolean | No | `false` | Whether to list all subfolders recursively |
+| Parameter   | Type    | Required | Default | Description                                |
+| ----------- | ------- | -------- | ------- | ------------------------------------------ |
+| `path`      | string  | No       | `"/"`   | Root path to start listing from            |
+| `recursive` | boolean | No       | `false` | Whether to list all subfolders recursively |
 
 #### When to Use
 
@@ -396,6 +408,7 @@ Lists folders in the vault to help understand directory structure. Can list fold
 - **Path Validation**: Checking if a folder exists before operations
 
 **Strategic Heuristics**:
+
 - Use `recursive: false` (default) for immediate children only
 - Use `recursive: true` for complete directory tree
 - Start with root (`/`) to get a full overview
@@ -430,6 +443,7 @@ Lists folders in the vault to help understand directory structure. Can list fold
 ```
 
 **Output**:
+
 ```
 FOLDERS IN: "Projects"
 ---
@@ -456,16 +470,17 @@ FOLDERS IN: "Projects"
 **Availability**: Always available
 
 #### Overview
+
 Performs full-text content search across all Markdown files in the vault. Supports boolean logic (AND, OR, NOT), regular expressions, and context windows around matches. This is the most powerful text-based search tool.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | string | Yes | - | Text phrase, boolean expression, or regex pattern |
-| `regex` | boolean | No | `false` | Treat query as regular expression |
-| `limit` | integer | No | `20` | Maximum number of matches to return |
-| `context_lines` | integer | No | `1` | Lines of context before and after each match |
+| Parameter       | Type    | Required | Default | Description                                       |
+| --------------- | ------- | -------- | ------- | ------------------------------------------------- |
+| `query`         | string  | Yes      | -       | Text phrase, boolean expression, or regex pattern |
+| `regex`         | boolean | No       | `false` | Treat query as regular expression                 |
+| `limit`         | integer | No       | `20`    | Maximum number of matches to return               |
+| `context_lines` | integer | No       | `1`     | Lines of context before and after each match      |
 
 #### When to Use
 
@@ -475,6 +490,7 @@ Performs full-text content search across all Markdown files in the vault. Suppor
 - **Context Exploration**: Seeing how terms are used across the vault
 
 **Strategic Heuristics**:
+
 - Use simple text for basic keyword searches
 - Use boolean logic for complex queries (e.g., `"AI AND ethics NOT bias"`)
 - Use regex for structured patterns (dates, tags, specific formats)
@@ -484,24 +500,28 @@ Performs full-text content search across all Markdown files in the vault. Suppor
 #### Best Practices
 
 1. **Query Types**:
-   
+
    **Simple Text** (case-insensitive):
+
    ```json
-   {"query": "machine learning"}
+   { "query": "machine learning" }
    ```
-   
+
    **Boolean Logic**:
+
    ```json
-   {"query": "neural network AND training NOT backpropagation"}
+   { "query": "neural network AND training NOT backpropagation" }
    ```
+
    - `AND`: Both terms must be present
    - `OR`: Either term must be present
    - `NOT`: Following term must not be present
    - Use parentheses for grouping: `"(AI OR ML) AND ethics"`
-   
+
    **Regular Expression**:
+
    ```json
-   {"query": "\\d{4}-\\d{2}-\\d{2}", "regex": true}
+   { "query": "\\d{4}-\\d{2}-\\d{2}", "regex": true }
    ```
 
 2. **Context Windows**:
@@ -525,6 +545,7 @@ Performs full-text content search across all Markdown files in the vault. Suppor
 #### Example Usage
 
 **Simple Search**:
+
 ```json
 {
   "query": "obsidian plugin development",
@@ -534,6 +555,7 @@ Performs full-text content search across all Markdown files in the vault. Suppor
 ```
 
 **Boolean Search**:
+
 ```json
 {
   "query": "(TypeScript OR JavaScript) AND API NOT deprecated",
@@ -542,6 +564,7 @@ Performs full-text content search across all Markdown files in the vault. Suppor
 ```
 
 **Regex Search**:
+
 ```json
 {
   "query": "#\\w+",
@@ -551,6 +574,7 @@ Performs full-text content search across all Markdown files in the vault. Suppor
 ```
 
 **Output**:
+
 ```
 SEARCH: "machine learning"
 ---
@@ -585,15 +609,16 @@ Found: 3 matches
 **Availability**: Always available
 
 #### Overview
+
 Reads and updates Pure Chat LLM plugin settings. Update operations require user confirmation through a modal dialog, ensuring settings are never changed without explicit approval. This is critical for maintaining user control over plugin behavior.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `action` | string | Yes | - | Operation: `"read"` or `"update"` |
-| `key` | string | No | - | Specific setting key (required for update, optional for read) |
-| `value` | string | No | - | New value for the setting (required for update, JSON-stringified if complex) |
+| Parameter | Type   | Required | Default | Description                                                                  |
+| --------- | ------ | -------- | ------- | ---------------------------------------------------------------------------- |
+| `action`  | string | Yes      | -       | Operation: `"read"` or `"update"`                                            |
+| `key`     | string | No       | -       | Specific setting key (required for update, optional for read)                |
+| `value`   | string | No       | -       | New value for the setting (required for update, JSON-stringified if complex) |
 
 #### When to Use
 
@@ -603,6 +628,7 @@ Reads and updates Pure Chat LLM plugin settings. Update operations require user 
 - **Preference Management**: Adjusting behavior based on user needs
 
 **Strategic Heuristics**:
+
 - Always read settings first before updating
 - Never update settings without explicit user request
 - Use `key` parameter to read specific settings
@@ -641,6 +667,7 @@ Reads and updates Pure Chat LLM plugin settings. Update operations require user 
 #### Example Usage
 
 **Read All Settings**:
+
 ```json
 {
   "action": "read"
@@ -648,6 +675,7 @@ Reads and updates Pure Chat LLM plugin settings. Update operations require user 
 ```
 
 **Read Specific Setting**:
+
 ```json
 {
   "action": "read",
@@ -656,6 +684,7 @@ Reads and updates Pure Chat LLM plugin settings. Update operations require user 
 ```
 
 **Update Setting** (triggers confirmation):
+
 ```json
 {
   "action": "update",
@@ -665,6 +694,7 @@ Reads and updates Pure Chat LLM plugin settings. Update operations require user 
 ```
 
 **Output** (Read):
+
 ```
 Settings:
 {
@@ -678,11 +708,13 @@ Settings:
 ```
 
 **Output** (Update after approval):
+
 ```
 Updated "debugMode" to: true
 ```
 
 **Output** (Update rejected):
+
 ```
 Update rejected.
 ```
@@ -704,15 +736,16 @@ Update rejected.
 **Availability**: Always available (but requires templates folder)
 
 #### Overview
+
 Lists and applies Obsidian templates. Automatically detects the templates folder from core Templates plugin, Templater plugin, or a folder named "Templates". Supports variable substitution (`{{date}}`, `{{time}}`, `{{title}}`).
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `action` | string | Yes | - | Operation: `"list"` or `"apply"` |
-| `template_path` | string | No | - | Path to template file (required for `"apply"`) |
-| `target_path` | string | No | - | Target note path (required for `"apply"`) |
+| Parameter       | Type   | Required | Default | Description                                    |
+| --------------- | ------ | -------- | ------- | ---------------------------------------------- |
+| `action`        | string | Yes      | -       | Operation: `"list"` or `"apply"`               |
+| `template_path` | string | No       | -       | Path to template file (required for `"apply"`) |
+| `target_path`   | string | No       | -       | Target note path (required for `"apply"`)      |
 
 #### When to Use
 
@@ -722,6 +755,7 @@ Lists and applies Obsidian templates. Automatically detects the templates folder
 - **Automation**: Using templates programmatically
 
 **Strategic Heuristics**:
+
 - List templates first to discover available options
 - Use descriptive template names for easy selection
 - Apply templates to new or existing notes
@@ -760,6 +794,7 @@ Lists and applies Obsidian templates. Automatically detects the templates folder
 #### Example Usage
 
 **List Templates**:
+
 ```json
 {
   "action": "list"
@@ -767,6 +802,7 @@ Lists and applies Obsidian templates. Automatically detects the templates folder
 ```
 
 **Apply Template**:
+
 ```json
 {
   "action": "apply",
@@ -776,6 +812,7 @@ Lists and applies Obsidian templates. Automatically detects the templates folder
 ```
 
 **Output** (List):
+
 ```
 Templates in "Templates":
 Templates/Daily Note.md
@@ -785,6 +822,7 @@ Templates/Project/Task List.md
 ```
 
 **Output** (Apply):
+
 ```
 Template content for "Templates/Daily Note.md":
 
@@ -796,7 +834,7 @@ type: daily-note
 # Daily Note for 2025-01-27
 
 ## Tasks for 2025-01-27
-- [ ] 
+- [ ]
 
 ## Notes
 
@@ -824,13 +862,14 @@ type: daily-note
 **Availability**: Always available
 
 #### Overview
+
 Retrieves information about the currently active note in Obsidian, including file path, cursor position, selection, and optionally the full content. Essential for understanding what the user is currently working on.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `include_content` | boolean | No | `false` | Whether to include the full note content in output |
+| Parameter         | Type    | Required | Default | Description                                        |
+| ----------------- | ------- | -------- | ------- | -------------------------------------------------- |
+| `include_content` | boolean | No       | `false` | Whether to include the full note content in output |
 
 #### When to Use
 
@@ -840,6 +879,7 @@ Retrieves information about the currently active note in Obsidian, including fil
 - **Active Note Operations**: Any operation that should target the current note
 
 **Strategic Heuristics**:
+
 - Call at the start of multi-step operations for context
 - Use when user says "this note", "here", "current file"
 - Set `include_content: true` only when you need to read the content
@@ -874,6 +914,7 @@ Retrieves information about the currently active note in Obsidian, including fil
 #### Example Usage
 
 **Basic Context** (metadata only):
+
 ```json
 {
   "include_content": false
@@ -881,6 +922,7 @@ Retrieves information about the currently active note in Obsidian, including fil
 ```
 
 **Full Context** (with content):
+
 ```json
 {
   "include_content": true
@@ -888,6 +930,7 @@ Retrieves information about the currently active note in Obsidian, including fil
 ```
 
 **Output** (without content):
+
 ```
 Active File: Projects/AI/GPT Research.md
 Cursor: Line 45, Col 12
@@ -900,6 +943,7 @@ in natural language understanding and generation.
 ```
 
 **Output** (with content):
+
 ```
 Active File: Projects/AI/GPT Research.md
 Cursor: Line 45, Col 12
@@ -932,18 +976,19 @@ Content:
 **Availability**: Always available
 
 #### Overview
+
 Controls the Obsidian workspace by opening and closing notes in various layouts. Supports splitting panes horizontally or vertically, opening in new tabs, and setting view modes (source/preview). Essential for managing the user's workspace programmatically.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `action` | string | Yes | - | Operation: `"open"` or `"close"` |
-| `path` | string | No | - | File path (required for `"open"`, optional for `"close"`) |
-| `split` | string | No | `"none"` | Split direction: `"horizontal"`, `"vertical"`, or `"none"` |
-| `new_leaf` | boolean | No | `true` | Whether to open in a new tab |
-| `mode` | string | No | - | View mode: `"source"` or `"preview"` |
-| `active` | boolean | No | `true` | Whether to focus the newly opened tab |
+| Parameter  | Type    | Required | Default  | Description                                                |
+| ---------- | ------- | -------- | -------- | ---------------------------------------------------------- |
+| `action`   | string  | Yes      | -        | Operation: `"open"` or `"close"`                           |
+| `path`     | string  | No       | -        | File path (required for `"open"`, optional for `"close"`)  |
+| `split`    | string  | No       | `"none"` | Split direction: `"horizontal"`, `"vertical"`, or `"none"` |
+| `new_leaf` | boolean | No       | `true`   | Whether to open in a new tab                               |
+| `mode`     | string  | No       | -        | View mode: `"source"` or `"preview"`                       |
+| `active`   | boolean | No       | `true`   | Whether to focus the newly opened tab                      |
 
 #### When to Use
 
@@ -953,6 +998,7 @@ Controls the Obsidian workspace by opening and closing notes in various layouts.
 - **Tab Management**: Opening or closing tabs based on workflow
 
 **Strategic Heuristics**:
+
 - Use `split: "horizontal"` for notes you want to compare vertically
 - Use `split: "vertical"` for side-by-side reference (most common)
 - Use `new_leaf: true` to preserve current note
@@ -963,18 +1009,21 @@ Controls the Obsidian workspace by opening and closing notes in various layouts.
 #### Best Practices
 
 1. **Opening Notes**:
-   
+
    **Simple Open** (replaces current tab if `new_leaf: false`):
+
    ```json
-   {"action": "open", "path": "Projects/AI.md", "new_leaf": false}
+   { "action": "open", "path": "Projects/AI.md", "new_leaf": false }
    ```
-   
+
    **New Tab** (preserves current):
+
    ```json
-   {"action": "open", "path": "Reference/Terms.md", "new_leaf": true}
+   { "action": "open", "path": "Reference/Terms.md", "new_leaf": true }
    ```
-   
+
    **Split View** (side-by-side):
+
    ```json
    {
      "action": "open",
@@ -985,15 +1034,17 @@ Controls the Obsidian workspace by opening and closing notes in various layouts.
    ```
 
 2. **Closing Notes**:
-   
+
    **Close Specific Tab**:
+
    ```json
-   {"action": "close", "path": "Projects/Old.md"}
+   { "action": "close", "path": "Projects/Old.md" }
    ```
-   
+
    **Close Active Tab**:
+
    ```json
-   {"action": "close"}
+   { "action": "close" }
    ```
 
 3. **Split Directions**:
@@ -1009,6 +1060,7 @@ Controls the Obsidian workspace by opening and closing notes in various layouts.
 #### Example Usage
 
 **Open for Editing**:
+
 ```json
 {
   "action": "open",
@@ -1020,6 +1072,7 @@ Controls the Obsidian workspace by opening and closing notes in various layouts.
 ```
 
 **Open Reference in Split**:
+
 ```json
 {
   "action": "open",
@@ -1031,6 +1084,7 @@ Controls the Obsidian workspace by opening and closing notes in various layouts.
 ```
 
 **Close Active Tab**:
+
 ```json
 {
   "action": "close"
@@ -1038,11 +1092,13 @@ Controls the Obsidian workspace by opening and closing notes in various layouts.
 ```
 
 **Output** (Open):
+
 ```
 Opened "Projects/TODO.md"
 ```
 
 **Output** (Close):
+
 ```
 Closed tab for "Projects/Old.md".
 ```
@@ -1065,14 +1121,15 @@ Closed tab for "Projects/Old.md".
 **Availability**: Always available
 
 #### Overview
+
 Displays a toast-style notification in Obsidian. These appear in the upper-right corner and automatically dismiss after a specified duration. Useful for providing feedback about operations without interrupting the user's workflow.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `message` | string | Yes | - | The message to display in the notification |
-| `duration` | integer | No | `5000` | Duration in milliseconds (1000 = 1 second) |
+| Parameter  | Type    | Required | Default | Description                                |
+| ---------- | ------- | -------- | ------- | ------------------------------------------ |
+| `message`  | string  | Yes      | -       | The message to display in the notification |
+| `duration` | integer | No       | `5000`  | Duration in milliseconds (1000 = 1 second) |
 
 #### When to Use
 
@@ -1082,6 +1139,7 @@ Displays a toast-style notification in Obsidian. These appear in the upper-right
 - **Success Messages**: Quick confirmations
 
 **Strategic Heuristics**:
+
 - Use for confirmations, not errors (errors should be in tool output)
 - Keep messages short and clear (under 50 characters ideal)
 - Standard duration (5000ms) is good for most messages
@@ -1123,6 +1181,7 @@ Displays a toast-style notification in Obsidian. These appear in the upper-right
 #### Example Usage
 
 **Standard Notification**:
+
 ```json
 {
   "message": "Note updated successfully",
@@ -1131,6 +1190,7 @@ Displays a toast-style notification in Obsidian. These appear in the upper-right
 ```
 
 **Quick Confirmation**:
+
 ```json
 {
   "message": "Copied to clipboard",
@@ -1139,6 +1199,7 @@ Displays a toast-style notification in Obsidian. These appear in the upper-right
 ```
 
 **Important Alert**:
+
 ```json
 {
   "message": "Large search in progress (2,500+ files)",
@@ -1147,6 +1208,7 @@ Displays a toast-style notification in Obsidian. These appear in the upper-right
 ```
 
 **Output**:
+
 ```
 Displayed notice: "Note updated successfully"
 ```
@@ -1171,15 +1233,16 @@ Displayed notice: "Note updated successfully"
 **Availability**: Always available
 
 #### Overview
+
 Reads content from Obsidian notes with support for sections, headers, and block references. Can return full notes, specific sections, or just the heading structure (outline). This is the primary tool for retrieving note content.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `link` | string | Yes | - | Wiki link format: `[[Filename]]`, `[[Filename#Header]]`, `[[Filename#^block-id]]` |
-| `headings_only` | boolean | No | `false` | Return only heading structure (outline mode) instead of content |
-| `depth` | integer | No | `6` | Maximum heading depth when `headings_only: true` (1-6) |
+| Parameter       | Type    | Required | Default | Description                                                                       |
+| --------------- | ------- | -------- | ------- | --------------------------------------------------------------------------------- |
+| `link`          | string  | Yes      | -       | Wiki link format: `[[Filename]]`, `[[Filename#Header]]`, `[[Filename#^block-id]]` |
+| `headings_only` | boolean | No       | `false` | Return only heading structure (outline mode) instead of content                   |
+| `depth`         | integer | No       | `6`     | Maximum heading depth when `headings_only: true` (1-6)                            |
 
 #### When to Use
 
@@ -1189,6 +1252,7 @@ Reads content from Obsidian notes with support for sections, headers, and block 
 - **Outline Extraction**: Understanding note structure without reading content
 
 **Strategic Heuristics**:
+
 - Use full link `[[Note]]` for entire notes
 - Use `[[Note#Header]]` for specific sections
 - Use `[[Note#^blockid]]` for specific blocks
@@ -1199,37 +1263,43 @@ Reads content from Obsidian notes with support for sections, headers, and block 
 #### Best Practices
 
 1. **Link Formats**:
-   
+
    **Full Note**:
+
    ```json
-   {"link": "[[Projects/AI Research]]"}
+   { "link": "[[Projects/AI Research]]" }
    ```
-   
+
    **Section by Header**:
+
    ```json
-   {"link": "[[Projects/AI Research#Methodology]]"}
+   { "link": "[[Projects/AI Research#Methodology]]" }
    ```
-   
+
    **Block Reference**:
+
    ```json
-   {"link": "[[Projects/AI Research#^key-findings]]"}
+   { "link": "[[Projects/AI Research#^key-findings]]" }
    ```
-   
+
    **Nested Header**:
+
    ```json
-   {"link": "[[Projects/AI Research#Results > Performance]]"}
+   { "link": "[[Projects/AI Research#Results > Performance]]" }
    ```
 
 2. **Outline Mode**:
-   
+
    **Full Outline**:
+
    ```json
-   {"link": "[[Projects/AI Research]]", "headings_only": true}
+   { "link": "[[Projects/AI Research]]", "headings_only": true }
    ```
-   
+
    **High-Level Outline** (H1-H3 only):
+
    ```json
-   {"link": "[[Projects/AI Research]]", "headings_only": true, "depth": 3}
+   { "link": "[[Projects/AI Research]]", "headings_only": true, "depth": 3 }
    ```
 
 3. **Error Handling**:
@@ -1247,6 +1317,7 @@ Reads content from Obsidian notes with support for sections, headers, and block 
 #### Example Usage
 
 **Read Full Note**:
+
 ```json
 {
   "link": "[[Projects/Machine Learning]]"
@@ -1254,6 +1325,7 @@ Reads content from Obsidian notes with support for sections, headers, and block 
 ```
 
 **Read Specific Section**:
+
 ```json
 {
   "link": "[[Projects/Machine Learning#Training Process]]"
@@ -1261,6 +1333,7 @@ Reads content from Obsidian notes with support for sections, headers, and block 
 ```
 
 **Get Note Outline**:
+
 ```json
 {
   "link": "[[Projects/Machine Learning]]",
@@ -1270,6 +1343,7 @@ Reads content from Obsidian notes with support for sections, headers, and block 
 ```
 
 **Output** (Full Note):
+
 ```
 NOTE SECTION READ SUCCESSFUL
 ---
@@ -1287,6 +1361,7 @@ Models learn by adjusting weights...
 ```
 
 **Output** (Section):
+
 ```
 NOTE SECTION READ SUCCESSFUL
 ---
@@ -1300,6 +1375,7 @@ Models learn by adjusting weights through backpropagation...
 ```
 
 **Output** (Outline):
+
 ```
 NOTE OUTLINE
 ---
@@ -1336,16 +1412,17 @@ Heading Structure:
 **Availability**: Always available
 
 #### Overview
+
 Writes or modifies content in Obsidian notes with support for sections, multiple write modes, and frontmatter properties. Can create new notes, modify existing ones, or update specific sections. Includes user confirmation through an edit review modal.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `link` | string | Yes | - | Wiki link: `[[Filename]]` or `[[Filename#Header]]` |
-| `content` | string | Yes | - | The content to write |
-| `mode` | string | No | Contextual | Write mode: `"append"`, `"prepend"`, or `"replace"` |
-| `properties` | object | No | - | YAML frontmatter properties (only used when creating new notes) |
+| Parameter    | Type   | Required | Default    | Description                                                     |
+| ------------ | ------ | -------- | ---------- | --------------------------------------------------------------- |
+| `link`       | string | Yes      | -          | Wiki link: `[[Filename]]` or `[[Filename#Header]]`              |
+| `content`    | string | Yes      | -          | The content to write                                            |
+| `mode`       | string | No       | Contextual | Write mode: `"append"`, `"prepend"`, or `"replace"`             |
+| `properties` | object | No       | -          | YAML frontmatter properties (only used when creating new notes) |
 
 #### When to Use
 
@@ -1355,6 +1432,7 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
 - **Batch Operations**: Multiple writes in sequence
 
 **Strategic Heuristics**:
+
 - Default mode for full files: `"replace"`
 - Default mode for sections: `"append"`
 - Use `"replace"` to completely rewrite content
@@ -1366,24 +1444,24 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
 #### Best Practices
 
 1. **Write Modes Explained**:
-   
+
    **Replace** (default for full files):
    - Completely replaces all content
    - Use for major rewrites
    - Careful with existing content
-   
+
    **Append** (default for sections):
    - Adds content at the end
    - Preserves existing content
    - Good for adding to lists, logs
-   
+
    **Prepend**:
    - Adds content at the beginning
    - Useful for reverse-chronological logs
    - Preserves existing content
 
 2. **Creating New Notes**:
-   
+
    ```json
    {
      "link": "[[Projects/New Research]]",
@@ -1397,8 +1475,9 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
    ```
 
 3. **Modifying Sections**:
-   
+
    **Append to Section**:
+
    ```json
    {
      "link": "[[Projects/TODO#Tasks]]",
@@ -1406,8 +1485,9 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
      "mode": "append"
    }
    ```
-   
+
    **Replace Section**:
+
    ```json
    {
      "link": "[[Projects/TODO#Tasks]]",
@@ -1432,6 +1512,7 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
 #### Example Usage
 
 **Create New Note**:
+
 ```json
 {
   "link": "[[Projects/AI Ethics]]",
@@ -1444,6 +1525,7 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
 ```
 
 **Append to Existing Section**:
+
 ```json
 {
   "link": "[[Projects/TODO#In Progress]]",
@@ -1453,6 +1535,7 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
 ```
 
 **Replace Full Note**:
+
 ```json
 {
   "link": "[[Daily/2025-01-27]]",
@@ -1462,6 +1545,7 @@ Writes or modifies content in Obsidian notes with support for sections, multiple
 ```
 
 **Output** (Success):
+
 ```
 WRITE OPERATION APPROVED
 ---
@@ -1478,6 +1562,7 @@ SUGGESTED ACTIONS:
 ```
 
 **Output** (Error - Section in non-existent file):
+
 ```
 ERROR: FileNotFoundError
 ---
@@ -1507,13 +1592,14 @@ RECOVERY OPTIONS:
 **Availability**: Always available
 
 #### Overview
+
 Finds all notes that link to a specific note (backlinks). Results include the number of times each note links to the target. This is essential for understanding note relationships and knowledge graph structure.
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `path` | string | Yes | - | The path of the note to find backlinks for |
+| Parameter | Type   | Required | Default | Description                                |
+| --------- | ------ | -------- | ------- | ------------------------------------------ |
+| `path`    | string | Yes      | -       | The path of the note to find backlinks for |
 
 #### When to Use
 
@@ -1523,6 +1609,7 @@ Finds all notes that link to a specific note (backlinks). Results include the nu
 - **Navigation**: Finding related content through links
 
 **Strategic Heuristics**:
+
 - Use to discover notes related to a specific topic
 - Check backlinks before deleting notes (impact assessment)
 - Find all notes that might need updates when you change one
@@ -1544,23 +1631,29 @@ Finds all notes that link to a specific note (backlinks). Results include the nu
    - Link count includes all mentions, not unique locations
 
 3. **Use Cases**:
-   
+
    **Before Deleting**:
+
    ```json
-   {"path": "Projects/Deprecated.md"}
+   { "path": "Projects/Deprecated.md" }
    ```
+
    Check if any notes reference it.
-   
+
    **Finding Related Work**:
+
    ```json
-   {"path": "Concepts/Machine Learning.md"}
+   { "path": "Concepts/Machine Learning.md" }
    ```
+
    Discover all notes discussing this topic.
-   
+
    **Hub Identification**:
+
    ```json
-   {"path": "Index/AI.md"}
+   { "path": "Index/AI.md" }
    ```
+
    See if this is a well-connected index.
 
 4. **Performance**:
@@ -1572,6 +1665,7 @@ Finds all notes that link to a specific note (backlinks). Results include the nu
 #### Example Usage
 
 **Find Backlinks**:
+
 ```json
 {
   "path": "Concepts/Neural Networks.md"
@@ -1579,6 +1673,7 @@ Finds all notes that link to a specific note (backlinks). Results include the nu
 ```
 
 **Output** (with backlinks):
+
 ```
 BACKLINKS FOR: "Concepts/Neural Networks.md"
 ---
@@ -1589,6 +1684,7 @@ BACKLINKS FOR: "Concepts/Neural Networks.md"
 ```
 
 **Output** (no backlinks):
+
 ```
 BACKLINKS FOR: "Concepts/Neural Networks.md"
 ---
@@ -1596,6 +1692,7 @@ Status: No backlinks found
 ```
 
 **Output** (error):
+
 ```
 Error: File not found at "Concepts/Missing.md"
 ```
@@ -1629,6 +1726,7 @@ Error: File not found at "Concepts/Missing.md"
 ### Error Recovery
 
 All tools provide structured error messages with:
+
 - Error type and description
 - Recovery suggestions
 - Alternative tool calls
@@ -1645,6 +1743,7 @@ Follow the recovery options provided in error messages.
 ### Obsidian Integration
 
 All tools respect:
+
 - Vault boundaries and permissions
 - Obsidian's file system abstraction
 - User settings and plugin configurations

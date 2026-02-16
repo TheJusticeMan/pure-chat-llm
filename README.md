@@ -8,7 +8,7 @@
 
 **Transform your Obsidian notes into powerful AI conversations with built-in agent capabilities.**
 
-[Installation](#installation-v) | [Quick Start](#quick-start-) | [Features](#features-+) | [Documentation](#documentation-i)
+[Installation](#installation-v) | [Quick Start](#quick-start-) | [Features](#features-) | [Documentation](#documentation-i)
 
 </div>
 
@@ -98,15 +98,15 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 1. Open **Settings** -> **Community Plugins**
 2. Click **Browse** and search for **Pure Chat LLM**
 3. Click **Install**, then **Enable**
-4. Configure your API key (see [Configuration](#configuration))
+4. Configure your API key (see [Configuration](#configuration-))
 
 ### Manual Installation
 
 1. Download the latest release from [GitHub Releases](https://github.com/TheJusticeMan/pure-chat-llm/releases)
 2. Extract `main.js`, `manifest.json`, and `styles.css` to:
-    ```
-    <vault>/.obsidian/plugins/pure-chat-llm/
-    ```
+   ```
+   <vault>/.obsidian/plugins/pure-chat-llm/
+   ```
 3. Reload Obsidian
 4. Enable the plugin in Settings -> Community Plugins
 
@@ -119,11 +119,11 @@ Real-time voice conversations using OpenAI Realtime API with optional tool acces
 1. **Create a note** in your vault
 2. **Write your message**:
 
-    ```markdown
-    # role: user
+   ```markdown
+   # role: user
 
-    What is the meaning of life?
-    ```
+   What is the meaning of life?
+   ```
 
 3. **Initiate chat** with **Shift + Enter** or command palette -> "Complete chat response"
 4. The AI will respond, and you can continue the conversation
@@ -186,10 +186,10 @@ The AI will:
 
 1. Navigate to **Settings** -> **Pure Chat LLM**
 2. Enter your API key for your chosen provider:
-    - **OpenAI**: [Get API Key](https://platform.openai.com/account/api-keys)
-    - **Gemini**: [Google AI Studio](https://makersuite.google.com/app/apikey)
-    - **xAI**: [xAI Console](https://console.x.ai/)
-    - **Anthropic**: [Anthropic Console](https://console.anthropic.com/)
+   - **OpenAI**: [Get API Key](https://platform.openai.com/account/api-keys)
+   - **Gemini**: [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - **xAI**: [xAI Console](https://console.x.ai/)
+   - **Anthropic**: [Anthropic Console](https://console.anthropic.com/)
 3. Save settings
 
 ### Endpoints & Models
@@ -458,7 +458,6 @@ npm run knip
 
 - **[Tool Guide](src/tools/GUIDE.md)**: Comprehensive tool documentation (1,662 lines)
 - **[Changelog](CHANGELOG.md)**: Version history and breaking changes
-- **[Release Notes](RELEASE_NOTES_2.0.0.md)**: Detailed v2.0.0 information
 - **[OpenAI API Docs](https://platform.openai.com/docs)**: API reference
 - **[Obsidian Plugin Dev](https://docs.obsidian.md/Plugins/Getting+started/Build+a+plugin)**: Plugin development guide
 
