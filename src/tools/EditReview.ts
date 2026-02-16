@@ -1,28 +1,21 @@
 import { createPatch } from 'diff';
-import {
-  App,
-  Modal,
-  normalizePath,
-  Notice,
-  Setting,
-  TextAreaComponent,
-  TFile,
-  TFolder,
-} from 'obsidian';
+import { App, Modal, normalizePath, Notice, Setting, TFile, TFolder } from 'obsidian';
+import { CodeAreaComponent } from 'src/ui/Modals';
 import { ToolOutputBuilder } from './ToolOutputBuilder';
 
 /**
- *
+ * EditReview provides user confirmation for file modifications and creations
  */
 export class EditReview {
   /**
-   *
-   * @param app
-   * @param path
-   * @param newContent
-   * @param properties
-   * @param overwrite
-   * @param instruction
+   * Prompts user to review and approve a file edit or creation
+   * @param app - The Obsidian App instance
+   * @param path - The file path to create or modify
+   * @param newContent - The new content for the file
+   * @param properties - Optional frontmatter properties to add
+   * @param overwrite - Whether to overwrite existing file if it exists
+   * @param instruction - Instruction text to display to the user
+   * @returns Promise resolving to success message or error description
    */
   static async prompt(
     app: App,
@@ -41,21 +34,21 @@ export class EditReview {
 }
 
 /**
- *
+ * Modal dialog for reviewing and approving file edits
  */
 class EditReviewModal extends Modal {
   originalContent: string | null = null;
   resolved = false;
 
   /**
-   *
-   * @param app
-   * @param path
-   * @param newContent
-   * @param properties
-   * @param overwrite
-   * @param instruction
-   * @param onResolve
+   * Creates a new EditReviewModal instance
+   * @param app - The Obsidian App instance
+   * @param path - The file path to create or modify
+   * @param newContent - The new content for the file
+   * @param properties - Optional frontmatter properties to add
+   * @param overwrite - Whether to overwrite existing file if it exists
+   * @param instruction - Instruction text to display to the user
+   * @param onResolve - Callback function to handle the user's decision
    */
   constructor(
     public app: App,
@@ -71,7 +64,7 @@ class EditReviewModal extends Modal {
   }
 
   /**
-   *
+   * Opens the modal and displays the edit review UI
    */
   async onOpen() {
     const { contentEl } = this;
@@ -114,10 +107,10 @@ class EditReviewModal extends Modal {
         const type = line.startsWith('+')
           ? 'added'
           : line.startsWith('-')
-          ? 'removed'
-          : line.startsWith('@@')
-          ? 'hunk'
-          : 'equal';
+            ? 'removed'
+            : line.startsWith('@@')
+              ? 'hunk'
+              : 'equal';
         div.addClass(`diff-${type}`);
         div.setText(line);
       }
@@ -128,9 +121,9 @@ class EditReviewModal extends Modal {
     // New Content
     new Setting(contentEl).setName('Proposed content').setHeading();
 
-    const newArea = new TextAreaComponent(contentEl);
+    const newArea = new CodeAreaComponent(contentEl);
     newArea.setValue(this.newContent);
-    newArea.inputEl.addClass('PUREcodePreview');
+
     newArea.onChange(val => {
       this.newContent = val;
     });
@@ -158,7 +151,7 @@ class EditReviewModal extends Modal {
   }
 
   /**
-   *
+   * Closes the modal and cancels the edit if not yet resolved
    */
   onClose() {
     const { contentEl } = this;
@@ -169,7 +162,8 @@ class EditReviewModal extends Modal {
   }
 
   /**
-   *
+   * Applies the edit by creating or modifying the file
+   * @returns Promise resolving to success message or error description
    */
   async applyEdit(): Promise<string> {
     try {

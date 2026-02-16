@@ -1,6 +1,6 @@
 import { syntaxTree } from '@codemirror/language';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
-import { App, Editor, ItemView, ViewStateResult, WorkspaceLeaf } from 'obsidian';
+import { App, Editor, ItemView, WorkspaceLeaf } from 'obsidian';
 import PureChatLLM from '../main';
 
 export interface CodeSnippetState {
@@ -10,30 +10,20 @@ export interface CodeSnippetState {
 }
 
 export const CODE_PREVIEW_VIEW_TYPE = 'pure-chat-llm-code-preview';
-/**
- *
- * @param app
- * @param code
- * @param language
- * @param editor
- */
-export function openCodePreview(app: App, code: string, language: string, editor: Editor) {
-  void app.workspace.getLeaf('split').setViewState({
-    type: CODE_PREVIEW_VIEW_TYPE,
-    active: true,
-    state: { code, language, editor },
-  });
-}
 
 /**
+ * View component for displaying code previews in the Obsidian workspace.
  *
+ * Renders code snippets in a preview pane with syntax highlighting or HTML rendering.
+ * For HTML code blocks, renders content in an iframe with restricted permissions.
  */
 export class CodePreview extends ItemView {
   state?: CodeSnippetState;
   /**
+   * Creates a new code preview view instance.
    *
-   * @param leaf
-   * @param plugin
+   * @param leaf - The workspace leaf to render the view in
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(
     leaf: WorkspaceLeaf,
@@ -44,60 +34,49 @@ export class CodePreview extends ItemView {
   }
 
   /**
+   * Gets the unique identifier for this view type.
    *
+   * @returns The view type identifier
    */
   getViewType(): string {
     return CODE_PREVIEW_VIEW_TYPE;
   }
 
   /**
+   * Gets the display text shown in the view header.
    *
+   * @returns The display text for this view
    */
   getDisplayText(): string {
     return 'Code preview';
   }
 
   /**
+   * Sets ephemeral state for the view and renders the code preview.
    *
-   * @param state
-   * @param result
+   * @param state - The code snippet state containing code and language
    */
-  setState(state: CodeSnippetState, result: ViewStateResult): Promise<void> {
+  setEphemeralState(state: CodeSnippetState) {
     this.renderCodePreview(state);
     this.state = state;
-    this.plugin.offCodeBlockUpdate(this.update);
-    this.plugin.onCodeBlockUpdate(this.update);
-    return Promise.resolve();
   }
 
-  update = () => {
-    const { state } = this;
-    if (!state) return;
-    const { codeBlock } = this.plugin;
-    if (!codeBlock) return;
-    const { editor } = state;
-    const content = editor.getValue().slice(codeBlock.from, codeBlock.to);
-    this.renderCodePreview({
-      code: content.match(/```\w+([\w\W]*?)```/m)?.[1] || '',
-      language: content.match(/```(\w+)[\w\W]*?```/m)?.[1] || 'text',
-      editor,
-    });
-  };
-
   /**
+   * Called when the view is opened.
    *
+   * @returns A promise that resolves when the view is ready
    */
   async onOpen() {
     //this.renderCodePreview();
   }
 
   /**
+   * Renders the code preview based on the provided state.
    *
-   * @param state
+   * @param state - The code snippet state containing code and language
    */
   private renderCodePreview(state: CodeSnippetState) {
     this.contentEl.empty();
-    this.contentEl.addClass('PURECodePreview');
 
     const code = state.code || '';
     const language: string = state.language || 'text';
@@ -108,18 +87,18 @@ export class CodePreview extends ItemView {
       iframe.setCssProps({ width: '100%', height: '100%' });
       iframe.srcdoc = code;
     } else {
-      this.contentEl.createEl('pre', {}, el => {
-        const codeEl = el.createEl('code', { text: code });
-        codeEl.addClass(`language-${language}`);
-      });
+      this.contentEl.createEl('pre', {}, el =>
+        el.createEl('code', { text: code }).addClass(`language-${language}`),
+      );
     }
   }
 
   /**
+   * Called when the view is closed.
    *
+   * @returns A promise that resolves when cleanup is complete
    */
   async onClose() {
-    this.plugin.offCodeBlockUpdate(this.update);
     this.contentEl.empty();
   }
 }
@@ -142,8 +121,9 @@ export function createCodeblockExtension(app: App, plugin: PureChatLLM) {
       app: App;
       plugin: PureChatLLM;
       /**
+       * Constructs the ViewPlugin class instance.
        *
-       * @param view
+       * @param view - The CodeMirror EditorView instance
        */
       constructor(private view: EditorView) {
         this.decorations = Decoration.none;
@@ -151,8 +131,9 @@ export function createCodeblockExtension(app: App, plugin: PureChatLLM) {
         this.plugin = plugin;
       }
       /**
+       * Updates the code block detection when the view changes.
        *
-       * @param update
+       * @param update - The view update containing state changes
        */
       update(update: ViewUpdate) {
         syntaxTree(update.view.state).iterate({
@@ -160,16 +141,23 @@ export function createCodeblockExtension(app: App, plugin: PureChatLLM) {
           to: update.view.state.selection.main.to,
           enter: node => {
             if (node.name === 'HyperMD-codeblock_HyperMD-codeblock-bg') {
-              const fullDoc = update.view.state.doc.toString();
-              const from = fullDoc.lastIndexOf('```', update.view.state.selection.main.from) - 3;
-              const to = fullDoc.indexOf('```', update.view.state.selection.main.from) + 3;
-              if (to === this.plugin.codeBlock?.to && from === this.plugin.codeBlock?.from) return;
+              const editor = this.app.workspace.activeEditor?.editor;
+              if (!editor) return;
+              const fullDoc = editor.getValue();
 
-              this.plugin.codeBlock = { from: from, to: to };
-              this.plugin.callOnChange();
-            } /* else {
-              this.plugin.codeBlock = null;
-            } */
+              const codeBlockRange = {
+                from: fullDoc.lastIndexOf('```', node.from) - 3,
+                to: fullDoc.indexOf('```', node.from) + 3,
+              };
+
+              const codeContent = fullDoc.slice(codeBlockRange.from, codeBlockRange.to);
+
+              this.plugin.updateCodePreview({
+                code: codeContent.match(/```(\w+)?\n([\w\W]*?)```/m)?.[2] || '',
+                language: codeContent.match(/```(\w+)/m)?.[1] || 'text',
+                editor,
+              });
+            }
           },
         });
       }

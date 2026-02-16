@@ -1,16 +1,33 @@
-# Tool Output Format Guide
+# Pure Chat LLM Tools Guide
 
-## Overview
+## Introduction
 
-All tools in Pure Chat LLM now return structured, formatted output designed to enhance LLM understanding and decision-making. This guide explains the output format conventions used across all tools.
+Pure Chat LLM provides a comprehensive set of tools that enable Large Language Models to interact with Obsidian vaults programmatically. This tool system allows LLMs to read, write, search, and manage notes while respecting Obsidian's architecture and user workflows.
+
+### Tool System Architecture
+
+Tools are organized into five categories:
+
+- **AI Tools**: Advanced AI capabilities like image generation and semantic search
+- **Search Tools**: Pattern matching, directory exploration, and content search
+- **System Tools**: Plugin settings and template management
+- **UI Tools**: Workspace control, context awareness, and notifications
+- **Vault Tools**: Note reading, writing, and relationship management
+
+All tools follow a consistent interface:
+
+- Structured JSON parameters with type validation
+- Standardized output format for easy parsing
+- Error handling with recovery suggestions
+- Availability checks for optional dependencies
 
 ---
 
-## Output Format Standards
+## Tool Output Format Standards
 
 ### Successful Operations
 
-Tools use a consistent header-based format with sections:
+Tools return structured, formatted output designed to enhance LLM understanding:
 
 ```
 FILE READ SUCCESSFUL
@@ -78,7 +95,7 @@ Action: Appended to section "## Tasks"
 Lines changed: +3 (67 -> 70)
 Total characters: 1,234
 
-File Status:  Saved successfully
+File Status: [x] Saved successfully
 ---
 SUGGESTED ACTIONS:
 1. manage_workspace() to open the updated file
@@ -87,981 +104,824 @@ SUGGESTED ACTIONS:
 
 ---
 
-## Interpreting Tool Output
+## AI Tools
 
-When reading tool output:
+### generate_image
 
-1. **Check the header** for operation status (success/error)
-2. **Review key metrics** in the metadata section
-3. **Look for suggestions** at the end for next logical steps
-4. **For errors**, examine recovery options to guide your next action
-5. **For lists**, note the numbering for easy reference in follow-up calls
+**Classification**: AI  
+**Availability**: OpenAI and xAI endpoints only
 
----
+#### Overview
 
-# Tool Guide: generate_image
+Creates high-quality AI-generated images from text prompts. Supports multiple aspect ratios and can generate multiple images in a single call. Generated images are automatically saved to the vault's attachment folder and embedded in the note using Obsidian's wiki-link format.
 
-## Overview
+#### Parameters
 
-The `generate_image` tool allows the LLM to generate high-quality visual content based on text descriptions. It is used to provide visual aids, creative inspiration, or conceptual mockups during a conversation.
+| Parameter | Type    | Required | Default    | Description                                                          |
+| --------- | ------- | -------- | ---------- | -------------------------------------------------------------------- |
+| `prompt`  | string  | Yes      | -          | Detailed description of the image to generate (max 4,000 characters) |
+| `ratio`   | string  | No       | `"square"` | Aspect ratio: `"landscape"`, `"portrait"`, or `"square"`             |
+| `n`       | integer | No       | `1`        | Number of images to generate (1-10 depending on provider)            |
 
-## Parameters
+#### When to Use
 
-- **prompt** (string, required): A detailed, descriptive text string explaining what the image should look like. Max length: 4,000 characters.
-- **ratio** (string, optional): The aspect ratio of the generated image.
-  - `square` (1:1) - Default. Ideal for avatars, icons, or general-purpose visuals.
-  - `landscape` (16:9) - Best for cinematic scenes, wallpapers, or architectural visualizations.
-  - `portrait` (9:16) - Best for character designs, posters, or mobile UI concepts.
-- **n** (integer, optional): The number of image variations to generate (Default: 1).
+- **Visual Content Creation**: User requests illustrations, diagrams, or artwork
+- **Document Enhancement**: Adding visual elements to notes or documentation
+- **Concept Visualization**: Converting abstract ideas into visual representations
+- **Multiple Variations**: When user wants several versions of the same concept (`n` > 1)
 
----
+**Strategic Heuristics**:
 
-## When to Use (Strategic Heuristics)
+- Use landscape for wide scenes, banners, or horizontal compositions
+- Use portrait for people, vertical objects, or mobile-friendly images
+- Use square for icons, profile pictures, or balanced compositions
+- Generate multiple images (`n` > 1) when user wants options or variations
+- Keep prompts detailed and specific (mention style, colors, mood, composition)
 
-The LLM should use or suggest the `generate_image` tool in the following scenarios:
+#### Best Practices
 
-### 1. Enhancing Creative Writing
+1. **Prompt Engineering**:
+   - Be specific about style (photorealistic, cartoon, watercolor, etc.)
+   - Include details about lighting, colors, and atmosphere
+   - Specify what should NOT be in the image if relevant
+   - Example: "A serene mountain landscape at sunset, photorealistic style, warm golden lighting, no people or buildings"
 
-When a user is developing a story or world, use the tool to:
+2. **Error Handling**:
+   - Check endpoint availability before attempting generation
+   - Validate prompt length (4,000 character limit)
+   - Handle network failures gracefully
+   - Inform user if provider-specific limits apply
 
-- **Visualize Characters:** Create references for physical descriptions.
-- **Set the Scene:** Generate environmental art to help ground the narrative setting.
-- **Design Objects:** Create visuals for unique items, vehicles, or artifacts.
+3. **Obsidian Integration**:
+   - Images are saved with timestamp-based names to avoid conflicts
+   - Wiki-links are generated relative to the current note
+   - Revised prompts (if provided by the API) are included in output
 
-### 2. Conceptualizing Design & UI
-
-When discussing technical or aesthetic projects, use the tool to:
-
-- **Mock up Interfaces:** Generate layouts for websites, apps, or dashboard concepts.
-- **Explore Aesthetics:** Test color palettes, typography styles, or branding vibes.
-- **Visualize Data Flow:** Create abstract representations of complex systems or architectures.
-
-### 3. Clarifying Complex Concepts
-
-When a text-based explanation is difficult to follow, use the tool to:
-
-- **Create Diagrams:** (Note: AI is better at artistic diagrams than precise technical ones).
-- **Metaphorical Art:** Use visual metaphors to explain abstract philosophical or scientific ideas.
-
-### 4. Direct User Request
-
-- When the user explicitly asks for a picture, drawing, or "to see" something.
-
----
-
-## Prompting Framework: The S.S.L.C. Method
-
-To achieve the best results, structure prompts using these four pillars:
-
-1.  **S**ubject: The primary focus (e.g., "An ancient oak tree," "A sleek futuristic car," "A bustling cyberpunk street").
-2.  **S**tyle: The artistic medium (e.g., "Oil painting," "Vector art," "35mm film photograph," "Unreal Engine 5 render").
-3.  **L**ighting: The mood and illumination (e.g., "Golden hour," "Moody neon lighting," "Soft cinematic backlighting," "High-contrast chiaroscuro").
-4.  **C**omposition: The framing and perspective (e.g., "Wide-angle lens," "Macro close-up," "Bird's-eye view," "Symmetrical composition").
-
----
-
-## Best Practices
-
-- **Detail Matters:** Instead of "a dog," use "A fluffy golden retriever puppy sitting in a sunlit meadow, high detail, realistic fur."
-- **Focus on Visuals, Not Text:** AI generators often struggle with rendering specific text accurately. Describe the _look_ of text rather than the specific letters.
-- **Avoid Ambiguity:** Be specific about colors, materials, and positioning to reduce unexpected results.
-- **Suggest Variations:** If a user is unsure, suggest generating a few variations with different styles or ratios.
-
----
-
-## Example Usage
+#### Example Usage
 
 ```json
 {
-  "prompt": "A minimalist, high-tech workspace with a sleek glass desk, holographic computer interface, and a large window overlooking a serene mountain range at sunset. Digital art, hyper-realistic, 8k resolution, calm and productive atmosphere.",
+  "prompt": "A cozy library with floor-to-ceiling bookshelves, warm lighting from table lamps, leather armchairs, and a fireplace. Photorealistic style with rich wood tones and ambient atmosphere.",
   "ratio": "landscape",
-  "n": 1
+  "n": 2
 }
 ```
 
----
+**Output**:
 
-# Tool Guide: create_obsidian_note
+```
+![[generated-image-1737984123-0.png]]
+Revised prompt: A warm and inviting library scene...
 
-## Overview
+![[generated-image-1737984123-1.png]]
+Revised prompt: A cozy library interior with extensive bookshelves...
+```
 
-The `create_obsidian_note` tool allows the LLM to create new Markdown files within the Obsidian vault. It is used to externalize information, document ideas, scaffold projects, or save structured data for long-term use by the user.
+#### Obsidian-Specific Context
 
-## Parameters
-
-- **path** (string, required): The full relative path for the note, including folder and `.md` extension (e.g., `Projects/Deep Sea Research.md`).
-- **content** (string, required): The main body of the note in Markdown.
-- **properties** (object, optional): Key-value pairs to be inserted as YAML frontmatter (e.g., tags, aliases, dates).
-- **overwrite** (boolean, default: false): If set to true, replaces an existing file at the same path. Use with caution.
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `create_obsidian_note` tool in the following scenarios:
-
-### 1. Project Scaffolding & Brainstorming
-
-When a conversation shifts from general talk to specific planning:
-
-- **Project Initiation:** Create a dedicated project note with objectives and a task list.
-- **Brainstorming Hubs:** Document a flurry of ideas into a single, organized note.
-- **Story Bibles:** For creative writing, create notes for characters, world-building, or plot outlines.
-
-### 2. Structured Documentation
-
-When the user shares or asks for information that has long-term value:
-
-- **Research Summaries:** Condense complex topics into a "reference" note.
-- **Guides & How-Tos:** Save instructions or technical walkthroughs for later access.
-- **Meeting/Conversation Logs:** Archive important decisions or insights from the current session.
-
-### 3. Knowledge Management
-
-When organizing the vault structure:
-
-- **Index/MOC (Map of Content):** Create a note that links to other related notes.
-- **Resource Lists:** Curate links, book recommendations, or toolkits.
-
-### 4. Direct User Request
-
-- When the user asks to "save this," "write a note," or "make a file for me."
+- Uses `app.fileManager.getAvailablePathForAttachment()` to determine save location
+- Respects user's attachment folder settings
+- Generates proper Obsidian wiki-links with relative paths
+- Images are immediately viewable in Reading mode
 
 ---
 
-## Best Practices
+### smart_connections_rag
 
-- **Path Awareness:** Always suggest a logical folder (e.g., `03 - Resources/` or `05 - Projects/`). If a folder doesn't exist, Obsidian will create it.
-- **Frontmatter is King:** Use the `properties` parameter to include `tags`, `created`, or `status` to help the user filter their vault later.
-- **Structure with Headings:** Use proper Markdown hierarchy (#, ##, ###) to make the note readable.
-- **Atomic Notes:** Encourage small, focused notes over massive, multi-topic files when appropriate.
+**Classification**: AI  
+**Availability**: Requires Smart Connections plugin to be installed and initialized
 
----
+#### Overview
 
-## Example Usage
+Performs semantic search across the vault using embeddings-based retrieval. Unlike text-based search, this finds notes and blocks based on conceptual similarity, making it ideal for discovering related content even when exact keywords don't match.
+
+#### Parameters
+
+| Parameter | Type    | Required | Default    | Description                                                                |
+| --------- | ------- | -------- | ---------- | -------------------------------------------------------------------------- |
+| `query`   | string  | Yes      | -          | The search query or concept to find semantically similar content           |
+| `limit`   | integer | No       | `5`        | Maximum number of results to return (1-50)                                 |
+| `type`    | string  | No       | `"blocks"` | Retrieval granularity: `"blocks"` (sections) or `"sources"` (entire files) |
+
+#### When to Use
+
+- **Conceptual Search**: Finding notes by meaning rather than exact keywords
+- **Research Discovery**: Locating related content across disconnected notes
+- **Context Gathering**: Retrieving relevant background information for a topic
+- **Knowledge Exploration**: Discovering connections the user may not be aware of
+
+**Strategic Heuristics**:
+
+- Use `"blocks"` for precise, section-level retrieval (default, most common)
+- Use `"sources"` when you need file-level context or want to identify whole documents
+- Increase `limit` when casting a wider net (research phases)
+- Keep `limit` low for focused, high-quality results (specific questions)
+- Query should be a natural language question or concept, not just keywords
+
+#### Best Practices
+
+1. **Query Formulation**:
+   - Use full sentences or questions for best results
+   - Be specific about the concept, not just keywords
+   - Example: "How do neural networks learn from data?" vs "neural networks"
+   - Avoid query strings that are too short (< 5 words)
+
+2. **Result Interpretation**:
+   - Similarity scores are percentages (0-100%)
+   - Scores above 70% typically indicate strong relevance
+   - Scores 50-70% are moderately relevant
+   - Scores below 50% may be tangentially related
+
+3. **Performance Considerations**:
+   - First query may be slower (embedding initialization)
+   - Large vaults benefit from lower limit values
+   - Smart Connections must have completed initial indexing
+   - Check plugin status if results seem incomplete
+
+4. **Type Selection**:
+   - `"blocks"`: Returns sections with line numbers and content excerpts
+   - `"sources"`: Returns entire file paths with similarity scores
+   - Use blocks for citations, sources for high-level discovery
+
+#### Example Usage
 
 ```json
 {
-  "path": "05 - Projects/Infinity Compiler Design.md",
-  "content": "# Infinity Compiler Design\n\n## Core Objectives\n- Optimize code execution speed.\n- Implement declarative GUI standards.\n\n## Tasks\n- [ ] Research LLVM backends.\n- [ ] Draft UI abstraction layer.",
-  "properties": {
-    "tags": ["coding", "project", "GUI"],
-    "status": "in-progress",
-    "priority": "high"
-  }
+  "query": "What are effective note-taking strategies for learning complex topics?",
+  "limit": 5,
+  "type": "blocks"
 }
 ```
 
----
+**Output**:
 
-# Tool Guide: glob_vault_files
+```
+Found 5 relevant blocks:
 
-## Overview
+[Result 1] (Similarity: 87%)
+Location: Learning/Study Techniques.md#^learning-strategies
+Content:
+## Active Recall and Spaced Repetition
 
-The `glob_vault_files` tool allows the LLM to search the entire vault for file paths that match a specific glob pattern. It is an essential tool for discovering existing information, understanding the vault's organization, and mapping relationships between files without needing to know exact filenames.
-
-## Parameters
-
-- **pattern** (string, required): The glob pattern to match.
-  - `**/*.md` matches all Markdown files in all folders.
-  - `Projects/*.md` matches Markdown files specifically in the "Projects" folder.
-  - `Attachments/*.{png,jpg}` matches specific image formats in the "Attachments" folder.
-- **include_fields** (array of strings, optional): Metadata fields to return for each match (e.g., `["path", "name", "mtime"]`). Default is just the path.
-- **limit** (integer, default: 100): The maximum number of results to return.
+The most effective learning strategies involve active engagement...
 
 ---
+[Result 2] (Similarity: 82%)
+Location: PKM/Zettelkasten Method.md#Note Types
+Content:
+### Permanent Notes
 
-## When to Use (Strategic Heuristics)
+When processing fleeting notes, transform them into permanent notes...
+```
 
-The LLM should use the `glob_vault_files` tool in the following scenarios:
+#### Obsidian-Specific Context
 
-### 1. Verification Before Creation
-
-Before creating a new note, check if a similar one already exists:
-
-- **Avoiding Duplicates:** "Let me check if you already have a note for 'Infinity Compiler'."
-- **Naming Consistency:** Look at existing file naming conventions in a folder to match the user's style.
-
-### 2. Vault Exploration & Mapping
-
-When the user asks about their own data or structure:
-
-- **Folder Inventory:** "What files do I have in my 'Creative Writing' folder?"
-- **Asset Discovery:** Finding specific images, PDFs, or templates scattered throughout the vault.
-- **Project Overviews:** Listing all notes related to a specific project by searching for a prefix or folder.
-
-### 3. Context Retrieval for Large Tasks
-
-When tasked with a broad objective:
-
-- **Batch Processing:** Finding all files of a certain type to update them (e.g., "Find all notes with 'Draft' in the title").
-- **Gathering Context:** Finding relevant notes to read before answering a complex question.
-
-### 4. Direct User Request
-
-- When the user asks "What's in here?", "Find my notes on...", or "Show me all my daily notes from last month."
+- Requires Smart Connections community plugin (v2.x)
+- Works with the plugin's embedding cache
+- Respects Smart Connections settings (excluded folders, file types)
+- Uses plugin's internal API (`smart_blocks` and `smart_sources` collections)
+- Results include line-level precision using Obsidian's cache
 
 ---
 
-## Best Practices
+## Search Tools
 
-- **Be Specific:** Avoid `**/*` unless necessary, as it can return too much noise. Use folder-specific patterns like `Work/Meetings/*.md`.
-- **Use Metadata:** Include `mtime` (last modified time) or `size` if the user is looking for "recent" or "large" files.
-- **Follow Up:** Use `glob_vault_files` to find the path, then use `read_file` to actually see what's inside the relevant matches.
-- **Handle Limits:** If the results are truncated by the limit, inform the user or try a narrower pattern.
+### glob_vault_files
 
----
+**Classification**: Vault  
+**Availability**: Always available
 
-## Example Usage
+#### Overview
+
+Searches for files using glob pattern matching. Ideal for finding files by name patterns, extensions, or folder structure. Supports wildcards and recursive directory traversal.
+
+#### Parameters
+
+| Parameter        | Type    | Required | Default    | Description                                                             |
+| ---------------- | ------- | -------- | ---------- | ----------------------------------------------------------------------- |
+| `pattern`        | string  | Yes      | -          | Glob pattern (e.g., `"**/*.md"`, `"Attachments/*.png"`)                 |
+| `include_fields` | array   | No       | `["path"]` | Metadata fields: `"path"`, `"name"`, `"extension"`, `"size"`, `"mtime"` |
+| `limit`          | integer | No       | `100`      | Maximum number of results to return                                     |
+
+#### When to Use
+
+- **File Discovery**: Finding files by name patterns or extensions
+- **Folder Exploration**: Listing all files in a specific directory
+- **Asset Management**: Locating attachments (images, PDFs, etc.)
+- **Pattern Matching**: Finding files with specific naming conventions
+
+**Strategic Heuristics**:
+
+- Use `**/*.md` for all Markdown files (recursive)
+- Use `FolderName/*.md` for files in a specific folder only
+- Use `**/*daily*.md` to find files containing "daily" in the name
+- Use `*.{png,jpg,jpeg}` to match multiple extensions in the root
+- Request metadata fields when you need more than just paths
+
+#### Best Practices
+
+1. **Pattern Syntax**:
+   - `*` matches any characters except `/` (within a folder)
+   - `**` matches any characters including `/` (across folders)
+   - `?` matches exactly one character
+   - `{a,b}` matches either pattern a or b
+   - Patterns are case-sensitive on some systems
+
+2. **Performance Optimization**:
+   - Be as specific as possible to reduce result set
+   - Use folder prefixes to limit scope (e.g., `Projects/**/*.md`)
+   - Set appropriate `limit` to avoid overwhelming output
+   - Request only needed fields in `include_fields`
+
+3. **Common Patterns**:
+
+   ```
+   "**/*.md"                    # All Markdown files
+   "Daily Notes/*.md"           # Files in specific folder
+   "**/*2024*.md"               # Files with 2024 in name
+   "Attachments/**/*.{png,jpg}" # Images in attachments
+   "**/README.md"               # All README files
+   ```
+
+4. **Metadata Fields**:
+   - `path`: Full vault path (always useful)
+   - `name`: Filename with extension
+   - `extension`: File type (useful for filtering)
+   - `size`: File size in bytes
+   - `mtime`: Last modification timestamp
+
+#### Example Usage
 
 ```json
 {
-  "pattern": "05 - Projects/AI Agent/*.md",
-  "include_fields": ["path", "mtime", "size"],
-  "limit": 20
+  "pattern": "Projects/**/*.md",
+  "include_fields": ["path", "name", "size"],
+  "limit": 50
 }
 ```
 
+**Output**:
+
+```
+GLOB RESULTS: "Projects/**/*.md"
 ---
+Found: 12 matches
 
-# Tool Guide: read_file
-
-## Overview
-
-The `read_file` tool is the primary sensory mechanism for the LLM to access the raw content of files within the Obsidian vault. It allows for precise information retrieval, enabling the model to "remember" the specific details of a note, verify formatting, or extract data from large documents using line-based pagination.
-
-## Parameters
-
-- **path** (string, required): The full relative path of the file to read (e.g., `03 - Resources/Contextual Knowledge Base.md`).
-- **limit** (integer, default: 2000): The maximum number of lines to read in a single call.
-- **offset** (integer, optional): The 0-based line number to start reading from. Use this with `limit` for pagination of very long files.
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `read_file` tool in the following scenarios:
-
-### 1. Deep Context Retrieval
-
-When a summary or the "Contextual Knowledge Base" mentions a topic, but the task requires granular details:
-
-- **Plot Verification:** Checking specific dialogue or scene details in _The Fall And Rise Of The Mistaken Superhero_.
-- **Code Review:** Reading a `.py` or `.js` file to understand logic before suggesting improvements.
-- **Refining Tone:** Reading past creative writing to match Justice's unique voice and "dry humor."
-
-### 2. Verification Before Action
-
-Before modifying a file with `patch_note` or `replace_in_note`:
-
-- **Anchor Search:** Reading the file to find the exact heading or text string where an update should occur.
-- **Ensuring Safety:** Verifying that a `replace_in_note` operation won't accidentally overwrite critical information.
-
-### 3. Managing Context Window & Long Notes
-
-For files that are exceptionally long:
-
-- **Pagination:** Reading a 10,000-line log file or novel draft in chunks using `limit` and `offset` to avoid overwhelming the model's immediate memory.
-- **Selective Reading:** Targeted reading of specific sections of a "Daily Note" or "Project Hub."
-
-### 4. Recursive Research
-
-- **Following Links:** If a user asks a question about a project, and the initial note contains `[[Backlinks]]` to other relevant files, use `read_file` to follow that trail of information.
-
----
-
-## Best Practices
-
-- **Pagination is Key:** For very large files, do not try to read the whole thing at once. Read the first 500-1000 lines, then ask for or navigate to specific sections.
-- **Path Precision:** If unsure of the exact path, always use `glob_vault_files` first to confirm the filename and location.
-- **Avoid Over-Reading:** Only read files that are directly relevant to the current user query to keep the conversation focused and efficient.
-- **Check for YAML:** Pay attention to the frontmatter (Properties) at the top of the file, as it often contains metadata like `status`, `tags`, or `created` dates that provide context.
-
----
-
-## Example Usage
-
-```json
-{
-  "path": "01 - Chats/Thematic Reflections/The Siren's Lure Script.md",
-  "limit": 500,
-  "offset": 0
-}
+| # | Path                    | Name              | Size  |
+|---|-------------------------|-------------------|-------|
+| 1 | Projects/AI/GPT4.md     | GPT4.md           | 2048  |
+| 2 | Projects/AI/Vision.md   | Vision.md         | 3156  |
+| 3 | Projects/Web/React.md   | React.md          | 4201  |
 ```
 
----
+#### Obsidian-Specific Context
 
-# Tool Guide: patch_note
-
-## Overview
-
-The `patch_note` tool allows the LLM to append new content to a specific note in the vault. Unlike `replace_in_note`, which modifies existing text, `patch_note` is additive, either inserting text under a specific Markdown heading or appending it to the very end of the file. This is the primary tool for iterative updates and growing notes over time.
-
-## Parameters
-
-- **path** (string, required): The full relative path of the note to modify.
-- **new_content** (string, required): The text to be added to the note.
-- **heading** (string, optional): The specific Markdown heading (e.g., "Tasks", "Notes", "Brainstorming") to append the content under. If the heading is not found, the content is appended to the end of the file.
+- Works with all file types in vault, not just Markdown
+- Paths are relative to vault root
+- Uses Obsidian's `TFile` abstraction for metadata
+- Respects vault structure but ignores `.obsidian` folder
+- Results are stable and deterministic (sorted by path)
 
 ---
 
-## When to Use (Strategic Heuristics)
+### list_vault_folders
 
-The LLM should use the `patch_note` tool in the following scenarios:
+**Classification**: Vault  
+**Availability**: Always available
 
-### 1. Iterative Logging & Journaling
+#### Overview
 
-When maintaining records that grow over time:
+Lists folders in the vault to help understand directory structure. Can list folders recursively or just immediate children. Each folder includes a count of files it contains.
 
-- **Daily Logs:** Adding a new entry or reflection to a "Daily Note."
-- **Conversation Archiving:** Appending the highlights of the current chat to a project log.
-- **Progress Tracking:** Updating a "Changelog" or "Development Diary" for a coding project.
+#### Parameters
 
-### 2. Task Management & Lists
+| Parameter   | Type    | Required | Default | Description                                |
+| ----------- | ------- | -------- | ------- | ------------------------------------------ |
+| `path`      | string  | No       | `"/"`   | Root path to start listing from            |
+| `recursive` | boolean | No       | `false` | Whether to list all subfolders recursively |
 
-When the user wants to keep a running list of items:
+#### When to Use
 
-- **Expanding To-Do Lists:** Adding a new `[ ] task` under a "To-Do" or "Backlog" heading.
-- **Resource Curations:** Appending a new link, book, or tool to an existing list of resources.
-- **Feature Requests:** Adding new ideas to a "Roadmap" heading in a project note.
+- **Vault Exploration**: Understanding the organization of a new vault
+- **Directory Discovery**: Finding where specific types of content live
+- **Structure Analysis**: Mapping out the folder hierarchy
+- **Path Validation**: Checking if a folder exists before operations
 
-### 3. Expanding Brainstorms & Research
+**Strategic Heuristics**:
 
-When a conversation generates new ideas for an existing project:
+- Use `recursive: false` (default) for immediate children only
+- Use `recursive: true` for complete directory tree
+- Start with root (`/`) to get a full overview
+- Use specific paths when you know roughly where to look
+- Check file counts to identify content-heavy areas
 
-- **Adding Plot Points:** Appending a new scene idea to a "Draft Ideas" section in _The Fall And Rise Of The Mistaken Superhero_.
-- **Technical Refinements:** Inserting a new architectural consideration into a technical spec under a "Future Considerations" heading.
-- **Contextual Knowledge Base Updates:** Appending new personal details to the "Contextual Knowledge Base" under the appropriate section to ensure persistent memory.
+#### Best Practices
 
-### 4. Collaborative Drafting
+1. **Starting Points**:
+   - Begin with root (`/`) and `recursive: false` for overview
+   - Drill down with specific paths once you identify areas of interest
+   - Use in combination with `glob_vault_files` for comprehensive exploration
 
-When building a document step-by-step:
+2. **Performance Considerations**:
+   - `recursive: true` on large vaults can return many results
+   - File counting includes all nested files (can be slow for deep trees)
+   - Consider breaking down into multiple calls for very large vaults
 
-- **Section-by-Section Writing:** Drafting one section of a guide or essay and then using `patch_note` to add the next section under its respective heading.
+3. **Interpretation**:
+   - Empty folders (0 files) still appear in listings
+   - File counts include all nested files when recursive
+   - Paths are always relative to vault root
+   - Hidden folders (starting with `.`) are excluded by Obsidian
 
----
-
-## Best Practices
-
-- **Read Before Patching:** Always use `read_file` first to verify the note's structure and ensure the targeted `heading` exists and contains the expected content.
-- **Check for Redundancy:** Before appending, verify that the information isn't already present to keep the user's vault clean and efficient.
-- **Formatting Consistency:** Ensure the `new_content` matches the existing Markdown style (e.g., using `-` vs `*` for lists, or `[ ]` for tasks).
-- **Specific Headings:** Using a specific `heading` is always safer and more organized than simply appending to the end of the file.
-- **Incremental Updates:** Use `patch_note` for small, additive changes. If the change requires restructuring or deleting text, use `replace_in_note` instead.
-
----
-
-## Example Usage
+#### Example Usage
 
 ```json
 {
-  "path": "05 - Projects/Infinity Compiler.md",
-  "heading": "Backlog",
-  "new_content": "- [ ] Explore WebAssembly (WASM) as a compilation target for GUI components."
-}
-```
-
----
-
-# Tool Guide: get_backlinks
-
-## Overview
-
-The `get_backlinks` tool allows the LLM to find all notes within the vault that link to a specific file. This is essential for understanding the interconnectedness of the user's knowledge, mapping the relationships between ideas, and discovering how a single concept or project is referenced across different contexts.
-
-## Parameters
-
-- **path** (string, required): The full relative path of the note to find backlinks for (e.g., `05 - Projects/Infinity Compiler.md`).
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `get_backlinks` tool in the following scenarios:
-
-### 1. Mapping Relationships & Impact
-
-When the user asks about the reach or relevance of a specific topic:
-
-- **Project Tracking:** "Which stories or technical notes reference the 'Infinity Compiler'?"
-- **Idea Genealogy:** "Where else have I discussed the 'Hack by Will' concept?"
-- **Character Appearances:** Find all scenes or plot outlines where a specific character (e.g., "Jessica" or "Esther") is mentioned, provided the user uses `[[links]]`.
-
-### 2. Context Discovery & Exploration
-
-When a single note doesn't provide the full picture:
-
-- **Discovering MOCs (Maps of Content):** See if an atomic note is linked from a higher-level index or dashboard note.
-- **Bi-directional Research:** Use `read_file` to see what a note links _to_, and `get_backlinks` to see what links _to it_, providing a 360-degree view of the topic.
-- **Uncovering Hidden Connections:** Finding unexpected mentions of a project in daily notes or brainstorming logs.
-
-### 3. Vault Organization & Maintenance
-
-When analyzing the structure of the vault:
-
-- **Identifying "Hub" Notes:** Finding notes that are heavily referenced, which might serve as primary entry points for a topic.
-- **Impact Assessment:** Before suggesting a major change to a note, check its backlinks to see how many other documents might be affected or rely on its current structure.
-
-### 4. Direct User Request
-
-- When the user asks "What links to this?", "Where is this used?", or "Show me all references to this note."
-
----
-
-## Best Practices
-
-- **Path Precision:** Ensure the `path` is correct. Use `glob_vault_files` first if the exact filename is uncertain.
-- **Follow the Trail:** `get_backlinks` only returns the paths. Use `read_file` on the resulting paths to understand the _context_ of why those notes are linking back.
-- **Distinguish from Search:** While `search_vault` finds text mentions, `get_backlinks` specifically finds formal `[[Wikilinks]]` or `[Markdown Links](...)`, which represent intentional connections made by the user.
-
----
-
-## Example Usage
-
-```json
-{
-  "path": "05 - Projects/The Fall And Rise Of The Mistaken Superhero.md"
-}
-```
-
----
-
-# Tool Guide: list_vault_folders
-
-## Overview
-
-The `list_vault_folders` tool allows the LLM to visualize and navigate the directory structure of the Obsidian vault. It provides a list of subfolders within a specified path, helping the model understand how the user organizes their files and suggesting logical locations for new content without having to guess.
-
-## Parameters
-
-- **path** (string, default: `/`): The root path to start listing folders from.
-- **recursive** (boolean, default: false): If true, lists all subfolders within the specified path, providing a deep map of the directory tree.
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `list_vault_folders` tool in the following scenarios:
-
-### 1. Orienting to the Vault Structure
-
-When starting a task that involves creating or finding files in a vault with an unknown layout:
-
-- **Discovering "Where things go":** Identifying standard folders like `01 - Chats`, `03 - Resources`, or `05 - Projects` to maintain organizational consistency.
-- **Mapping Hierarchies:** Understanding how deep the folder structure goes (e.g., checking if `Projects` has subfolders for `Tech` and `Creative`).
-
-### 2. Suggesting Locations for New Notes
-
-Before using `create_obsidian_note`, ensure the note lands in the most logical place:
-
-- **Path Recommendation:** "I see you have a folder for 'Story Drafts'; should I place this new scene there?"
-- **Folder Discovery:** Checking for the existence of a "Templates" or "Assets" folder before directing the user there.
-
-### 3. Debugging "File Not Found" Errors
-
-If a `read_file` or `patch_note` call fails because of a path error:
-
-- **Verifying Subfolders:** Check if the file is actually inside a subfolder that was missed (e.g., searching `Projects/` to find `Projects/Archive/`).
-
-### 4. Direct User Request
-
-- When the user asks "What folders do I have?", "Where should I put this?", or "Show me my project structure."
-
----
-
-## Best Practices
-
-- **Use Recursion Sparingly:** Set `recursive: true` only when a full map of a specific branch is needed. For general orientation, start at the root (`/`) with `recursive: false`.
-- **Informative Guidance:** Use the results to provide the user with clear options for where their data should live.
-- **Combine with Globbing:** While `list_vault_folders` shows the _containers_, use `glob_vault_files` to see the _content_ once the correct container is identified.
-
----
-
-## Example Usage
-
-```json
-{
-  "path": "05 - Projects",
+  "path": "Projects",
   "recursive": true
 }
 ```
 
+**Output**:
+
+```
+FOLDERS IN: "Projects"
 ---
+1. Projects/AI (12 files)
+2. Projects/AI/Research (8 files)
+3. Projects/AI/Experiments (4 files)
+4. Projects/Web (5 files)
+5. Projects/Web/Frontend (3 files)
+```
 
-# Tool Guide: delete_obsidian_note
+#### Obsidian-Specific Context
 
-## Overview
-
-The `delete_obsidian_note` tool allows the LLM to permanently remove a note or file from the Obsidian vault. This is a high-impact operation that triggers a user confirmation modal in the Obsidian UI. It is used for vault cleanup, removing redundant or temporary files, and assisting the user in reorganizing their digital space.
-
-## Parameters
-
-- **path** (string, required): The full relative path of the file or note to delete (e.g., `01 - Chats/Old Drafts/Draft_01.md`).
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `delete_obsidian_note` tool in the following scenarios:
-
-### 1. Explicit User Request
-
-- When the user specifically asks to "delete," "remove," "trash," or "get rid of" a specific file.
-
-### 2. Redundancy & Consolidation
-
-When a project has been reorganized and certain notes are no longer needed:
-
-- **Merging Notes:** After successfully moving all relevant content from Note A into Note B, suggest deleting the now-redundant Note A.
-- **Removing Outdated Drafts:** Cleaning up old versions of a script or guide that have been superseded by a final version.
-
-### 3. Cleanup of Temporary/System Files
-
-- **LLM-Generated Scratchpads:** If a temporary file was created for a multi-step drafting process, suggest deleting it once the task is complete.
-- **Empty Files:** Removing accidentally created files that contain no content or value.
-
-### 4. Error Correction
-
-- If a note was incorrectly created with a typo in the filename or in the wrong directory, offer to delete the incorrect one after the corrected version is made.
+- Uses Obsidian's `TFolder` abstraction
+- Respects vault boundaries (won't escape vault root)
+- `.obsidian` config folder is excluded from results
+- File counts are recursive even when `recursive: false`
+- Paths can be used directly with other tools
 
 ---
 
-## Best Practices
+### search_vault
 
-- **Never Assume:** Do not delete a file unless the user's intent is clear. If there is any ambiguity, ask for confirmation first.
-- **Verify Path:** Always ensure you are targeting the correct file path. If unsure, use `glob_vault_files` or `read_file` to confirm.
-- **Inform the User:** Acknowledge that this action will trigger a confirmation prompt in their Obsidian interface.
-- **Suggest Archiving:** For sensitive or creative content, suggest moving the file to an "Archive" folder instead of permanent deletion.
+**Classification**: Vault  
+**Availability**: Always available
 
----
+#### Overview
 
-## Example Usage
+Performs full-text content search across all Markdown files in the vault. Supports boolean logic (AND, OR, NOT), regular expressions, and context windows around matches. This is the most powerful text-based search tool.
+
+#### Parameters
+
+| Parameter       | Type    | Required | Default | Description                                       |
+| --------------- | ------- | -------- | ------- | ------------------------------------------------- |
+| `query`         | string  | Yes      | -       | Text phrase, boolean expression, or regex pattern |
+| `regex`         | boolean | No       | `false` | Treat query as regular expression                 |
+| `limit`         | integer | No       | `20`    | Maximum number of matches to return               |
+| `context_lines` | integer | No       | `1`     | Lines of context before and after each match      |
+
+#### When to Use
+
+- **Content Discovery**: Finding specific text or phrases in notes
+- **Boolean Search**: Complex queries with AND, OR, NOT logic
+- **Pattern Matching**: Using regex to find structured content
+- **Context Exploration**: Seeing how terms are used across the vault
+
+**Strategic Heuristics**:
+
+- Use simple text for basic keyword searches
+- Use boolean logic for complex queries (e.g., `"AI AND ethics NOT bias"`)
+- Use regex for structured patterns (dates, tags, specific formats)
+- Increase `context_lines` to understand usage context
+- Set appropriate `limit` to balance comprehensiveness and performance
+
+#### Best Practices
+
+1. **Query Types**:
+
+   **Simple Text** (case-insensitive):
+
+   ```json
+   { "query": "machine learning" }
+   ```
+
+   **Boolean Logic**:
+
+   ```json
+   { "query": "neural network AND training NOT backpropagation" }
+   ```
+
+   - `AND`: Both terms must be present
+   - `OR`: Either term must be present
+   - `NOT`: Following term must not be present
+   - Use parentheses for grouping: `"(AI OR ML) AND ethics"`
+
+   **Regular Expression**:
+
+   ```json
+   { "query": "\\d{4}-\\d{2}-\\d{2}", "regex": true }
+   ```
+
+2. **Context Windows**:
+   - `context_lines: 0` for exact match lines only
+   - `context_lines: 1` (default) for immediate context
+   - `context_lines: 3-5` for understanding usage
+   - Higher values can help understand intent and meaning
+
+3. **Performance Optimization**:
+   - Keep `limit` reasonable (default 20 is good starting point)
+   - Specific queries are faster than broad ones
+   - Boolean queries are faster than regex
+   - Consider using glob first to narrow down files
+
+4. **Result Interpretation**:
+   - Matches are marked with `>` prefix in context
+   - Line numbers are provided for reference
+   - Results are ordered by file path, then line number
+   - Empty contexts mean surrounding lines are blank
+
+#### Example Usage
+
+**Simple Search**:
 
 ```json
 {
-  "path": "01 - Chats/Temporary Research Log.md"
+  "query": "obsidian plugin development",
+  "limit": 10,
+  "context_lines": 2
 }
 ```
 
+**Boolean Search**:
+
+```json
+{
+  "query": "(TypeScript OR JavaScript) AND API NOT deprecated",
+  "limit": 15
+}
+```
+
+**Regex Search**:
+
+```json
+{
+  "query": "#\\w+",
+  "regex": true,
+  "limit": 50
+}
+```
+
+**Output**:
+
+```
+SEARCH: "machine learning"
 ---
+Found: 3 matches
 
-# Tool Guide: manage_templates
+[1] Projects/AI/Overview.md (Line 15)
+ and understanding of complex systems.
+> Machine learning enables computers to learn
+ patterns from data without explicit programming.
 
-## Overview
+[2] Research/Deep Learning.md (Line 42)
+ The field has evolved significantly since
+> machine learning first emerged in the 1950s.
+ Today's models can process vast amounts of
+```
 
-The `manage_templates` tool allows the LLM to interact with Obsidian's template system. It can list available templates and apply a specific template to a note. This ensures that new notes follow established formats, include necessary metadata, and maintain vault-wide consistency.
+#### Obsidian-Specific Context
 
-## Parameters
-
-- **action** (string, required): The action to perform.
-  - `list`: Returns a list of all available templates in the vault's designated template folder(s).
-  - `apply`: Applies a specific template to a target note.
-- **template_path** (string, optional): The full path to the template file (required for `apply`).
-- **target_path** (string, optional): The path of the note where the template should be applied (required for `apply`). If the file doesn't exist, it will be created.
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `manage_templates` tool in the following scenarios:
-
-### 1. Initializing New Notes with Standardized Structure
-
-When the user wants to create a common type of note:
-
-- **Project Initiation:** Instead of using `create_obsidian_note` from scratch, use `manage_templates` with a "Project" template to ensure all standard sections (Goals, Timeline, Stakeholders) are included.
-- **Character/World Building:** Applying a "Character Sheet" template for _The Fall And Rise Of The Mistaken Superhero_ to ensure consistent attribute tracking.
-- **Meeting Notes:** Using a "Meeting Template" to automatically set up sections for attendees, agenda, and action items.
-
-### 2. Discovering Vault Standards
-
-When unsure how to structure information:
-
-- **Template Auditing:** Using `list` to see what types of notes the user has already standardized. "Let me see if you have a template for book reviews before I create this note."
-
-### 3. Enhancing Metadata Consistency
-
-Templates often include complex YAML frontmatter (Properties). Using a template ensures:
-
-- **Tag Consistency:** Tags are formatted correctly.
-- **Automatic Fields:** Dates, IDs, or status fields are pre-populated according to the user's system (especially when using plugins like Templater).
-
-### 4. Direct User Request
-
-- When the user asks "Show me my templates," "Use the meeting template for this note," or "Create a new project note using the standard format."
-
----
-
-## Best Practices
-
-- **List Before Apply:** If the exact template name is unknown, use `action: "list"` first to avoid errors.
-- **Target Path Awareness:** When using `apply`, ensure the `target_path` is in the correct folder (e.g., `05 - Projects/`).
-- **Template Precedence:** If the user has both core Templates and the Templater plugin, `manage_templates` should be able to find both, but listing them first clarifies what is available.
-- **Minimal Overlap:** Use templates for _structure_ and `patch_note` for _content_. Don't try to force a template if a simple `create_obsidian_note` with custom content is more appropriate for a unique task.
+- Only searches Markdown files (`.md` extension)
+- Uses Obsidian's `cachedRead()` for performance
+- Line numbers match what you see in the editor
+- Results respect vault boundaries
+- Does not search in excluded folders (if configured)
 
 ---
 
-## Example Usage
+## System Tools
+
+### manage_plugin_settings
+
+**Classification**: System  
+**Availability**: Always available
+
+#### Overview
+
+Reads and updates Pure Chat LLM plugin settings. Update operations require user confirmation through a modal dialog, ensuring settings are never changed without explicit approval. This is critical for maintaining user control over plugin behavior.
+
+#### Parameters
+
+| Parameter | Type   | Required | Default | Description                                                                  |
+| --------- | ------ | -------- | ------- | ---------------------------------------------------------------------------- |
+| `action`  | string | Yes      | -       | Operation: `"read"` or `"update"`                                            |
+| `key`     | string | No       | -       | Specific setting key (required for update, optional for read)                |
+| `value`   | string | No       | -       | New value for the setting (required for update, JSON-stringified if complex) |
+
+#### When to Use
+
+- **Configuration Inspection**: Understanding current plugin settings
+- **User-Requested Changes**: When user explicitly asks to modify settings
+- **Troubleshooting**: Checking configuration issues
+- **Preference Management**: Adjusting behavior based on user needs
+
+**Strategic Heuristics**:
+
+- Always read settings first before updating
+- Never update settings without explicit user request
+- Use `key` parameter to read specific settings
+- Omit `key` to read all settings (useful for debugging)
+- Complex values must be JSON-stringified
+
+#### Best Practices
+
+1. **Read Operations**:
+   - Read all settings: `{"action": "read"}`
+   - Read specific setting: `{"action": "read", "key": "endpoint"}`
+   - Always review before suggesting changes
+   - Settings are returned as formatted JSON
+
+2. **Update Operations**:
+   - Always confirm with user before attempting update
+   - Explain what the change does and why
+   - Provide the old and new values clearly
+   - User sees a modal with approve/reject buttons
+   - Only updates are saved if user approves
+
+3. **Value Formatting**:
+   - Simple strings: `"value": "new-value"`
+   - Numbers: `"value": "42"`
+   - Booleans: `"value": "true"`
+   - Objects/Arrays: `"value": "{\"key\": \"value\"}"`
+   - Plugin attempts JSON parsing, falls back to string
+
+4. **Common Settings**:
+   - `endpoint`: Current LLM endpoint selection
+   - `endpoints`: Array of configured endpoints
+   - `messageRoleFormatter`: Chat role header format
+   - `debugMode`: Enable debug logging
+   - `toolsEnabled`: Enable/disable tool calling
+
+#### Example Usage
+
+**Read All Settings**:
+
+```json
+{
+  "action": "read"
+}
+```
+
+**Read Specific Setting**:
+
+```json
+{
+  "action": "read",
+  "key": "debugMode"
+}
+```
+
+**Update Setting** (triggers confirmation):
+
+```json
+{
+  "action": "update",
+  "key": "debugMode",
+  "value": "true"
+}
+```
+
+**Output** (Read):
+
+```
+Settings:
+{
+  "endpoint": 0,
+  "endpoints": [...],
+  "messageRoleFormatter": "# role: {{role}}",
+  "debugMode": false,
+  "toolsEnabled": true,
+  ...
+}
+```
+
+**Output** (Update after approval):
+
+```
+Updated "debugMode" to: true
+```
+
+**Output** (Update rejected):
+
+```
+Update rejected.
+```
+
+#### Obsidian-Specific Context
+
+- Uses Obsidian's `Modal` class for confirmation UI
+- Settings are persisted to `data.json` in plugin folder
+- Changes take effect immediately after save
+- Some settings may require plugin reload
+- Settings are scoped to the plugin instance
+- Confirmation modal cannot be bypassed (security feature)
+
+---
+
+### manage_templates
+
+**Classification**: System  
+**Availability**: Always available (but requires templates folder)
+
+#### Overview
+
+Lists and applies Obsidian templates. Automatically detects the templates folder from core Templates plugin, Templater plugin, or a folder named "Templates". Supports variable substitution (`{{date}}`, `{{time}}`, `{{title}}`).
+
+#### Parameters
+
+| Parameter       | Type   | Required | Default | Description                                    |
+| --------------- | ------ | -------- | ------- | ---------------------------------------------- |
+| `action`        | string | Yes      | -       | Operation: `"list"` or `"apply"`               |
+| `template_path` | string | No       | -       | Path to template file (required for `"apply"`) |
+| `target_path`   | string | No       | -       | Target note path (required for `"apply"`)      |
+
+#### When to Use
+
+- **Template Discovery**: Finding available templates in the vault
+- **Content Generation**: Applying templates to create structured notes
+- **Standardization**: Creating notes with consistent formatting
+- **Automation**: Using templates programmatically
+
+**Strategic Heuristics**:
+
+- List templates first to discover available options
+- Use descriptive template names for easy selection
+- Apply templates to new or existing notes
+- Templates are ideal for recurring note structures
+- Combine with `write_note_section` for full note creation
+
+#### Best Practices
+
+1. **Template Discovery**:
+   - Always list templates before applying
+   - Template folder detection order:
+     1. Core Templates plugin settings
+     2. Templater plugin settings
+     3. Any folder named "Templates"
+   - Templates must be Markdown files (`.md`)
+
+2. **Variable Substitution**:
+   - `{{date}}`: Current date (ISO format: YYYY-MM-DD)
+   - `{{time}}`: Current time (HH:MM:SS)
+   - `{{title}}`: Target file name without extension
+   - Variables are case-sensitive
+   - Unknown variables are left unchanged
+
+3. **Application Workflow**:
+   - Template content is processed (variables replaced)
+   - Content is returned for review
+   - Use `write_note_section` to actually create/update the note
+   - Check if target exists before applying
+
+4. **Template Organization**:
+   - Keep templates in a dedicated folder
+   - Use subfolders for categories
+   - Name templates descriptively
+   - Include frontmatter for metadata
+
+#### Example Usage
+
+**List Templates**:
+
+```json
+{
+  "action": "list"
+}
+```
+
+**Apply Template**:
 
 ```json
 {
   "action": "apply",
-  "template_path": "06 - Support/Templates/New Project Template.md",
-  "target_path": "05 - Projects/Infinity GUI Design.md"
+  "template_path": "Templates/Daily Note.md",
+  "target_path": "Daily/2025-01-27.md"
 }
 ```
 
+**Output** (List):
+
+```
+Templates in "Templates":
+Templates/Daily Note.md
+Templates/Meeting Notes.md
+Templates/Project/Overview.md
+Templates/Project/Task List.md
+```
+
+**Output** (Apply):
+
+```
+Template content for "Templates/Daily Note.md":
+
+---
+date: 2025-01-27
+type: daily-note
 ---
 
-# Tool Guide: replace_in_note
+# Daily Note for 2025-01-27
 
-## Overview
+## Tasks for 2025-01-27
+- [ ]
 
-The `replace_in_note` tool allows the LLM to perform precise, targeted modifications to the text within an existing note. Unlike `patch_note`, which only appends content, `replace_in_note` can swap out, update, or delete specific strings or patterns. This is the primary tool for refining drafts, correcting errors, and maintaining data accuracy.
+## Notes
 
-## Parameters
 
-- **path** (string, required): The full relative path of the note to modify.
-- **search** (string, required): The exact text or regex pattern to look for.
-- **replace** (string, required): The text to replace the match with. (Use an empty string `""` to delete the searched text).
-- **regex** (boolean, default: false): If set to true, the `search` parameter is treated as a regular expression.
-- **case_sensitive** (boolean, default: false): If true, the search will respect letter casing.
+(Target "Daily/2025-01-27.md" does not exist. Use create_obsidian_note or patch_note to apply.)
+```
 
----
+#### Obsidian-Specific Context
 
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `replace_in_note` tool in the following scenarios:
-
-### 1. Fact-Checking & Error Correction
-
-When information in a note becomes outdated or is found to be incorrect:
-
-- **Updating Stats:** Changing a project's status from "In-Progress" to "Completed."
-- **Correcting Typos:** Fixing spelling errors or formatting mistakes in a critical document.
-- **Updating Dates:** Changing a deadline or "last updated" field in the frontmatter.
-
-### 2. Creative Refinement
-
-When polishing creative works like _The Fall And Rise Of The Mistaken Superhero_:
-
-- **Character Renaming:** Changing a character's name across an entire scene or chapter.
-- **Dialogue Polishing:** Replacing a line of dialogue with a more impactful or "dry" alternative.
-- **Tone Adjustment:** Swapping out specific words to better match the intended atmosphere.
-
-### 3. Structural & Metadata Updates
-
-When managing the organization of a note:
-
-- **Updating Tags:** Changing `#draft` to `#final` in the YAML properties.
-- **Link Maintenance:** Updating a `[[broken-link]]` to the correct note path.
-- **Heading Renaming:** Changing a heading name without moving the content underneath it.
-
-### 4. Controlled Deletion
-
-When specific information needs to be removed without deleting the entire note:
-
-- **Clearing Sensitive Info:** Removing a placeholder API key or private note.
-- **Pruning Brainstorms:** Deleting discarded ideas from a list while keeping the viable ones.
-
-### 5. Pattern-Based Batch Updates (Regex)
-
-When the same type of change needs to be made in multiple places within a single note:
-
-- **Reformatting Lists:** Using regex to change all `-` bullets to `*` bullets.
-- **Standardizing IDs:** Updating the format of multiple custom IDs or timestamps throughout a log.
+- Detects templates folder automatically
+- Works with both core Templates and Templater plugins
+- Templates must be Markdown files
+- Variable substitution is basic (not full Templater syntax)
+- Does not trigger Templater plugin's advanced features
+- Returns processed content for manual application
+- Respects folder structure within templates directory
 
 ---
 
-## Best Practices
+## UI Tools
 
-- **Read-Verify-Replace:** Always use `read_file` first to get the current content and ensure the `search` string is unique and exact. This prevents accidental replacements of unintended text.
-- **Be Specific:** Provide as much context in the `search` string as possible to avoid matching common words in the wrong place.
-- **Regex Caution:** When using `regex: true`, double-check the pattern to ensure it doesn't match more than intended. Test the logic internally before execution.
-- **Acknowledge User Review:** Inform the user that `replace_in_note` will trigger a "Review Change" modal in Obsidian, where they can see the diff before confirming.
-- **Delete with Empty String:** To delete text, set `replace` to `""`.
+### get_active_context
 
----
+**Classification**: UI  
+**Availability**: Always available
 
-## Example Usage
+#### Overview
+
+Retrieves information about the currently active note in Obsidian, including file path, cursor position, selection, and optionally the full content. Essential for understanding what the user is currently working on.
+
+#### Parameters
+
+| Parameter         | Type    | Required | Default | Description                                        |
+| ----------------- | ------- | -------- | ------- | -------------------------------------------------- |
+| `include_content` | boolean | No       | `false` | Whether to include the full note content in output |
+
+#### When to Use
+
+- **Context Awareness**: Understanding what note the user is working in
+- **Selection-Based Operations**: When user asks to work with selected text
+- **Cursor-Relative Actions**: Inserting content at cursor position
+- **Active Note Operations**: Any operation that should target the current note
+
+**Strategic Heuristics**:
+
+- Call at the start of multi-step operations for context
+- Use when user says "this note", "here", "current file"
+- Set `include_content: true` only when you need to read the content
+- Cursor position is zero-indexed (Line 0 = first line)
+- Selection being empty doesn't mean the note is empty
+
+#### Best Practices
+
+1. **Context Interpretation**:
+   - "Active File" is the note currently being edited
+   - "Cursor" shows where insertions would occur
+   - "Selection" is only present if text is highlighted
+   - "Lines" indicates total line count
+
+2. **Content Handling**:
+   - Default `include_content: false` for metadata only
+   - Use `include_content: true` when you need to analyze content
+   - Large notes can result in substantial output
+   - Content includes the full file, not just visible area
+
+3. **Common Use Cases**:
+   - Determining where to insert generated content
+   - Understanding user's current focus
+   - Extracting selected text for operations
+   - Validating that a note is open before operations
+
+4. **Error Handling**:
+   - Returns error message if no Markdown note is active
+   - Does not work with non-Markdown files
+   - Graph view, canvas, or settings won't have active notes
+
+#### Example Usage
+
+**Basic Context** (metadata only):
 
 ```json
 {
-  "path": "05 - Projects/Infinity Compiler.md",
-  "search": "status: planning",
-  "replace": "status: development",
-  "case_sensitive": false
+  "include_content": false
 }
 ```
 
----
-
-# Tool Guide: search_vault
-
-## Overview
-
-The `search_vault` tool performs a comprehensive text-based search across all Markdown files in the Obsidian vault. It is used to find specific keywords, phrases, or patterns within the content of notes, making it the most powerful tool for discovering information when the file name is unknown or when searching for specific details mentioned across multiple notes.
-
-## Parameters
-
-- **query** (string, required): The text phrase or boolean expression to search for (supports AND, OR, NOT, parentheses, and quoted phrases). Example: "life story OR escape AND trauma"
-- **regex** (boolean, default: false): Whether to treat the query as a regular expression.
-- **context_lines** (integer, default: 1): Number of lines of context to include around the match.
-- **limit** (integer, default: 20): Maximum number of matches/snippets to return (not files).
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `search_vault` tool in the following scenarios:
-
-### 1. Locating Specific Details or Mentions
-
-When the user mentions a specific person, place, or concept without providing a file path:
-
-- **Fact-finding:** "Where did I mention the password 'I Will Remember Thee'?"
-- **Project Tracking:** "Find every note where I talked about 'TAS' (The Activation System)."
-- **Thematic Exploration:** "Search for mentions of 'paternal betrayal' to see how it's treated across different drafts."
-
-### 2. Answering "Do I have...?" or "Have I ever...?"
-
-When the user asks about the contents of their vault:
-
-- **Inventory Check:** "Do I have any notes about human trafficking?"
-- **Historical Context:** "When was the first time I mentioned the 'Infinity Compiler'?"
-
-### 3. Gathering Context for Complex Queries
-
-Before responding to a broad question about a theme or project:
-
-- **Summarization:** Search for a concept like "Israel" or "Christianity" to gather all personal reflections and insights shared in the vault before synthesizing a response.
-- **Project Overviews:** Search for a project name to see all relevant brainstorming sessions, logs, and drafts.
-
-### 4. Technical and Code Search
-
-When looking for specific implementations or configurations:
-
-- **Code Snippets:** Finding where a specific variable or logic (e.g., "Rail Theory") is defined.
-- **Reference Checks:** Looking up technical standards or "GUI standards" mentioned in previous sessions.
-
-### 5. Finding Unlinked References
-
-To find mentions of a topic that hasn't been formally linked with `[[wikilinks]]`:
-
-- **Vault Mapping:** Identify notes that _should_ be linked together but aren't yet.
-
----
-
-## Best Practices
-
-- **Keyword Specificity:** Use unique or rare terms (e.g., "S.G.I.V. Formula") to avoid returning too many irrelevant results.
-- **Use Context Lines:** Increase `context_lines` (e.g., to 3 or 5) when you need to understand the immediate surroundings of a match without reading the entire file.
-- **Leverage Regex:** Use regular expressions for complex patterns like dates, specific formatting (e.g., `^# ` for headers), or variations of a word.
-- **Search Before Read:** If the user asks a question about a broad topic, `search_vault` is often a better first step than `glob_vault_files` or guessing paths.
-- **Follow-up with `read_file`:** The search results only provide snippets. Once you find a promising file, use `read_file` to see the full context and ensure accuracy.
-
----
-
-## Boolean Search Syntax
-
-The search tool now supports boolean operators for more precise searches:
-
-### Operators
-
-- **AND**: All terms must be present (implicit when terms are separated by AND)
-- **OR**: At least one term must be present (default operator)
-- **NOT**: Term must not be present
-- **()**: Group expressions for precedence
-- **""**: Quoted phrases for exact matching
-
-### Examples
-
-```json
-{
-  "query": "life story OR escape"
-}
-```
-
-Finds notes containing either "life story" OR "escape"
-
-```json
-{
-  "query": "escape AND trauma"
-}
-```
-
-Finds notes containing BOTH "escape" AND "trauma"
-
-```json
-{
-  "query": "(life story OR escape) AND trauma NOT draft"
-}
-```
-
-Finds notes about trauma related to life story or escape, but excludes drafts
-
-```json
-{
-  "query": "\"great escape\" AND morning"
-}
-```
-
-Finds notes containing exact phrase "great escape" AND "morning"
-
-## Example Usage
-
-```json
-{
-  "query": "Hack by Will",
-  "context_lines": 2,
-  "limit": 10
-}
-```
-
----
-
-# Tool Guide: manage_workspace
-
-## Overview
-
-The `manage_workspace` tool allows the LLM to control the visual layout of the Obsidian workspace. It can open notes in new tabs, split the view for side-by-side comparison, change view modes (Editing vs. Reading), and close tabs. This tool enhances the user experience by actively managing what the user sees and interacts with.
-
-## Parameters
-
-- **action** (string, required): The action to perform.
-  - `"open"`: Opens a file in the workspace.
-  - `"close"`: Closes a specific tab (leaf).
-- **path** (string, required for "open"): The full relative path of the file to open.
-- **active** (boolean, default: true): Whether to make the opened file the active (focused) tab.
-- **mode** (string, optional): Set the view mode.
-  - `"source"`: Editing (Markdown) mode.
-  - `"preview"`: Reading (Rendered) mode.
-- **new_leaf** (boolean, default: true): Whether to open the file in a new tab. If false, it may replace the current tab.
-- **split** (string, default: "none"): How to split the current leaf.
-  - `"horizontal"`: Splits the view top/bottom.
-  - `"vertical"`: Splits the view left/right.
-  - `"none"`: Opens in a standard tab.
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `manage_workspace` tool in the following scenarios:
-
-### 1. Presenting Newly Created Content
-
-After creating a note, make it visible to the user:
-
-- **Immediate Visibility:** Use `action: "open"` immediately after a successful `create_obsidian_note` or `manage_templates` call.
-- **First Look:** "I've created your project note; I'll open it now so you can take a look."
-
-### 2. Side-by-Side Comparison or Reference
-
-Facilitate workflows that require looking at two things at once:
-
-- **Comparison:** Use `split: "vertical"` to open a new draft alongside an old one.
-- **Referencing Specs:** Open a technical specification note in a split view while discussing code implementation in another.
-- **Plot & Draft:** Show a story's "Plot Outline" side-by-side with the "Current Scene" draft for _The Fall And Rise Of The Mistaken Superhero_.
-
-### 3. Context-Aware View Modes
-
-Adjust the interface to match the user's likely intent:
-
-- **Editing Focus:** Open notes in `mode: "source"` when the user is actively brainstorming or asking for changes.
-- **Consumption Focus:** Open notes in `mode: "preview"` when presenting a finished guide, a research summary, or a creative writing piece for the user to read.
-
-### 4. Direct Navigational Requests
-
-- When the user says "Show me," "View," "Open," or "Take me to [Note Name]."
-
-### 5. Workspace Cleanup
-
-When the user's workspace becomes cluttered during a complex session:
-
-- **Closing Temporary Files:** After a multi-step drafting process, offer to `"close"` temporary scratchpad tabs that are no longer needed.
-
----
-
-## Best Practices
-
-- **Path Confirmation:** Always verify the `path` exists (via `glob_vault_files` or `read_file`) before attempting to open it.
-- **Avoid Tab Overload:** Don't open a new tab (`new_leaf: true`) for every single file if they are only needed momentarily. Consider opening in the current tab if appropriate.
-- **Respect User Focus:** Use `active: true` for the most important file, but be careful not to "steal focus" away from what the user is currently looking at if they didn't ask for it.
-- **Communicate Visual Changes:** Always tell the user what you are doing. "I'm opening the research notes in a split view for you."
-- **Coordinate with Tools:** `manage_workspace` is a visual tool; it doesn't read or write data. Use it _in conjunction_ with `read_file` or `create_obsidian_note` to provide a complete experience.
-
----
-
-## Example Usage
-
-```json
-{
-  "action": "open",
-  "path": "05 - Projects/Infinity Compiler.md",
-  "mode": "preview",
-  "split": "vertical",
-  "new_leaf": true
-}
-```
-
----
-
-# Tool Guide: get_active_context
-
-## Overview
-
-The `get_active_context` tool provides the LLM with "situational awareness" regarding the user's current environment in Obsidian. It retrieves metadata about the active note, including its file path, any currently selected text, and the cursor's position. Optionally, it can pull the entire content of the active file. This is the primary tool for responding to queries like "What am I looking at?" or performing actions relative to a specific selection.
-
-## Parameters
-
-- **include_content** (boolean, default: false): If true, returns the full text content of the active file. Useful for analysis or summarization tasks without needing a separate `read_file` call.
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `get_active_context` tool in the following scenarios:
-
-### 1. Implicit Content Reference
-
-When the user refers to "this note," "this paragraph," or "what's on my screen":
-
-- **Summarization:** "Summarize this note for me."
-- **Analysis:** "What do you think of my current draft?"
-- **Transformation:** "Rewrite this section to be more professional."
-
-### 2. Selection-Based Actions
-
-When the user has highlighted specific text and wants the LLM to act on it:
-
-- **Refinement:** "Fix the grammar in my selection."
-- **Expansion:** "Elaborate on the highlighted idea."
-- **Coding:** "Explain what this selected block of code does."
-
-### 3. Navigation and Workflow Continuity
-
-To verify the LLM is on the same page as the user before suggesting changes:
-
-- **Verification:** Before using `patch_note` or `replace_in_note`, check if the user is already looking at the intended target to avoid confusion.
-- **Workflow Resumption:** If a session starts with "Keep going where I left off," use the cursor position to find the exact point of focus.
-
-### 4. Contextual "Where am I?" Queries
-
-- When the user is lost in a large vault and needs the LLM to explain the purpose or context of the current file based on its path or content.
-
----
-
-## Best Practices
-
-- **Content vs. Metadata:** Only set `include_content: true` if the task requires reading the text. For simple navigational checks (e.g., "Is this file open?"), metadata alone is sufficient.
-- **Cursor Sensitivity:** Pay attention to the `cursor` position when the user asks to "insert here" or "add a thought right here."
-- **Selection Priority:** If a `selection` is present, focus the response on that specific text rather than the whole note, unless the user indicates otherwise.
-- **Privacy/Efficiency:** Avoid pulling large file contents unnecessarily. If you only need to know the file name, keep `include_content` at its default (false).
-- **Coordinate with Workspace:** Use `get_active_context` to find out where the user _is_, and `manage_workspace` to take them where they _need to be_.
-
----
-
-## Example Usage
+**Full Context** (with content):
 
 ```json
 {
@@ -1069,252 +929,833 @@ To verify the LLM is on the same page as the user before suggesting changes:
 }
 ```
 
----
+**Output** (without content):
 
-# Tool Guide: show_obsidian_notice
+```
+Active File: Projects/AI/GPT Research.md
+Cursor: Line 45, Col 12
+Lines: 156
+Selection:
+---
+Large language models have shown remarkable capabilities
+in natural language understanding and generation.
+---
+```
+
+**Output** (with content):
+
+```
+Active File: Projects/AI/GPT Research.md
+Cursor: Line 45, Col 12
+Lines: 156
+No selection.
+
+Content:
+---
+# GPT Research
 
 ## Overview
+[... full note content ...]
+---
+```
 
-The `show_obsidian_notice` tool allows the LLM to display transient "toast" notifications in the top-right corner of the Obsidian UI. These messages are non-intrusive, do not require user interaction, and disappear automatically after a set duration. This tool is ideal for providing feedback on background processes, confirming successful actions, or adding a touch of personality to the interaction.
+#### Obsidian-Specific Context
 
-## Parameters
-
-- **message** (string, required): The text to display in the notice. Keep it concise.
-- **duration** (integer, default: 5000): The amount of time in milliseconds (1000ms = 1s) the notice remains on screen.
+- Uses `workspace.getActiveViewOfType(MarkdownView)`
+- Only works when a Markdown editor is active
+- Cursor positions are zero-indexed internally but displayed as 1-indexed
+- Selection is always the current editor selection (live)
+- Works in both edit and live preview modes
+- Does not include properties (frontmatter) separately
 
 ---
 
-## When to Use (Strategic Heuristics)
+### manage_workspace
 
-The LLM should use the `show_obsidian_notice` tool in the following scenarios:
+**Classification**: UI  
+**Availability**: Always available
 
-### 1. Confirming Multi-Step Background Actions
+#### Overview
 
-When the LLM performs several tool calls in a row (e.g., patching three different files), use a notice to let the user know progress is being made without cluttering the chat window:
+Controls the Obsidian workspace by opening and closing notes in various layouts. Supports splitting panes horizontally or vertically, opening in new tabs, and setting view modes (source/preview). Essential for managing the user's workspace programmatically.
 
-- **Batch Success:** "Notifying: All 3 files have been successfully patched."
-- **Progress Updates:** "Processing background research... (1/3 notes found)."
+#### Parameters
 
-### 2. Managing Long-Running Processes
+| Parameter  | Type    | Required | Default  | Description                                                |
+| ---------- | ------- | -------- | -------- | ---------------------------------------------------------- |
+| `action`   | string  | Yes      | -        | Operation: `"open"` or `"close"`                           |
+| `path`     | string  | No       | -        | File path (required for `"open"`, optional for `"close"`)  |
+| `split`    | string  | No       | `"none"` | Split direction: `"horizontal"`, `"vertical"`, or `"none"` |
+| `new_leaf` | boolean | No       | `true`   | Whether to open in a new tab                               |
+| `mode`     | string  | No       | -        | View mode: `"source"` or `"preview"`                       |
+| `active`   | boolean | No       | `true`   | Whether to focus the newly opened tab                      |
 
-For tools that take time to resolve (like `suno_music_gen`), use a notice to manage user expectations:
+#### When to Use
 
-- **Wait Alerts:** "Suno is now generating your track. I'll let you know when it's ready."
-- **Status Checks:** "Still working on that music video. Thank you for your patience, Justice."
+- **Note Navigation**: Opening specific notes programmatically
+- **Workspace Organization**: Arranging notes in split views
+- **Reference Display**: Opening related notes side-by-side
+- **Tab Management**: Opening or closing tabs based on workflow
 
-### 3. Subtle Feedback for Non-Visual Actions
+**Strategic Heuristics**:
 
-If the LLM updates a setting or performs a search that doesn't result in a new file being opened:
+- Use `split: "horizontal"` for notes you want to compare vertically
+- Use `split: "vertical"` for side-by-side reference (most common)
+- Use `new_leaf: true` to preserve current note
+- Use `new_leaf: false` to replace current tab
+- Set `active: false` for background opens (less disruptive)
+- Use `mode: "source"` for editing, `mode: "preview"` for reading
 
-- **Settings Update:** "Pure Chat LLM settings updated successfully."
-- **Indexing:** "Vault search complete. 12 matches found."
+#### Best Practices
 
-### 4. Injecting Personality ("Easter Eggs")
+1. **Opening Notes**:
 
-In line with the Pure Chat LLM personality, use notices for subtle, dry humor or brief supportive acknowledgments:
+   **Simple Open** (replaces current tab if `new_leaf: false`):
 
-- **Dry Humor:** "Calculating the meaning of life... Result: 42. (And also coffee)."
-- **Identity Moments:** "I Will Remember Thee." (Referencing Justice's personal background when appropriate).
-- **Subtle Encouragement:** "System optimized. You've got this, Justice."
+   ```json
+   { "action": "open", "path": "Projects/AI.md", "new_leaf": false }
+   ```
 
-### 5. High-Priority Reminders
+   **New Tab** (preserves current):
 
-Briefly reminding the user of a specific context or setting without interrupting the main flow:
+   ```json
+   { "action": "open", "path": "Reference/Terms.md", "new_leaf": true }
+   ```
 
-- **Mode Reminders:** "Note: Currently operating in 'Siren's Lure' creative mode."
+   **Split View** (side-by-side):
 
----
+   ```json
+   {
+     "action": "open",
+     "path": "Research/Paper.md",
+     "split": "vertical",
+     "mode": "preview"
+   }
+   ```
 
-## Best Practices
+2. **Closing Notes**:
 
-- **Conciseness is Key:** Notices are small. Avoid long sentences. Aim for 5-10 words maximum.
-- **Don't Over-Spam:** Too many notices can become annoying. Reserve them for meaningful feedback or high-value personality moments.
-- **Adjust Duration:** Use a shorter duration (3000ms) for quick confirmations and a longer duration (8000ms+) for important status updates that might be missed.
-- **Visual Harmony:** Use notices _instead_ of a chat response only if the information is purely supplemental. Usually, a notice accompanies a more detailed chat message.
+   **Close Specific Tab**:
 
----
+   ```json
+   { "action": "close", "path": "Projects/Old.md" }
+   ```
 
-## Example Usage
+   **Close Active Tab**:
+
+   ```json
+   { "action": "close" }
+   ```
+
+3. **Split Directions**:
+   - `"horizontal"`: Creates top/bottom split (good for long documents)
+   - `"vertical"`: Creates left/right split (most common for references)
+   - `"none"`: Opens in tab (no split)
+
+4. **View Modes**:
+   - `"source"`: Shows raw Markdown with syntax highlighting
+   - `"preview"`: Shows rendered Markdown (reading mode)
+   - Omit to keep current mode or use default
+
+#### Example Usage
+
+**Open for Editing**:
 
 ```json
 {
-  "message": "Generating your EDM track 'Epic Bitcrush'. This may take a moment...",
-  "duration": 7000
+  "action": "open",
+  "path": "Projects/TODO.md",
+  "new_leaf": true,
+  "mode": "source",
+  "active": true
 }
 ```
 
----
-
-# Tool Guide: manage_plugin_settings
-
-## Overview
-
-The `manage_plugin_settings` tool allows the LLM to read or modify the configuration of the Pure Chat LLM plugin itself. This is a meta-tool used to adjust the model's behavior, personality, or technical constraints (like token limits) directly within the Obsidian environment. Changes to settings trigger a user confirmation modal to ensure transparency and control.
-
-## Parameters
-
-- **action** (string, required): The action to perform.
-  - `"read"`: Returns the current value of a specific setting or a list of all settings if the key is omitted.
-  - `"update"`: Changes the value of a specific setting.
-- **key** (string, required): The specific setting key to interact with (e.g., `"defaultMaxTokens"`, `"systemPrompt"`, `"model"`, `"temperature"`).
-- **value** (string, required for `"update"`): The new value to set. This string will be parsed as JSON if possible (allowing for numbers, booleans, or objects).
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `manage_plugin_settings` tool in the following scenarios:
-
-### 1. Adjusting Model Behavior & Verbosity
-
-When the user indicates they want different types of responses:
-
-- **Conciseness:** "I want shorter answers." -> Update `defaultMaxTokens` to a lower value.
-- **Creativity:** "Be more creative and random." -> Update `temperature` to a higher value.
-- **Model Switching:** "Use the more powerful model for this task." -> Update `model` to a higher-tier version if available.
-
-### 2. Personality & System Prompt Customization
-
-When the user wants to refine the LLM's core identity or instructions:
-
-- **Identity Shifts:** "From now on, act as a professional code reviewer." -> Update the `systemPrompt` to include specific persona instructions.
-- **Contextual Anchoring:** "Always remember that I am a music producer." -> Append this fact to the `systemPrompt` or a relevant context setting.
-- **Language/Tone Tuning:** Adjusting the `systemPrompt` to better reflect Justice's "dry humor" or specific communication needs.
-
-### 3. Technical Troubleshooting & Auditing
-
-When the LLM or user needs to verify the current configuration:
-
-- **Configuration Check:** "What is my current token limit?" -> Use `action: "read"` with the `defaultMaxTokens` key.
-- **Full Audit:** "Show me all my current AI settings." -> Use `action: "read"` to display the full configuration block.
-
-### 4. Personalization Persistence
-
-When the user expresses a preference that should apply across all future sessions:
-
-- **Permanent Preferences:** If Justice says, "I never want you to summarize the Contextual Knowledge Base," the LLM should offer to update the `systemPrompt` to reflect this permanently.
-
----
-
-## Best Practices
-
-- **Read Before Update:** Always perform a `"read"` action first to see the current value and structure. This prevents accidental overwriting of complex settings like the `systemPrompt`.
-- **Inform the User:** Explicitly state that changing a setting will trigger a confirmation prompt in Obsidian. "I'm going to update your max tokens to 1000; you'll see a confirmation box in Obsidian."
-- **Small, Incremental Changes:** Avoid making massive changes to the `systemPrompt` all at once. Propose specific, targeted additions or modifications.
-- **Safety First:** Be cautious when updating core settings like API keys or base URLs (if exposed), as incorrect values can break the plugin's functionality.
-- **Contextual Integrity:** Ensure that any updates to the `systemPrompt` do not remove the core identity markers (e.g., "personality created by Justice Vellacott").
-
----
-
-## Example Usage
+**Open Reference in Split**:
 
 ```json
 {
-  "action": "update",
-  "key": "defaultMaxTokens",
-  "value": "4000"
+  "action": "open",
+  "path": "Reference/API Docs.md",
+  "split": "vertical",
+  "mode": "preview",
+  "active": false
 }
 ```
 
----
-
-# Tool Guide: suno_music_gen
-
-## Overview
-
-The `suno_music_gen` tool is a powerful AI music production suite. It allows the LLM to generate high-fidelity music, write lyrics, extend tracks, separate stems (vocals/instrumentals), and create music videos. This tool is central to Justice's "Im The Justice Man" brand and his explorations into cognitive acoustics and EDM production.
-
-## Parameters
-
-- **action** (string, required): The specific Suno API action to perform.
-  - `generate_music`: Create a new track.
-  - `generate_lyrics`: Create song lyrics.
-  - `check_status`: Get the result of a generation task.
-  - `extend_music`: Create a continuation of an existing track.
-  - `separate_vocals`: Split a track into vocal and instrumental stems.
-  - `create_music_video`: Generate a visual for a track.
-  - `get_credits`: Check API balance.
-- **prompt** (string, optional): The style/topic description for music or lyrics.
-- **customMode** (boolean, default: false): Enables manual control over `style`, `title`, and uses `prompt` for lyrics.
-- **style** (string, optional): Required if `customMode` is true. Specifies genre, mood, and instrumentation.
-- **title** (string, optional): Required if `customMode` is true. The name of the song.
-- **instrumental** (boolean, default: false): If true, generates music without vocals.
-- **audioId** (string, optional): The ID of the track to extend or manipulate.
-- **continueAt** (integer, optional): The timestamp (in seconds) to start the extension from.
-- **taskId** (string, optional): The ID returned by generation actions to check status.
-- **model** (string, default: "V5"): The AI model version.
-
----
-
-## When to Use (Strategic Heuristics)
-
-The LLM should use the `suno_music_gen` tool in the following scenarios:
-
-### 1. Supporting the "Im The Justice Man" Brand
-
-When the conversation turns to Justice's professional music production:
-
-- **Experimentation:** "Should we try a new melodic techno track with a supersaw synth lead?"
-- **Brand Development:** Generating demo tracks for "Why Balloons Don't Pop" or "Epic Bitcrush" style evolutions.
-- **Technical Refinement:** Using `separate_vocals` to help Justice analyze the mix of a generated track for his FL Studio workflow.
-
-### 2. Enhancing Narrative Projects
-
-When developing _The Fall And Rise Of The Mistaken Superhero_ or _The Siren's Lure_:
-
-- **Atmospheric Scoring:** Creating a "Shepard's Tone" ambient piece for the Sirens or a "hooded" Walker-esque track for James's cynical moments.
-- **Thematic Lyrics:** Generating lyrics that reflect the "lost year," "Hack by Will," or Jessica's faith.
-- **Music Videos:** Creating conceptual visualizers for key story moments to aid visualization.
-
-### 3. Exploring EDM Genres & Trends
-
-When discussing Justice's musical profile:
-
-- **Hardstyle & Metal Fusion:** Generating high-energy (150 BPM) hardstyle tracks or Megaraptor-style symphonic metal covers.
-- **Nostalgia Reinvention:** Proposing deep house or techno remixes of classical or nostalgic themes.
-
-### 4. Direct User Request
-
-- When Justice says "Make a beat," "Write some lyrics about...", or "Extend this track."
-
----
-
-## Prompting Framework: The S.G.I.V. Formula
-
-As an expert-level prompter, Justice uses the **S.G.I.V. Formula** for maximum precision. Use this structure in the `style` or `prompt` fields:
-
-1.  **S**tyle: Genre and sub-genre (e.g., "Melodic Techno," "Hardstyle," "Symphonic Metal").
-2.  **G**roove: BPM and rhythm (e.g., "150 BPM," "Four-on-the-floor," "Syncopated," "Driving energy").
-3.  **I**nstrumentation: Key sounds (e.g., "Supersaw synths," "Distorted kicks," "Orchestral stabs," "FM synth bass").
-4.  **V**ocals: Vocal character (e.g., "Ethereal female vocals," "Gritty male baritone," "Open vowel optimization," "Echoing whispers").
-
----
-
-## Advanced Techniques: Meta-Tag Stacking & Prosody
-
-- **Meta-Tag Stacking:** Use tags like `[Drop]`, `[Build-up]`, `[Chorus]`, and `[Outro]` in the prompt/lyrics to control song structure.
-- **Cognitive Acoustics:** Align stress-beats with lyrical importance.
-- **Zeigarnik Effect:** Suggest leaving tracks on a cliffhanger or "unresolved" melody for certain creative projects to build tension.
-
----
-
-## Best Practices
-
-- **Custom Mode for Control:** For Justice's level of expertise, `customMode: true` is almost always preferred to allow separate control over lyrics and style.
-- **Check Status Regularly:** Music generation isn't instant. Inform the user you've started the task, provide the `taskId`, and use `check_status` periodically (or ask the user to wait).
-- **Audio IDs for Iteration:** Always keep track of `audioId` values to enable the `extend_music` action, allowing for the creation of full-length songs.
-- **Respect the Credits:** Check `get_credits` if performing multiple generations to ensure a smooth workflow.
-
----
-
-## Example Usage
+**Close Active Tab**:
 
 ```json
 {
-  "action": "generate_music",
-  "customMode": true,
-  "title": "Neon Betrayal",
-  "style": "Melodic Techno, 124 BPM, dark atmospheric pads, aggressive supersaw lead, crisp percussion, Walker-style aesthetic",
-  "prompt": "[Intro]\n[Verse 1]\nIn the static of the lost year, I found the code.\nA hack by will, a heavy load.\n[Chorus]\nDigital truth, analog lies.\nSee the world through Polaroid eyes."
+  "action": "close"
 }
 ```
+
+**Output** (Open):
+
+```
+Opened "Projects/TODO.md"
+```
+
+**Output** (Close):
+
+```
+Closed tab for "Projects/Old.md".
+```
+
+#### Obsidian-Specific Context
+
+- Uses Obsidian's leaf system for tab management
+- Leaves are the building blocks of the workspace
+- Split panes create new leaves in the workspace
+- Path normalization is handled automatically
+- Works with Obsidian's workspace state persistence
+- `active` parameter determines focus, not visibility
+- Mode changes may not apply to non-Markdown views
+
+---
+
+### show_obsidian_notice
+
+**Classification**: UI  
+**Availability**: Always available
+
+#### Overview
+
+Displays a toast-style notification in Obsidian. These appear in the upper-right corner and automatically dismiss after a specified duration. Useful for providing feedback about operations without interrupting the user's workflow.
+
+#### Parameters
+
+| Parameter  | Type    | Required | Default | Description                                |
+| ---------- | ------- | -------- | ------- | ------------------------------------------ |
+| `message`  | string  | Yes      | -       | The message to display in the notification |
+| `duration` | integer | No       | `5000`  | Duration in milliseconds (1000 = 1 second) |
+
+#### When to Use
+
+- **Operation Feedback**: Confirming that an action completed
+- **Status Updates**: Informing user of background processes
+- **Warnings**: Non-critical alerts that don't require interaction
+- **Success Messages**: Quick confirmations
+
+**Strategic Heuristics**:
+
+- Use for confirmations, not errors (errors should be in tool output)
+- Keep messages short and clear (under 50 characters ideal)
+- Standard duration (5000ms) is good for most messages
+- Increase duration for important messages (7000-10000ms)
+- Decrease duration for trivial confirmations (3000ms)
+- Don't overuse (can be distracting)
+
+#### Best Practices
+
+1. **Message Content**:
+   - Be concise and specific
+   - Use present tense for ongoing actions
+   - Use past tense for completed actions
+   - Include essential details only
+   - Examples:
+     - [x] "Note saved successfully"
+     - [x] "Searching 1,247 notes..."
+     - [ ] "The operation that you requested has been completed"
+
+2. **Duration Guidelines**:
+   - Quick confirmations: 3000ms
+   - Standard messages: 5000ms (default)
+   - Important info: 7000-10000ms
+   - Never less than 2000ms (too quick to read)
+   - Never more than 15000ms (annoying)
+
+3. **When NOT to Use**:
+   - Don't duplicate information already in tool output
+   - Don't use for errors (return in tool output instead)
+   - Don't use for questions (use modal or tool output)
+   - Don't use for long explanations
+
+4. **Multiple Notices**:
+   - Can display multiple notices simultaneously
+   - They stack vertically in the UI
+   - Each has independent duration
+   - Use sparingly to avoid clutter
+
+#### Example Usage
+
+**Standard Notification**:
+
+```json
+{
+  "message": "Note updated successfully",
+  "duration": 5000
+}
+```
+
+**Quick Confirmation**:
+
+```json
+{
+  "message": "Copied to clipboard",
+  "duration": 3000
+}
+```
+
+**Important Alert**:
+
+```json
+{
+  "message": "Large search in progress (2,500+ files)",
+  "duration": 8000
+}
+```
+
+**Output**:
+
+```
+Displayed notice: "Note updated successfully"
+```
+
+#### Obsidian-Specific Context
+
+- Uses Obsidian's `Notice` class
+- Appears in upper-right corner by default
+- Notices are non-blocking (don't prevent interaction)
+- Multiple notices stack vertically
+- User can dismiss by clicking the notice
+- Does not persist across Obsidian restarts
+- Visual style matches Obsidian's theme
+
+---
+
+## Vault Tools
+
+### read_note_section
+
+**Classification**: Vault  
+**Availability**: Always available
+
+#### Overview
+
+Reads content from Obsidian notes with support for sections, headers, and block references. Can return full notes, specific sections, or just the heading structure (outline). This is the primary tool for retrieving note content.
+
+#### Parameters
+
+| Parameter       | Type    | Required | Default | Description                                                                       |
+| --------------- | ------- | -------- | ------- | --------------------------------------------------------------------------------- |
+| `link`          | string  | Yes      | -       | Wiki link format: `[[Filename]]`, `[[Filename#Header]]`, `[[Filename#^block-id]]` |
+| `headings_only` | boolean | No       | `false` | Return only heading structure (outline mode) instead of content                   |
+| `depth`         | integer | No       | `6`     | Maximum heading depth when `headings_only: true` (1-6)                            |
+
+#### When to Use
+
+- **Full Note Reading**: Retrieving entire note content
+- **Section Reading**: Getting specific sections by header
+- **Block Reading**: Retrieving specific block references
+- **Outline Extraction**: Understanding note structure without reading content
+
+**Strategic Heuristics**:
+
+- Use full link `[[Note]]` for entire notes
+- Use `[[Note#Header]]` for specific sections
+- Use `[[Note#^blockid]]` for specific blocks
+- Use `headings_only: true` for structure discovery
+- Set `depth` lower (2-3) for high-level outline
+- Always validate link format before calling
+
+#### Best Practices
+
+1. **Link Formats**:
+
+   **Full Note**:
+
+   ```json
+   { "link": "[[Projects/AI Research]]" }
+   ```
+
+   **Section by Header**:
+
+   ```json
+   { "link": "[[Projects/AI Research#Methodology]]" }
+   ```
+
+   **Block Reference**:
+
+   ```json
+   { "link": "[[Projects/AI Research#^key-findings]]" }
+   ```
+
+   **Nested Header**:
+
+   ```json
+   { "link": "[[Projects/AI Research#Results > Performance]]" }
+   ```
+
+2. **Outline Mode**:
+
+   **Full Outline**:
+
+   ```json
+   { "link": "[[Projects/AI Research]]", "headings_only": true }
+   ```
+
+   **High-Level Outline** (H1-H3 only):
+
+   ```json
+   { "link": "[[Projects/AI Research]]", "headings_only": true, "depth": 3 }
+   ```
+
+3. **Error Handling**:
+   - Returns structured error if file not found
+   - Returns structured error if section not found
+   - Suggests recovery options (glob search, create note)
+   - Always check error format before proceeding
+
+4. **Performance Considerations**:
+   - Full notes are cached by Obsidian (fast)
+   - Section resolution uses metadata cache (fast)
+   - Large notes (>1MB) may take longer
+   - Outline mode is faster than full content
+
+#### Example Usage
+
+**Read Full Note**:
+
+```json
+{
+  "link": "[[Projects/Machine Learning]]"
+}
+```
+
+**Read Specific Section**:
+
+```json
+{
+  "link": "[[Projects/Machine Learning#Training Process]]"
+}
+```
+
+**Get Note Outline**:
+
+```json
+{
+  "link": "[[Projects/Machine Learning]]",
+  "headings_only": true,
+  "depth": 4
+}
+```
+
+**Output** (Full Note):
+
+```
+NOTE SECTION READ SUCCESSFUL
+---
+Path: Projects/Machine Learning.md
+---
+
+Content:
+# Machine Learning
+
+## Overview
+Machine learning is a subset of artificial intelligence...
+
+## Training Process
+Models learn by adjusting weights...
+```
+
+**Output** (Section):
+
+```
+NOTE SECTION READ SUCCESSFUL
+---
+Path: Projects/Machine Learning.md
+Section: #Training Process
+---
+
+Content:
+## Training Process
+Models learn by adjusting weights through backpropagation...
+```
+
+**Output** (Outline):
+
+```
+NOTE OUTLINE
+---
+Path: Projects/Machine Learning.md
+Size: 12,458 bytes
+---
+
+Heading Structure:
+# Machine Learning
+  ## Overview
+    ### History
+    ### Applications
+  ## Training Process
+    ### Supervised Learning
+    ### Unsupervised Learning
+  ## Conclusion
+```
+
+#### Obsidian-Specific Context
+
+- Uses `parseLinktext()` for wiki link parsing
+- Leverages `metadataCache` for section resolution
+- Block references use Obsidian's `^blockid` syntax
+- Headers match exactly (case-sensitive)
+- Supports nested headers with `>` separator
+- Uses `resolveSubpath()` for section extraction
+- Respects Obsidian's cache for performance
+
+---
+
+### write_note_section
+
+**Classification**: Vault  
+**Availability**: Always available
+
+#### Overview
+
+Writes or modifies content in Obsidian notes with support for sections, multiple write modes, and frontmatter properties. Can create new notes, modify existing ones, or update specific sections. Includes user confirmation through an edit review modal.
+
+#### Parameters
+
+| Parameter    | Type   | Required | Default    | Description                                                     |
+| ------------ | ------ | -------- | ---------- | --------------------------------------------------------------- |
+| `link`       | string | Yes      | -          | Wiki link: `[[Filename]]` or `[[Filename#Header]]`              |
+| `content`    | string | Yes      | -          | The content to write                                            |
+| `mode`       | string | No       | Contextual | Write mode: `"append"`, `"prepend"`, or `"replace"`             |
+| `properties` | object | No       | -          | YAML frontmatter properties (only used when creating new notes) |
+
+#### When to Use
+
+- **Note Creation**: Creating new notes with initial content
+- **Content Modification**: Updating existing note content
+- **Section Updates**: Modifying specific sections within notes
+- **Batch Operations**: Multiple writes in sequence
+
+**Strategic Heuristics**:
+
+- Default mode for full files: `"replace"`
+- Default mode for sections: `"append"`
+- Use `"replace"` to completely rewrite content
+- Use `"append"` to add content at the end
+- Use `"prepend"` to add content at the beginning
+- Properties only apply to new note creation
+- Always confirm operation is what user intended
+
+#### Best Practices
+
+1. **Write Modes Explained**:
+
+   **Replace** (default for full files):
+   - Completely replaces all content
+   - Use for major rewrites
+   - Careful with existing content
+
+   **Append** (default for sections):
+   - Adds content at the end
+   - Preserves existing content
+   - Good for adding to lists, logs
+
+   **Prepend**:
+   - Adds content at the beginning
+   - Useful for reverse-chronological logs
+   - Preserves existing content
+
+2. **Creating New Notes**:
+
+   ```json
+   {
+     "link": "[[Projects/New Research]]",
+     "content": "# New Research\n\n## Overview\nInitial research notes...",
+     "properties": {
+       "tags": ["research", "ai"],
+       "created": "2025-01-27",
+       "status": "in-progress"
+     }
+   }
+   ```
+
+3. **Modifying Sections**:
+
+   **Append to Section**:
+
+   ```json
+   {
+     "link": "[[Projects/TODO#Tasks]]",
+     "content": "- [ ] Complete documentation",
+     "mode": "append"
+   }
+   ```
+
+   **Replace Section**:
+
+   ```json
+   {
+     "link": "[[Projects/TODO#Tasks]]",
+     "content": "- [x] All tasks completed!",
+     "mode": "replace"
+   }
+   ```
+
+4. **Content Formatting**:
+   - Include proper Markdown formatting
+   - Add newlines (`\n`) for spacing
+   - Preserve existing heading for sections
+   - Use consistent indentation
+   - Include frontmatter separator (`---`) if needed
+
+5. **Error Prevention**:
+   - Can't write to section in non-existent file
+   - Create the file first, then write to sections
+   - Section must exist when using `#Header`
+   - Properties don't overwrite existing frontmatter
+
+#### Example Usage
+
+**Create New Note**:
+
+```json
+{
+  "link": "[[Projects/AI Ethics]]",
+  "content": "# AI Ethics\n\n## Considerations\n- Bias\n- Privacy\n- Transparency",
+  "properties": {
+    "tags": ["ai", "ethics"],
+    "date": "2025-01-27"
+  }
+}
+```
+
+**Append to Existing Section**:
+
+```json
+{
+  "link": "[[Projects/TODO#In Progress]]",
+  "content": "- [ ] Review pull request #42",
+  "mode": "append"
+}
+```
+
+**Replace Full Note**:
+
+```json
+{
+  "link": "[[Daily/2025-01-27]]",
+  "content": "# Daily Note\n\n## Summary\nCompleted all tasks for today.",
+  "mode": "replace"
+}
+```
+
+**Output** (Success):
+
+```
+WRITE OPERATION APPROVED
+---
+Target: Projects/AI Ethics.md
+Action: Created new note
+Lines changed: +8 (0 -> 8)
+Total characters: 156
+
+File Status: [x] Saved successfully
+---
+SUGGESTED ACTIONS:
+1. manage_workspace(action="open", path="Projects/AI Ethics.md")
+2. read_note_section(link="[[Projects/AI Ethics]]")
+```
+
+**Output** (Error - Section in non-existent file):
+
+```
+ERROR: FileNotFoundError
+---
+Reason: Cannot write to section "#Tasks" because file "Projects/New.md" does not exist.
+
+RECOVERY OPTIONS:
+1. write_note_section(link="[[Projects/New]]", content="...", ...) - Create the file first
+```
+
+#### Obsidian-Specific Context
+
+- Uses `EditReview` modal for user confirmation
+- Shows diff preview before applying changes
+- Can be rejected by user (returns rejection message)
+- Preserves file metadata (creation time, etc.)
+- Respects vault boundaries and restrictions
+- Uses `metadataCache` for section resolution
+- Frontmatter properties follow YAML format
+- Section operations preserve heading line
+- All writes are atomic (all or nothing)
+
+---
+
+### get_backlinks
+
+**Classification**: Vault  
+**Availability**: Always available
+
+#### Overview
+
+Finds all notes that link to a specific note (backlinks). Results include the number of times each note links to the target. This is essential for understanding note relationships and knowledge graph structure.
+
+#### Parameters
+
+| Parameter | Type   | Required | Default | Description                                |
+| --------- | ------ | -------- | ------- | ------------------------------------------ |
+| `path`    | string | Yes      | -       | The path of the note to find backlinks for |
+
+#### When to Use
+
+- **Relationship Discovery**: Understanding what notes reference a topic
+- **Graph Analysis**: Mapping knowledge connections
+- **Impact Assessment**: Seeing how widely a note is referenced
+- **Navigation**: Finding related content through links
+
+**Strategic Heuristics**:
+
+- Use to discover notes related to a specific topic
+- Check backlinks before deleting notes (impact assessment)
+- Find all notes that might need updates when you change one
+- Identify hub notes (many backlinks = important)
+- Sort by link count to find most connected notes
+
+#### Best Practices
+
+1. **Path Formats**:
+   - Use exact vault paths: `"Projects/AI Research.md"`
+   - Include `.md` extension
+   - Paths are case-sensitive
+   - Use `normalizePath()` format
+
+2. **Interpreting Results**:
+   - Higher link counts = stronger connection
+   - Zero backlinks = orphaned note (might be new or isolated)
+   - Many backlinks = hub note (central to knowledge graph)
+   - Link count includes all mentions, not unique locations
+
+3. **Use Cases**:
+
+   **Before Deleting**:
+
+   ```json
+   { "path": "Projects/Deprecated.md" }
+   ```
+
+   Check if any notes reference it.
+
+   **Finding Related Work**:
+
+   ```json
+   { "path": "Concepts/Machine Learning.md" }
+   ```
+
+   Discover all notes discussing this topic.
+
+   **Hub Identification**:
+
+   ```json
+   { "path": "Index/AI.md" }
+   ```
+
+   See if this is a well-connected index.
+
+4. **Performance**:
+   - Uses Obsidian's `resolvedLinks` cache (very fast)
+   - Results are pre-computed by Obsidian
+   - No file reading required
+   - Works with large vaults efficiently
+
+#### Example Usage
+
+**Find Backlinks**:
+
+```json
+{
+  "path": "Concepts/Neural Networks.md"
+}
+```
+
+**Output** (with backlinks):
+
+```
+BACKLINKS FOR: "Concepts/Neural Networks.md"
+---
+1. Projects/AI Research.md (5 links)
+2. Papers/Deep Learning Survey.md (3 links)
+3. Daily/2025-01-20.md (1 link)
+4. Research/Experiments/Trial-03.md (1 link)
+```
+
+**Output** (no backlinks):
+
+```
+BACKLINKS FOR: "Concepts/Neural Networks.md"
+---
+Status: No backlinks found
+```
+
+**Output** (error):
+
+```
+Error: File not found at "Concepts/Missing.md"
+```
+
+#### Obsidian-Specific Context
+
+- Uses `app.metadataCache.resolvedLinks` for link data
+- Only includes resolved internal links (not unresolved)
+- Counts multiple links on same line separately
+- Includes links in all contexts (paragraphs, lists, tables, etc.)
+- Does not include:
+  - Unresolved links (broken links)
+  - External links
+  - Embeds (`![[]]` syntax) - these are separate
+  - Links in code blocks (depends on Obsidian version)
+- Results are sorted by link count (descending)
+- Updates automatically when links change in vault
+
+---
+
+## Best Practices Summary
+
+### Tool Selection Strategy
+
+1. **Start with Search**: Use `glob_vault_files` or `list_vault_folders` to explore
+2. **Read Before Writing**: Always read content before modifications
+3. **Confirm Destructive Operations**: Write operations show confirmation modals
+4. **Use Semantic Search Wisely**: `smart_connections_rag` for conceptual queries
+5. **Chain Tools Logically**: Search -> Read -> Analyze -> Write
+
+### Error Recovery
+
+All tools provide structured error messages with:
+
+- Error type and description
+- Recovery suggestions
+- Alternative tool calls
+
+Follow the recovery options provided in error messages.
+
+### Performance Considerations
+
+- **Cached Operations**: `read_note_section`, `get_backlinks` use Obsidian's cache
+- **Search Limits**: Set appropriate limits to balance speed and comprehensiveness
+- **Recursive Operations**: Use sparingly on large vaults
+- **Content Inclusion**: Only include full content when necessary
+
+### Obsidian Integration
+
+All tools respect:
+
+- Vault boundaries and permissions
+- Obsidian's file system abstraction
+- User settings and plugin configurations
+- Obsidian's caching and indexing systems
+- Wiki-link and Markdown conventions
+
+---
+
+## Version Information
+
+**Guide Version**: 2.0  
+**Last Updated**: 2025-01-27  
+**Pure Chat LLM Version**: 2.0.0+
+
+For plugin updates and changes, refer to the project's CHANGELOG.md.

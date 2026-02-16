@@ -5,7 +5,7 @@ import { version } from '../../package.json';
 
 export const EmptyApiKey = 'sk-XXXXXXXXX';
 
-export const selectionTemplates = {
+const selectionTemplates = {
   'Add emojis':
     'Insert relevant emojis into the `<Selection>` at natural breaks to enhance context and tone. Ensure no two emojis are adjacent and keep all original text unchanged. Return only the emojified selection.',
   'Auto complete 5 suggestions':
@@ -71,7 +71,7 @@ export const PureChatLLMversion = version;
 // export const splashScreenMD = splash;
 // export const readmeMD = readme;
 
-export const chatTemplates = {
+const chatTemplates = {
   'Analyzer pro':
     'Analyze the `<Conversation>`. Provide a brief analysis of roles and goals. Then, generate a "Better System Prompt" (rewritten for clarity/constraints) and a "Condensed User Prompt" (synthesized intent). Return output in markdown with specific headers.',
   'Analyzer pro without condensing':
@@ -112,7 +112,7 @@ export const Chatsysprompt =
   'You are a markdown chat processor.\n\nYou will receive:\n\n- A chat conversation enclosed within <Conversation> and </Conversation> tags.\n- A command or instruction immediately after the conversation.\n\nYour task:\n\n1. Extract the chat content inside the <Conversation> and </Conversation> tags.\n2. Follow the command to process, summarize, clarify, or modify the chat.\n3. Return only the final processed chat in markdown format, without any tags or instructions.\n\nUse this workflow to accurately handle the chat based on the instruction.';
 export const Selectionsysprompt =
   'You are a markdown content processor.\n\nYou will receive:\n\n- A selected piece of markdown text inside <Selection> and </Selection> tags.\n- A command or instruction immediately after the selection.\n\nYour job:\n\n1. Extract the markdown inside the <Selection> and </Selection> tags.\n2. Follow the command to process or expand that markdown.\n3. Return only the processed markdown content, without tags or instructions.\n\nUse this workflow to help modify markdown content accurately.';
-export const ENDPOINTS = [
+const ENDPOINTS = [
   {
     name: 'OpenAI',
     apiKey: EmptyApiKey,
@@ -199,13 +199,7 @@ export const DEFAULT_SETTINGS: PureChatLLMSettings = {
   agentMode: true,
   useYAMLFrontMatter: false,
   enabledToolClassifications: { Vault: true, UI: true, System: true, AI: true },
-  blueFileResolution: {
-    enabled: false,
-    maxDepth: 5,
-    enableCaching: true,
-    writeIntermediateResults: false,
-  },
-  blueResolutionViewMode: 'tree',
+  maxRecursionDepth: 10,
   removeEmptyMessages: true,
   realtimeSystemPromptFile: '',
 };

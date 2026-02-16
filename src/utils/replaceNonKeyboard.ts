@@ -1,6 +1,6 @@
 import PureChatLLM from '../main';
 
-export const nonKeyboardCharMap: [RegExp, string][] = [
+const nonKeyboardCharMap: [RegExp, string][] = [
   [/\u2013/g, '-'],
   [/\u2014/g, '--'],
   [/\u2019/g, "'"],
@@ -22,7 +22,7 @@ export const nonKeyboardCharMap: [RegExp, string][] = [
   [/\u{1f54a}/gu, '(<\\~/)'],
 ];
 
-export const nonSafeCharacterFilter = /[^a-zA-Z`0-9~!@#$%^&*()_+\\=[\]{}|;:'",.<>/? \n\t-]/gu;
+const nonSafeCharacterFilter = /[^a-zA-Z`0-9~!@#$%^&*()_+\\=[\]{}|;:'",.<>/? \n\t-]/gu;
 
 /**
  * Replaces non-keyboard characters in the input string with their keyboard equivalents.

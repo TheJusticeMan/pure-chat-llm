@@ -27,17 +27,29 @@ const readNoteSectionParameters = defineToolParameters({
   required: ['link'],
 } as const);
 
-export type ReadNoteSectionArgs = InferArgs<typeof readNoteSectionParameters>;
+type ReadNoteSectionArgs = InferArgs<typeof readNoteSectionParameters>;
 
+/**
+ * Tool for reading content from Obsidian notes with support for sections and block references
+ */
 export class ReadNoteSectionTool extends Tool<ReadNoteSectionArgs> {
   readonly name = 'read_note_section';
   readonly classification = 'Vault';
   readonly description =
     'Reads content from an Obsidian note using wiki link format with support for sections, headers, and block references. Can return outline structure with headings_only mode.';
   readonly parameters = readNoteSectionParameters;
+  /**
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
+   */
   isAvailable() {
     return true;
   }
+  /**
+   * Reads note content or outline structure based on the provided wiki link
+   * @param args - The arguments containing link, headings_only flag, and depth
+   * @returns Formatted string with note content, outline, or error message
+   */
   async execute(args: ReadNoteSectionArgs): Promise<string> {
     const { link, headings_only = false, depth = 6 } = args;
     const app = this.chat.plugin.app;
@@ -119,17 +131,29 @@ const writeNoteSectionParameters = defineToolParameters({
   required: ['link', 'content'],
 } as const);
 
-export type WriteNoteSectionArgs = InferArgs<typeof writeNoteSectionParameters>;
+type WriteNoteSectionArgs = InferArgs<typeof writeNoteSectionParameters>;
 
+/**
+ * Tool for writing or modifying content in Obsidian notes with section support
+ */
 export class WriteNoteSectionTool extends Tool<WriteNoteSectionArgs> {
   readonly name = 'write_note_section';
   readonly classification = 'Vault';
   readonly description =
     'Writes content to a note or a specific section using WikiLink syntax. Can create new notes or modify existing ones.';
   readonly parameters = writeNoteSectionParameters;
+  /**
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
+   */
   isAvailable() {
     return true;
   }
+  /**
+   * Writes or modifies note content with support for sections and modes (replace/append/prepend)
+   * @param args - The arguments containing link, content, mode, and properties
+   * @returns Confirmation message or error if operation failed
+   */
   async execute(args: WriteNoteSectionArgs): Promise<string> {
     const { link, content, mode, properties } = args;
     const app = this.chat.plugin.app;
@@ -227,16 +251,28 @@ const backlinksParameters = defineToolParameters({
   required: ['path'],
 } as const);
 
-export type BacklinksArgs = InferArgs<typeof backlinksParameters>;
+type BacklinksArgs = InferArgs<typeof backlinksParameters>;
 
+/**
+ * Tool for finding all notes that link to a specific note (backlinks)
+ */
 export class BacklinksTool extends Tool<BacklinksArgs> {
   readonly name = 'get_backlinks';
   readonly classification = 'Vault';
   readonly description = 'Finds all notes that link to a specific note (backlinks).';
   readonly parameters = backlinksParameters;
+  /**
+   * Checks if the tool is available for use
+   * @returns Always returns true as this tool is always available
+   */
   isAvailable() {
     return true;
   }
+  /**
+   * Finds and lists all backlinks to the specified note
+   * @param args - The arguments containing the path to the target note
+   * @returns Formatted string with backlinks sorted by link count or error message
+   */
   async execute(args: BacklinksArgs): Promise<string> {
     const app = this.chat.plugin.app;
     const normalizedPath = normalizePath(args.path);

@@ -4,14 +4,15 @@
   "description": "Turn notes into conversations with chatGPT",
   "main": "main.js",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "format": "prettier --write \"src/**/*.ts\" && prettier --write \"*.sh\" && prettier --write \"**/*.md\"",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "version": "node version-bump.mjs && git add manifest.json versions.json src/assets/s.json",
-    "release": "bash Release.sh",
+    "dev": "node scripts/esbuild.config.mjs",
+    "format": "prettier --write \"src/**/*.ts\" && prettier --write \"scripts/*.sh\" && prettier --write \"**/*.md\"",
+    "build": "tsc -noEmit -skipLibCheck && node scripts/esbuild.config.mjs production",
+    "version": "node scripts/version-bump.mjs && git add manifest.json versions.json src/assets/s.json",
+    "release": "bash scripts/Release.sh",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "copy-to-mobile-vault": "kioclient5 --overwrite copy styles.css manifest.json main.js \"mtp:/Armor X31 Pro/Internal shared storage/Documents/Obsidian/.obsidian/plugins/pure-chat-llm/\""
+    "copy-to-mobile-vault": "kioclient5 --overwrite copy styles.css manifest.json main.js \"mtp:/Armor X31 Pro/Internal shared storage/Documents/Obsidian/.obsidian/plugins/pure-chat-llm/\"",
+    "knip": "knip"
   },
   "keywords": [
     "obsidian",
@@ -28,19 +29,21 @@
     "@codemirror/view": "^6.38.3",
     "@eslint/js": "^9.39.2",
     "@types/glob-to-regexp": "^0.4.4",
-    "@types/node": "^25.0.2",
+    "@types/node": "^25.2.3",
     "builtin-modules": "5.0.0",
     "esbuild": "^0.27.2",
     "eslint": "^9.39.2",
-    "eslint-plugin-obsidianmd": "^0.1.9",
     "eslint-plugin-jsdoc": "^62.5.4",
+    "eslint-plugin-obsidianmd": "^0.1.9",
     "globals": "^16.5.0",
+    "knip": "^5.83.1",
     "obsidian": "latest",
     "prettier": "^3.7.4",
     "prettier-plugin-sh": "^0.18.0",
     "tslib": "^2.8.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.50.1"
+    "typescript-eslint": "^8.50.1",
+    "@typescript-eslint/parser": "^8.55.0"
   },
   "dependencies": {
     "diff": "^8.0.3",

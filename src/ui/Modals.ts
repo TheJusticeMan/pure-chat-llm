@@ -23,9 +23,10 @@ export class AskForAPI extends Modal {
   private modal: string;
 
   /**
+   * Creates a modal dialog for API key configuration.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(app: App, plugin: PureChatLLM) {
     super(app);
@@ -39,7 +40,7 @@ export class AskForAPI extends Modal {
   }
 
   /**
-   *
+   * Builds the user interface for the API key modal.
    */
   private buildUI() {
     const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
@@ -90,7 +91,9 @@ export class AskForAPI extends Modal {
   }
 
   /**
+   * Saves the API key to settings and closes the modal.
    *
+   * @returns A promise that resolves when settings are saved
    */
   private async saveAndClose() {
     this.plugin.settings.endpoints[this.plugin.settings.endpoint].apiKey =
@@ -103,7 +106,7 @@ export class AskForAPI extends Modal {
 /**
  * A custom text area component that extends the base `TextAreaComponent`.
  *
- * This component adds the "PUREcodePreview" CSS class to its input element,
+ * This component adds the "codePreview" CSS class to its input element,
  * allowing for specialized styling or behavior in the UI.
  *
  * @extends TextAreaComponent
@@ -112,22 +115,30 @@ export class AskForAPI extends Modal {
  */
 export class CodeAreaComponent extends TextAreaComponent {
   /**
+   * Creates a new code area component.
    *
-   * @param containerEl
+   * @param containerEl - The HTML element to contain the text area
    */
   constructor(containerEl: HTMLElement) {
     super(containerEl);
-    this.inputEl.addClass('PUREcodePreview');
+    this.inputEl.addClass('codePreview');
   }
 }
 
+/**
+ * Opens a new split view with a selection response initialized in a new file.
+ *
+ * @param plugin - The PureChatLLM plugin instance
+ * @param selection - The selected text to include in the new chat
+ * @returns A promise that resolves when the file is created and opened
+ */
 export async function editWand(plugin: PureChatLLM, selection: string) {
   await plugin.app.workspace
     .getLeaf('split')
     .openFile(
       await plugin.app.vault.create(
         await plugin.app.fileManager.getAvailablePathForAttachment('PUREselection.md'),
-        new PureChatLLMChat(plugin).initSelectionResponse('', selection, '').markdown,
+        new PureChatLLMChat(plugin).initSelectionResponse('', selection, '').getMarkdown(),
       ),
     );
 }
@@ -159,7 +170,11 @@ const endpointInputPlaceholders: PureChatLLMAPI = {
 };
 
 /**
+ * Modal dialog for editing and managing LLM provider configurations.
  *
+ * Allows users to add, edit, and remove custom API endpoints for different
+ * language model providers. Displays a list of configured providers and
+ * provides forms for editing their details.
  */
 export class EditModalProviders extends Modal {
   plugin: PureChatLLM;
@@ -167,9 +182,10 @@ export class EditModalProviders extends Modal {
   selectedIndex = 0; // Index of the currently selected endpoint
 
   /**
+   * Creates a modal for editing LLM providers.
    *
-   * @param app
-   * @param plugin
+   * @param app - The Obsidian application instance
+   * @param plugin - The PureChatLLM plugin instance
    */
   constructor(app: App, plugin: PureChatLLM) {
     super(app);
@@ -181,7 +197,7 @@ export class EditModalProviders extends Modal {
   }
 
   /**
-   *
+   * Builds the user interface for the provider editor modal.
    */
   buildUI() {
     this.contentEl.empty();
@@ -248,7 +264,7 @@ export class EditModalProviders extends Modal {
     this.setTitle(selectedEndpoint.name);
   }
   /**
-   *
+   * Called when the modal is closed. Filters out empty endpoints and saves settings.
    */
   onClose(): void {
     const { settings } = this.plugin;
