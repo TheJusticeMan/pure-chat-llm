@@ -20,6 +20,7 @@ import PureChatLLM from '../main';
 import { ChatMessage, PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { AskForAPI } from './Modals';
+import apocalypseThrottle from 'apocalypse-throttle';
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -92,9 +93,8 @@ export class PureChatLLMSideView extends ItemView {
     // when a file is loaded or changed, update the view
 
     this.registerEvent(
-      this.app.workspace.on(
-        'editor-change',
-        (editor: Editor, view: MarkdownView) => !this.plugin.isresponding && this.checkUpdate(view),
+      this.app.workspace.on('editor-change', (editor: Editor, view: MarkdownView) =>
+        this.checkUpdate(view),
       ),
     );
     this.registerEvent(this.app.workspace.on('file-open', () => this.checkUpdate()));
@@ -126,15 +126,17 @@ export class PureChatLLMSideView extends ItemView {
    * @param view - The current markdown view to check for updates
    * @returns The current instance for chaining
    */
-  checkUpdate(view: MarkdownView | null = this.app.workspace.getActiveViewOfType(MarkdownView)) {
-    if (!view) return this.defaultContent();
-    const editor = view.editor;
-    const file = view.file;
-    if (!editor || !file) return this.defaultContent();
-    const writeHandler = new WriteHandler(this.plugin, file, view, editor);
-    this.update(writeHandler, editor);
-    return this;
-  }
+  checkUpdate = apocalypseThrottle(
+    (view: MarkdownView | null = this.app.workspace.getActiveViewOfType(MarkdownView)) => {
+      if (!view) return this.defaultContent();
+      const editor = view.editor;
+      const file = view.file;
+      if (!editor || !file) return this.defaultContent();
+      this.update(new WriteHandler(this.plugin, file, view, editor), editor);
+      return this;
+    },
+    1000,
+  );
 
   /**
    * Renders default content when no valid conversation is detected.

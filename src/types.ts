@@ -6,21 +6,17 @@ export interface PureChatLLMSettings {
   endpoints: PureChatLLMAPI[];
   defaultmaxTokens: number;
   messageRoleFormatter: string;
-  AutoReverseRoles: boolean;
   selectionTemplates: { [key: string]: string };
   chatTemplates: { [key: string]: string };
   addfiletocontext: boolean;
   CMDselectionTemplates: { [key: string]: boolean };
   CMDchatTemplates: { [key: string]: boolean };
   ModelsOnEndpoint: { [key: string]: string[] };
-
   resolveFilesForChatAnalysis: boolean;
-  autoConcatMessagesFromSameRole: boolean;
   agentMode: boolean;
   useYAMLFrontMatter: boolean;
   enabledToolClassifications: { Vault: boolean; UI: boolean; System: boolean; AI: boolean };
   maxRecursionDepth: number;
-  removeEmptyMessages: boolean;
   realtimeSystemPromptFile: string;
 }
 

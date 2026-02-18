@@ -365,43 +365,6 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       .addSetting(
         setting =>
           void setting
-            .setName('Auto-concat messages from same role')
-            .setDesc(
-              'Automatically combine consecutive messages from the same role into a single message.',
-            )
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.autoConcatMessagesFromSameRole)
-                .onChange(async value => await this.sett('autoConcatMessagesFromSameRole', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Remove empty messages')
-            .setDesc('Automatically remove messages with empty content when saving/loading chats.')
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.removeEmptyMessages)
-                .onChange(async value => await this.sett('removeEmptyMessages', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Auto reverse roles')
-            .setDesc(
-              'Automatically switch roles when the last message is empty, for replying to self.',
-            )
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.AutoReverseRoles)
-                .onChange(async value => await this.sett('AutoReverseRoles', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
             .setName('Add file to context for editing')
             .setDesc('Include the current file content in the context for selection editing.')
             .addToggle(toggle =>

@@ -65,7 +65,6 @@ import { WriteHandler } from './utils/write-handler';
  */
 export default class PureChatLLM extends Plugin {
   settings: PureChatLLMSettings;
-  isresponding: boolean;
   console: BrowserConsole;
   pureChatStatusElement: HTMLElement;
   codeBlock: CodeSnippetState = { code: '', language: '' };

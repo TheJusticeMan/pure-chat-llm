@@ -196,7 +196,7 @@ export class PureChatLLMChat {
     };
 
     this.session = this.adapter.parse(markdown, defaultOptions, this.plugin.settings.SystemPrompt);
-    if (this.plugin.settings.removeEmptyMessages) this.cleanUpChat();
+    this.cleanUpChat();
 
     this.endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     this.updateEndpointFromModel();
@@ -228,10 +228,7 @@ export class PureChatLLMChat {
    */
   appendMessage(...messages: { role: RoleType; content: string; cline?: EditorRange }[]) {
     messages.forEach(message => {
-      if (
-        this.plugin.settings.autoConcatMessagesFromSameRole &&
-        this.session.messages[this.session.messages.length - 1]?.role === message.role
-      ) {
+      if (this.session.messages[this.session.messages.length - 1]?.role === message.role) {
         this.session.messages[this.session.messages.length - 1].content += message.content;
       } else {
         this.session.appendMessage({ role: message.role, content: message.content.trim() });
@@ -755,15 +752,13 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
   if (
     chat.session.messages[chat.session.messages.length - 1].content === '' &&
     chat.session.validChat &&
-    plugin.settings.AutoReverseRoles
-  ) {
-    if (chat.session.messages.pop()?.role == 'user') chat.reverseRoles();
-  }
+    chat.session.messages.pop()?.role == 'user'
+  )
+    chat.reverseRoles();
+
   await writeHandler.write(chat.getMarkdown());
 
   if (!chat.session.validChat) return;
-
-  plugin.isresponding = true;
 
   await writeHandler.appendContent(`\n${chat.adapter.parseRole('assistant...' as RoleType)}\n`);
   chat
@@ -771,7 +766,6 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
       await writeHandler.appendContent(e.content!);
     })
     .then(async chat => {
-      plugin.isresponding = false;
       if (
         chat.session.messages.length >= (plugin.settings.AutogenerateTitle || Infinity) &&
         (writeHandler.file?.name.includes('Untitled') || / \d+\.md$/.test(writeHandler.file?.name))
@@ -780,8 +774,7 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
       }
       await writeHandler.write(chat.getMarkdown());
     })
-    .catch(error => plugin.console.error(error))
-    .finally(() => (plugin.isresponding = false));
+    .catch(error => plugin.console.error(error));
   return chat;
 }
 
