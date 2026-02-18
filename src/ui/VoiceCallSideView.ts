@@ -93,16 +93,13 @@ export class VoiceCallSideView extends ItemView {
       .setClass('headerfloattop')
       .setHeading()
       .addExtraButton(btn =>
-        btn
-          .setIcon('settings')
-          .setTooltip('Open settings')
-          .onClick(() => this.plugin.openSettings()),
+        btn.setIcon('settings').setTooltip('Open settings').onClick(this.plugin.openSettings),
       )
       .addExtraButton(btn =>
         btn
           .setIcon(PURE_CHAT_LLM_ICON_NAME)
           .setTooltip('Open conversation view')
-          .onClick(() => this.plugin.activateChatView()),
+          .onClick(this.plugin.activateChatView),
       );
   }
 

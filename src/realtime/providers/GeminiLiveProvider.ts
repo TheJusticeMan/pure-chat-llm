@@ -154,8 +154,7 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
       this.workletNode = new AudioWorkletNode(this.audioContext, 'pcm-processor');
 
       this.workletNode.port.onmessage = event => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        this.sendAudioChunk(event.data);
+        this.sendAudioChunk(event.data as ArrayBuffer);
       };
 
       this.sourceNode.connect(this.workletNode);

@@ -10,10 +10,12 @@ import {
   Notice,
   Platform,
   Setting,
+  SettingGroup,
   WorkspaceLeaf,
 } from 'obsidian';
 import { alloptions, EmptyApiKey } from 'src/assets/constants';
-import { PureChatLLMChat } from '../core/Chat';
+import { WriteHandler } from 'src/utils/write-handler';
+import { completeChatResponse, PureChatLLMChat } from '../core/Chat';
 import PureChatLLM from '../main';
 import { ChatMessage, PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '../types';
 import { BrowserConsole } from '../utils/BrowserConsole';
@@ -90,116 +92,131 @@ export class PureChatLLMSideView extends ItemView {
     // when a file is loaded or changed, update the view
 
     this.registerEvent(
-      this.app.workspace.on('editor-change', (editor: Editor, view: MarkdownView) => {
-        // if the user is typing in the editor, update the view
-        if (!this.plugin.isresponding) this.update(editor, view);
-      }),
+      this.app.workspace.on(
+        'editor-change',
+        (editor: Editor, view: MarkdownView) => !this.plugin.isresponding && this.checkUpdate(view),
+      ),
     );
-    this.registerEvent(
-      this.app.workspace.on('file-open', () => {
-        this.defaultContent();
-        /* this.console.log('Active leaf changed, updating side view'); */
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        const editor = view?.editor;
-        if (!view) return;
-        if (!editor) return;
-        this.update(editor, view);
-      }),
-    );
+    this.registerEvent(this.app.workspace.on('file-open', () => this.checkUpdate()));
     this.registerEvent(
       this.app.workspace.on('active-leaf-change', leaf => {
-        if (!leaf) return;
-        const v = leaf.view;
-        if (!(v instanceof MarkdownView)) return;
+        const view = leaf?.view;
+        if (!(view instanceof MarkdownView)) return;
+        this.checkUpdate(view);
 
-        const e = v.editor;
-        this.update(e, v);
-        const c = e.getCursor();
-        if (c.ch === 0 && c.line === 0 && this.ischat) {
-          e.setCursor({
-            line: e.lastLine(),
-            ch: e.getLine(e.lastLine()).length,
-          });
-          e.scrollIntoView(
+        const c = view.editor.getCursor();
+        if (!(c.ch + c.line) && this.ischat)
+          this.goToPostion(
+            view.editor,
             {
-              from: { line: e.lastLine(), ch: 0 },
-              to: { line: e.lastLine(), ch: e.getLine(e.lastLine()).length },
+              from: { line: view.editor.lastLine(), ch: 0 },
+              to: { line: view.editor.lastLine(), ch: 0 },
             },
-            true,
+            false,
           );
-        }
       }),
     );
     // check it the editor is open
-    this.defaultContent();
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (view) {
-      const editor = view.editor;
-      if (editor) {
-        this.update(editor, view);
-      }
-    }
+    this.checkUpdate();
+  }
+
+  /**
+   * Checks for updates to the view based on the current editor and markdown view.
+   *
+   * @param view - The current markdown view to check for updates
+   * @returns The current instance for chaining
+   */
+  checkUpdate(view: MarkdownView | null = this.app.workspace.getActiveViewOfType(MarkdownView)) {
+    if (!view) return this.defaultContent();
+    const editor = view.editor;
+    const file = view.file;
+    if (!editor || !file) return this.defaultContent();
+    const writeHandler = new WriteHandler(this.plugin, file, view, editor);
+    this.update(writeHandler, editor);
+    return this;
   }
 
   /**
    * Renders default content when no valid conversation is detected.
+   * This method clears the view and displays instructions and available commands for the user.
+   *
+   * @param writeHandler - The write handler for managing editor updates
+   * @returns The current instance for chaining
    */
-  defaultContent() {
+  defaultContent(writeHandler?: WriteHandler): this {
     this.contentEl.empty();
-
     new Setting(this.contentEl)
       .setName('Pure Chat LLM')
       .setClass('headerfloattop')
       .setHeading()
-      .addButton(btn => btn.setButtonText('Hot keys').onClick(() => this.plugin.openHotkeys()))
-      .then(b => {
-        const editor = this.app.workspace.activeEditor?.editor;
-        if (editor)
-          b.addExtraButton(btn =>
-            btn
-              .setIcon('cpu')
-              .onClick(() => new ModelAndProviderChooser(this.app, this.plugin, editor))
-              .setTooltip('Choose model and provider'),
-          );
-      })
-      .addExtraButton(btn => btn.setIcon('settings').onClick(() => this.plugin.openSettings()))
+      .addButton(btn => btn.setButtonText('Hot keys').onClick(this.plugin.openHotkeys))
+      .addExtraButton(btn => btn.setIcon('settings').onClick(this.plugin.openSettings))
       .addExtraButton(btn =>
         btn
           .setIcon('phone')
           .setTooltip('Open voice call view')
           .onClick(() => this.plugin.activateVoiceCallView()),
       );
-    new Setting(this.contentEl).setName(
-      'The current editor does not contain a valid conversation.',
-    );
-    new Setting(this.contentEl).setName('Available commands').setHeading();
-    new Setting(this.contentEl)
-      .setName('Complete chat response')
-      .setDesc('This will start a new chat with the current editor content.');
-    new Setting(this.contentEl)
-      .setName('Generate title')
-      .setDesc('This will generate a title for the current editor content.');
-    new Setting(this.contentEl)
-      .setName('Edit selection')
-      .setDesc('This will edit the selected text in the current editor.');
-    new Setting(this.contentEl)
-      .setName('Analyze conversation')
-      .setDesc('This will analyze the current conversation.');
-    new Setting(this.contentEl)
-      .setName('Reverse roles')
-      .setDesc('This will reverse the roles of the current conversation.');
-    new Setting(this.contentEl)
-      .setName('Speak chat')
-      .setDesc('This will speak the current chat using two voices.');
+    new SettingGroup(this.contentEl)
+      .setHeading('No valid conversation detected')
+      .addSetting(
+        s =>
+          void s
+            .setName('Complete chat response')
+            .setDesc('This will start a new chat with the current editor content.')
+            .then(b => {
+              if (writeHandler)
+                b.addExtraButton(btn =>
+                  btn
+                    .setIcon('send')
+                    .onClick(async () => await completeChatResponse(this.plugin, writeHandler))
+                    .setTooltip('Choose model and provider'),
+                );
+            }),
+      )
+      .addSetting(
+        s =>
+          void s
+            .setName('Generate title')
+            .setDesc('This will generate a title for the current editor content.'),
+      )
+      .addSetting(
+        s =>
+          void s
+            .setName('Edit selection')
+            .setDesc('This will edit the selected text in the current editor.'),
+      )
+      .addSetting(
+        s =>
+          void s
+            .setName('Analyze conversation')
+            .setDesc('This will analyze the current conversation.'),
+      )
+      .addSetting(
+        s =>
+          void s
+            .setName('Reverse roles')
+            .setDesc('This will reverse the roles of the current conversation.'),
+      )
+      .addSetting(
+        s =>
+          void s
+            .setName('Speak chat')
+            .setDesc('This will speak the current chat using two voices.'),
+      );
+
+    return this;
   }
 
   /**
    * Updates the view content based on the current editor and chat state.
    *
+   * @param writeHandler - The write handler for managing editor updates
    * @param editor - The active editor instance
-   * @param view - The active markdown view
+   
+  * @returns this
    */
-  update(editor: Editor, view: MarkdownView) {
+  update(writeHandler: WriteHandler, editor: Editor): this {
     //MetadataCache
     //resolveSubpath
     const editorValue = editor.getValue();
@@ -211,9 +228,9 @@ export class PureChatLLMSideView extends ItemView {
     this.ischat = chat.session.validChat;
     const container = this.contentEl;
     container.empty();
+    container.addClass('LLMSideView');
     if (!chat.session.validChat || !editorValue) {
-      this.defaultContent();
-      return;
+      return this.defaultContent(writeHandler);
     }
 
     new Setting(container)
@@ -224,7 +241,7 @@ export class PureChatLLMSideView extends ItemView {
         btn
           .setIcon('cpu')
           .setTooltip(`${chat.endpoint.name} (${chat.session.options.model})`)
-          .onClick(() => new ModelAndProviderChooser(this.app, this.plugin, editor)),
+          .onClick(() => this.chooseModelAndProvider(writeHandler)),
       )
       .addExtraButton(btn =>
         btn
@@ -232,7 +249,7 @@ export class PureChatLLMSideView extends ItemView {
           .setTooltip(this.isExpanded ? 'Collapse view' : 'Expand view')
           .onClick(() => {
             this.isExpanded = !this.isExpanded;
-            this.update(editor, view);
+            this.update(writeHandler, editor);
           }),
       )
       .addExtraButton(btn =>
@@ -315,17 +332,26 @@ export class PureChatLLMSideView extends ItemView {
       });
     }
 
-    container.addClass('LLMSideView');
     // Process markdown messages
-    this.renderChatMessages(chat, container, editor, view);
+    this.renderChatMessages(chat, container, editor, writeHandler);
 
     // scroll to bottom of container
     // if the editor is focused
-    if (editor.hasFocus()) {
+    if (editor.hasFocus() && container.scrollTop === 0)
       container.scrollTo(0, container.scrollHeight);
-    } else if (this.isExpanded) {
-      container.scrollTo(0, 0);
-    }
+    else if (this.isExpanded) container.scrollTo(0, 0);
+
+    return this;
+  }
+
+  /**
+   * Opens the model and provider chooser modal.
+   *
+   * @param writeHandler - The write handler for managing editor updates
+   */
+  chooseModelAndProvider(writeHandler: WriteHandler) {
+    if (writeHandler.editor)
+      new ModelAndProviderChooser(this.app, this.plugin, writeHandler.editor).open();
   }
 
   /**
@@ -334,20 +360,20 @@ export class PureChatLLMSideView extends ItemView {
    * @param chat - The chat session to render
    * @param container - The container element to render into
    * @param editor - The active editor instance
-   * @param view - The active markdown view
+   * @param writeHandler - The write handler for managing editor updates
    */
   private renderChatMessages(
     chat: PureChatLLMChat,
     container: HTMLElement,
     editor: Editor,
-    view: MarkdownView,
+    writeHandler: WriteHandler,
   ) {
     chat.session.messages.forEach((message, index) => {
       const preview = message.content.substring(0, 400);
 
       // Role header with clickable position jump
       container.createDiv({ text: '', cls: ['messageContainer', message.role] }, contain => {
-        this.renderMessageContainer(contain, message, editor, chat, index, preview, view);
+        this.renderMessageContainer(contain, message, editor, chat, index, preview, writeHandler);
       });
     });
   }
@@ -361,7 +387,7 @@ export class PureChatLLMSideView extends ItemView {
    * @param chat - The chat session
    * @param index - The message index in the conversation
    * @param preview - The preview text for the message
-   * @param view - The active markdown view
+   * @param writeHandler - The write handler for managing editor updates
    */
   private renderMessageContainer(
     contain: HTMLDivElement,
@@ -370,7 +396,7 @@ export class PureChatLLMSideView extends ItemView {
     chat: PureChatLLMChat,
     index: number,
     preview: string,
-    view: MarkdownView,
+    writeHandler: WriteHandler,
   ) {
     // Preview of message content with copy button
     contain.createEl('div', { text: '', cls: 'preview' }, div => {
@@ -379,7 +405,13 @@ export class PureChatLLMSideView extends ItemView {
       if (preview) {
         div.createDiv({ text: '', cls: 'message' }, el => {
           el.onClickEvent(() => this.goToPostion(editor, chat.session.clines[index], true));
-          void MarkdownRenderer.render(this.app, preview, el, view.file?.basename || '', this);
+          void MarkdownRenderer.render(
+            this.app,
+            preview,
+            el,
+            writeHandler.file.basename || '',
+            this,
+          );
         });
         extr('copy', 'Copy message to clipboard', () => {
           void navigator.clipboard.writeText(message.content);
@@ -393,13 +425,13 @@ export class PureChatLLMSideView extends ItemView {
               .getAvailablePathForAttachment(
                 `Message ${(
                   message.content.match(/^#+? (.+)$/m)?.[0] ||
-                  view.file?.basename ||
+                  writeHandler.file.basename ||
                   'Untitled'
                 )
                   .replace(/^#+ /, '')
                   .replace(/[^a-zA-Z0-9 !.,+\-_=]/g, '')
                   .trim()}.md`,
-                view.file?.path,
+                writeHandler.file.path,
               )
               .then(path =>
                 this.app.vault
@@ -413,7 +445,7 @@ export class PureChatLLMSideView extends ItemView {
       );
       extr('refresh-cw', 'Regenerate response from this message onward', () => {
         editor.setValue(chat.thencb(c => c.session.messages.splice(index + 1)).getMarkdown());
-        void this.plugin.completeChatResponse(editor, view);
+        void completeChatResponse(this.plugin, writeHandler);
       });
     });
   }
@@ -428,14 +460,14 @@ export class PureChatLLMSideView extends ItemView {
   private goToPostion(editor: Editor, position: EditorRange, select = false) {
     if (select) {
       editor.setSelections([{ anchor: position.from, head: position.to }]);
-      editor.scrollIntoView(position);
+      editor.scrollIntoView(position, true);
       // if it's mobile, wait 100ms to focus the editor again
       // this will make the selection work on mobile
       editor.focus();
       if (Platform.isMobile) window.setTimeout(() => editor.focus(), 100);
     } else {
       editor.setCursor(position.from);
-      editor.scrollTo(0, editor.posToOffset(position.from));
+      editor.scrollIntoView({ from: position.from, to: position.from }, true);
       editor.focus();
     }
   }

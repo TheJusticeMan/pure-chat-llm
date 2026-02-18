@@ -7,6 +7,7 @@ import {
   EditorSuggestContext,
   EditorSuggestTriggerInfo,
   FuzzySuggestModal,
+  loadPrism,
   MarkdownView,
   Menu,
   Plugin,
@@ -36,7 +37,6 @@ import { PureChatLLMSettingTab } from './ui/Settings';
 import { ModelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
 import { VoiceCallSideView } from './ui/VoiceCallSideView';
 import { BrowserConsole } from './utils/BrowserConsole';
-import { codelanguages } from './utils/codelanguages';
 import { replaceNonKeyboardChars } from './utils/replaceNonKeyboard';
 import { toTitleCase } from './utils/toTitleCase';
 import { WriteHandler } from './utils/write-handler';
@@ -64,35 +64,10 @@ import { WriteHandler } from './utils/write-handler';
  * @public
  */
 export default class PureChatLLM extends Plugin {
-  /**
-   * Description placeholder
-   *
-   * @type {PureChatLLMSettings}
-   */
   settings: PureChatLLMSettings;
-  /**
-   * Description placeholder
-   *
-   * @type {boolean}
-   */
   isresponding: boolean;
-  /**
-   * Description placeholder
-   *
-   * @type {BrowserConsole}
-   */
   console: BrowserConsole;
-  /**
-   * Description placeholder
-   *
-   * @type {HTMLElement}
-   */
   pureChatStatusElement: HTMLElement;
-  /**
-   * Description placeholder
-   *
-   * @type {({ from: number; to: number } | null)}
-   */
   codeBlock: CodeSnippetState = { code: '', language: '' };
 
   /**
@@ -130,11 +105,20 @@ export default class PureChatLLM extends Plugin {
 
     this.setupContextMenuActions();
 
-    this.registerEditorSuggest(new PureChatEditorSuggest(this.app, this));
     this.registerEditorExtension(createCodeblockExtension(this.app, this));
+
     // Add settings tab
     this.addSettingTab(new PureChatLLMSettingTab(this.app, this));
     void this.status('');
+    this.app.workspace.onLayoutReady(async () =>
+      this.registerEditorSuggest(
+        new PureChatEditorSuggest(
+          this.app,
+          this,
+          Object.keys(((await loadPrism()) as { languages: { [key: string]: string } }).languages),
+        ),
+      ),
+    );
   }
 
   /**
@@ -155,7 +139,7 @@ export default class PureChatLLM extends Plugin {
     this.registerEvent(
       this.app.workspace.on('file-menu', (menu, file) => {
         if (file instanceof TFolder)
-          menu.addItem(item => {
+          menu.addItem(item =>
             item
               .setTitle('New conversation')
               .setIcon('message-square-plus')
@@ -172,13 +156,13 @@ export default class PureChatLLM extends Plugin {
                     ),
                   void this.activateChatView()
                 ),
-              );
-          });
+              ),
+          );
         else if (file instanceof TFile && file.extension === 'md') {
           const link = this.app.fileManager.generateMarkdownLink(file, file.path);
           const parent = file.parent || this.app.vault.getRoot();
           menu
-            .addItem(item => {
+            .addItem(item =>
               item
                 .setTitle('New chat from file')
                 .setIcon('message-square-plus')
@@ -195,9 +179,9 @@ export default class PureChatLLM extends Plugin {
                       ),
                     void this.activateChatView()
                   ),
-                );
-            })
-            .addItem(item => {
+                ),
+            )
+            .addItem(item =>
               item
                 .setTitle('New chat from file system prompt')
                 .setIcon('message-square-plus')
@@ -216,8 +200,8 @@ export default class PureChatLLM extends Plugin {
                       ),
                     void this.activateChatView()
                   ),
-                );
-            });
+                ),
+            );
         }
       }),
     );
@@ -298,11 +282,14 @@ export default class PureChatLLM extends Plugin {
       editorCallback: (editor: Editor) =>
         void new PureChatLLMSpeech(
           this,
-          new PureChatLLMChat(this).setMarkdown(editor.getValue()).thencb(chat => {
-            chat.session.messages = chat.session.messages.filter(
-              message => message.role === 'user' || message.role === 'assistant',
-            );
-          }),
+          new PureChatLLMChat(this)
+            .setMarkdown(editor.getValue())
+            .thencb(
+              chat =>
+                (chat.session.messages = chat.session.messages.filter(
+                  message => message.role === 'user' || message.role === 'assistant',
+                )),
+            ),
         ).startStreaming(),
     });
     // replaceNonKeyboardChars is used to replace non-keyboard characters with their keyboard equivalents
@@ -405,21 +392,21 @@ export default class PureChatLLM extends Plugin {
    *
    * @returns {Promise<void>}
    */
-  async openHotkeys(): Promise<void> {
+  openHotkeys = async (): Promise<void> => {
     // make sure this stays up to date as the documentation does'nt include all the functions used here
     await this.app.setting.open();
     this.app.setting.openTabById('hotkeys');
     this.app.setting.activeTab.searchComponent.setValue('Pure Chat LLM');
     this.app.setting.activeTab.searchComponent.onChanged();
-  }
+  };
 
   /**
    *
    */
-  async openSettings(): Promise<void> {
+  openSettings = async (): Promise<void> => {
     await this.app.setting.open();
     this.app.setting.openTabById('pure-chat-llm');
-  }
+  };
 
   /**
    * Called when the user enables the plugin.
@@ -604,8 +591,7 @@ export default class PureChatLLM extends Plugin {
     const activeFile = view.file;
     if (!activeFile) return;
 
-    const writeHandler = new WriteHandler(this, activeFile, view, editor, true);
-    await completeChatResponse(this, writeHandler);
+    await completeChatResponse(this, new WriteHandler(this, activeFile, view, editor, true));
   }
 
   /**
@@ -685,21 +671,8 @@ export default class PureChatLLM extends Plugin {
  * const handler = new InstructPromptsHandler(app, (prompt) => { ... }, templates);
  * handler.open();
  */
-/**
- * Modal for selecting instruction prompts from predefined templates.
- */
 class InstructPromptsHandler extends FuzzySuggestModal<string> {
-  /**
-   * Description placeholder
-   *
-   * @type {(result: string) => void}
-   */
   onSubmit: (result: string) => void;
-  /**
-   * Description placeholder
-   *
-   * @type {{ [key: string]: string }}
-   */
   templates: { [key: string]: string };
   /**
    * Creates a new instruction prompts handler modal.
@@ -752,27 +725,20 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
  * based on the current editor context.
  */
 class PureChatEditorSuggest extends EditorSuggest<string> {
-  /**
-   * Description placeholder
-   *
-   * @type {string}
-   */
   type: string;
-  /**
-   * Description placeholder
-   *
-   * @type {PureChatLLM}
-   */
-  plugin: PureChatLLM;
   /**
    * Creates a new editor suggest instance.
    *
    * @param app - The Obsidian application instance
    * @param plugin - The PureChatLLM plugin instance
+   * @param codelanguages - An array containing code languages
    */
-  constructor(app: App, plugin: PureChatLLM) {
+  constructor(
+    app: App,
+    public plugin: PureChatLLM,
+    public codelanguages: string[],
+  ) {
     super(app);
-    this.plugin = plugin;
   }
 
   /**
@@ -813,8 +779,8 @@ class PureChatEditorSuggest extends EditorSuggest<string> {
     if (context.query.startsWith('```')) {
       this.type = 'code';
       const query = context.query.slice(3).toLowerCase().trim();
-      if (query) return codelanguages.filter(lang => lang.startsWith(query)).slice(0, 100);
-      else return ['', ...codelanguages.sort().slice(0, 100)];
+      if (query) return this.codelanguages.filter(lang => lang.startsWith(query)).slice(0, 100);
+      else return ['', ...this.codelanguages.sort().slice(0, 100)];
     } else if (context.query.startsWith('# ')) {
       this.type = 'role';
       const roles = ['user', 'assistant', 'system', 'developer'];

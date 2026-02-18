@@ -71,7 +71,6 @@ export class AskForAPI extends Modal {
       });
     new Setting(this.contentEl)
       .setName(
-        // eslint-disable-next-line no-undef
         createFragment(el => el.createEl('a', { href: endpoint.getapiKey, text: endpoint.name })),
       )
       .setDesc(`Link to get API key from ${endpoint.name}`)

@@ -702,13 +702,14 @@ export class PureChatLLMChat {
       headers: this.llmService.getHeaders(this.endpoint),
     })
       .then(response => response.json())
-      .then(data => {
-        return (this.plugin.settings.ModelsOnEndpoint[endpointName] = (
-          data as { data: { id: string }[] }
-        ).data
-          .map(item => item.id)
-          .map(id => id.replace(/.+\//g, '') || id));
-      })
+      .then(
+        data =>
+          (this.plugin.settings.ModelsOnEndpoint[endpointName] = (
+            data as { data: { id: string }[] }
+          ).data
+            .map(item => item.id)
+            .map(id => id.replace(/.+\//g, '') || id)),
+      )
       .catch(error => {
         this.console.error('Error fetching models:', error);
         return [];
@@ -745,11 +746,8 @@ export class PureChatLLMChat {
  * @returns Promise resolving to the chat instance or undefined
  */
 export async function completeChatResponse(plugin: PureChatLLM, writeHandler: WriteHandler) {
-  const editorcontent = await writeHandler.getValue();
-
-  const chat = new PureChatLLMChat(plugin).setMarkdown(editorcontent);
-  const endpoint = plugin.settings.endpoints[plugin.settings.endpoint];
-  if (endpoint.apiKey == EmptyApiKey) {
+  const chat = new PureChatLLMChat(plugin).setMarkdown(await writeHandler.getValue());
+  if (plugin.settings.endpoints[plugin.settings.endpoint].apiKey == EmptyApiKey) {
     new AskForAPI(plugin).open();
     return;
   }
@@ -776,8 +774,7 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
     .then(async chat => {
       plugin.isresponding = false;
       if (
-        plugin.settings.AutogenerateTitle > 0 &&
-        chat.session.messages.length >= plugin.settings.AutogenerateTitle &&
+        chat.session.messages.length >= (plugin.settings.AutogenerateTitle || Infinity) &&
         (writeHandler.file?.name.includes('Untitled') || / \d+\.md$/.test(writeHandler.file?.name))
       ) {
         await generateTitle(plugin, writeHandler);

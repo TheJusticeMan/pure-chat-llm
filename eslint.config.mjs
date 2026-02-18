@@ -19,6 +19,11 @@ export default defineConfig([
         ...globals.browser,
         ...globals.node,
         NodeJS: 'readonly',
+        createFragment: 'readonly',
+        createEl: 'readonly',
+        createDiv: 'readonly',
+        createSpan: 'readonly',
+        createSvg: 'readonly',
       },
     },
     plugins: {

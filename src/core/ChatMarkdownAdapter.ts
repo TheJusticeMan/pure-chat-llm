@@ -57,10 +57,7 @@ export class ChatMarkdownAdapter {
     session.messages = matches.map((match, index) => {
       if (!match.index) {
         session.clines.push({ from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } });
-        return {
-          role: 'user' as RoleType,
-          content: '',
-        };
+        return { role: 'user', content: '' };
       }
       const contentStart = match.index + match[0].length;
       const contentEnd = index + 1 < matches.length ? matches[index + 1].index : markdown.length;

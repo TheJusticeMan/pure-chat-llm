@@ -97,9 +97,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                   Object.fromEntries(settings.endpoints.map((e, i) => [i.toString(), e.name])),
                 )
                 .setValue(settings.endpoint.toString())
-                .onChange(async value => {
-                  await this.sett('endpoint', parseInt(value, 10));
-                }),
+                .onChange(async value => await this.sett('endpoint', parseInt(value, 10))),
             )
             .addButton(btn =>
               btn
@@ -161,9 +159,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         setting =>
           void setting
             .setName('Custom LLM providers')
-            .setDesc(
-              'Add custom LLM providers with API keys. These will be available in the model provider dropdown.',
-            )
+            .setDesc('Add custom LLM providers with API keys.')
             .addButton(btn =>
               btn
                 .setButtonText('Add custom provider')
@@ -213,7 +209,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
           void setting
             .setName('Realtime system prompt file')
             .setDesc(
-              'Path to a file containing the system prompt for voice calls. If empty or not found, defaults to built-in prompts.',
+              'Path to a file the system prompt for voice calls. Defaults to built-in prompts.',
             )
             .addText(text =>
               new FileInputSuggest(
@@ -321,9 +317,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         setting =>
           void setting
             .setName('Autogenerate title')
-            .setDesc(
-              'How many responses to wait for before automatically creating a conversation title (set to 0 to disable).',
-            )
+            .setDesc('How long chat before creating a conversation title (set to 0 to disable).')
             .addText(text =>
               text
                 .setPlaceholder(DEFAULT_SETTINGS.AutogenerateTitle.toString())
@@ -419,10 +413,8 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       .addSetting(
         setting =>
           void setting
-            .setName('File resolution in chat analysis')
-            .setDesc(
-              'Enable this to automatically resolve and include file contents when using chat analysis commands. This helps provide context from linked files in the conversation.',
-            )
+            .setName('Include linked files in chat analysis')
+            .setDesc('Automatically include linked files when using chat analysis commands.')
             .addToggle(toggle =>
               toggle
                 .setValue(settings.resolveFilesForChatAnalysis)
@@ -433,19 +425,13 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         setting =>
           void setting
             .setName('Maximum recursion depth')
-            .setDesc(
-              'Maximum depth for recursive [[link]] resolution (1-20). Prevents infinite loops. Default is 10.',
-            )
-            .addText(text =>
-              text
-                .setPlaceholder('10')
-                .setValue(settings.maxRecursionDepth.toString())
-                .onChange(async value => {
-                  const num = parseInt(value);
-                  if (!isNaN(num) && num >= 1 && num <= 20) {
-                    await this.sett('maxRecursionDepth', num);
-                  }
-                }),
+            .setDesc('Maximum depth for recursive [[link]] resolution (1-20). Default is 10.')
+            .addSlider(slider =>
+              slider
+                .setLimits(1, 20, 1)
+                .setValue(settings.maxRecursionDepth)
+                .setDynamicTooltip()
+                .onChange(async value => await this.sett('maxRecursionDepth', value)),
             ),
       );
 
@@ -455,8 +441,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         setting =>
           void setting
             .setName('Import ChatGPT conversations')
-            // eslint-disable-next-line obsidianmd/ui/sentence-case
-            .setDesc('Import conversations exported from chat.openai.com.')
+            .setDesc(`Import conversations exported from ${'chat.openai.com'}.`)
             .addButton(btn => {
               btn
                 .setButtonText('Import')
@@ -468,15 +453,12 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
         setting =>
           void setting
             .setName('Debug')
-            .setDesc(
-              'Enable logging of detailed debug information in the console for troubleshooting.',
-            )
+            .setDesc('Enable logging of debug information in the console.')
             .addToggle(toggle =>
               toggle.setValue(settings.debug).onChange(async value => {
                 await this.sett('debug', value);
 
                 this.plugin.console = new BrowserConsole(settings.debug, 'PureChatLLM');
-                //console.log('reload the plugin to apply the changes');
               }),
             ),
       )
@@ -504,10 +486,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 }),
             )
             .addButton(btn =>
-              btn
-                .setButtonText('Hot keys')
-                .setCta()
-                .onClick(e => this.plugin.openHotkeys()),
+              btn.setButtonText('Hot keys').setCta().onClick(this.plugin.openHotkeys),
             ),
       );
   }
@@ -545,11 +524,6 @@ function loadAllModels(plugin: PureChatLLM): void {
  * @extends Modal
  */
 class SelectionPromptEditor extends Modal {
-  /**
-   * Description placeholder
-   *
-   * @type {string}
-   */
   promptTitle: string;
   /**
    * Creates a modal for editing prompt templates.

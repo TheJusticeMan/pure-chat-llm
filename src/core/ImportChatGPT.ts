@@ -113,9 +113,9 @@ export class ImportChatGPT {
    * @returns Promise resolving to the selected folder
    */
   private getFolderPath(): Promise<TFolder> {
-    return new Promise(resolve => {
-      new FolderSuggest(this.app, resolve, 'Where to load the files').open();
-    });
+    return new Promise(resolve =>
+      new FolderSuggest(this.app, resolve, 'Where to load the files').open(),
+    );
   }
 
   /**
@@ -244,17 +244,7 @@ export class ImportChatGPT {
  * @param prompt - Optional placeholder text for the search input.
  */
 class FolderSuggest extends FuzzySuggestModal<TFolder> {
-  /**
-   * Description placeholder
-   *
-   * @type {(result: TFolder) => void}
-   */
   onSubmit: (result: TFolder) => void;
-  /**
-   * Description placeholder
-   *
-   * @type {TFolder[]}
-   */
   folders: TFolder[];
   /**
    * Creates a new FolderSuggest modal
