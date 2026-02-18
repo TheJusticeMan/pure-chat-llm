@@ -541,12 +541,10 @@ export class ModelAndProviderChooser extends FuzzySuggestModal<ModelAndProvider>
     const endpoint = this.plugin.settings.endpoints[this.plugin.settings.endpoint];
     if (endpoint.apiKey === EmptyApiKey) {
       if (this.firstrun) return this.updatemodelist(0);
-      new AskForAPI(this.app, this.plugin).open();
+      new AskForAPI(this.plugin).open();
       return;
     }
-    this.plugin.modellist = [];
     void new PureChatLLMChat(this.plugin).getAllModels().then(models => {
-      this.plugin.modellist = models;
       this.plugin.settings.ModelsOnEndpoint[endpoint.name] = models;
       void this.plugin.saveSettings();
       this.modellist = models.map(m => ({ name: m, ismodel: true }));

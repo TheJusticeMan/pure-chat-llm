@@ -17,21 +17,17 @@ import { PureChatLLMAPI } from '../types';
  * @param plugin - The instance of the PureChatLLM plugin, used to access and save settings.
  */
 export class AskForAPI extends Modal {
-  plugin: PureChatLLM;
-  app: App;
   private apiKey: string;
   private modal: string;
 
   /**
    * Creates a modal dialog for API key configuration.
    *
-   * @param app - The Obsidian application instance
    * @param plugin - The PureChatLLM plugin instance
    */
-  constructor(app: App, plugin: PureChatLLM) {
-    super(app);
+  constructor(public plugin: PureChatLLM) {
+    super(plugin.app);
     this.plugin = plugin;
-    this.app = app;
     const endpoint = plugin.settings.endpoints[plugin.settings.endpoint];
     this.apiKey = endpoint.apiKey;
     this.setTitle(`Enter your ${endpoint.name} API key`);

@@ -31,7 +31,7 @@ import {
   CodeSnippetState,
   createCodeblockExtension,
 } from './ui/CodePreview';
-import { AskForAPI, editWand } from './ui/Modals';
+import { editWand } from './ui/Modals';
 import { PureChatLLMSettingTab } from './ui/Settings';
 import { ModelAndProviderChooser, PureChatLLMSideView } from './ui/SideView';
 import { VoiceCallSideView } from './ui/VoiceCallSideView';
@@ -85,12 +85,6 @@ export default class PureChatLLM extends Plugin {
   /**
    * Description placeholder
    *
-   * @type {string[]}
-   */
-  modellist: string[] = [];
-  /**
-   * Description placeholder
-   *
    * @type {HTMLElement}
    */
   pureChatStatusElement: HTMLElement;
@@ -99,7 +93,7 @@ export default class PureChatLLM extends Plugin {
    *
    * @type {({ from: number; to: number } | null)}
    */
-  codeBlock: CodeSnippetState | null = null;
+  codeBlock: CodeSnippetState = { code: '', language: '' };
 
   /**
    * Initializes the plugin by loading settings, registering views, commands, and setting up the UI.
@@ -153,72 +147,77 @@ export default class PureChatLLM extends Plugin {
    */
   private setupContextMenuActions() {
     this.registerEvent(
-      this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
-        this.addItemsToMenu(menu, editor, view);
-      }),
+      this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) =>
+        this.addItemsToMenu(menu, editor, view),
+      ),
     );
 
     this.registerEvent(
       this.app.workspace.on('file-menu', (menu, file) => {
-        if (file instanceof TFolder) {
+        if (file instanceof TFolder)
           menu.addItem(item => {
             item
               .setTitle('New conversation')
               .setIcon('message-square-plus')
               .setSection('action-primary')
-              .onClick(async () => {
-                const leaf = this.app.workspace.getLeaf(true);
-                await leaf.openFile(
-                  await this.app.vault.create(
-                    `${file.path}/${this.generateUniqueFileName(file, 'Untitled Conversation')}.md`,
-                    new PureChatLLMChat(this).setMarkdown('Type your message...').getMarkdown(),
+              .onClick(
+                async () => (
+                  await this.app.workspace
+                    .getLeaf(true)
+                    .openFile(
+                      await this.app.vault.create(
+                        `${file.path}/${this.generateUniqueFileName(file, 'Untitled Conversation')}.md`,
+                        new PureChatLLMChat(this).setMarkdown('Type your message...').getMarkdown(),
+                      ),
+                    ),
+                  void this.activateChatView()
+                ),
+              );
+          });
+        else if (file instanceof TFile && file.extension === 'md') {
+          const link = this.app.fileManager.generateMarkdownLink(file, file.path);
+          const parent = file.parent || this.app.vault.getRoot();
+          menu
+            .addItem(item => {
+              item
+                .setTitle('New chat from file')
+                .setIcon('message-square-plus')
+                .setSection('action')
+                .onClick(
+                  async () => (
+                    await this.app.workspace
+                      .getLeaf(true)
+                      .openFile(
+                        await this.app.vault.create(
+                          `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
+                          new PureChatLLMChat(this).setMarkdown(link).getMarkdown(),
+                        ),
+                      ),
+                    void this.activateChatView()
                   ),
                 );
-                void this.activateChatView();
-              });
-          });
-        } else if (file instanceof TFile && file.extension === 'md') {
-          const link = this.app.fileManager.generateMarkdownLink(file, file.path);
-          menu.addItem(item => {
-            item
-              .setTitle('New chat from file')
-              .setIcon('message-square-plus')
-              .setSection('action')
-              .onClick(async () => {
-                const parent = file.parent || this.app.vault.getRoot();
-
-                await this.app.workspace
-                  .getLeaf(true)
-                  .openFile(
-                    await this.app.vault.create(
-                      `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
-                      new PureChatLLMChat(this).setMarkdown(link).getMarkdown(),
-                    ),
-                  );
-                void this.activateChatView();
-              });
-          });
-          menu.addItem(item => {
-            item
-              .setTitle('New chat from file system prompt')
-              .setIcon('message-square-plus')
-              .setSection('action')
-              .onClick(async () => {
-                const parent = file.parent || this.app.vault.getRoot();
-
-                await this.app.workspace
-                  .getLeaf(true)
-                  .openFile(
-                    await this.app.vault.create(
-                      `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
-                      new PureChatLLMChat(this)
-                        .setMarkdown(`# role: System\n${link}\n# role: User\n`)
-                        .getMarkdown(),
-                    ),
-                  );
-                void this.activateChatView();
-              });
-          });
+            })
+            .addItem(item => {
+              item
+                .setTitle('New chat from file system prompt')
+                .setIcon('message-square-plus')
+                .setSection('action')
+                .onClick(
+                  async () => (
+                    await this.app.workspace
+                      .getLeaf(true)
+                      .openFile(
+                        await this.app.vault.create(
+                          `${parent.path}/${this.generateUniqueFileName(parent, `Untitled ${file.basename}`)}.md`,
+                          new PureChatLLMChat(this)
+                            .setMarkdown(`# role: System\n${link}\n# role: User\n`)
+                            .getMarkdown(),
+                        ),
+                      ),
+                    void this.activateChatView()
+                  ),
+                );
+            });
         }
       }),
     );
@@ -362,13 +361,6 @@ export default class PureChatLLM extends Plugin {
       icon: 'phone',
       callback: this.activateVoiceCallView,
     });
-
-    this.addCommand({
-      id: 'start-voice-call',
-      name: 'Start voice call',
-      icon: 'phone-call',
-      callback: this.activateVoiceCallView,
-    });
   }
 
   /**
@@ -500,8 +492,8 @@ export default class PureChatLLM extends Plugin {
       await leaf.setViewState({ type: CODE_PREVIEW_VIEW_TYPE, active: true });
     }
     if (
-      state.code === this.codeBlock?.code &&
-      state.language === this.codeBlock?.language &&
+      state.code === this.codeBlock.code &&
+      state.language === this.codeBlock.language &&
       leaves.length > 0
     )
       return;
@@ -533,31 +525,19 @@ export default class PureChatLLM extends Plugin {
   addItemsToMenu(menu: Menu, editor: Editor, view: MarkdownView) {
     const selected = editor.getSelection();
     if (selected.length > 0)
-      menu
-        .addItem(item =>
-          item
-            .setTitle('Edit selection')
-            .setIcon('wand')
-            .onClick(async () => {
-              this.editSelection(selected, editor);
-            })
-            .setSection('selection'),
-        )
-        .addItem(item =>
-          item
-            .setTitle('Wand')
-            .setIcon('wand')
-            .onClick(async () => editWand(this, selected))
-            .setSection('selection'),
-        );
-    const { codeBlock } = this;
-    if (codeBlock)
       menu.addItem(item =>
         item
-          .setTitle('Open code preview')
-          .setIcon('code')
-          .onClick(() => this.openCodePreview(codeBlock)),
+          .setTitle('Edit selection')
+          .setIcon('wand')
+          .onClick(() => this.editSelection(selected, editor))
+          .setSection('selection'),
       );
+    menu.addItem(item =>
+      item
+        .setTitle('Open code preview')
+        .setIcon('code')
+        .onClick(() => this.openCodePreview(this.codeBlock)),
+    );
 
     return menu;
   }
@@ -590,13 +570,6 @@ export default class PureChatLLM extends Plugin {
           : void editWand(this, selected),
       { ...this.settings.selectionTemplates, 'Custom prompt': '' },
     ).open();
-  }
-
-  /**
-   *
-   */
-  askForApiKey() {
-    new AskForAPI(this.app, this).open();
   }
 
   /**
@@ -650,7 +623,6 @@ export default class PureChatLLM extends Plugin {
       ...((await this.loadData()) as PureChatLLMSettings),
     };
 
-    this.settings = { ...loadedData };
     this.settings = {
       ...loadedData,
       chatTemplates: {
@@ -667,43 +639,18 @@ export default class PureChatLLM extends Plugin {
       str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
     this.settings.chatTemplates = Object.fromEntries(
-      Object.entries(this.settings.chatTemplates).map(([key, value]) => [
-        toSentenceCase(key),
-        value,
-      ]),
-    );
+      Object.entries(this.settings.chatTemplates)
+        .map(([key, value]) => [toSentenceCase(key), value])
+        .filter(([key, value]) => key && value)
+        .sort(([a], [b]) => a.localeCompare(b)),
+    ) as { [key: string]: string };
 
     this.settings.selectionTemplates = Object.fromEntries(
-      Object.entries(this.settings.selectionTemplates).map(([key, value]) => [
-        toSentenceCase(key),
-        value,
-      ]),
-    );
-
-    // Compatibility fixes for older versions
-
-    this.settings.endpoints.forEach(
-      endpoint =>
-        (endpoint.endpoint = endpoint.endpoint.replace(
-          '/chat/completions',
-          '',
-        )) /* Old endpoints had /chat/completions appended*/,
-    );
-
-    DEFAULT_SETTINGS.endpoints.forEach(endpoint => {
-      if (!this.settings.endpoints.find(e => e.name === endpoint.name))
-        this.settings.endpoints.push(endpoint);
-    });
-
-    if ((loadedData as unknown as { chatParser?: number }).chatParser === 1) {
-      this.settings.messageRoleFormatter = '\\n> [!note] {role}\\n> # role: {role}\\n';
-      // @ts-ignore
-      delete this.settings.chatParser;
-    }
-    const oldSystemPrompt =
-      "You are ChatGPT, a large language model trained by OpenAI. Carefully heed the user's instructions. Respond using Markdown.\n\nBe attentive, thoughtful, and precise—provide clear, well-structured answers that honor the complexity of each query. Avoid generic responses; instead, offer insights that encourage creativity, reflection, and learning. Employ subtle, dry humor or depth when appropriate. Respect the user’s individuality and values, adapting your tone and approach as needed to foster a conversational, meaningful, and genuinely supportive exchange.";
-    if (this.settings.SystemPrompt === oldSystemPrompt)
-      this.settings.SystemPrompt = DEFAULT_SETTINGS.SystemPrompt;
+      Object.entries(this.settings.selectionTemplates)
+        .map(([key, value]) => [toSentenceCase(key), value])
+        .filter(([key, value]) => key && value)
+        .sort(([a], [b]) => a.localeCompare(b)),
+    ) as { [key: string]: string };
 
     DEFAULT_SETTINGS.endpoints.forEach(
       endpoint =>
@@ -717,27 +664,7 @@ export default class PureChatLLM extends Plugin {
    */
   async saveSettings() {
     this.settings.selectionTemplates = this.settings.selectionTemplates || {};
-
-    this.settings.selectionTemplates = Object.fromEntries(
-      Object.keys(this.settings.selectionTemplates)
-        .sort()
-        .map(key => [key, this.settings.selectionTemplates[key]])
-        .filter(([key, value]) => key && value),
-    ) as { [key: string]: string };
-    this.settings.chatTemplates = Object.fromEntries(
-      Object.keys(this.settings.chatTemplates)
-        .sort()
-        .map(key => [key, this.settings.chatTemplates[key]])
-        .filter(([key, value]) => key && value),
-    ) as { [key: string]: string };
     await this.saveData(this.settings);
-  }
-
-  /**
-   *
-   */
-  onunload() {
-    // Cleanup code if needed
   }
 }
 

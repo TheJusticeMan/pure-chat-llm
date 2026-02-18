@@ -1,12 +1,11 @@
 import { syntaxTree } from '@codemirror/language';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
-import { App, Editor, ItemView, WorkspaceLeaf } from 'obsidian';
+import { App, ItemView, WorkspaceLeaf } from 'obsidian';
 import PureChatLLM from '../main';
 
 export interface CodeSnippetState {
   code: string;
   language: string;
-  editor: Editor;
 }
 
 export const CODE_PREVIEW_VIEW_TYPE = 'pure-chat-llm-code-preview';
@@ -155,7 +154,6 @@ export function createCodeblockExtension(app: App, plugin: PureChatLLM) {
               this.plugin.updateCodePreview({
                 code: codeContent.match(/```(\w+)?\n([\w\W]*?)```/m)?.[2] || '',
                 language: codeContent.match(/```(\w+)/m)?.[1] || 'text',
-                editor,
               });
             }
           },

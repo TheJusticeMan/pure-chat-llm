@@ -13,7 +13,7 @@ export interface PureChatLLMSettings {
   CMDselectionTemplates: { [key: string]: boolean };
   CMDchatTemplates: { [key: string]: boolean };
   ModelsOnEndpoint: { [key: string]: string[] };
-  useImageGeneration: boolean;
+
   resolveFilesForChatAnalysis: boolean;
   autoConcatMessagesFromSameRole: boolean;
   agentMode: boolean;

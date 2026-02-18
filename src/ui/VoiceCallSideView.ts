@@ -1,13 +1,13 @@
-import { ItemView, WorkspaceLeaf, Setting, Notice, TFile } from 'obsidian';
-import { VoiceCall } from '../realtime/VoiceCall';
-import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
-import { GeminiLiveProvider } from '../realtime/providers/GeminiLiveProvider';
-import { PureChatLLMChat } from '../core/Chat';
-import { CallState, VOICE_CALL_VIEW_TYPE, ToolDefinition, PURE_CHAT_LLM_ICON_NAME } from '../types';
-import { VoiceCallConfig } from '../realtime/providers/IVoiceCallProvider';
-import PureChatLLM from '../main';
+import { ItemView, Setting, WorkspaceLeaf } from 'obsidian';
 import { EmptyApiKey } from 'src/assets/constants';
+import { PureChatLLMChat } from '../core/Chat';
+import PureChatLLM from '../main';
 import { ChatToolExecutor } from '../realtime/ChatToolExecutor';
+import { VoiceCall } from '../realtime/VoiceCall';
+import { GeminiLiveProvider } from '../realtime/providers/GeminiLiveProvider';
+import { VoiceCallConfig } from '../realtime/providers/IVoiceCallProvider';
+import { OpenAIRealtimeProvider } from '../realtime/providers/OpenAIRealtimeProvider';
+import { CallState, PURE_CHAT_LLM_ICON_NAME, ToolDefinition, VOICE_CALL_VIEW_TYPE } from '../types';
 
 type VoiceProvider = 'openai' | 'gemini';
 
@@ -80,10 +80,6 @@ export class VoiceCallSideView extends ItemView {
     this.renderHeader(contentEl);
     this.renderControls(contentEl);
     this.createRemoteAudioElement(contentEl);
-
-    if (this.callState.status === 'idle') {
-      this.renderInstructions(contentEl);
-    }
   }
 
   /**
@@ -134,9 +130,7 @@ export class VoiceCallSideView extends ItemView {
           btn
             .setButtonText('Start call')
             .setCta()
-            .onClick(() => {
-              void this.startCall();
-            }),
+            .onClick(() => this.startCall()),
         );
     }
 
@@ -148,9 +142,7 @@ export class VoiceCallSideView extends ItemView {
             .setButtonText('Try again')
             .setCta()
             .setIcon('refresh-cw')
-            .onClick(() => {
-              this.resetCallState();
-            }),
+            .onClick(() => this.resetCallState()),
         );
     }
 
@@ -168,30 +160,8 @@ export class VoiceCallSideView extends ItemView {
             .setButtonText('End call')
             .setWarning()
             .setIcon('phone-off')
-            .onClick(() => {
-              void this.endCall();
-            }),
+            .onClick(() => this.endCall()),
         );
-    }
-  }
-
-  /**
-   * Renders usage instructions for the voice call feature.
-   *
-   * @param container - The container element to render into
-   */
-  private renderInstructions(container: HTMLElement): void {
-    const instructionsEl = container.createDiv({ cls: 'voice-call-instructions' });
-    new Setting(instructionsEl).setName('How to use').setHeading();
-    instructionsEl.createEl('p', { text: '1. Click "start call" to initiate a new voice call' });
-    instructionsEl.createEl('p', { text: '2. Use "mute" to toggle your microphone' });
-    instructionsEl.createEl('p', { text: '3. Click "end call" to disconnect' });
-
-    if (this.plugin.settings.agentMode) {
-      instructionsEl.createEl('p', {
-        cls: 'tool-info',
-        text: 'Agent mode enabled: AI can access tools.',
-      });
     }
   }
 
@@ -203,15 +173,12 @@ export class VoiceCallSideView extends ItemView {
   private createRemoteAudioElement(container: HTMLElement): void {
     if (!this.remoteAudioElement) {
       this.remoteAudioElement = container.createEl('audio', {
-        attr: {
-          autoplay: 'true',
-          playsinline: 'true',
-        },
+        attr: { autoplay: 'true', playsinline: 'true' },
       });
       this.remoteAudioElement.setCssProps({ display: 'none' });
-      this.remoteAudioElement.addEventListener('error', e => {
-        console.error('Audio playback error:', e);
-      });
+      this.remoteAudioElement.addEventListener('error', e =>
+        console.error('Audio playback error:', e),
+      );
     }
   }
 
@@ -232,36 +199,23 @@ export class VoiceCallSideView extends ItemView {
    * @returns A promise that resolves to the system prompt string
    */
   private async getRealtimeSystemPrompt(): Promise<string> {
-    const filePath = this.plugin.settings.realtimeSystemPromptFile;
+    const filePath = this.plugin.settings.realtimeSystemPromptFile.trim();
 
     // If no file path configured, use default based on agent mode
-    if (!filePath || filePath.trim() === '') {
-      return this.getDefaultSystemPrompt();
-    }
+    if (!filePath) return '';
 
     // Try to read the file
     try {
-      const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (!file || !(file instanceof TFile)) {
-        // File not found - use default and notify user
-        new Notice(`Realtime prompt file not found: ${filePath}. Using default.`);
-        return this.getDefaultSystemPrompt();
-      }
+      const file = this.plugin.app.vault.getFileByPath(filePath);
+      if (!file) return '';
 
-      const content = await this.plugin.app.vault.cachedRead(file);
+      const content = (await this.plugin.app.vault.cachedRead(file)).trim();
 
       // If file is empty, use default
-      if (!content || content.trim() === '') {
-        new Notice(`Realtime prompt file is empty: ${filePath}. Using default.`);
-        return this.getDefaultSystemPrompt();
-      }
-
-      return content.trim();
-    } catch (error) {
-      // Error reading file - use default and notify user
-      const msg = error instanceof Error ? error.message : String(error);
-      new Notice(`Error reading realtime prompt file: ${msg}. Using default.`);
-      return this.getDefaultSystemPrompt();
+      if (!content) return '';
+      return content;
+    } catch {
+      return '';
     }
   }
 
@@ -294,15 +248,13 @@ export class VoiceCallSideView extends ItemView {
         this.chat = new PureChatLLMChat(this.plugin);
         this.toolExecutor = new ChatToolExecutor(this.chat);
         tools = this.toolExecutor.getToolDefinitions();
-        new Notice('Initializing with tool access');
       } else {
         this.chat = null;
         this.toolExecutor = null;
-        new Notice('Initializing voice call');
       }
 
       // 3. Configure Provider - Read system prompt from file
-      const instructions = await this.getRealtimeSystemPrompt();
+      const instructions = (await this.getRealtimeSystemPrompt()) || this.getDefaultSystemPrompt();
 
       let provider;
       const config: VoiceCallConfig = {
@@ -334,7 +286,7 @@ export class VoiceCallSideView extends ItemView {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to start call:', msg);
-      new Notice(`Failed to start call: ${msg}`);
+
       this.callState.error = msg;
       this.renderView();
     }
@@ -348,10 +300,7 @@ export class VoiceCallSideView extends ItemView {
   private handleRemoteStream(stream: MediaStream): void {
     if (this.remoteAudioElement) {
       this.remoteAudioElement.srcObject = stream;
-      this.remoteAudioElement.play().catch(err => {
-        console.error('Auto-play failed:', err);
-        new Notice('Click to enable audio.');
-      });
+      this.remoteAudioElement.play().catch(err => console.error('Auto-play failed:', err));
     }
   }
 

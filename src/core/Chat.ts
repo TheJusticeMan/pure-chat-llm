@@ -111,8 +111,6 @@ export class PureChatLLMChat {
       .registerTool(ShowNoticeTool)
       .registerTool(PluginSettingsTool);
     /* .registerTool(SunoTool) */
-    if (!this.plugin.settings.useImageGeneration)
-      this.toolregistry.disable(ImageGenerationTool._name);
   }
 
   /**
@@ -468,7 +466,7 @@ export class PureChatLLMChat {
    */
   async processChatWithTemplate(templatePrompt: string) {
     if (this.endpoint.apiKey === EmptyApiKey) {
-      this.plugin.askForApiKey();
+      new AskForAPI(this.plugin).open();
       return Promise.resolve({ role: 'assistant', content: '' });
     }
     // Remove trailing empty message if present
@@ -530,7 +528,7 @@ export class PureChatLLMChat {
   selectionResponse(templatePrompt: string, selectedText: string, fileText?: string) {
     if (!selectedText) return Promise.resolve({ role: 'assistant', content: selectedText });
     if (this.endpoint.apiKey === EmptyApiKey) {
-      this.plugin.askForApiKey();
+      new AskForAPI(this.plugin).open();
       return Promise.resolve({ role: 'assistant', content: selectedText });
     }
     this.initSelectionResponse(templatePrompt, selectedText, fileText);
@@ -752,7 +750,7 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
   const chat = new PureChatLLMChat(plugin).setMarkdown(editorcontent);
   const endpoint = plugin.settings.endpoints[plugin.settings.endpoint];
   if (endpoint.apiKey == EmptyApiKey) {
-    new AskForAPI(plugin.app, plugin).open();
+    new AskForAPI(plugin).open();
     return;
   }
 
@@ -787,10 +785,7 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
       await writeHandler.write(chat.getMarkdown());
     })
     .catch(error => plugin.console.error(error))
-    .finally(() => {
-      plugin.isresponding = false;
-      return;
-    });
+    .finally(() => (plugin.isresponding = false));
   return chat;
 }
 

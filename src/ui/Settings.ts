@@ -99,14 +99,13 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 .setValue(settings.endpoint.toString())
                 .onChange(async value => {
                   await this.sett('endpoint', parseInt(value, 10));
-                  this.plugin.modellist = [];
                 }),
             )
             .addButton(btn =>
               btn
                 .setIcon('key')
                 .setTooltip('Add API key')
-                .onClick(async () => new AskForAPI(this.app, this.plugin).open()),
+                .onClick(async () => new AskForAPI(this.plugin).open()),
             )
             .addButton(
               // fixes issue that you can't refresh models after the first time
@@ -114,16 +113,7 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 btn
                   .setIcon('refresh-cw')
                   .setTooltip('Refresh list of models')
-                  .onClick(async () => {
-                    loadAllModels(this.plugin);
-                    /* this.plugin.settings.ModelsOnEndpoint[
-                      this.plugin.settings.endpoints[this.plugin.settings.endpoint].name
-                    ] = [];
-                    void new PureChatLLMChat(this.plugin).getAllModels().then(models => {
-                      void this.plugin.saveSettings();
-                      new Notice('Model list refreshed');
-                    }); */
-                  }),
+                  .onClick(async () => loadAllModels(this.plugin)),
             ),
       )
       .addSetting(
@@ -221,19 +211,6 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
       .addSetting(
         setting =>
           void setting
-            .setName('Use OpenAI image generation')
-            .setDesc(
-              "Enable this to use OpenAI's DALL-E for image generation. Requires an OpenAI API key.",
-            )
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.useImageGeneration)
-                .onChange(async value => await this.sett('useImageGeneration', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
             .setName('Realtime system prompt file')
             .setDesc(
               'Path to a file containing the system prompt for voice calls. If empty or not found, defaults to built-in prompts.',
@@ -326,18 +303,15 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                 )
                 .onClick(() => {
                   const file = this.app.vault.getFileByPath('PureChatLLM-Templates.md');
-                  if (file) {
+                  if (file)
                     void this.app.vault.cachedRead(file).then(data => {
                       this.plugin.settings = {
                         ...this.plugin.settings,
                         ...getObjectFromMarkdown(data, 1, 2),
                       };
                       void this.plugin.saveSettings();
-                      new Notice('Templates imported. Please review them in the prompt editor.');
+                      new Notice('Templates imported.');
                     });
-                  } else {
-                    new Notice('PureChatLLM-Templates.md not found.');
-                  }
                 }),
             ),
       );
