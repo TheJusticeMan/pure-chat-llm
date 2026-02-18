@@ -8,8 +8,7 @@
 }
 
 .LLMSideView .messageContainer {
-  display: flex;
-  flex-direction: column;
+  display: inline;
 }
 
 .LLMSideView .message {
@@ -17,7 +16,7 @@
   margin: 0.25em 0;
   max-height: 10em;
   overflow-y: hidden;
-  padding: 0.5em; /* Added padding for better border/bg definition */
+  padding: 0;
   transition: background-color 0.1s ease;
 }
 
@@ -37,9 +36,10 @@
   border: var(--border-width) solid var(--background-modifier-border);
   border-radius: var(--radius-xl) var(--radius-xl) 0 var(--radius-xl);
   max-width: 90%;
+  padding: 0 1em;
   margin-left: auto;
   margin-right: 0;
-  text-align: left; /* Keep text left-aligned for readability */
+  text-align: left;
 }
 
 .LLMSideView .messageContainer.user .message:hover {
@@ -48,7 +48,7 @@
 
 .LLMSideView .messageContainer .clickable-icon {
   display: inline-block;
-  margin-top: 0.5em; /* Cleaner vertical rhythm than padding-top */
+  padding: 0.5em;
 }
 
 .codePreview {

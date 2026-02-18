@@ -24,7 +24,7 @@
 - **Note-as-Chat** = : Transform any note into a conversation -- no separate chat windows
 - **Deep Integration** & : Leverages Obsidian's API for vault operations, workspace management, and more
 - **Safety First** ! : All destructive operations require explicit user approval via visual diff modals
-- **38% Smaller** v : Optimized architecture (131KB bundle, down from 211KB in v1.x)
+- **42.8% Smaller** v : Optimized architecture (120.7KB bundle, down from 211KB in v1.x)
 - **Voice Calls** o : Real-time voice conversations with tool access via OpenAI Realtime API
 - **Multi-Provider** \* : OpenAI, Gemini, xAI, Anthropic, Cohere, Mistral AI, DeepSeek
 
