@@ -107,7 +107,7 @@ export type InferArgs<T extends ToolParameters> = {
 export class ToolRegistry {
   private allTools: Map<string, Tool<Record<string, unknown>>>;
   private enabledTools: Set<string>;
-  private streamCallback?: (textFragment: StreamDelta) => Promise<boolean>;
+  private streamCallback?: (textFragment: StreamDelta) => Promise<void>;
 
   /**
    * Creates a new ToolRegistry instance
@@ -130,7 +130,7 @@ export class ToolRegistry {
    * Sets the stream callback for status updates
    * @param streamcallback - The callback function to handle status updates
    */
-  setCallBack(streamcallback: ((textFragment: StreamDelta) => Promise<boolean>) | undefined) {
+  setCallBack(streamcallback: ((textFragment: StreamDelta) => Promise<void>) | undefined) {
     this.streamCallback = streamcallback;
   }
 

@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { Menu, Notice } from 'obsidian';
 import {
   ChatRequestOptions,
   ChatResponse,
@@ -42,6 +42,8 @@ export class LLMService {
     };
   }
 
+  stopping = false;
+
   /**
    * Sends a chat request to the LLM API and handles the response
    * @param endpoint - The API endpoint configuration
@@ -53,11 +55,18 @@ export class LLMService {
   async fetchResponse(
     endpoint: PureChatLLMAPI,
     options: ChatRequestOptions,
-    statusCallback?: (status: string) => void,
-    streamCallback?: (textFragment: StreamDelta) => Promise<boolean>,
+    statusCallback?: (status: string, onMenu?: (menu: Menu) => Menu) => void,
+    streamCallback?: (textFragment: StreamDelta) => Promise<void>,
   ): Promise<ChatResponse> {
     this.console.log('Sending chat request with options:', options);
-    statusCallback?.(`running: ${options.model}`);
+    statusCallback?.(`running: ${options.model}`, menu =>
+      menu.addItem(item =>
+        item
+          .setTitle('Stop')
+          .setIcon('cross')
+          .onClick(() => (this.stopping = true)),
+      ),
+    );
 
     const requestOptions = { ...options };
 
@@ -186,7 +195,7 @@ export class LLMService {
    */
   async handleStreamingResponse(
     response: Response,
-    streamCallback: (textFragment: StreamDelta) => Promise<boolean>,
+    streamCallback: (textFragment: StreamDelta) => Promise<void>,
   ): Promise<ChatResponse> {
     if (!response.body) {
       throw new Error('Response body is null. Streaming is not supported in this environment.');
@@ -225,10 +234,11 @@ export class LLMService {
 
               // Flush buffer if enough time has passed (100ms debouncing)
               if (Date.now() - lastFlushTime >= 100) {
-                const continueProcessing = await streamCallback({ content: contentBuffer });
+                await streamCallback({ content: contentBuffer });
                 contentBuffer = '';
                 lastFlushTime = Date.now();
-                if (!continueProcessing) {
+                if (this.stopping) {
+                  this.stopping = false;
                   await reader.cancel();
                   done = true;
                   break;

@@ -356,14 +356,20 @@ export default class PureChatLLM extends Plugin {
    * Displays a message in the status bar prefixed with '[Pure Chat LLM]'.
    *
    * @param {string} text - The message text to display in the status bar.
+   * @param {(menu: Menu) => void} [onMenu] - Optional callback to add items to the status bar context menu.
    * @returns {void}
    */
-  status(text: string) {
+  status = (text: string, onMenu?: (menu: Menu) => Menu) => {
     this.pureChatStatusElement.empty();
     // Display a message in the status bar
     setIcon(this.pureChatStatusElement, PURE_CHAT_LLM_ICON_NAME);
     this.pureChatStatusElement.append(` ${text}`);
-  }
+    if (onMenu)
+      this.pureChatStatusElement.addEventListener('contextmenu', ev => {
+        ev.preventDefault();
+        onMenu(new Menu()).showAtMouseEvent(ev);
+      });
+  };
 
   /**
    * Generates a unique file name in the specified folder.

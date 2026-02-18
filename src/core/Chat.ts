@@ -583,7 +583,7 @@ export class PureChatLLMChat {
    */
   completeChatResponse(
     file: TFile,
-    streamcallback?: (textFragment: { content: string }) => Promise<boolean>,
+    streamcallback?: (textFragment: StreamDelta) => Promise<void>,
   ): Promise<this> {
     if (this.endpoint.apiKey === EmptyApiKey) {
       return Promise.resolve(this);
@@ -629,12 +629,12 @@ export class PureChatLLMChat {
    */
   async sendChatRequest(
     options: ChatRequestOptions,
-    streamcallback?: (textFragment: StreamDelta) => Promise<boolean>,
+    streamcallback?: (textFragment: StreamDelta) => Promise<void>,
   ): Promise<ChatResponse> {
     const response = await this.llmService.fetchResponse(
       this.endpoint,
       options,
-      status => this.plugin.status(status),
+      this.plugin.status,
       streamcallback,
     );
 
@@ -669,7 +669,7 @@ export class PureChatLLMChat {
   async handleToolCalls(
     toolCalls: ToolCall[],
     options: ChatRequestOptions,
-    streamcallback?: (textFragment: StreamDelta) => Promise<boolean>,
+    streamcallback?: (textFragment: StreamDelta) => Promise<void>,
     assistantMessage?: { role: RoleType; content?: string | null; tool_calls?: ToolCall[] },
   ): Promise<boolean> {
     this.toolregistry.setCallBack(streamcallback);
@@ -768,8 +768,7 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
   await writeHandler.appendContent(`\n${chat.adapter.parseRole('assistant...' as RoleType)}\n`);
   chat
     .completeChatResponse(writeHandler.file, async e => {
-      await writeHandler.appendContent(e.content);
-      return true;
+      await writeHandler.appendContent(e.content!);
     })
     .then(async chat => {
       plugin.isresponding = false;
