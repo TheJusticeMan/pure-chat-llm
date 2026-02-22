@@ -762,18 +762,19 @@ export async function completeChatResponse(plugin: PureChatLLM, writeHandler: Wr
 
   await writeHandler.appendContent(`\n${chat.adapter.parseRole('assistant...' as RoleType)}\n`);
   chat
-    .completeChatResponse(writeHandler.file, async e => {
-      await writeHandler.appendContent(e.content!);
-    })
-    .then(async chat => {
-      if (
+    .completeChatResponse(
+      writeHandler.file,
+      async e => await writeHandler.appendContent(e.content!),
+    )
+    .then(
+      async chat => (
+        await writeHandler.write(chat.getMarkdown()),
         chat.session.messages.length >= (plugin.settings.AutogenerateTitle || Infinity) &&
-        (writeHandler.file?.name.includes('Untitled') || / \d+\.md$/.test(writeHandler.file?.name))
-      ) {
-        await generateTitle(plugin, writeHandler);
-      }
-      await writeHandler.write(chat.getMarkdown());
-    })
+          (writeHandler.file?.name.includes('Untitled') ||
+            / \d+\.md$/.test(writeHandler.file?.name)) &&
+          (await generateTitle(plugin, writeHandler))
+      ),
+    )
     .catch(error => plugin.console.error(error));
   return chat;
 }

@@ -89,21 +89,21 @@ const ENDPOINTS = [
   {
     name: 'OpenAI',
     apiKey: EmptyApiKey,
-    defaultmodel: 'gpt-4.1-nano',
+    defaultmodel: 'gpt-5-nano',
     endpoint: 'https://api.openai.com/v1',
     getapiKey: 'https://platform.openai.com/api-keys',
   },
   {
     name: 'Gemini',
     apiKey: EmptyApiKey,
-    defaultmodel: 'models/gemini-2.0-flash-lite',
+    defaultmodel: 'gemini-2.5-flash-lite',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
     getapiKey: 'https://aistudio.google.com/apikey',
   },
   {
     name: 'xAI',
     apiKey: EmptyApiKey,
-    defaultmodel: 'grok-3-mini',
+    defaultmodel: 'grok-4-fast-non-reasoning',
     endpoint: 'https://api.x.ai/v1',
     getapiKey: 'https://console.x.ai',
   },
@@ -141,13 +141,6 @@ const ENDPOINTS = [
     endpoint: 'http://localhost:11434/v1',
     defaultmodel: 'qwen3:0.6b',
     getapiKey: '',
-  },
-  {
-    name: 'Suno',
-    apiKey: EmptyApiKey,
-    defaultmodel: 'V4_5ALL',
-    endpoint: 'https://api.sunoapi.org',
-    getapiKey: 'https://sunoapi.org/api-key',
   },
 ];
 

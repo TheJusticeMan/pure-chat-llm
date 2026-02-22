@@ -576,8 +576,7 @@ export default class PureChatLLM extends Plugin {
     const activeFile = view.file;
     if (!activeFile) return;
 
-    const writeHandler = new WriteHandler(this, activeFile, view, editor, true);
-    await generateTitle(this, writeHandler);
+    await generateTitle(this, new WriteHandler(this, activeFile, view, editor, true));
   }
 
   /**

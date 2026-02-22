@@ -60,6 +60,14 @@ export class WriteHandler {
   async write(content: string): Promise<void> {
     if (this.editor && this.view?.file?.path === this.file.path) {
       this.editor.setValue(content);
+      if (this.followCursor) {
+        const lastLine = this.editor.lastLine();
+        this.editor.setCursor({ line: lastLine, ch: this.editor.getLine(lastLine).length });
+        this.editor.scrollIntoView({
+          from: { line: lastLine, ch: 0 },
+          to: { line: lastLine, ch: this.editor.getLine(lastLine).length },
+        });
+      }
     } else {
       await this.plugin.app.vault.modify(this.file, content);
     }
