@@ -1,4 +1,5 @@
-import { normalizePath, parseLinktext, resolveSubpath, TFile } from 'obsidian';
+import { normalizePath, resolveSubpath, TFile } from 'obsidian';
+import { myParseLinkText } from 'src/utils/parse';
 import { defineToolParameters, InferArgs, Tool } from '../tools';
 import { EditReview } from './EditReview';
 import { ToolOutputBuilder } from './ToolOutputBuilder';
@@ -53,7 +54,7 @@ export class ReadNoteSectionTool extends Tool<ReadNoteSectionArgs> {
   async execute(args: ReadNoteSectionArgs): Promise<string> {
     const { link, headings_only = false, depth = 6 } = args;
     const app = this.chat.plugin.app;
-    const { path, subpath } = parseLinktext(link.replace(/^\[\[/, '').replace(/\]\]$/, ''));
+    const { path, subpath } = myParseLinkText(link.replace(/^\[\[/, '').replace(/\]\]$/, ''));
     const file = app.metadataCache.getFirstLinkpathDest(path, '');
     if (!file || !(file instanceof TFile)) {
       return new ToolOutputBuilder()
@@ -157,7 +158,7 @@ export class WriteNoteSectionTool extends Tool<WriteNoteSectionArgs> {
   async execute(args: WriteNoteSectionArgs): Promise<string> {
     const { link, content, mode, properties } = args;
     const app = this.chat.plugin.app;
-    const { path, subpath } = parseLinktext(link.replace(/^\[\[/, '').replace(/\]\]$/, ''));
+    const { path, subpath } = myParseLinkText(link.replace(/^\[\[/, '').replace(/\]\]$/, ''));
     const file = app.metadataCache.getFirstLinkpathDest(path, '');
 
     // Case 1: Create new note

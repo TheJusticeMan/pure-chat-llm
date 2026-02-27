@@ -1,4 +1,5 @@
-import { parseLinktext, requestUrl } from 'obsidian';
+import { requestUrl } from 'obsidian';
+import { myParseLinkText } from 'src/utils/parse';
 import { defineToolParameters, InferArgs, Tool } from '../tools';
 import imgModels from './ImageGen.json';
 
@@ -222,7 +223,7 @@ export class SmartConnectionsRetrievalTool extends Tool<SmartConnectionsArgs> {
           try {
             if (r.item.data?.lines) {
               const lines = r.item.data.lines;
-              const file = this.chat.plugin.app.vault.getFileByPath(parseLinktext(r.key).path);
+              const file = this.chat.plugin.app.vault.getFileByPath(myParseLinkText(r.key).path);
               if (file && lines.length > 0) {
                 const fileLines = (await this.chat.plugin.app.vault.cachedRead(file)).split('\n');
                 if (lines.length === 2 && lines[1] > lines[0] + 1) {

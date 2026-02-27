@@ -1,5 +1,8 @@
-import { App, EditorRange, Notice, parseLinktext, resolveSubpath, TFile } from 'obsidian';
+import { App, EditorRange, Notice, resolveSubpath, TFile } from 'obsidian';
 import { Chatsysprompt, EmptyApiKey, Selectionsysprompt } from 'src/assets/constants';
+import { AskForAPI } from 'src/ui/Modals';
+import { myParseLinkText } from 'src/utils/parse';
+import { WriteHandler } from 'src/utils/write-handler';
 import PureChatLLM from '../main';
 import { ToolRegistry } from '../tools';
 import { ImageGenerationTool, SmartConnectionsRetrievalTool } from '../tools/AITools';
@@ -23,8 +26,6 @@ import { BrowserConsole } from '../utils/BrowserConsole';
 import { ChatMarkdownAdapter } from './ChatMarkdownAdapter';
 import { ChatSession } from './ChatSession';
 import { LLMService } from './LLMService';
-import { WriteHandler } from 'src/utils/write-handler';
-import { AskForAPI } from 'src/ui/Modals';
 
 /**
  * Represents a chat session for the Pure Chat LLM Obsidian plugin.
@@ -341,7 +342,8 @@ export class PureChatLLMChat {
 
     const resolved: MediaMessage[] = await Promise.all(
       matches.map(async ([originalLink, link]) => {
-        const { subpath, path } = parseLinktext(link);
+        // Fix the error where parseLinktext does not properly handle links with display text, e.g. [[file|display]]
+        const { subpath, path } = myParseLinkText(link);
         const file = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
 
         if (!file) return { type: 'text', text: originalLink };
