@@ -78,6 +78,10 @@ export class LLMService {
 
     let response: Response;
     try {
+      /* response = await requestUrl({url:`${endpoint.endpoint}/chat/completions`, method: 'POST', headers: this.getHeaders(endpoint), body: JSON.stringify({
+          ...requestOptions,
+          stream: requestOptions.stream && !!streamCallback,
+        })}); */
       // eslint-disable-next-line no-restricted-globals
       response = await fetch(`${endpoint.endpoint}/chat/completions`, {
         method: 'POST',

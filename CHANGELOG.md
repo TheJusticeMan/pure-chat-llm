@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-03-21
+
+chore: update dependencies and modify constants
+
+- Updated @eslint/js from ^9.39.2 to ^9.30.1
+- Updated @typescript-eslint/parser from ^6.21.0 to ^8.56.1
+- Updated eslint from ^8.57.1 to ^9.30.1
+- Added 'think' property to alloptions in constants.ts
+- Commented out requestUrl call in LLMService.ts
+
 ## [2.0.2] - 2026-02-27
 
 ### Fixed

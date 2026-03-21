@@ -78,6 +78,7 @@ export const alloptions = {
   tool_choice: 'none',
   tools: [],
   web_search_options: {},
+  think: undefined,
 };
 
 export const Chatsysprompt =
