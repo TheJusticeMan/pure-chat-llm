@@ -189,7 +189,7 @@ export class ChatMarkdownAdapter {
           filteredOptions[key] = parsed[key as keyof ChatOptions];
         }
       }
-      return filteredOptions as Partial<ChatOptions>;
+      return filteredOptions;
     } catch {
       return null;
     }

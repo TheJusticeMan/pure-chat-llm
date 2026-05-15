@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-05-15
+
+### Added
+
+- Release artifact attestation in CI via `actions/attest@v4` for `main.js`, `manifest.json`, and `styles.css`.
+- `arrow-body-style` ESLint rule set to `as-needed` for more consistent function style.
+
+### Changed
+
+- Bumped plugin version from `2.0.3` to `2.1.0`.
+- Updated release workflow GitHub Actions versions:
+  - `actions/checkout` from `v3` to `v4`
+  - `actions/setup-node` from `v3` to `v4`
+- Expanded release workflow permissions to include `id-token: write` and `attestations: write`.
+- Updated TypeScript compiler configuration:
+  - `moduleResolution` changed from `node` to `bundler`
+  - `lib` updated to `es2023`, `DOM`, `DOM.Iterable`
+  - `paths` map added with `"*": ["./*"]`
+  - Removed `baseUrl`
+- Major dependency refresh in `package.json` and `package-lock.json`, including:
+  - `@eslint/js` -> `^10.0.1`
+  - `eslint` -> `^10.4.0`
+  - `@typescript-eslint/parser` and `typescript-eslint` -> `^8.59.3`
+  - `typescript` -> `^6.0.3`
+  - `esbuild` -> `^0.28.0`
+  - `knip` -> `^6.14.0`
+  - `eslint-plugin-obsidianmd` -> `^0.3.0`
+  - `diff` -> `^9.0.0`
+
+### Fixed
+
+- Improved popout-window compatibility in ChatGPT JSON import file picker by using workspace `activeDocument` access instead of global `document`.
+- Hardened strict typing and null-safety in core/UI classes:
+  - definite assignment fixes for `file`, `type`, and prompt title fields
+  - optional status element handling in status rendering
+  - removed unnecessary cast in chat option parsing
+  - removed unused modal field
+- Improved command/editor compatibility by accepting both `MarkdownView` and `MarkdownFileInfo` where needed (`completeChatResponse`, `generateTitle`, editor-change handling).
+- Refined context menu event wiring by removing an unused `view` parameter.
+- Updated realtime websocket timeout calls to `window.setTimeout`/`window.clearTimeout` for browser-typed consistency.
+
 ## [2.0.3] - 2026-03-21
 
 chore: update dependencies and modify constants

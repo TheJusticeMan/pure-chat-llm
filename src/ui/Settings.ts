@@ -487,7 +487,7 @@ function loadAllModels(plugin: PureChatLLM): void {
  * @extends Modal
  */
 class SelectionPromptEditor extends Modal {
-  promptTitle: string;
+  promptTitle: string = '';
   /**
    * Creates a modal for editing prompt templates.
    *

@@ -164,16 +164,16 @@ export class GeminiLiveProvider implements IVoiceCallProvider {
       await new Promise<void>((resolve, reject) => {
         if (!this.ws) return reject(new Error('No WS'));
 
-        const timer = setTimeout(() => reject(new Error('Timeout')), 10000);
+        const timer = window.setTimeout(() => reject(new Error('Timeout')), 10000);
 
         this.ws.onopen = () => {
-          clearTimeout(timer);
+          window.clearTimeout(timer);
           this.sendSetup(config);
           resolve();
         };
 
         this.ws.onerror = err => {
-          clearTimeout(timer);
+          window.clearTimeout(timer);
           console.error('WS Error during connect', err);
         };
 

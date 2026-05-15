@@ -21,6 +21,7 @@ import { ChatMessage, PURE_CHAT_LLM_ICON_NAME, PURE_CHAT_LLM_VIEW_TYPE } from '.
 import { BrowserConsole } from '../utils/BrowserConsole';
 import { AskForAPI } from './Modals';
 import apocalypseThrottle from 'apocalypse-throttle';
+import { MarkdownFileInfo } from 'obsidian';
 
 /**
  * Represents the side view for the Pure Chat LLM plugin in Obsidian.
@@ -93,8 +94,10 @@ export class PureChatLLMSideView extends ItemView {
     // when a file is loaded or changed, update the view
 
     this.registerEvent(
-      this.app.workspace.on('editor-change', (editor: Editor, view: MarkdownView) =>
-        this.checkUpdate(view),
+      this.app.workspace.on(
+        'editor-change',
+        (editor: Editor, view: MarkdownView | MarkdownFileInfo) =>
+          view instanceof MarkdownView ? this.checkUpdate(view) : this.checkUpdate(),
       ),
     );
     this.registerEvent(this.app.workspace.on('file-open', () => this.checkUpdate()));

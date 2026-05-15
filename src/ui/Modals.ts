@@ -18,7 +18,6 @@ import { PureChatLLMAPI } from '../types';
  */
 export class AskForAPI extends Modal {
   private apiKey: string;
-  private modal: string;
 
   /**
    * Creates a modal dialog for API key configuration.

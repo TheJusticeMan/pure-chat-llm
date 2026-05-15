@@ -31,6 +31,7 @@ export default defineConfig([
     },
     rules: {
       /* '@typescript-eslint/naming-convention': 'error', */
+      'arrow-body-style': ['error', 'as-needed'],
       'obsidianmd/ui/sentence-case': [
         'error',
         {

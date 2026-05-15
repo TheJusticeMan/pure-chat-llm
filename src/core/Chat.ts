@@ -58,7 +58,7 @@ export class PureChatLLMChat {
   console: BrowserConsole;
   endpoint: PureChatLLMAPI;
   parser = '# role: {role}';
-  file: TFile;
+  file!: TFile;
   toolregistry: ToolRegistry = new ToolRegistry(this);
   llmService: LLMService;
 

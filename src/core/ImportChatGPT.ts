@@ -124,15 +124,16 @@ export class ImportChatGPT {
    */
   private getFileFromUser(): Promise<File | null> {
     return new Promise(resolve => {
-      const input = document.createElement('input');
+      const activeDocument = this.app.workspace.containerEl.doc;
+      const input = activeDocument.createElement('input');
       input.type = 'file';
       input.accept = '.json,application/json';
       input.setCssProps({ display: 'none' });
 
-      document.body.appendChild(input);
+      activeDocument.body.appendChild(input);
       input.onchange = () => {
         resolve(input.files?.[0] ?? null);
-        document.body.removeChild(input);
+        activeDocument.body.removeChild(input);
       };
       input.click();
     });

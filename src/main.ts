@@ -8,6 +8,7 @@ import {
   EditorSuggestTriggerInfo,
   FuzzySuggestModal,
   loadPrism,
+  MarkdownFileInfo,
   MarkdownView,
   Menu,
   Plugin,
@@ -64,9 +65,9 @@ import { WriteHandler } from './utils/write-handler';
  * @public
  */
 export default class PureChatLLM extends Plugin {
-  settings: PureChatLLMSettings;
-  console: BrowserConsole;
-  pureChatStatusElement: HTMLElement;
+  settings: PureChatLLMSettings = DEFAULT_SETTINGS;
+  console: BrowserConsole = new BrowserConsole(this.settings.debug, 'PureChatLLM');
+  pureChatStatusElement?: HTMLElement;
   codeBlock: CodeSnippetState = { code: '', language: '' };
 
   /**
@@ -130,8 +131,8 @@ export default class PureChatLLM extends Plugin {
    */
   private setupContextMenuActions() {
     this.registerEvent(
-      this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) =>
-        this.addItemsToMenu(menu, editor, view),
+      this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor) =>
+        this.addItemsToMenu(menu, editor),
       ),
     );
 
@@ -221,7 +222,7 @@ export default class PureChatLLM extends Plugin {
       id: 'complete-chat-response',
       name: 'Complete chat response',
       icon: 'send',
-      editorCallback: (editor: Editor, view: MarkdownView) =>
+      editorCallback: (editor: Editor, view: MarkdownView | MarkdownFileInfo) =>
         this.completeChatResponse(editor, view),
     });
     // Add command for choosing model and provider
@@ -236,7 +237,8 @@ export default class PureChatLLM extends Plugin {
       id: 'generate-title',
       name: 'Generate title',
       icon: 'text-cursor-input',
-      editorCallback: (editor: Editor, view: MarkdownView) => this.generateTitle(editor, view),
+      editorCallback: (editor: Editor, view: MarkdownView | MarkdownFileInfo) =>
+        this.generateTitle(editor, view),
     });
     this.addCommand({
       id: 'edit-selection',
@@ -359,6 +361,7 @@ export default class PureChatLLM extends Plugin {
    * @returns {void}
    */
   status = (text: string, onMenu?: (menu: Menu) => Menu) => {
+    if (!this.pureChatStatusElement) return;
     this.pureChatStatusElement.empty();
     // Display a message in the status bar
     setIcon(this.pureChatStatusElement, PURE_CHAT_LLM_ICON_NAME);
@@ -511,10 +514,9 @@ export default class PureChatLLM extends Plugin {
    *
    * @param {Menu} menu - The menu to add items to.
    * @param {Editor} editor - The current editor instance.
-   * @param {MarkdownView} view - The current markdown view.
    * @returns {Menu} The menu with added items.
    */
-  addItemsToMenu(menu: Menu, editor: Editor, view: MarkdownView) {
+  addItemsToMenu(menu: Menu, editor: Editor) {
     const selected = editor.getSelection();
     if (selected.length > 0)
       menu.addItem(item =>
@@ -570,13 +572,17 @@ export default class PureChatLLM extends Plugin {
    * If no active file is found, a notice is displayed to the user.
    *
    * @param editor - The editor instance containing the file's content.
-   * @param view - The Markdown view associated with the editor.
+   * @param view - The Markdown view or file info associated with the editor.
    */
-  async generateTitle(editor: Editor, view: MarkdownView): Promise<void> {
+  async generateTitle(editor: Editor, view: MarkdownView | MarkdownFileInfo): Promise<void> {
     const activeFile = view.file;
     if (!activeFile) return;
 
-    await generateTitle(this, new WriteHandler(this, activeFile, view, editor, true));
+    if (view instanceof MarkdownView) {
+      await generateTitle(this, new WriteHandler(this, activeFile, view, editor, true));
+    } else {
+      await generateTitle(this, new WriteHandler(this, activeFile, undefined, editor, true));
+    }
   }
 
   /**
@@ -589,13 +595,17 @@ export default class PureChatLLM extends Plugin {
    * errors gracefully.
    *
    * @param editor - The active Obsidian editor instance where the chat is being composed.
-   * @param view - The current MarkdownView associated with the editor.
+   * @param view - The current MarkdownView or MarkdownFileInfo associated with the editor.
    */
-  async completeChatResponse(editor: Editor, view: MarkdownView) {
+  async completeChatResponse(editor: Editor, view: MarkdownView | MarkdownFileInfo) {
     const activeFile = view.file;
     if (!activeFile) return;
 
-    await completeChatResponse(this, new WriteHandler(this, activeFile, view, editor, true));
+    if (view instanceof MarkdownView) {
+      await completeChatResponse(this, new WriteHandler(this, activeFile, view, editor, true));
+    } else {
+      await completeChatResponse(this, new WriteHandler(this, activeFile, undefined, editor, true));
+    }
   }
 
   /**
@@ -729,7 +739,7 @@ class InstructPromptsHandler extends FuzzySuggestModal<string> {
  * based on the current editor context.
  */
 class PureChatEditorSuggest extends EditorSuggest<string> {
-  type: string;
+  type!: string;
   /**
    * Creates a new editor suggest instance.
    *
