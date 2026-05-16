@@ -1,9 +1,9 @@
 {
 	"id": "pure-chat-llm",
 	"name": "Pure Chat LLM",
-	"version": "2.1.0",
+	"version": "2.1.1",
 	"minAppVersion": "1.11.4",
-	"description": "Turn notes into conversations with chatGPT",
+	"description": "Turn notes into conversations with chatGPT.",
 	"author": "Justice Vellacott",
 	"authorUrl": "https://thejusticeman.github.io/",
 	"isDesktopOnly": false

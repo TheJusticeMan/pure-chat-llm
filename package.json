@@ -1,7 +1,7 @@
 {
   "name": "pure-chat-llm",
-  "version": "2.1.0",
-  "description": "Turn notes into conversations with chatGPT",
+  "version": "2.1.1",
+  "description": "Turn notes into conversations with chatGPT.",
   "main": "main.js",
   "scripts": {
     "dev": "node scripts/esbuild.config.mjs",
@@ -31,7 +31,6 @@
     "@types/glob-to-regexp": "^0.4.4",
     "@types/node": "^25.8.0",
     "@typescript-eslint/parser": "^8.59.3",
-    "builtin-modules": "^5.2.0",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "eslint-plugin-jsdoc": "^62.9.0",
