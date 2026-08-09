@@ -355,9 +355,9 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                   async value =>
                     await this.sett(
                       'messageRoleFormatter',
-                      (value.includes('{role}') && value + ' {role}') ||
-                        value ||
-                        DEFAULT_SETTINGS.messageRoleFormatter,
+                      !value ? DEFAULT_SETTINGS.messageRoleFormatter :
+                        value.includes('{role}') ? value :
+                        value.trimEnd() + ' {role}',
                     ),
                 ),
             ),
