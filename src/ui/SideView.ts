@@ -404,7 +404,7 @@ export class PureChatLLMSideView extends ItemView {
     writeHandler: WriteHandler,
   ) {
     // Preview of message content with copy button
-    contain.createEl('div', { text: '', cls: 'preview' }, div => {
+    contain.createDiv( { text: '', cls: 'preview' }, div => {
       const extr = (icon: string, tip: string, onClick: () => void) =>
         new ExtraButtonComponent(div).setIcon(icon).setTooltip(tip).onClick(onClick);
       if (preview) {

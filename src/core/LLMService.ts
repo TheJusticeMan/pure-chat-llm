@@ -82,7 +82,6 @@ export class LLMService {
           ...requestOptions,
           stream: requestOptions.stream && !!streamCallback,
         })}); */
-      // eslint-disable-next-line no-restricted-globals
       response = await fetch(`${endpoint.endpoint}/chat/completions`, {
         method: 'POST',
         headers: this.getHeaders(endpoint),

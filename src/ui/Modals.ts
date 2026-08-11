@@ -1,5 +1,5 @@
 import 'obsidian';
-import { App, Modal, Setting, TextAreaComponent } from 'obsidian';
+import { App, Modal, Setting, TextAreaComponent, TFile } from 'obsidian';
 import { EmptyApiKey } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
 import PureChatLLM from '../main';
@@ -164,106 +164,170 @@ const endpointInputPlaceholders: PureChatLLMAPI = {
 };
 
 /**
- * Modal dialog for editing and managing LLM provider configurations.
- *
- * Allows users to add, edit, and remove custom API endpoints for different
- * language model providers. Displays a list of configured providers and
- * provides forms for editing their details.
+ * Modal for editing a single LLM provider endpoint configuration.
  */
-export class EditModalProviders extends Modal {
-  plugin: PureChatLLM;
-  app: App;
-  selectedIndex = 0; // Index of the currently selected endpoint
+export class EditEndpointModal extends Modal {
+  /**
+   * @param app - The Obsidian application instance
+   * @param endpoint - A copy of the endpoint to edit (mutated on save)
+   * @param onSave - Called with the updated endpoint when saved
+   */
+  constructor(
+    app: App,
+    private endpoint: PureChatLLMAPI,
+    private onSave: (endpoint: PureChatLLMAPI) => void,
+  ) {
+    super(app);
+    this.setTitle(endpoint.name || 'New provider');
+  }
+
+  /** Builds the form for editing endpoint fields. */
+  onOpen() {
+    const { contentEl } = this;
+
+    Object.entries(endpointNames).forEach(([key, label]) => {
+      new Setting(contentEl)
+        .setName(label as string)
+        .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
+        .addText(text =>
+          text
+            .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
+            .setValue(this.endpoint[key as keyof PureChatLLMAPI])
+            .onChange(value => {
+              this.endpoint[key as keyof PureChatLLMAPI] = value.trim();
+              if (key === 'name') this.setTitle(value.trim() || 'New provider');
+            }),
+        );
+    });
+
+    new Setting(contentEl)
+      .addButton(btn =>
+        btn
+          .setButtonText('Save')
+          .setCta()
+          .onClick(() => {
+            this.onSave(this.endpoint);
+            this.close();
+          }),
+      )
+      .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
+  }
+
+  /** Clears the content element on close. */
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
+/**
+ * Modal dialog for editing selection templates.
+ *
+ * This modal allows users to edit template keys and values with save/cancel actions.
+ *
+ * @extends Modal
+ */
+export class EditSelectionTemplateModal extends Modal {
+  templateKey: string;
+  templateValue: string;
+  onSave: (key: string, value: string) => void;
 
   /**
-   * Creates a modal for editing LLM providers.
+   * Creates a modal dialog for editing selection templates.
    *
    * @param app - The Obsidian application instance
    * @param plugin - The PureChatLLM plugin instance
+   * @param promptTemplates - The current set of prompt templates
+   * @param templateKey - The current template key
+   * @param templateValue - The current template value
+   * @param onSave - Callback function when save is clicked
    */
-  constructor(app: App, plugin: PureChatLLM) {
+  constructor(
+    public app: App,
+    public plugin: PureChatLLM,
+    public promptTemplates: Record<string, string>,
+    templateKey: string,
+    templateValue: string,
+    onSave: (key: string, value: string) => void,
+  ) {
     super(app);
-    this.plugin = plugin;
-    this.app = app;
+    this.templateKey = templateKey;
+    this.templateValue = templateValue;
+    this.onSave = onSave;
 
-    this.setTitle('Edit LLM providers');
-    this.buildUI();
+    this.setTitle('Edit selection template');
   }
 
   /**
-   * Builds the user interface for the provider editor modal.
+   * Builds the user interface for the edit selection template modal.
    */
-  buildUI() {
-    this.contentEl.empty();
-    const { endpoints, endpoint } = this.plugin.settings;
-    const selectedEndpoint = endpoints[this.selectedIndex] || endpoints[endpoint];
+  onOpen() {
+    const { contentEl } = this;
 
-    endpoints.forEach(
-      (key, i) =>
-        void new Setting(this.contentEl)
-          .setName(i !== this.selectedIndex ? key.name : 'Editing...')
-          .addExtraButton(btn => {
-            btn
-              .setIcon('trash')
-              .setTooltip(`Remove ${key.name}`)
-              .onClick(() => {
-                this.plugin.settings.endpoints.splice(i, 1);
-                this.buildUI(); // Rebuild UI after removal
-              });
-          })
-          .addButton(btn => {
-            btn
-              .setIcon('pencil')
-              .setTooltip(`Edit ${key.name}`)
-              .onClick(() => {
-                this.selectedIndex = i;
-                this.buildUI(); // Rebuild UI to show the selected endpoint details
-              });
-            if (i === this.selectedIndex) btn.setCta();
-          }),
+    new Setting(contentEl).setName('Name').addText(text => {
+      text.setValue(this.templateKey).onChange(value => {
+        this.templateKey = value.trim();
+      });
+    });
+
+    new Setting(contentEl).addTextArea(text =>
+      text
+        .setValue(this.templateValue)
+        .onChange(value => {
+          this.templateValue = value.trim();
+        })
+        .inputEl.addClass('codePreview'),
     );
-    new Setting(this.contentEl).setName('Add new endpoint').addButton(btn => {
-      btn
-        .setIcon('plus')
-        .setTooltip('Add a new endpoint')
-        .onClick(() => {
-          this.plugin.settings.endpoints.push({
-            name: '',
-            apiKey: '',
-            endpoint: '',
-            defaultmodel: '',
 
-            getapiKey: '',
-          });
-          this.selectedIndex = this.plugin.settings.endpoints.length - 1;
-          this.buildUI(); // Rebuild UI to show the new endpoint
-        });
-    });
+    new Setting(contentEl)
+      .addButton(btn =>
+        btn
+          .setButtonText('Save')
+          .setCta()
+          .onClick(() => {
+            this.onSave(this.templateKey, this.templateValue);
+            this.close();
+          }),
+      )
+      .addButton(btn =>
+        btn.setButtonText('Generate prompt').onClick(() => {
+          const promptTemplatesSummary = Object.entries(this.promptTemplates)
+            .map(([k, v]) => `## template: ${k} \n\n ${v}`)
+            .join('\n');
+          void new PureChatLLMChat(this.plugin)
+            .appendMessage(
+              {
+                role: 'system',
+                content: `You are editing templates for the PureChatLLM plugin.\n\n# Here are the templates:\n\n${promptTemplatesSummary}`,
+              },
+              {
+                role: 'user',
+                content: `You are creating a new template called: \`"${this.templateKey}"\`.  Please predict the content for this prompt template.  Return only the content of the template.`,
+              },
+            )
+            .completeChatResponse(([] as TFile[])[0])
+            .then(chat => {
+              const predictedContent =
+                chat.session.messages[chat.session.messages.length - 2]?.content.trim() || '';
+              if (!predictedContent)
+                return console.warn(
+                  'No predicted content returned from chat response.',
+                  chat.session.messages,
+                );
 
-    new Setting(this.contentEl).setName('Edit').setHeading();
-    Object.entries(endpointNames).forEach(([key, label]) => {
-      new Setting(this.contentEl)
-        .setName(label as string)
-        .setDesc(endpointDescriptions[key as keyof PureChatLLMAPI])
-        .addText(text => {
-          text
-            .setPlaceholder(endpointInputPlaceholders[key as keyof PureChatLLMAPI])
-            .setValue(selectedEndpoint[key as keyof PureChatLLMAPI])
-            .onChange(value => {
-              selectedEndpoint[key as keyof PureChatLLMAPI] = value.trim();
-              if (key === 'name') this.setTitle(value.trim());
+              this.templateValue = predictedContent;
+              this.close();
+              this.onSave(this.templateKey, predictedContent);
             });
-        });
-    });
-    this.setTitle(selectedEndpoint.name);
+        }),
+      )
+      .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
   }
+
   /**
-   * Called when the modal is closed. Filters out empty endpoints and saves settings.
+   * Called when the modal is closed. Clears the content element.
    */
-  onClose(): void {
-    const { settings } = this.plugin;
-    settings.endpoints = settings.endpoints.filter(endpoint => endpoint.name);
-    void this.plugin.saveSettings();
-    super.onClose();
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 }

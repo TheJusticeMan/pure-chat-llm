@@ -86,10 +86,12 @@ export class ImportChatGPT {
    * Creates a new ImportChatGPT instance and initiates the import process
    * @param app - The Obsidian app instance
    * @param plugin - The Pure Chat LLM plugin instance
+   * @param triggerElement - The HTML element that triggered the import
    */
   constructor(
     public app: App,
     public plugin: PureChatLLM,
+    public triggerElement: HTMLElement,
   ) {
     void this.promptAndImport();
   }
@@ -124,15 +126,14 @@ export class ImportChatGPT {
    */
   private getFileFromUser(): Promise<File | null> {
     return new Promise(resolve => {
-      const input = window.activeDocument.createElement('input');
+      const input = this.triggerElement.createEl('input');
       input.type = 'file';
       input.accept = '.json,application/json';
       input.setCssProps({ display: 'none' });
-
-      window.activeDocument.body.appendChild(input);
+      input.onclick = e => e.stopPropagation(); // Prevents the click from bubbling up to the trigger element and creating an infinite loop and call stack overflow
       input.onchange = () => {
         resolve(input.files?.[0] ?? null);
-        window.activeDocument.body.removeChild(input);
+        this.triggerElement.removeChild(input);
       };
       input.click();
     });

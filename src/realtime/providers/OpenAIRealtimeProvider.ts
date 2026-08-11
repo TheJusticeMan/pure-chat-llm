@@ -114,7 +114,6 @@ export class OpenAIRealtimeProvider implements IVoiceCallProvider {
       formData.append('sdp', offer.sdp || '');
       formData.append('session', JSON.stringify(sessionConfig));
 
-      // eslint-disable-next-line no-restricted-globals
       const response = await fetch(config.endpoint || this.sessionEndpoint, {
         method: 'POST',
         headers: {

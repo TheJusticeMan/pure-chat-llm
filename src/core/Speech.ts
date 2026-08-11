@@ -65,7 +65,6 @@ export class PureChatLLMSpeech {
       return;
     }
     try {
-      // eslint-disable-next-line no-restricted-globals
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {

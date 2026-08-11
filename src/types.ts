@@ -48,7 +48,7 @@ export interface ToolParameters {
   required: string[];
 }
 
-export interface ToolFunction {
+interface ToolFunction {
   name: string;
   description: string;
   parameters: ToolParameters;
@@ -131,7 +131,7 @@ export interface ChatOptions {
 }
 
 // Voice Call Types
-export type CallStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
+type CallStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
 
 export interface CallState {
   status: CallStatus;

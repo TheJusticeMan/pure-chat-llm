@@ -1,20 +1,17 @@
 import {
-  AbstractInputSuggest,
   App,
-  Modal,
   Notice,
   PluginSettingTab,
   Setting,
-  SettingGroup,
-  TFile,
+  SettingDefinitionItem,
+  SettingGroupItem,
 } from 'obsidian';
 import { DEFAULT_SETTINGS, PureChatLLMversion } from 'src/assets/constants';
 import { PureChatLLMChat } from '../core/Chat';
 import { ImportChatGPT } from '../core/ImportChatGPT';
 import PureChatLLM from '../main';
 import { PURE_CHAT_LLM_ICON_NAME, PureChatLLMSettings } from '../types';
-import { BrowserConsole } from '../utils/BrowserConsole';
-import { AskForAPI, CodeAreaComponent, EditModalProviders } from './Modals';
+import { AskForAPI, EditEndpointModal, EditSelectionTemplateModal } from './Modals';
 
 /**
  * Represents the settings tab for the PureChatLLM plugin in Obsidian.
@@ -61,135 +58,134 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
   }
 
   /**
-   * Checks if a setting differs from its default value and returns it as a string.
+   * Retrieves the setting definitions for the plugin.
    *
-   * @param key - The setting key to check
-   * @returns The setting value as a string if it differs from default, otherwise empty string
+   * @returns An array of setting definition items that define the UI structure and behavior
+   * of the settings tab.
    */
-  ifdefault<S extends keyof PureChatLLMSettings>(key: S): string {
+  getSettingDefinitions(): SettingDefinitionItem[] {
     const { settings } = this.plugin;
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    return settings[key] !== DEFAULT_SETTINGS[key] ? String(settings[key] ?? '') : '';
-  }
-
-  /**
-   * Displays the settings tab user interface.
-   *
-   * Generates all setting controls including model selection, prompts, agent mode,
-   * templates, chat behavior, and utility functions.
-   */
-  display(): void {
-    const {
-      containerEl,
-      plugin: { settings },
-    } = this;
-
-    containerEl.empty();
-    new SettingGroup(containerEl)
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Model provider')
-            .setDesc('Choose the default model provider. Configure API keys.')
-            .addDropdown(dropdown =>
-              dropdown
-                .addOptions(
-                  Object.fromEntries(settings.endpoints.map((e, i) => [i.toString(), e.name])),
+    return [
+      {
+        type: 'group',
+        items: [
+          {
+            name: 'Model provider',
+            desc: 'Choose the default model provider. Configure API keys.',
+            render: setting =>
+              void setting
+                .addDropdown(dropdown =>
+                  dropdown
+                    .addOptions(
+                      Object.fromEntries(settings.endpoints.map((e, i) => [i.toString(), e.name])),
+                    )
+                    .setValue(settings.endpoint.toString())
+                    .onChange(async value => await this.sett('endpoint', parseInt(value, 10))),
                 )
-                .setValue(settings.endpoint.toString())
-                .onChange(async value => await this.sett('endpoint', parseInt(value, 10))),
-            )
-            .addButton(btn =>
-              btn
-                .setIcon('key')
-                .setTooltip('Add API key')
-                .onClick(async () => new AskForAPI(this.plugin).open()),
-            )
-            .addButton(
-              // fixes issue that you can't refresh models after the first time
-              btn =>
-                btn
-                  .setIcon('refresh-cw')
-                  .setTooltip('Refresh list of models')
-                  .onClick(async () => loadAllModels(this.plugin)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Default system prompt')
-            .setDesc('System message or file for each new chat.')
-            .setClass('PURE')
-            .addText(text =>
-              new FileInputSuggest(
-                this.app,
-                text
-                  .setPlaceholder(DEFAULT_SETTINGS.SystemPrompt)
-                  .setValue(this.ifdefault('SystemPrompt'))
-                  .onChange(
-                    async value =>
-                      await this.sett('SystemPrompt', value || DEFAULT_SETTINGS.SystemPrompt),
-                  ).inputEl,
-              ).onSelect((file: TFile) =>
-                text.setValue(this.plugin.app.fileManager.generateMarkdownLink(file, file.path)),
-              ),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Default token count')
-            .setDesc('Default max tokens for models that support it.')
-            .addText(text =>
-              text
-                .setPlaceholder(DEFAULT_SETTINGS.defaultmaxTokens.toString())
-                .setValue(this.ifdefault('defaultmaxTokens'))
-                .onChange(
-                  async value =>
-                    await this.sett(
-                      'defaultmaxTokens',
-                      Number(value || DEFAULT_SETTINGS.defaultmaxTokens) ||
-                        DEFAULT_SETTINGS.defaultmaxTokens ||
-                        4096,
-                    ),
+                .addButton(btn =>
+                  btn
+                    .setIcon('key')
+                    .setTooltip('Add API key')
+                    .onClick(async () => new AskForAPI(this.plugin).open()),
+                )
+                .addButton(
+                  // fixes issue that you can't refresh models after the first time
+                  btn =>
+                    btn
+                      .setIcon('refresh-cw')
+                      .setTooltip('Refresh list of models')
+                      .onClick(async () => loadAllModels(this.plugin)),
                 ),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Custom LLM providers')
-            .setDesc('Add custom LLM providers with API keys.')
-            .addButton(btn =>
-              btn
-                .setButtonText('Add custom provider')
-                .setCta()
-                .onClick(() => new EditModalProviders(this.app, this.plugin).open()),
-            ),
-      );
-
-    new SettingGroup(containerEl)
-      .setHeading('Agent & capabilities')
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Agent mode')
-            .setDesc(
-              'Enable this to allow the LLM to use tools (e.g., creating notes, searching the vault).',
-            )
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.agentMode)
-                .onChange(async value => await this.sett('agentMode', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Enabled tool classifications')
-            .setDesc('Control which categories of tools are available to the agent.')
-            .then(() => {
-              (['Vault', 'UI', 'System', 'AI'] as const).forEach(classification => {
+          },
+          {
+            name: 'Default system prompt',
+            desc: 'System message or file for each new chat.',
+            control: {
+              type: 'text',
+              key: 'SystemPrompt',
+              placeholder: DEFAULT_SETTINGS.SystemPrompt,
+            },
+          },
+          {
+            name: 'Default token count',
+            desc: 'Default max tokens for models that support it.',
+            control: {
+              type: 'number',
+              key: 'defaultmaxTokens',
+            },
+          },
+          {
+            type: 'page',
+            name: 'Custom LLM providers',
+            desc: 'Add custom LLM providers with API keys.',
+            items: [
+              {
+                type: 'list',
+                name: 'Custom LLM providers',
+                desc: 'Add custom LLM providers with API keys.',
+                addItem: {
+                  name: 'Add provider',
+                  action: () =>
+                    new EditEndpointModal(
+                      this.app,
+                      { name: '', apiKey: '', endpoint: '', defaultmodel: '', getapiKey: '' },
+                      ep => {
+                        if (ep.name) {
+                          this.plugin.settings.endpoints.push(ep);
+                          void this.plugin.saveSettings();
+                          this.update();
+                        }
+                      },
+                    ).open(),
+                },
+                items: settings.endpoints.map((endpoint, index) => ({
+                  name: endpoint.name,
+                  render: (setting: Setting) =>
+                    void setting.addExtraButton(btn =>
+                      btn.setIcon('pencil').onClick(() =>
+                        new EditEndpointModal(this.app, { ...endpoint }, ep => {
+                          this.plugin.settings.endpoints[index] = ep;
+                          void this.plugin.saveSettings();
+                          this.update();
+                        }).open(),
+                      ),
+                    ),
+                  searchable: false,
+                })),
+                onReorder: (oldIndex: number, newIndex: number) => {
+                  const endpoints = [...this.plugin.settings.endpoints];
+                  const [moved] = endpoints.splice(oldIndex, 1);
+                  endpoints.splice(newIndex, 0, moved);
+                  this.plugin.settings.endpoints = endpoints;
+                  void this.plugin.saveSettings();
+                },
+                onDelete: (idx: number) => {
+                  this.plugin.settings.endpoints.splice(idx, 1);
+                  void this.plugin.saveSettings();
+                  this.update();
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: 'group',
+        name: 'Agent & capabilities',
+        items: [
+          {
+            name: 'Agent mode',
+            desc: 'Enable this to allow the LLM to use tools (e.g., creating notes, searching the vault).',
+            control: {
+              type: 'toggle',
+              key: 'agentMode',
+            },
+          },
+          {
+            name: 'Enabled tool classifications',
+            desc: 'Control which categories of tools are available to the agent.',
+            render: setting =>
+              void (['Vault', 'UI', 'System', 'AI'] as const).forEach(classification => {
                 setting.addButton(btn => {
                   if (settings.enabledToolClassifications[classification] ?? true) btn.setCta();
                   return btn.setButtonText(classification).onClick(async () => {
@@ -201,257 +197,237 @@ export class PureChatLLMSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                   });
                 });
-              });
-            }),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Realtime system prompt file')
-            .setDesc(
-              'Path to a file the system prompt for voice calls. Defaults to built-in prompts.',
-            )
-            .addText(text =>
-              new FileInputSuggest(
-                this.app,
-                text
-                  .setPlaceholder('e.g., System Prompts/Realtime.md')
-                  .setValue(this.ifdefault('realtimeSystemPromptFile'))
-                  .onChange(
-                    async value =>
-                      await this.sett(
-                        'realtimeSystemPromptFile',
-                        value || DEFAULT_SETTINGS.realtimeSystemPromptFile,
-                      ),
-                  ).inputEl,
-              ).onSelect((file: TFile) => text.setValue(file.path)),
-            ),
-      );
-    new SettingGroup(containerEl)
-      .setHeading('Prompts & templates')
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Selection commands')
-            .setDesc('Edit selection prompt templates for the selection commands.')
-            .addButton(btn =>
-              btn
-                .setButtonText('Edit prompts')
-                //.setCta()
-                .setTooltip('Edit selection prompt templates')
-                .onClick(() =>
-                  new SelectionPromptEditor(
-                    this.app,
-                    this.plugin,
-                    this.plugin.settings.selectionTemplates,
-                    { ...DEFAULT_SETTINGS.selectionTemplates },
-                    this.plugin.settings.CMDselectionTemplates,
-                  ).open(),
-                ),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Chat analyze commands')
-            .setDesc('Edit chat prompt templates for the analyze commands.')
-            .addButton(btn =>
-              btn
-                .setButtonText('Edit prompts')
-                //.setCta()
-                .setTooltip('Edit chat prompt templates')
-                .onClick(() =>
-                  new SelectionPromptEditor(
-                    this.app,
-                    this.plugin,
-                    this.plugin.settings.chatTemplates,
-                    { ...DEFAULT_SETTINGS.chatTemplates },
-                    settings.CMDchatTemplates,
-                  ).open(),
-                ),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Import/export templates')
-            .setDesc(
-              'Import or export selection and chat prompt templates to/from PureChatLLM-Templates.md.',
-            )
-            .addButton(btn =>
-              btn.setButtonText('Export').onClick(() => {
-                const { selectionTemplates, chatTemplates } = this.plugin.settings;
-                const content = getMarkdownFromObject({ selectionTemplates, chatTemplates });
-                const filePath = 'PureChatLLM-Templates.md';
-                const file = this.app.vault.getFileByPath(filePath);
-                if (file) void this.app.vault.modify(file, content);
-                else void this.app.vault.create(filePath, content);
-                new Notice('Templates exported to PureChatLLM-Templates.md');
               }),
-            )
-            .addButton(btn =>
-              btn
-                .setButtonText('Import')
-                .then(btn =>
-                  this.app.vault.getFileByPath('PureChatLLM-Templates.md')
-                    ? btn
-                    : btn.setDisabled(true),
+          },
+          {
+            name: 'Realtime system prompt file',
+            desc: 'Path to a file the system prompt for voice calls. Defaults to built-in prompts.',
+            control: {
+              type: 'file',
+              key: 'realtimeSystemPromptFile',
+              filter: file => file.extension === 'md',
+            },
+          },
+        ],
+      },
+      {
+        type: 'group',
+        name: 'Prompts & templates',
+        items: [
+          this.makeTemplatePageItem(
+            'Selection commands',
+            'Edit selection prompt templates for the selection commands.',
+            'selectionTemplates',
+          ),
+          this.makeTemplatePageItem(
+            'Chat analyze commands',
+            'Edit chat prompt templates for the analyze commands.',
+            'chatTemplates',
+          ),
+          {
+            name: 'Import/export templates',
+            desc: 'Import or export selection and chat prompt templates to/from PureChatLLM-Templates.md.',
+            render: setting =>
+              void setting
+                .addButton(btn =>
+                  btn.setButtonText('Export').onClick(() => {
+                    const { selectionTemplates, chatTemplates } = this.plugin.settings;
+                    const content = getMarkdownFromObject({ selectionTemplates, chatTemplates });
+                    const filePath = 'PureChatLLM-Templates.md';
+                    const file = this.app.vault.getFileByPath(filePath);
+                    if (file) void this.app.vault.modify(file, content);
+                    else void this.app.vault.create(filePath, content).then(() => this.update());
+                    new Notice('Templates exported to PureChatLLM-Templates.md');
+                  }),
                 )
-                .onClick(() => {
-                  const file = this.app.vault.getFileByPath('PureChatLLM-Templates.md');
-                  if (file)
-                    void this.app.vault.cachedRead(file).then(data => {
-                      this.plugin.settings = {
-                        ...this.plugin.settings,
-                        ...getObjectFromMarkdown(data, 1, 2),
-                      };
-                      void this.plugin.saveSettings();
-                      new Notice('Templates imported.');
-                    });
-                }),
-            ),
-      );
-    new SettingGroup(containerEl)
-      .setHeading('Chat behavior & storage')
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Autogenerate title')
-            .setDesc('How long chat before creating a conversation title (set to 0 to disable).')
-            .addText(text =>
-              text
-                .setPlaceholder(DEFAULT_SETTINGS.AutogenerateTitle.toString())
-                .setValue(this.ifdefault('AutogenerateTitle'))
-                .onChange(
-                  async value =>
-                    await this.sett(
-                      'AutogenerateTitle',
-                      Number(value || DEFAULT_SETTINGS.AutogenerateTitle) || 0,
-                    ),
+                .addButton(btn =>
+                  btn
+                    .setButtonText('Import')
+                    .then(btn =>
+                      this.app.vault.getFileByPath('PureChatLLM-Templates.md')
+                        ? btn
+                        : btn.setDisabled(true),
+                    )
+                    .onClick(() => {
+                      const file = this.app.vault.getFileByPath('PureChatLLM-Templates.md');
+                      if (file)
+                        void this.app.vault.cachedRead(file).then(data => {
+                          this.plugin.settings = {
+                            ...this.plugin.settings,
+                            ...getObjectFromMarkdown(data, 1, 2),
+                          };
+                          void this.plugin.saveSettings();
+                          new Notice('Templates imported.');
+                        });
+                    }),
                 ),
-            ),
-      ) //YAML front matter
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Use YAML front matter')
-            .setDesc('Store chat metadata in YAML front matter instead of HTML comments.')
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.useYAMLFrontMatter)
-                .onChange(async value => await this.sett('useYAMLFrontMatter', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Chat style')
-            .setDesc('Select how chats are written and interpreted in markdown')
-            .addText(text =>
-              text
-                .setPlaceholder(DEFAULT_SETTINGS.messageRoleFormatter)
-                .setValue(this.ifdefault('messageRoleFormatter'))
-                .onChange(
-                  async value =>
-                    await this.sett(
-                      'messageRoleFormatter',
-                      !value ? DEFAULT_SETTINGS.messageRoleFormatter :
-                        value.includes('{role}') ? value :
-                        value.trimEnd() + ' {role}',
-                    ),
-                ),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Add file to context for editing')
-            .setDesc('Include the current file content in the context for selection editing.')
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.addfiletocontext)
-                .onChange(async value => await this.sett('addfiletocontext', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Include linked files in chat analysis')
-            .setDesc('Automatically include linked files when using chat analysis commands.')
-            .addToggle(toggle =>
-              toggle
-                .setValue(settings.resolveFilesForChatAnalysis)
-                .onChange(async value => await this.sett('resolveFilesForChatAnalysis', value)),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Maximum recursion depth')
-            .setDesc('Maximum depth for recursive [[link]] resolution (1-20). Default is 10.')
-            .addSlider(slider =>
-              slider
-                .setLimits(1, 20, 1)
-                .setValue(settings.maxRecursionDepth)
-                .setDynamicTooltip()
-                .onChange(async value => await this.sett('maxRecursionDepth', value)),
-            ),
-      );
+          },
+        ],
+      },
+      {
+        type: 'group',
+        name: 'Chat behavior & storage',
+        items: [
+          {
+            name: 'Autogenerate title',
+            desc: 'How long chat before creating a conversation title (set to 0 to disable).',
+            control: {
+              type: 'number',
+              key: 'AutogenerateTitle',
+            },
+          },
+          {
+            name: 'Use YAML front matter',
+            desc: 'Store chat metadata in YAML front matter instead of HTML comments.',
+            control: {
+              type: 'toggle',
+              key: 'useYAMLFrontMatter',
+            },
+          },
+          {
+            name: 'Chat style',
+            desc: 'Select how chats are written and interpreted in markdown',
+            control: {
+              type: 'text',
+              key: 'messageRoleFormatter',
+              placeholder: DEFAULT_SETTINGS.messageRoleFormatter,
+              validate: value =>
+                !value || !value.includes('{role}')
+                  ? 'The chat style must include the {role} placeholder.'
+                  : undefined,
+            },
+          },
+          {
+            name: 'Add file to context for editing',
+            desc: 'Include the current file content in the context for selection editing.',
+            control: {
+              type: 'toggle',
+              key: 'addfiletocontext',
+            },
+          },
+          {
+            name: 'Include linked files in chat analysis',
+            desc: 'Automatically include linked files when using chat analysis commands.',
+            control: {
+              type: 'toggle',
+              key: 'resolveFilesForChatAnalysis',
+            },
+          },
+          {
+            name: 'Maximum recursion depth',
+            desc: 'Maximum depth for recursive [[link]] resolution (1-20). Default is 10.',
+            control: {
+              type: 'slider',
+              key: 'maxRecursionDepth',
+              min: 1,
+              max: 20,
+              step: 1,
+            },
+          },
+        ],
+      },
+      {
+        name: 'Utilities & maintenance',
+        type: 'group',
+        items: [
+          {
+            name: 'Import ChatGPT conversations',
+            desc: `Import conversations exported from ${'chat.openai.com'}.`,
+            action: (el: HTMLElement) => new ImportChatGPT(this.app, this.plugin, el),
+          },
+          {
+            name: 'Debug',
+            desc: 'Enable logging of debug information in the console.',
+            control: {
+              type: 'toggle',
+              key: 'debug',
+            },
+          },
+          {
+            name: 'Version',
+            desc: `v${PureChatLLMversion}`,
+          },
+        ],
+      },
+    ];
+  }
 
-    new SettingGroup(containerEl)
-      .setHeading('Utilities & maintenance')
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Import ChatGPT conversations')
-            .setDesc(`Import conversations exported from ${'chat.openai.com'}.`)
-            .addButton(btn => {
-              btn
-                .setButtonText('Import')
-                .setCta()
-                .onClick(() => new ImportChatGPT(this.app, this.plugin));
-            }),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Debug')
-            .setDesc('Enable logging of debug information in the console.')
-            .addToggle(toggle =>
-              toggle.setValue(settings.debug).onChange(async value => {
-                await this.sett('debug', value);
-
-                this.plugin.console = new BrowserConsole(settings.debug, 'PureChatLLM');
-              }),
-            ),
-      )
-      .addSetting(
-        setting =>
-          void setting
-            .setName('Version')
-            .setDesc(`v${PureChatLLMversion}`)
-            .addButton(btn =>
-              btn
-                .setButtonText('Reset settings')
-                .setTooltip("Won't delete the API keys.")
-                .setWarning()
-                .onClick(e => {
-                  const oldSettings = { ...this.plugin.settings };
-                  this.plugin.settings = { ...DEFAULT_SETTINGS };
-                  this.plugin.settings.endpoints.forEach((ep, endpoint) => {
-                    if (DEFAULT_SETTINGS.endpoints[endpoint])
-                      this.plugin.settings.endpoints[endpoint].apiKey =
-                        oldSettings.endpoints[endpoint].apiKey;
-                  });
+  /**
+   * Builds a page-type list item for editing a named template map in settings.
+   * @param name - Display name for the setting and page heading
+   * @param desc - Description shown below the setting name
+   * @param key - The settings key of the template map to edit
+   * @returns A setting definition item of type 'page' containing the list editor
+   */
+  private makeTemplatePageItem(
+    name: string,
+    desc: string,
+    key: 'selectionTemplates' | 'chatTemplates',
+  ): SettingGroupItem {
+    const { settings } = this.plugin;
+    return {
+      name,
+      desc,
+      type: 'page',
+      items: [
+        {
+          type: 'list',
+          name,
+          desc,
+          addItem: {
+            name: 'Add template',
+            action: () =>
+              new EditSelectionTemplateModal(
+                this.app,
+                this.plugin,
+                this.plugin.settings[key],
+                '',
+                '',
+                (k, value) => {
+                  this.plugin.settings[key][k] = value;
                   void this.plugin.saveSettings();
-                  this.display();
-                  new Notice('Settings reset to defaults.  API keys are unchanged.');
-                }),
-            )
-            .addButton(btn =>
-              btn.setButtonText('Hot keys').setCta().onClick(this.plugin.openHotkeys),
-            ),
-      );
+                  this.update();
+                },
+              ).open(),
+          },
+          onReorder: (oldIndex: number, newIndex: number) => {
+            const folders = Object.entries(this.plugin.settings[key]);
+            const [moved] = folders.splice(oldIndex, 1);
+            folders.splice(newIndex, 0, moved);
+            this.plugin.settings[key] = Object.fromEntries(folders);
+            void this.plugin.saveSettings();
+          },
+          onDelete: (idx: number) => {
+            delete this.plugin.settings[key][Object.keys(this.plugin.settings[key])[idx]];
+            void this.plugin.saveSettings();
+            this.update();
+          },
+          items: Object.keys(settings[key]).map(k => ({
+            name: k,
+            render: (setting: Setting) =>
+              void setting.addExtraButton(btn =>
+                btn.setIcon('pencil').onClick(() =>
+                  new EditSelectionTemplateModal(
+                    this.app,
+                    this.plugin,
+                    this.plugin.settings[key],
+                    k,
+                    settings[key][k],
+                    (newKey, value) => {
+                      if (newKey !== k) delete this.plugin.settings[key][k];
+
+                      this.plugin.settings[key][newKey] = value;
+                      void this.plugin.saveSettings();
+                      this.update();
+                    },
+                  ).open(),
+                ),
+              ),
+            searchable: false,
+          })),
+        },
+      ],
+    };
   }
 }
 
@@ -475,246 +451,6 @@ function loadAllModels(plugin: PureChatLLM): void {
     }
   });
   plugin.settings.endpoint = currentEndpoint;
-}
-
-/**
- * Modal dialog for editing and managing selection prompt templates within the PureChatLLM plugin.
- *
- * This class provides a UI for users to create, select, and edit named prompt templates
- * that are stored in the plugin's settings. It features a dropdown for selecting existing
- * templates, a button to add new templates, and a code editor area for editing the template content.
- *
- * @extends Modal
- */
-class SelectionPromptEditor extends Modal {
-  promptTitle: string = '';
-  /**
-   * Creates a modal for editing prompt templates.
-   *
-   * @param app - The Obsidian application instance
-   * @param plugin - The PureChatLLM plugin instance
-   * @param promptTemplates - The prompt templates object to edit
-   * @param defaultTemplates - Default template values for reset functionality
-   * @param inCMD - Object tracking which templates are available in command palette
-   */
-  constructor(
-    app: App,
-    private plugin: PureChatLLM,
-    private promptTemplates: { [key: string]: string },
-    private defaultTemplates: { [key: string]: string } = {},
-    private inCMD: { [key: string]: boolean } = {},
-  ) {
-    super(app);
-    this.plugin = plugin;
-    this.update();
-  }
-  /**
-   * Updates the modal UI with current template list and editor.
-   */
-  update() {
-    this.contentEl.empty();
-    if (!this.promptTitle)
-      this.promptTitle = Object.keys(this.promptTemplates)[0] || 'New template';
-    if (this.promptTitle && !this.promptTemplates[this.promptTitle])
-      this.promptTemplates[this.promptTitle] = '';
-    Object.keys(this.promptTemplates).forEach(key => (this.inCMD[key] = Boolean(this.inCMD[key])));
-    const isAllinCMD = Object.values(this.inCMD).every(v => v);
-    new Setting(this.contentEl)
-      .setName('All templates')
-
-      .setDesc('Manage all prompt templates for the Pure Chat LLM plugin.')
-      .setHeading()
-      .addExtraButton(btn =>
-        btn
-          .setIcon(isAllinCMD ? 'minus' : 'plus')
-          .setTooltip(isAllinCMD ? 'Remove all from command palette' : 'Add all to command palette')
-          .onClick(() => {
-            Object.keys(this.inCMD).forEach(key => (this.inCMD[key] = !isAllinCMD));
-            this.update();
-          }),
-      )
-      .addExtraButton(btn =>
-        btn
-          .setIcon('trash')
-          .setTooltip('Delete all templates')
-          .onClick(() => {
-            Object.keys(this.promptTemplates).forEach(key => {
-              delete this.promptTemplates[key];
-              delete this.inCMD[key];
-            });
-            this.promptTitle = 'New template';
-            this.update();
-          }),
-      );
-    Object.keys(this.promptTemplates)
-      .sort()
-      .forEach(
-        key =>
-          void new Setting(this.contentEl)
-            .setName(key !== this.promptTitle ? key : 'Editing...')
-            .addExtraButton(btn =>
-              btn
-                .setIcon(this.inCMD[key] ? 'minus' : 'plus')
-                .setTooltip('Use this template in the command palette')
-                .onClick(() => {
-                  this.inCMD[key] = !this.inCMD[key];
-                  this.update();
-                }),
-            )
-            .addExtraButton(btn =>
-              btn
-                .setIcon('trash')
-                .setTooltip('Delete this template')
-                .onClick(() => {
-                  delete this.promptTemplates[key];
-                  this.promptTitle = Object.keys(this.promptTemplates)[0];
-                  this.update();
-                }),
-            )
-            .addButton(btn => {
-              btn
-                .setIcon('pencil')
-                .setTooltip('Edit this template')
-                .onClick(() => {
-                  this.promptTitle = key;
-                  this.update();
-                });
-              if (key === this.promptTitle) btn.setCta();
-            }),
-      );
-    new Setting(this.contentEl).setName('Add a new template').addText(text => {
-      text.setPlaceholder('New template title').setValue('');
-      text.inputEl.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          const value = text.getValue().trim();
-          if (value) this.generateTemplateContent(value);
-        }
-      });
-      text.inputEl.addEventListener('blur', () => {
-        const value = text.getValue().trim();
-        if (value) this.generateTemplateContent(value);
-      });
-    });
-
-    new Setting(this.contentEl)
-      .setName('Template name')
-      .setHeading()
-
-      .setTooltip('Change the name of the current template.')
-      .addText(text => {
-        text
-          .setPlaceholder('Template name')
-          .setValue(this.promptTitle)
-          .onChange(value => {
-            if (value && value !== this.promptTitle) {
-              this.promptTemplates[value] = this.promptTemplates[this.promptTitle];
-              delete this.promptTemplates[this.promptTitle];
-              this.promptTitle = value;
-              this.setTitle(this.promptTitle);
-              //this.update();
-            }
-          });
-      });
-    new CodeAreaComponent(this.contentEl)
-      .setValue(this.promptTemplates[this.promptTitle])
-      .onChange(value => (this.promptTemplates[this.promptTitle] = value));
-    new Setting(this.contentEl)
-      .addButton(btn =>
-        btn
-          .setButtonText('Save')
-          .setCta()
-          .onClick(async () => this.close()),
-      )
-      .addButton(btn =>
-        btn
-          .setButtonText('Reset all')
-          .setTooltip('Reset all templates to default values.')
-          .setWarning()
-          .onClick(async () => {
-            Object.assign(this.promptTemplates, this.defaultTemplates);
-            this.promptTitle = Object.keys(this.promptTemplates)[0] || 'New template';
-            this.update();
-          }),
-      );
-    this.setTitle(this.promptTitle);
-  }
-
-  /**
-   * Generates content for a new template using AI assistance.
-   *
-   * @param value - The name of the new template to generate
-   */
-  private generateTemplateContent(value: string) {
-    this.promptTitle = value;
-    if (!this.promptTemplates[this.promptTitle]) this.promptTemplates[this.promptTitle] = '';
-    const promptTemplatesSummary = Object.entries(this.promptTemplates)
-      .map(([k, v]) => `## template: ${k} \n\n ${v}`)
-      .join('\n');
-    void new PureChatLLMChat(this.plugin)
-      .appendMessage(
-        {
-          role: 'system',
-          content: `You are editing templates for the PureChatLLM plugin.\n\n# Here are the templates:\n\n${promptTemplatesSummary}`,
-        },
-        {
-          role: 'user',
-          content: `You are creating a new template called: \`"${this.promptTitle}"\`.  Please predict the content for this prompt template.`,
-        },
-      )
-      .completeChatResponse(([] as TFile[])[0])
-      .then(chat => {
-        if (!this.promptTemplates[this.promptTitle]) {
-          this.promptTemplates[this.promptTitle] =
-            chat.session.messages[chat.session.messages.length - 2]?.content.trim() || '';
-          this.update();
-        }
-      });
-    this.update();
-  }
-
-  /**
-   * Called when the modal is closed. Saves all template changes to settings.
-   */
-  onClose(): void {
-    void this.plugin.saveSettings();
-  }
-}
-/**
- * Input suggest component for file path autocomplete.
- */
-class FileInputSuggest extends AbstractInputSuggest<TFile> {
-  files: TFile[];
-  /**
-   * Creates a new file input suggest component.
-   *
-   * @param app - The Obsidian application instance
-   * @param inputEl - The input element to attach suggestions to
-   */
-  constructor(app: App, inputEl: HTMLInputElement) {
-    super(app, inputEl);
-    this.files = app.vault.getMarkdownFiles();
-  }
-
-  /**
-   * Filters and returns file suggestions based on the query.
-   *
-   * @param query - The search query string
-   * @returns Array of matching files
-   */
-  protected getSuggestions(query: string): TFile[] | Promise<TFile[]> {
-    if (!query) return [];
-    return this.files.filter(file => file.path.toLowerCase().includes(query.toLowerCase()));
-  }
-
-  /**
-   * Renders a single suggestion item in the suggestion list.
-   *
-   * @param value - The file to render
-   * @param el - The HTML element to render into
-   */
-  renderSuggestion(value: TFile, el: HTMLElement): void {
-    el.setText(value.path);
-  }
 }
 /**
  * Converts a markdown string into a nested object structure based on heading levels.

@@ -96,14 +96,13 @@ class EditReviewModal extends Modal {
     // Diff
     new Setting(contentEl).setName('Changes').setHeading();
 
-    const diffContainer = contentEl.createEl('div');
-    diffContainer.addClass('diff-container');
+    const diffContainer = contentEl.createDiv({ cls: 'diff-container' });
 
     if (this.originalContent !== null) {
       const patch = createPatch(this.path, this.originalContent, this.newContent);
       const lines = patch.split('\n');
       for (const line of lines) {
-        const div = diffContainer.createEl('div');
+        const div = diffContainer.createDiv();
         const type = line.startsWith('+')
           ? 'added'
           : line.startsWith('-')
@@ -115,7 +114,7 @@ class EditReviewModal extends Modal {
         div.setText(line);
       }
     } else {
-      diffContainer.createEl('div').setText('New file - no diff available');
+      diffContainer.createDiv().setText('New file - no diff available');
     }
 
     // New Content

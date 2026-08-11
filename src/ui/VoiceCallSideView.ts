@@ -155,7 +155,7 @@ export class VoiceCallSideView extends ItemView {
         .addButton(btn =>
           btn
             .setButtonText('End call')
-            .setWarning()
+            .setDestructive()
             .setIcon('phone-off')
             .onClick(() => this.endCall()),
         );

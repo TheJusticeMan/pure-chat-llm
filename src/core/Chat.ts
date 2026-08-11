@@ -695,7 +695,6 @@ export class PureChatLLMChat {
     const cached = this.plugin.settings.ModelsOnEndpoint[endpointName];
     if (cached?.length) return Promise.resolve(cached);
     this.console.log(`Fetching models from ${endpointName} API...`);
-    // eslint-disable-next-line no-restricted-globals
     return fetch(`${endpoint}/models`, {
       method: 'GET',
       headers: this.llmService.getHeaders(this.endpoint),

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-08-11
+
+### Changed
+
+- Migrated settings UI from the deprecated `display()` method to the new `getSettingDefinitions()` API, which Obsidian uses directly for minAppVersion >= 1.13.0.
+- Custom LLM providers are now managed inline as a list inside the settings page, replacing the standalone `EditModalProviders` modal. Supports add, edit, reorder, and delete.
+- Added `EditEndpointModal` in `Modals.ts` for editing a single LLM provider endpoint (name, API key, URL, default model, key URL).
+
+### Fixed
+
+- Fixed {role} appending when there's already one on the role formatter.
+
+- Thanks @ajongbloets
+
 ## [2.1.1] - 2026-05-16
 
 ### Changed

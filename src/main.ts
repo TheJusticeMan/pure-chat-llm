@@ -641,15 +641,13 @@ export default class PureChatLLM extends Plugin {
     this.settings.chatTemplates = Object.fromEntries(
       Object.entries(this.settings.chatTemplates)
         .map(([key, value]) => [toSentenceCase(key), value])
-        .filter(([key, value]) => key && value)
-        .sort(([a], [b]) => a.localeCompare(b)),
+        .filter(([key, value]) => key && value),
     ) as { [key: string]: string };
 
     this.settings.selectionTemplates = Object.fromEntries(
       Object.entries(this.settings.selectionTemplates)
         .map(([key, value]) => [toSentenceCase(key), value])
-        .filter(([key, value]) => key && value)
-        .sort(([a], [b]) => a.localeCompare(b)),
+        .filter(([key, value]) => key && value),
     ) as { [key: string]: string };
 
     DEFAULT_SETTINGS.endpoints.forEach(
@@ -657,6 +655,12 @@ export default class PureChatLLM extends Plugin {
         this.settings.endpoints.find(e => e.name === endpoint.name) ||
         this.settings.endpoints.push(endpoint),
     );
+
+    this.settings.messageRoleFormatter = !this.settings.messageRoleFormatter
+      ? DEFAULT_SETTINGS.messageRoleFormatter
+      : this.settings.messageRoleFormatter.includes('{role}')
+        ? this.settings.messageRoleFormatter
+        : this.settings.messageRoleFormatter.trimEnd() + ' {role}';
   }
 
   /**
